@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.raytok.ear",
+      "sha256_cert_fingerprints": [
+        "B5:FB:DD:B4:FC:37:AD:59:44:70:99:D1:13:CE:6B:27:C8:06:AF:73:A4:DF:6A:37:B4:27:09:64:BC:02:5A:DF"
+      ]
+    }
+  }
+]

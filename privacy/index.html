@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RayTok 개인정보 처리방침</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif; margin: 0; padding: 32px 20px 64px; color: #0A0F1F; background: #f3f2f2; max-width: 760px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 28px 0 8px; }
+  p, li { font-size: 15px; line-height: 1.6; color: #333; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #e8e8e8; }
+  .date { font-size: 13px; color: #777; }
+</style>
+</head>
+<body>
+<h1>RayTok 개인정보 처리방침</h1>
+<p class="date">시행일 2026-09-04 · 적용: RayTok Ear (com.raytok.ear), RayTok Glass (com.raytok.glass)</p>
+
+<p>RayTok은 실시간 통역 앱입니다. <strong>RayTok에는 서버가 없습니다.</strong> 앱이 만드는 어떤 내용도 RayTok 운영자에게 모이지 않으며, 분석·광고 SDK를 쓰지 않습니다. 이 문서는 앱이 <em>휴대폰 안에</em> 저장하는 것과 <em>휴대폰 밖으로</em> 보내는 것을 빠짐없이 적은 것입니다.</p>
+
+<h2>1. 휴대폰 안에 저장하는 것</h2>
+<table>
+<tr><th>무엇</th><th>어디</th><th>얼마나</th><th>지우는 방법</th></tr>
+<tr><td>메모 — 강연·메모·저장한 대화의 원문과 번역</td><td>앱 전용 저장 공간</td><td>사용자가 지울 때까지</td><td>메모 삭제, 또는 설정 → 앱 초기화</td></tr>
+<tr><td>활동 기록 — 세션 시작·끝 같은 줄</td><td>앱 전용 저장 공간, 최근 60줄</td><td>밀려날 때까지</td><td>앱 초기화</td></tr>
+<tr><td>설정 — 언어, 출력, 스위치, 번역 엔진, 휴대폰 이름</td><td>앱 전용 저장 공간</td><td>지울 때까지</td><td>앱 초기화</td></tr>
+<tr><td>인식 기록 — 음성 인식기가 준 원문·시각·설정 값 (진단용)</td><td>메모리; 사용자가 "기록 저장"을 누르면 메모로</td><td>앱을 끄면 사라짐, 저장하면 메모와 같음</td><td>기록 지우기, 앱 초기화</td></tr>
+<tr><td>번역 모델 (언어당 30~80MB)</td><td>앱 전용 파일</td><td>지울 때까지</td><td>설정 → 언어 팩 → 삭제</td></tr>
+</table>
+<p>음성 인식 모델은 휴대폰의 구글 음성 서비스가 관리하며 앱 밖에 있습니다. 안드로이드 자동 백업은 시험 빌드에서 꺼져 있습니다. 출시 빌드에서 켤 경우 위 항목이 사용자 본인의 구글 계정으로 백업되며, 같은 계정에서만 복원됩니다.</p>
+
+<h2>2. 휴대폰 밖으로 보내는 것</h2>
+<table>
+<tr><th>무엇</th><th>어디로</th><th>언제</th></tr>
+<tr><td>번역할 문장(원문 텍스트)</td><td>Google 번역 (translate.googleapis.com)</td><td>번역 엔진 설정에 따라 — 기본은 확정된 문장만, "기기 내 우선"이면 기기 내 모델이 없는 언어만, "인터넷 번역"이면 전부</td></tr>
+<tr><td>음성(오디오)</td><td>휴대폰의 구글 음성 인식 서비스 — 기기 내 모델이 있으면 기기 안에서, 없으면 구글 서버로</td><td>기기 내 인식 모델이 없는 언어를 들을 때</td></tr>
+<tr><td>대화 한 줄(원문+번역)</td><td>투폰으로 연결한 상대 휴대폰 — 같은 로컬 네트워크, 암호화 없음</td><td>투폰 연결 중</td></tr>
+</table>
+<p>구글로 보낸 문장·음성의 처리는 <a href="https://policies.google.com/privacy">Google 개인정보처리방침</a>을 따릅니다. 인터넷 없이 쓰려면 설정 → 언어 팩에서 언어를 미리 받고, 번역 엔진을 "기기 내 우선"으로 두면 됩니다. 투폰은 공용 Wi-Fi보다 한쪽 휴대폰의 핫스팟을 권합니다.</p>
+
+<h2>3. 앱이 요구하는 권한</h2>
+<ul>
+<li><strong>마이크</strong> — 음성 인식</li>
+<li><strong>블루투스 연결</strong> — 이어폰·안경으로 소리 보내기</li>
+<li><strong>인터넷</strong> — 번역, 언어 팩 받기</li>
+<li><strong>카메라</strong> — 투폰 연결 QR 찍기(그 순간만)</li>
+</ul>
+
+<h2>4. 사용자가 할 수 있는 것</h2>
+<ul>
+<li>설정 → <strong>앱 초기화</strong>: 1항의 항목 전부 삭제(인식 기록 포함).</li>
+<li>메모 화면에서 메모 개별 삭제, 언어 팩 화면에서 모델 삭제.</li>
+<li>휴대폰을 넘기기 전에는 앱 초기화 또는 앱 삭제를 권합니다.</li>
+</ul>
+
+<h2>5. 아동·민감정보</h2>
+<p>RayTok은 아동을 대상으로 하지 않으며, 별도의 계정·가입·결제 정보를 받지 않습니다. 통역 내용은 사용자가 말한 그대로이며, 앱 운영자는 이를 볼 수 없습니다.</p>
+
+<h2>6. 문의와 개정</h2>
+<p>문의: <em>(운영자 연락처를 적으세요)</em><br>방침이 바뀌면 이 페이지의 시행일을 고치고 앱의 다음 판에 알립니다.</p>
+</body>
+</html>
