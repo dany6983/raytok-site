@@ -1,12 +1,15 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.raytok.ear",
       "sha256_cert_fingerprints": [
         "B5:FB:DD:B4:FC:37:AD:59:44:70:99:D1:13:CE:6B:27:C8:06:AF:73:A4:DF:6A:37:B4:27:09:64:BC:02:5A:DF",
-        "C2:09:29:2D:66:71:90:10:6E:C1:A2:52:6D:00:7F:3D:9F:97:D9:51:CF:E1:7F:76:FE:83:1A:51:04:FD:69:7B"
+        "C2:09:29:2D:66:71:90:10:6E:C1:A2:52:6D:00:7F:3D:9F:97:D9:51:CF:E1:7F:76:FE:83:1A:51:04:FD:69:7B",
+        "4B:1F:93:53:35:1E:DD:1A:FA:C2:B5:25:35:5D:14:28:AC:04:94:74:50:21:06:1A:31:CB:9B:01:40:48:95:29"
       ]
     }
   }
