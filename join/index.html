@@ -35,7 +35,8 @@
   var store = 'https://raytok.kr/download/';
   var ok = /^\d{1,3}(\.\d{1,3}){3}$/.test(q.ip || '') && /^[A-Z0-9]{6}$/i.test(q.code || '');
   var qs = 'ip=' + encodeURIComponent(q.ip || '') + '&code=' + encodeURIComponent((q.code || '').toUpperCase())
-         + '&name=' + encodeURIComponent(q.name || '') + '&lang=' + encodeURIComponent(q.lang || '');
+         + '&name=' + encodeURIComponent(q.name || '') + '&lang=' + encodeURIComponent(q.lang || '')
+         + (q.mode === 'guide' ? '&mode=guide' : '');   // v2 가이드 세션 QR (D-138)
   var intent = 'intent://join?' + qs + '#Intent;scheme=raytok;package=' + pkg
              + ';S.browser_fallback_url=' + encodeURIComponent(store) + ';end';
   var deep = 'raytok://join?' + qs;
