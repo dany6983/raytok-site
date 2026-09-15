@@ -31,6 +31,12 @@
   /* ▲▲ 그 밖에 고칠 것은 없다 (docs/PLAY_RELEASE_CHECKLIST.md 6-2) ▲▲ */
 
   /* 빌드마다 여기 셋만 고친다 */
+  // stable: 다니가 마지막으로 "정상"이라 한 실기 통과 빌드 (AGENTS 8항). 새 빌드가 실기를 통과하기 전엔 안 옮긴다.
+  var STABLE = {
+    tag:  'LANG-27',
+    date: '2026-09-15',
+    apk:  'https://expo.dev/artifacts/eas/NHBe66coGinEFAtDFNVTeF9eAiaFbKqiKA_RzjrRKAk.apk'
+  };
   var BUILD = {
     tag:  'LANG-29',
     date: '2026-09-15',
@@ -50,6 +56,7 @@
   <p>안드로이드 전용입니다.</p>
   <a class="btn" id="apk-btn" href="#">RayTok 받기</a>
   <p class="meta" id="apk-meta"></p>
+  <p class="meta" style="margin-top:10px">안정판(실기 통과): <a id="stable-btn" href="#">RayTok 받기</a> <span id="stable-meta"></span></p>
 
   <div class="note">
     <b>받은 뒤에</b>
@@ -84,6 +91,8 @@
     return;
   }
   document.getElementById('apk-btn').href = BUILD.apk;
+  document.getElementById('stable-btn').href = STABLE.apk;
+  document.getElementById('stable-meta').textContent = '· ' + STABLE.tag + ' · ' + STABLE.date;
   document.getElementById('apk-meta').textContent =
     BUILD.tag + ' · ' + BUILD.date + ' · 이어폰용';
 })();
