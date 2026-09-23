@@ -1,0 +1,406 @@
+{
+ "ver": 1,
+ "lang": "fil",
+ "items": [
+  {
+   "id": 1,
+   "tr": "Magsisimula na tayo sa trabaho ngayon."
+  },
+  {
+   "id": 2,
+   "tr": "Mangyaring magtipon-tipon ang lahat. Magsasagawa tayo ng pulong sa kaligtasan bago magtrabaho."
+  },
+  {
+   "id": 3,
+   "tr": "Ipapahayag ko ang mga detalye ng trabaho para sa araw na ito."
+  },
+  {
+   "id": 4,
+   "tr": "Mangyaring suriin ang kondisyon ng makinarya at mga kagamitan bago mag-umpisa."
+  },
+  {
+   "id": 5,
+   "tr": "Kung masama ang inyong pakiramdam, mangyaring ipagbigay-alam agad sa amin."
+  },
+  {
+   "id": 6,
+   "tr": "Mangyaring dumaan lamang sa mga itinalagang daanan sa loob ng lugar ng pagtatrabaho."
+  },
+  {
+   "id": 7,
+   "tr": "Mangyaring magtrabaho nang sunod-sunod ayon sa direksyon ng tagapangasiwa."
+  },
+  {
+   "id": 8,
+   "tr": "Huwag paganahin ang makina o baguhin ang mga setting nang walang pahintulot."
+  },
+  {
+   "id": 9,
+   "tr": "Huwag na huwag magtatrabaho nang mag-isa sa mga lugar na nangangailangan ng dalawang tao sa bawat koponan."
+  },
+  {
+   "id": 10,
+   "tr": "Mangyaring alamin muna ang lokasyon ng power switch at emergency stop button."
+  },
+  {
+   "id": 11,
+   "tr": "Alisin ang mga harang sa paligid ng lugar ng pagtatrabaho at panatilihin itong maayos at malinis."
+  },
+  {
+   "id": 12,
+   "tr": "Mangyaring suriin kung gumagana nang maayos ang mga aparatong pangkaligtasan o takip na proteksyon."
+  },
+  {
+   "id": 13,
+   "tr": "Bawal gumamit ng smartphone at magsuot ng earphone habang nagtatrabaho."
+  },
+  {
+   "id": 14,
+   "tr": "Kung may makitang panganib, ihinto agad ang trabaho at iulat ito."
+  },
+  {
+   "id": 15,
+   "tr": "Dapat tiyakin ng papalit na shift worker ang tamang paglilipat ng mga tungkulin at impormasyon."
+  },
+  {
+   "id": 16,
+   "tr": "Huwag magmadali sa mga mapanganib na trabaho, at sundin ang mga alituntunin sa kaligtasan."
+  },
+  {
+   "id": 17,
+   "tr": "Mangyaring ihinto muna ang trabaho nang pansamantala."
+  },
+  {
+   "id": 18,
+   "tr": "Tapos na ang lahat ng trabaho para sa araw na ito."
+  },
+  {
+   "id": 19,
+   "tr": "Pagkatapos ng trabaho, patayin ang kuryente ng makina at tanggalin ang saksakan nito."
+  },
+  {
+   "id": 20,
+   "tr": "Mangyaring ibalik sa tamang lagayan ang mga ginamit na kagamitan at personal protective equipment."
+  },
+  {
+   "id": 21,
+   "tr": "Mapanganib! Mangyaring dahan-dahang lumayo pabalik."
+  },
+  {
+   "id": 22,
+   "tr": "May panganib ng makuryente, huwag hawakan ang mga kagamitang de-kuryente gamit ang basang kamay."
+  },
+  {
+   "id": 23,
+   "tr": "Ito ay lugar na may panganib na maipit. Mag-ingat sa inyong mga kamay at dulo ng damit."
+  },
+  {
+   "id": 24,
+   "tr": "Ito ay lugar na may panganib na mahulog. Huwag sumandal sa mga harang o hawakan."
+  },
+  {
+   "id": 25,
+   "tr": "Lugar na may babala sa mga nahuhulog na bagay. Palaging tumingin sa itaas."
+  },
+  {
+   "id": 26,
+   "tr": "May papalapit na forklift. Huminto at tiyaking ligtas bago magpatuloy."
+  },
+  {
+   "id": 27,
+   "tr": "Kasalukuyang may nagbubuhat gamit ang kreyn. Huwag dumaan sa ilalim ng binubuhat na karga."
+  },
+  {
+   "id": 28,
+   "tr": "Babala sa mainit na kagamitan! Huwag hawakan ang ibabaw nito upang maiwasan ang mapaso."
+  },
+  {
+   "id": 29,
+   "tr": "Babala sa umiikot na bahagi ng makina! Huwag ipasok ang kamay habang ito ay umiikot."
+  },
+  {
+   "id": 30,
+   "tr": "Lugar na may panganib sa sunog. Mahigpit na ipinagbabawal ang paninigarilyo at paggamit ng apoy."
+  },
+  {
+   "id": 31,
+   "tr": "Lugar na may panganib sa nakakalasong gas at suffocation. Huwag pumasok sa confined space nang walang pahintulot."
+  },
+  {
+   "id": 32,
+   "tr": "Mag-ingat sa paghawak ng mga kemikal! Iwasan ang pagdikit sa balat at huwag itong langhapin."
+  },
+  {
+   "id": 33,
+   "tr": "Madulas ang sahig, mag-ingat na huwag madulas habang naglalakad."
+  },
+  {
+   "id": 34,
+   "tr": "Kapag nagbubuhat ng mabibigat na bagay, itukod ang tuhod upang hindi mapinsala ang baywang."
+  },
+  {
+   "id": 35,
+   "tr": "May panganib ng pagguho o pagtumba, huwag sumandal sa mga nakasalansang kagamitan."
+  },
+  {
+   "id": 36,
+   "tr": "Huwag magwelding o gumawa ng mga gawaing may kislap malapit sa mga bagay na madaling masunog."
+  },
+  {
+   "id": 37,
+   "tr": "Huwag tumingin nang direkta sa laser o liwanag ng welding nang walang proteksyon sa mata."
+  },
+  {
+   "id": 38,
+   "tr": "Huwag hayaang mauntog o mabilad sa direktang sikat ng araw ang mga high-pressure gas cylinder."
+  },
+  {
+   "id": 39,
+   "tr": "Tiyaking suriin ang antas ng presyon kapag binubuksan o isinasara ang mga balbula at tubo."
+  },
+  {
+   "id": 40,
+   "tr": "Lugar ito na maraming alikabok. Mangyaring buksan ang ventilation system."
+  },
+  {
+   "id": 41,
+   "tr": "Huwag tumayo sa daanan ng mga sasakyan at mabibigat na kagamitan."
+  },
+  {
+   "id": 42,
+   "tr": "Huwag magsalansan ng mga bagay na lalampas sa itinalagang limitasyon ng taas."
+  },
+  {
+   "id": 43,
+   "tr": "Tiyaking suriin at sundin ang mga tanda ng kaligtasan at babala sa panganib."
+  },
+  {
+   "id": 44,
+   "tr": "Huwag umakyat gamit ang hindi sertipikadong hagdan o hindi matatag na plataporma."
+  },
+  {
+   "id": 45,
+   "tr": "Habang sinusuri ang makina, magkabit ng karatulang 'Kasalukuyang Sinusuri - Huwag Paganahin'."
+  },
+  {
+   "id": 46,
+   "tr": "Tiyaking i-fasten ang chin strap ng inyong safety helmet bago pumasok sa lugar ng pagtatrabaho."
+  },
+  {
+   "id": 47,
+   "tr": "Kailangang magsuot ng safety shoes para maprotektahan ang inyong mga paa."
+  },
+  {
+   "id": 48,
+   "tr": "Kapag nagtatrabaho sa matataas na lugar, magsuot ng safety harness at ikabit ang safety hook."
+  },
+  {
+   "id": 49,
+   "tr": "Magsuot ng dust mask o respirator kapag nagtatrabaho sa maalikabok at mapanganib na mga lugar."
+  },
+  {
+   "id": 50,
+   "tr": "Maaaring may tumalsik na mga piraso, kaya tiyaking magsuot ng safety glasses."
+  },
+  {
+   "id": 51,
+   "tr": "Mangyaring magsuot ng earplugs sa mga maiingay na lugar ng pagtatrabaho."
+  },
+  {
+   "id": 52,
+   "tr": "Bawal magsuot ng mga guwantes na maaaring maipit habang nagpapatakbo ng umiikot na makinarya."
+  },
+  {
+   "id": 53,
+   "tr": "Magsuot ng chemical-resistant rubber gloves at protektadong damit kapag humahawak ng mga kemikal."
+  },
+  {
+   "id": 54,
+   "tr": "Magsuot ng welding mask at guwantes na gawa sa balat habang nagwewelding."
+  },
+  {
+   "id": 55,
+   "tr": "Magsuot ng cut-resistant gloves kapag nagpuputol o humahawak ng matatalas na materyales."
+  },
+  {
+   "id": 56,
+   "tr": "Suriin ang inyong personal protective equipment araw-araw upang matiyak na walang pinsala o sira."
+  },
+  {
+   "id": 57,
+   "tr": "Palitan agad ng bago ang mga nasirang safety helmet o protective gear."
+  },
+  {
+   "id": 58,
+   "tr": "Mangyaring magsuot ng reflective vest kapag nagtatrabaho sa gabi o sa madidilim na lugar."
+  },
+  {
+   "id": 59,
+   "tr": "Magsuot ng thermal clothing o kasuotang panlamig na angkop sa inyong kapaligiran sa pagtatrabaho."
+  },
+  {
+   "id": 60,
+   "tr": "Itali nang maayos ang mahabang buhok at ilagay ito sa loob ng safety helmet."
+  },
+  {
+   "id": 61,
+   "tr": "Ang malaluwag na damit-pantrabaho o may mga tali ay maaaring maipit sa makina, kaya mangyaring magsuot nang maayos."
+  },
+  {
+   "id": 62,
+   "tr": "Ibaba ang face shield kapag nagsasagawa ng gawaing pag-insulate o pagliliha."
+  },
+  {
+   "id": 63,
+   "tr": "Magsuot ng insulated gloves at insulated shoes kapag nagsasagawa ng pagsusuri sa kuryente."
+  },
+  {
+   "id": 64,
+   "tr": "Malilimitahan ang pagpasok sa lugar ng pagtatrabaho kung walang suot na personal protective equipment."
+  },
+  {
+   "id": 65,
+   "tr": "Pagkatapos magtrabaho, linisin ang protective gear at itabi ito sa nakatalagang storage box."
+  },
+  {
+   "id": 66,
+   "tr": "Kapag tumunog ang emergency alarm, ihinto agad ang trabaho at lumikas."
+  },
+  {
+   "id": 67,
+   "tr": "Pindutin ang emergency stop button upang agad na ihinto ang makina."
+  },
+  {
+   "id": 68,
+   "tr": "May sunog! Sumigaw ng 'Sunog!' nang malakas at ipagbigay-alam sa mga nasa paligid."
+  },
+  {
+   "id": 69,
+   "tr": "Takpan ang ilong at bibig gamit ang basang tuwalya o damit, yumuko nang mababa, at lumikas."
+  },
+  {
+   "id": 70,
+   "tr": "Huwag sumakay sa elevator, mangyaring lumikas gamit ang emergency stairs."
+  },
+  {
+   "id": 71,
+   "tr": "Kung mawalan ng kuryente, mahinahong lumikas sa pamamagitan ng pagsunod sa mga emergency exit sign."
+  },
+  {
+   "id": 72,
+   "tr": "Alamin ang lokasyon ng fire extinguisher, at hilahin ang safety pin upang patayin ang apoy sa simula nito."
+  },
+  {
+   "id": 73,
+   "tr": "Kung may nasugatan, ipagbigay-alam agad sa tagapangasiwa."
+  },
+  {
+   "id": 74,
+   "tr": "Kung walang malay ang pasyente, tumawag sa emergency hotline at magsagawa ng CPR."
+  },
+  {
+   "id": 75,
+   "tr": "Kung may kemikal na tumalsik sa mata o balat, banlawan ito gamit ang emergency eyewash nang hindi bababa sa 15 minuto."
+  },
+  {
+   "id": 76,
+   "tr": "Kung may hinala na may tagas ng gas, huwag buksan ang switch ng ilaw at buksan ang mga bintana upang magpahangin."
+  },
+  {
+   "id": 77,
+   "tr": "Magtipon nang mabilis sa itinalagang outdoor assembly point para sa head count."
+  },
+  {
+   "id": 78,
+   "tr": "Huwag magsalansan ng mga kagamitan sa mga emergency exit at emergency pathway."
+  },
+  {
+   "id": 79,
+   "tr": "Kung may lindol, magtago sa ilalim ng matatag na mesa at protektahan ang inyong ulo."
+  },
+  {
+   "id": 80,
+   "tr": "Kung may pagguho o nahuhulog na mga bagay, protektahan ang inyong ulo at lumikas sa ligtas na lugar."
+  },
+  {
+   "id": 81,
+   "tr": "Kung may aksidente sa kuryente, huwag hawakan nang direkta ang biktima at patayin muna ang power source."
+  },
+  {
+   "id": 82,
+   "tr": "Huwag galawin ang pinangyarihan ng aksidente at maghintay ng tagubilin mula sa tagapangasiwa."
+  },
+  {
+   "id": 83,
+   "tr": "Mangyaring makipagtulungan sa mga tagubilin ng mga emergency medical technician at bombero."
+  },
+  {
+   "id": 84,
+   "tr": "Palaging alamin ang lokasyon ng first aid kit sa lugar ng pagtatrabaho."
+  },
+  {
+   "id": 85,
+   "tr": "Mangyaring makilahok nang aktibo sa mga emergency evacuation drill."
+  },
+  {
+   "id": 86,
+   "tr": "Magsisimula na ngayon ang 15 minutong oras ng pahinga."
+  },
+  {
+   "id": 87,
+   "tr": "Ibaba ang inyong mga kagamitan at pumunta sa itinalagang break room."
+  },
+  {
+   "id": 88,
+   "tr": "Babala sa matinding init! Magpahinga sa malamig na silong at uminom ng sapat na tubig."
+  },
+  {
+   "id": 89,
+   "tr": "Babala sa matinding lamig! Uminom ng maiinit na inumin at panatilihing mainit ang katawan."
+  },
+  {
+   "id": 90,
+   "tr": "Huwag manatili sa mga mapanganib na lugar o sa paligid ng makinarya habang nagpapahinga."
+  },
+  {
+   "id": 91,
+   "tr": "Oras na para sa tanghalian. Mangyaring pumunta sa kantina."
+  },
+  {
+   "id": 92,
+   "tr": "Tiyaking maghugas nang mabuti ng inyong mga kamay bago kumain."
+  },
+  {
+   "id": 93,
+   "tr": "Pagkatapos kumain, bumalik sa lugar ng pagtatrabaho 10 minuto bago magsimula muli ang trabaho."
+  },
+  {
+   "id": 94,
+   "tr": "Pagkatapos magpahinga, magsagawa ng magaan na stretching bago magsimula muli ng trabaho upang i-relax ang katawan."
+  },
+  {
+   "id": 95,
+   "tr": "Mangyaring panatilihing tahimik at maayos sa loob ng break room."
+  },
+  {
+   "id": 96,
+   "tr": "Siguraduhing manigarilyo lamang sa mga itinalagang smoking area."
+  },
+  {
+   "id": 97,
+   "tr": "Mahigpit na ipinagbabawal ang pag-inom ng alak o pagdadala ng inuming de-alkohol sa loob ng lugar ng pagtatrabaho."
+  },
+  {
+   "id": 98,
+   "tr": "5 minuto bago magsimula muli ang trabaho. Mangyaring maghanda na sa pagtatrabaho."
+  },
+  {
+   "id": 99,
+   "tr": "Uminom ng sapat na tubig at asin upang maiwasan ang sakit sanhi ng matinding init."
+  },
+  {
+   "id": 100,
+   "tr": "Magsisimula na tayo sa trabaho ngayong hapon. Mangyaring pumunta sa inyong mga pwesto."
+  }
+ ]
+}

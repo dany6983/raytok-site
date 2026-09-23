@@ -1,0 +1,406 @@
+{
+ "ver": 1,
+ "lang": "vi",
+ "items": [
+  {
+   "id": 1,
+   "tr": "Bây giờ chúng ta sẽ bắt đầu công việc."
+  },
+  {
+   "id": 2,
+   "tr": "Xin vui lòng tập trung lại. Chúng ta sẽ tiến hành cuộc họp an toàn trước khi làm việc."
+  },
+  {
+   "id": 3,
+   "tr": "Tôi xin thông báo nội dung công việc ngày hôm nay."
+  },
+  {
+   "id": 4,
+   "tr": "Vui lòng kiểm tra tình trạng máy móc và dụng cụ trước khi làm việc."
+  },
+  {
+   "id": 5,
+   "tr": "Nếu bạn cảm thấy không khỏe hoặc có bất kỳ vấn đề thể chất nào, hãy báo ngay cho chúng tôi."
+  },
+  {
+   "id": 6,
+   "tr": "Chỉ di chuyển qua các lối đi được chỉ định trong khu vực làm việc."
+  },
+  {
+   "id": 7,
+   "tr": "Hãy làm việc theo đúng thứ tự dưới sự hướng dẫn của người giám sát."
+  },
+  {
+   "id": 8,
+   "tr": "Không được tự ý vận hành máy móc hoặc thay đổi cài đặt."
+  },
+  {
+   "id": 9,
+   "tr": "Tuyệt đối không làm việc một mình trong khu vực yêu cầu làm việc theo nhóm hai người."
+  },
+  {
+   "id": 10,
+   "tr": "Hãy kiểm tra trước vị trí của công tắc nguồn và nút dừng khẩn cấp."
+  },
+  {
+   "id": 11,
+   "tr": "Hãy dọn dẹp các chướng ngại vật xung quanh nơi làm việc và giữ gìn ngăn nắp."
+  },
+  {
+   "id": 12,
+   "tr": "Vui lòng kiểm tra xem thiết bị an toàn hoặc nắp bảo vệ có hoạt động bình thường không."
+  },
+  {
+   "id": 13,
+   "tr": "Nghiêm cấm sử dụng điện thoại thông minh và đeo tai nghe trong lúc làm việc."
+  },
+  {
+   "id": 14,
+   "tr": "Nếu phát hiện yếu tố nguy hiểm, hãy dừng công việc ngay lập tức và báo cáo."
+  },
+  {
+   "id": 15,
+   "tr": "Người bàn giao ca làm việc phải xác nhận chính xác các thông tin bàn giao."
+  },
+  {
+   "id": 16,
+   "tr": "Đối với công việc nguy hiểm, không được vội vàng mà phải tuân thủ quy tắc an toàn."
+  },
+  {
+   "id": 17,
+   "tr": "Xin vui lòng tạm dừng công việc."
+  },
+  {
+   "id": 18,
+   "tr": "Tất cả công việc hôm nay kết thúc tại đây."
+  },
+  {
+   "id": 19,
+   "tr": "Sau khi kết thúc công việc, hãy ngắt nguồn điện và rút phích cắm máy móc."
+  },
+  {
+   "id": 20,
+   "tr": "Hãy thu dọn dụng cụ và thiết bị bảo hộ đã sử dụng vào đúng nơi quy định."
+  },
+  {
+   "id": 21,
+   "tr": "Nguy hiểm! Xin vui lòng lùi lại phía sau."
+  },
+  {
+   "id": 22,
+   "tr": "Có nguy cơ bị điện giật, không chạm vào thiết bị điện bằng tay ướt."
+  },
+  {
+   "id": 23,
+   "tr": "Đây là khu vực có nguy cơ bị kẹp. Hãy chú ý tay và gấu áo."
+  },
+  {
+   "id": 24,
+   "tr": "Khu vực có nguy cơ rơi ngã. Không được tựa vào lan can."
+  },
+  {
+   "id": 25,
+   "tr": "Khu vực chú ý vật rơi. Hãy luôn quan sát phía trên."
+  },
+  {
+   "id": 26,
+   "tr": "Xe nâng đang đến gần. Hãy dừng lại và xác nhận an toàn."
+  },
+  {
+   "id": 27,
+   "tr": "Đang tiến hành công việc cẩu hàng. Không đi qua dưới vật đang được nâng."
+  },
+  {
+   "id": 28,
+   "tr": "Chú ý thiết bị nhiệt độ cao! Có nguy cơ bị bỏng, không chạm vào bề mặt."
+  },
+  {
+   "id": 29,
+   "tr": "Chú ý bộ phận xoay! Không đưa tay vào khi máy đang quay."
+  },
+  {
+   "id": 30,
+   "tr": "Khu vực có nguy cơ hỏa hoạn. Nghiêm cấm hút thuốc và sử dụng lửa."
+  },
+  {
+   "id": 31,
+   "tr": "Khu vực nguy cơ khí độc và ngạt thở. Không vào không gian kín khi chưa được phép."
+  },
+  {
+   "id": 32,
+   "tr": "Chú ý khi xử lý hóa chất! Tránh tiếp xúc với da và hít phải."
+  },
+  {
+   "id": 33,
+   "tr": "Sàn nhà trơn trượt, hãy chú ý tránh bị trượt ngã khi đi bộ."
+  },
+  {
+   "id": 34,
+   "tr": "Khi nâng vật nặng, hãy gập đầu gối để tránh chấn thương lưng."
+  },
+  {
+   "id": 35,
+   "tr": "Có nguy cơ đổ sập và lật úp, không tựa vào hàng hóa xếp chồng."
+  },
+  {
+   "id": 36,
+   "tr": "Không hàn hoặc thực hiện công việc phát ra tia lửa gần vật liệu dễ cháy."
+  },
+  {
+   "id": 37,
+   "tr": "Không nhìn trực tiếp bằng mắt thường vào tia laser hoặc ánh sáng hàn."
+  },
+  {
+   "id": 38,
+   "tr": "Không để bình khí nén áp suất cao bị va đập hoặc tiếp xúc trực tiếp với ánh nắng mặt trời."
+  },
+  {
+   "id": 39,
+   "tr": "Hãy chắc chắn kiểm tra tình trạng áp suất khi đóng mở van và đường ống."
+  },
+  {
+   "id": 40,
+   "tr": "Khu vực phát sinh nhiều bụi. Hãy bật thiết bị thông gió."
+  },
+  {
+   "id": 41,
+   "tr": "Không đứng trên đường di chuyển của xe cộ và thiết bị hạng nặng."
+  },
+  {
+   "id": 42,
+   "tr": "Không xếp chồng hàng hóa vượt quá giới hạn chiều cao quy định."
+  },
+  {
+   "id": 43,
+   "tr": "Hãy chắc chắn kiểm tra và tuân thủ các biển báo an toàn và cảnh báo nguy hiểm."
+  },
+  {
+   "id": 44,
+   "tr": "Không leo lên thang chưa được kiểm định hoặc bục đỡ không chắc chắn."
+  },
+  {
+   "id": 45,
+   "tr": "Trong khi kiểm tra máy móc, hãy treo biển báo 'Cấm vận hành - Đang kiểm tra'."
+  },
+  {
+   "id": 46,
+   "tr": "Vui lòng cài chặt quai mũ bảo hộ trước khi vào công trường."
+  },
+  {
+   "id": 47,
+   "tr": "Nhất thiết phải đi giày bảo hộ để bảo vệ bàn chân của bạn."
+  },
+  {
+   "id": 48,
+   "tr": "Khi làm việc trên cao, hãy đeo dây đai an toàn và móc khóa an toàn vào vị trí."
+  },
+  {
+   "id": 49,
+   "tr": "Khi làm việc với bụi và chất độc hại, hãy đeo mặt nạ phòng bụi hoặc mặt nạ phòng độc."
+  },
+  {
+   "id": 50,
+   "tr": "Các mảnh vỡ có thể bắn ra, vì vậy hãy chắc chắn đeo kính bảo hộ."
+  },
+  {
+   "id": 51,
+   "tr": "Hãy đeo nút tai ở những nơi làm việc có tiếng ồn lớn."
+  },
+  {
+   "id": 52,
+   "tr": "Khi vận hành máy xoay, nghiêm cấm đeo găng tay có nguy cơ bị cuốn vào."
+  },
+  {
+   "id": 53,
+   "tr": "Đeo găng tay cao su kháng hóa chất và quần áo bảo hộ khi xử lý hóa chất."
+  },
+  {
+   "id": 54,
+   "tr": "Đeo mặt nạ hàn và găng tay da khi thực hiện công việc hàn."
+  },
+  {
+   "id": 55,
+   "tr": "Đeo găng tay chống cắt khi cắt hoặc xử lý các vật liệu sắc nhọn."
+  },
+  {
+   "id": 56,
+   "tr": "Hãy kiểm tra thiết bị bảo hộ hàng ngày xem có bị hư hỏng hay hao mòn không."
+  },
+  {
+   "id": 57,
+   "tr": "Hãy thay thế ngay mũ bảo hộ hoặc thiết bị bảo hộ bị hỏng bằng đồ mới."
+  },
+  {
+   "id": 58,
+   "tr": "Hãy mặc áo phản quang khi làm việc vào ban đêm hoặc ở những nơi tối tăm."
+  },
+  {
+   "id": 59,
+   "tr": "Hãy mặc quần áo chống nhiệt hoặc quần áo giữ ấm phù hợp với môi trường làm việc."
+  },
+  {
+   "id": 60,
+   "tr": "Hãy buộc tóc dài gọn gàng và cho vào bên trong mũ bảo hộ."
+  },
+  {
+   "id": 61,
+   "tr": "Quần áo bảo hộ rộng hoặc có dây lòng thòng có thể bị kẹt vào máy móc, vì vậy hãy mặc gọn gàng."
+  },
+  {
+   "id": 62,
+   "tr": "Hãy hạ kính che mặt xuống khi thực hiện công việc cách điện hoặc mài."
+  },
+  {
+   "id": 63,
+   "tr": "Hãy đeo găng tay cách điện và đi giày cách điện khi kiểm tra điện."
+  },
+  {
+   "id": 64,
+   "tr": "Việc ra vào công trường sẽ bị hạn chế nếu không đeo thiết bị bảo hộ."
+  },
+  {
+   "id": 65,
+   "tr": "Sau khi kết thúc công việc, hãy lau sạch thiết bị bảo hộ và bảo quản trong hộp đựng."
+  },
+  {
+   "id": 66,
+   "tr": "Khi chuông báo động khẩn cấp vang lên, hãy dừng ngay công việc và sơ tán."
+  },
+  {
+   "id": 67,
+   "tr": "Hãy nhấn nút dừng khẩn cấp để dừng máy ngay lập tức."
+  },
+  {
+   "id": 68,
+   "tr": "Hỏa hoạn xảy ra! Hãy hét to 'Cháy rồi!' để báo cho mọi người xung quanh biết."
+  },
+  {
+   "id": 69,
+   "tr": "Che mũi và miệng bằng khăn ướt hoặc quần áo, hạ thấp người và sơ tán."
+  },
+  {
+   "id": 70,
+   "tr": "Không đi thang máy, hãy thoát hiểm bằng lối cầu thang thoát hiểm."
+  },
+  {
+   "id": 71,
+   "tr": "Trong trường hợp mất điện, hãy bình tĩnh di chuyển theo đèn hướng dẫn khẩn cấp."
+  },
+  {
+   "id": 72,
+   "tr": "Xác định vị trí bình chữa cháy, rút chốt an toàn để dập tắt đám cháy ban đầu."
+  },
+  {
+   "id": 73,
+   "tr": "Nếu có người bị thương, hãy thông báo ngay cho người giám sát."
+  },
+  {
+   "id": 74,
+   "tr": "Nếu nạn nhân bất tỉnh, hãy gọi cấp cứu và tiến hành hồi sức tim phổi."
+  },
+  {
+   "id": 75,
+   "tr": "Nếu hóa chất bắn vào mắt hoặc da, hãy rửa bằng vòi rửa khẩn cấp ít nhất 15 phút."
+  },
+  {
+   "id": 76,
+   "tr": "Nếu nghi ngờ rò rỉ khí ga, không bật công tắc đèn, hãy mở cửa sổ để thông gió."
+  },
+  {
+   "id": 77,
+   "tr": "Hãy nhanh chóng tập hợp tại điểm tập trung ngoài trời được chỉ định để kiểm tra quân số."
+  },
+  {
+   "id": 78,
+   "tr": "Không để đồ đạc cản trở lối thoát hiểm và đường thoát hiểm khẩn cấp."
+  },
+  {
+   "id": 79,
+   "tr": "Khi xảy ra động đất, hãy trốn dưới gầm bàn chắc chắn và bảo vệ đầu của bạn."
+  },
+  {
+   "id": 80,
+   "tr": "Khi xảy ra sụp đổ hoặc vật rơi, hãy ôm lấy đầu và lánh nạn ở nơi an toàn."
+  },
+  {
+   "id": 81,
+   "tr": "Khi xảy ra tai nạn điện giật, không chạm trực tiếp vào nạn nhân mà hãy ngắt nguồn điện trước."
+  },
+  {
+   "id": 82,
+   "tr": "Không tự ý làm xáo trộn hiện trường tai nạn, hãy đợi hướng dẫn của người quản lý."
+  },
+  {
+   "id": 83,
+   "tr": "Hãy hợp tác theo sự hướng dẫn của nhân viên cứu hộ và lính cứu hỏa."
+  },
+  {
+   "id": 84,
+   "tr": "Hãy luôn ghi nhớ vị trí của hộp sơ cứu tại công trường."
+  },
+  {
+   "id": 85,
+   "tr": "Hãy tích cực tham gia vào các buổi diễn tập sơ tán khẩn cấp."
+  },
+  {
+   "id": 86,
+   "tr": "Từ bây giờ là thời gian nghỉ giải lao 15 phút."
+  },
+  {
+   "id": 87,
+   "tr": "Hãy đặt dụng cụ làm việc xuống và di chuyển đến phòng nghỉ được chỉ định."
+  },
+  {
+   "id": 88,
+   "tr": "Cảnh báo nắng nóng gay gắt! Hãy nghỉ ngơi dưới bóng râm mát và uống đủ nước."
+  },
+  {
+   "id": 89,
+   "tr": "Cảnh báo rét đậm! Hãy uống đồ uống ấm và chú ý giữ ấm cơ thể."
+  },
+  {
+   "id": 90,
+   "tr": "Không ở lại khu vực nguy hiểm hoặc xung quanh máy móc trong thời gian nghỉ ngơi."
+  },
+  {
+   "id": 91,
+   "tr": "Đã đến giờ ăn trưa. Xin vui lòng di chuyển đến nhà ăn tập thể."
+  },
+  {
+   "id": 92,
+   "tr": "Hãy chắc chắn rửa sạch tay bằng xà phòng trước khi ăn."
+  },
+  {
+   "id": 93,
+   "tr": "Sau khi ăn xong, hãy quay lại nơi làm việc trước khi bắt đầu lại công việc 10 phút."
+  },
+  {
+   "id": 94,
+   "tr": "Sau khi nghỉ ngơi, hãy khởi động cơ thể bằng các động tác kéo giãn nhẹ nhàng trước khi làm việc."
+  },
+  {
+   "id": 95,
+   "tr": "Hãy giữ trật tự và dọn dẹp ngăn nắp trong phòng nghỉ."
+  },
+  {
+   "id": 96,
+   "tr": "Chỉ được hút thuốc ở những nơi được chỉ định làm khu vực hút thuốc."
+  },
+  {
+   "id": 97,
+   "tr": "Tuyệt đối nghiêm cấm việc uống rượu và mang đồ uống có cồn vào công trường."
+  },
+  {
+   "id": 98,
+   "tr": "Còn 5 phút nữa là bắt đầu lại công việc. Xin vui lòng chuẩn bị làm việc."
+  },
+  {
+   "id": 99,
+   "tr": "Hãy bổ sung lượng nước và muối thích hợp để phòng ngừa các bệnh do nắng nóng."
+  },
+  {
+   "id": 100,
+   "tr": "Chúng ta sẽ bắt đầu công việc buổi chiều. Xin vui lòng di chuyển về vị trí của mình."
+  }
+ ]
+}

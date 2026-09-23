@@ -1,0 +1,406 @@
+{
+ "ver": 1,
+ "lang": "id",
+ "items": [
+  {
+   "id": 1,
+   "tr": "Kita akan mulai pekerjaan sekarang."
+  },
+  {
+   "id": 2,
+   "tr": "Harap berkumpul semuanya. Kita akan melaksanakan pertemuan keselamatan kerja sebelum mulai bekerja."
+  },
+  {
+   "id": 3,
+   "tr": "Saya akan menyampaikan detail pekerjaan hari ini."
+  },
+  {
+   "id": 4,
+   "tr": "Harap periksa kondisi mesin dan peralatan sebelum mulai bekerja."
+  },
+  {
+   "id": 5,
+   "tr": "Jika Anda merasa kurang sehat atau kondisi fisik tidak prima, segera beri tahu kami."
+  },
+  {
+   "id": 6,
+   "tr": "Silakan gunakan jalur yang telah ditentukan saja di dalam area kerja."
+  },
+  {
+   "id": 7,
+   "tr": "Harap bekerja secara berurutan sesuai dengan arahan pengawas kerja."
+  },
+  {
+   "id": 8,
+   "tr": "Jangan mengoperasikan mesin atau mengubah pengaturan tanpa izin."
+  },
+  {
+   "id": 9,
+   "tr": "Jangan pernah bekerja sendirian di area kerja yang mewajibkan dua orang per tim."
+  },
+  {
+   "id": 10,
+   "tr": "Harap pastikan letak sakelar daya dan tombol penghenti darurat terlebih dahulu."
+  },
+  {
+   "id": 11,
+   "tr": "Singkirkan rintangan di sekitar tempat kerja dan rapikan kembali."
+  },
+  {
+   "id": 12,
+   "tr": "Harap periksa apakah alat keselamatan atau penutup pelindung berfungsi dengan normal."
+  },
+  {
+   "id": 13,
+   "tr": "Dilarang menggunakan ponsel pintar dan memakai earphone selama bekerja."
+  },
+  {
+   "id": 14,
+   "tr": "Jika Anda menemukan bahaya, segera hentikan pekerjaan dan laporkan."
+  },
+  {
+   "id": 15,
+   "tr": "Pekerja shift pengganti harus memastikan serah terima pekerjaan dengan tepat."
+  },
+  {
+   "id": 16,
+   "tr": "Jangan terburu-buru melakukan pekerjaan berbahaya, dan patuhilah peraturan keselamatan."
+  },
+  {
+   "id": 17,
+   "tr": "Harap hentikan pekerjaan untuk sementara waktu."
+  },
+  {
+   "id": 18,
+   "tr": "Semua pekerjaan hari ini telah selesai."
+  },
+  {
+   "id": 19,
+   "tr": "Setelah selesai bekerja, matikan daya mesin dan cabut steker kabelnya."
+  },
+  {
+   "id": 20,
+   "tr": "Harap rapikan kembali peralatan dan alat pelindung diri yang telah digunakan ke tempatnya."
+  },
+  {
+   "id": 21,
+   "tr": "Berbahaya! Harap melangkah mundur."
+  },
+  {
+   "id": 22,
+   "tr": "Ada risiko tersengat listrik, jangan menyentuh peralatan listrik dengan tangan basah."
+  },
+  {
+   "id": 23,
+   "tr": "Ini adalah area rawan terjepit. Harap perhatikan tangan dan ujung pakaian Anda."
+  },
+  {
+   "id": 24,
+   "tr": "Ini adalah area rawan jatuh. Jangan bersandar pada pagar pengaman."
+  },
+  {
+   "id": 25,
+   "tr": "Ini adalah area awas benda jatuh. Selalu perhatikan bagian atas Anda."
+  },
+  {
+   "id": 26,
+   "tr": "Forklift sedang mendekat. Harap berhenti dan pastikan kondisi aman."
+  },
+  {
+   "id": 27,
+   "tr": "Pekerjaan pengangkatan dengan derek sedang berlangsung. Jangan berjalan di bawah muatan yang diangkat."
+  },
+  {
+   "id": 28,
+   "tr": "Awas peralatan bersuhu tinggi! Jangan menyentuh permukaan untuk menghindari risiko luka bakar."
+  },
+  {
+   "id": 29,
+   "tr": "Awas bagian mesin yang berputar! Jangan memasukkan tangan saat mesin sedang berputar."
+  },
+  {
+   "id": 30,
+   "tr": "Ini adalah area rawan kebakaran. Merokok dan menggunakan api sangat dilarang."
+  },
+  {
+   "id": 31,
+   "tr": "Ini adalah area bahaya gas beracun dan mati lemas. Jangan memasuki ruang terbatas tanpa izin."
+  },
+  {
+   "id": 32,
+   "tr": "Awas penanganan bahan kimia! Hindari kontak dengan kulit dan jangan dihirup."
+  },
+  {
+   "id": 33,
+   "tr": "Lantai licin, harap berhati-hati agar tidak terpeleset saat berjalan."
+  },
+  {
+   "id": 34,
+   "tr": "Saat mengangkat barang berat, tekuk lutut Anda agar pinggang tidak cedera."
+  },
+  {
+   "id": 35,
+   "tr": "Ada risiko runtuh dan roboh, jangan bersandar pada tumpukan barang."
+  },
+  {
+   "id": 36,
+   "tr": "Jangan melakukan pengelasan atau pekerjaan dengan percikan api di dekat bahan yang mudah terbakar."
+  },
+  {
+   "id": 37,
+   "tr": "Jangan melihat langsung ke arah sinar laser atau cahaya las dengan mata telanjang."
+  },
+  {
+   "id": 38,
+   "tr": "Jangan membiarkan tabung gas bertekanan tinggi terkena benturan atau sinar matahari langsung."
+  },
+  {
+   "id": 39,
+   "tr": "Pastikan untuk memeriksa kondisi tekanan saat membuka atau menutup katup dan pipa."
+  },
+  {
+   "id": 40,
+   "tr": "Ini adalah area dengan banyak debu. Harap nyalakan sistem ventilasi."
+  },
+  {
+   "id": 41,
+   "tr": "Jangan berdiri di jalur pergerakan kendaraan dan alat berat."
+  },
+  {
+   "id": 42,
+   "tr": "Jangan menumpuk barang melebihi batas ketinggian pemuatan yang telah ditentukan."
+  },
+  {
+   "id": 43,
+   "tr": "Pastikan untuk memeriksa dan mematuhi rambu keselamatan dan tanda bahaya."
+  },
+  {
+   "id": 44,
+   "tr": "Jangan memanjat menggunakan tangga yang tidak bersertifikasi atau pijakan yang tidak stabil."
+  },
+  {
+   "id": 45,
+   "tr": "Saat memeriksa mesin, pasanglah papan tanda 'Sedang Diperiksa - Dilarang Dioperasikan'."
+  },
+  {
+   "id": 46,
+   "tr": "Pastikan untuk mengikat tali dagu helm pengaman sebelum memasuki tempat kerja."
+  },
+  {
+   "id": 47,
+   "tr": "Wajib memakai sepatu keselamatan untuk melindungi kaki Anda."
+  },
+  {
+   "id": 48,
+   "tr": "Saat bekerja di ketinggian, kenakan sabuk pengaman dan pasang kait pengamannya."
+  },
+  {
+   "id": 49,
+   "tr": "Kenakan masker antidebu atau masker antipolusi saat bekerja dengan debu dan zat berbahaya."
+  },
+  {
+   "id": 50,
+   "tr": "Serpihan dapat beterbangan, jadi pastikan untuk memakai kacamata pelindung."
+  },
+  {
+   "id": 51,
+   "tr": "Harap kenakan penyumbat telinga di tempat kerja yang bising."
+  },
+  {
+   "id": 52,
+   "tr": "Dilarang memakai sarung tangan yang berisiko tersangkut saat mengoperasikan mesin berputar."
+  },
+  {
+   "id": 53,
+   "tr": "Kenakan sarung tangan karet tahan bahan kimia dan pakaian pelindung saat menangani bahan kimia."
+  },
+  {
+   "id": 54,
+   "tr": "Kenakan pelindung wajah las dan sarung tangan kulit saat melakukan pengelasan."
+  },
+  {
+   "id": 55,
+   "tr": "Kenakan sarung tangan antipotong saat memotong atau menangani bahan yang tajam."
+  },
+  {
+   "id": 56,
+   "tr": "Periksalah alat pelindung diri setiap hari untuk memastikan tidak ada kerusakan atau keausan."
+  },
+  {
+   "id": 57,
+   "tr": "Segera ganti helm pengaman atau alat pelindung diri yang rusak dengan yang baru."
+  },
+  {
+   "id": 58,
+   "tr": "Harap kenakan rompi reflektif saat bekerja di malam hari atau di tempat yang gelap."
+  },
+  {
+   "id": 59,
+   "tr": "Kenakan pakaian tahan panas atau pakaian hangat yang sesuai dengan lingkungan kerja."
+  },
+  {
+   "id": 60,
+   "tr": "Ikat rambut yang panjang dengan rapi ke dalam helm pengaman."
+  },
+  {
+   "id": 61,
+   "tr": "Pakaian kerja yang longgar atau bertali dapat tersangkut di mesin, jadi harap berpakaian dengan rapi."
+  },
+  {
+   "id": 62,
+   "tr": "Turunkan pelindung wajah saat melakukan pekerjaan isolasi atau penggerindaan."
+  },
+  {
+   "id": 63,
+   "tr": "Kenakan sarung tangan isolasi dan sepatu isolasi saat melakukan pemeriksaan listrik."
+  },
+  {
+   "id": 64,
+   "tr": "Akses masuk ke tempat kerja akan dibatasi jika tidak mengenakan alat pelindung diri."
+  },
+  {
+   "id": 65,
+   "tr": "Setelah selesai bekerja, bersihkan alat pelindung diri dan simpan di dalam kotak penyimpanan."
+  },
+  {
+   "id": 66,
+   "tr": "Jika alarm darurat berbunyi, segera hentikan pekerjaan dan lakukan evakuasi."
+  },
+  {
+   "id": 67,
+   "tr": "Tekan tombol penghenti darurat untuk segera menghentikan mesin."
+  },
+  {
+   "id": 68,
+   "tr": "Kebakaran terjadi! Berteriaklah 'Kebakaran!' dengan keras dan beri tahu orang-orang di sekitar."
+  },
+  {
+   "id": 69,
+   "tr": "Tutup hidung dan mulut dengan handuk basah atau pakaian, bungkukkan badan, lalu evakuasi."
+  },
+  {
+   "id": 70,
+   "tr": "Jangan naik lift, silakan melarikan diri menggunakan tangga darurat."
+  },
+  {
+   "id": 71,
+   "tr": "If terjadi mati listrik, bergeraklah dengan tenang mengikuti lampu petunjuk darurat."
+  },
+  {
+   "id": 72,
+   "tr": "Periksa posisi alat pemadam api, tarik pin pengaman untuk memadamkan api pada tahap awal."
+  },
+  {
+   "id": 73,
+   "tr": "Jika ada yang terluka, segera beri tahu pengawas kerja."
+  },
+  {
+   "id": 74,
+   "tr": "Jika korban tidak sadarkan diri, hubungi layanan darurat dan lakukan resusitasi jantung paru."
+  },
+  {
+   "id": 75,
+   "tr": "Jika bahan kimia tepercik ke mata atau kulit, basuh dengan alat pembasuh darurat minimal selama 15 menit."
+  },
+  {
+   "id": 76,
+   "tr": "Jika dicurigai ada kebocoran gas, jangan nyalakan sakelar lampu dan bukalah jendela untuk ventilasi."
+  },
+  {
+   "id": 77,
+   "tr": "Berkumpullah dengan cepat di titik kumpul luar ruangan yang telah ditentukan untuk pemeriksaan jumlah orang."
+  },
+  {
+   "id": 78,
+   "tr": "Jangan menumpuk barang di pintu darurat dan jalur evakuasi darurat."
+  },
+  {
+   "id": 79,
+   "tr": "Jika terjadi gempa bumi, berlindunglah di bawah meja yang kokoh dan lindungi kepala Anda."
+  },
+  {
+   "id": 80,
+   "tr": "Jika terjadi keruntuhan atau benda jatuh, lindungi kepala dan mengungsilah ke tempat yang aman."
+  },
+  {
+   "id": 81,
+   "tr": "Jika terjadi kecelakaan sengatan listrik, jangan menyentuh langsung dan matikan daya terlebih dahulu."
+  },
+  {
+   "id": 82,
+   "tr": "Jangan mengubah kondisi tempat kejadian kecelakaan dan tunggulah instruksi dari pengelola."
+  },
+  {
+   "id": 83,
+   "tr": "Harap bekerja sama mengikuti arahan petugas medis darurat dan petugas pemadam kebakaran."
+  },
+  {
+   "id": 84,
+   "tr": "Harap selalu ketahui letak kotak pertolongan pertama di tempat kerja."
+  },
+  {
+   "id": 85,
+   "tr": "Harap berpartisipasi aktif dalam latihan evakuasi darurat."
+  },
+  {
+   "id": 86,
+   "tr": "Mulai sekarang adalah waktu istirahat selama 15 menit."
+  },
+  {
+   "id": 87,
+   "tr": "Letakkan peralatan kerja Anda dan pergilah ke ruang istirahat yang telah ditentukan."
+  },
+  {
+   "id": 88,
+   "tr": "Peringatan gelombang panas! Harap beristirahat di tempat teduh yang sejuk dan minumlah air yang cukup."
+  },
+  {
+   "id": 89,
+   "tr": "Peringatan gelombang dingin! Minumlah minuman hangat dan jagalah agar tubuh tetap hangat."
+  },
+  {
+   "id": 90,
+   "tr": "Jangan berada di area bahaya atau di sekitar mesin selama waktu istirahat."
+  },
+  {
+   "id": 91,
+   "tr": "Ini adalah waktu makan siang. Silakan pergi ke kantin."
+  },
+  {
+   "id": 92,
+   "tr": "Pastikan untuk mencuci tangan dengan bersih sebelum makan."
+  },
+  {
+   "id": 93,
+   "tr": "Setelah makan, kembalilah ke tempat kerja 10 menit sebelum pekerjaan dimulai kembali."
+  },
+  {
+   "id": 94,
+   "tr": "Setelah istirahat, lakukan peregangan ringan sebelum mulai bekerja untuk melemaskan tubuh."
+  },
+  {
+   "id": 95,
+   "tr": "Harap jaga ketenangan dan kerapian di dalam ruang istirahat."
+  },
+  {
+   "id": 96,
+   "tr": "Merokok hanya diperbolehkan di area merokok yang telah ditentukan."
+  },
+  {
+   "id": 97,
+   "tr": "Mengonsumsi atau membawa minuman beralkohol ke tempat kerja sangat dilarang."
+  },
+  {
+   "id": 98,
+   "tr": "5 menit sebelum pekerjaan dimulai kembali. Harap bersiap-siap untuk bekerja."
+  },
+  {
+   "id": 99,
+   "tr": "Konsumsilah air dan garam yang cukup untuk mencegah penyakit akibat sengatan panas."
+  },
+  {
+   "id": 100,
+   "tr": "Kita akan mulai pekerjaan sore. Harap kembali ke posisi masing-masing."
+  }
+ ]
+}
