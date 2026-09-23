@@ -1,0 +1,67 @@
+{
+  "ver": 1,
+  "session": {
+    "code": "483921",
+    "host": "F971N",
+    "lang": "ko",
+    "started": 1758500000000
+  },
+  "items": [
+    {
+      "host": "F971N",
+      "kind": "begin",
+      "lang": "ko",
+      "n": 1,
+      "prev": "0000000000000000000000000000000000000000000000000000000000000000",
+      "session": "483921",
+      "ts": 1758500000000,
+      "hash": "b548e37f94be51d5922d4d528d61b72be1b64912d654d385a46f9095fff55bdd"
+    },
+    {
+      "kind": "line",
+      "n": 2,
+      "prev": "b548e37f94be51d5922d4d528d61b72be1b64912d654d385a46f9095fff55bdd",
+      "seq": 1,
+      "src": "ko",
+      "text": "안전모를 쓰셔요",
+      "tr": {
+        "en": "Wear a helmet",
+        "vi": "Hãy đội mũ bảo hiểm"
+      },
+      "ts": 1758500003000,
+      "via": "",
+      "hash": "f6d03d6584553c373423ea0bfe224666013b1a8c533dae3932e62b774e6c3489"
+    },
+    {
+      "dev": "a1b2c3",
+      "kind": "join",
+      "lang": "vi",
+      "n": 3,
+      "name": "",
+      "prev": "f6d03d6584553c373423ea0bfe224666013b1a8c533dae3932e62b774e6c3489",
+      "ts": 1758500004000,
+      "hash": "61c80817f9498a6da7e595035314797b4a2e6e7a0f8718caaceefaf7ddbdfa2f"
+    },
+    {
+      "dev": "a1b2c3",
+      "from": 2,
+      "kind": "gap",
+      "n": 4,
+      "prev": "61c80817f9498a6da7e595035314797b4a2e6e7a0f8718caaceefaf7ddbdfa2f",
+      "to": 4,
+      "ts": 1758500010000,
+      "hash": "7af2254f48d36f0fa6200f9b0fa05b9ea34641b9b5018178b2b7553d2c7d2a06"
+    },
+    {
+      "joined_max": 1,
+      "kind": "end",
+      "lines": 1,
+      "minutes": 0,
+      "n": 5,
+      "prev": "7af2254f48d36f0fa6200f9b0fa05b9ea34641b9b5018178b2b7553d2c7d2a06",
+      "ts": 1758500020000,
+      "hash": "a4435d240a9462b6a78adc2145d0ca11155a186fb76f6e78d362696edf73423e"
+    }
+  ],
+  "last": "a4435d240a9462b6a78adc2145d0ca11155a186fb76f6e78d362696edf73423e"
+}
