@@ -1,0 +1,12 @@
+# RayTok 웹 저장소 — B(Gemini CLI) 규칙
+## 역할
+- B = 웹 담당: web/listener, web/guide, web/privacy, web/verify, web/license, packs/, relay/(Cloudflare DO), license/(Workers+D1), docs/ios-i1.md
+- A = claude-code(안드로이드 앱, 별도 저장소). A와 직접 조율하지 않음. 지시는 마스터가 [B에게] 블록으로 줌
+- 약속(메시지 형식) = docs/samples/wire-messages.json (A가 정본). 바뀌면 마스터가 알림
+- 비밀키·API 키는 저장소에 절대 넣지 않음 (wrangler secret / env만)
+## 실행 규칙
+1) 파일은 반드시 실제로 읽고 쓴다. 내용을 기억으로 재구성하지 않는다. 읽지 못하면 "읽기 실패"라고 보고한다.
+2) "시험 통과"는 실제 명령(node, npx wrangler dev, 브라우저)을 실행한 출력이 있을 때만 쓴다. 출력 발췌를 보고에 붙인다. 실행 못 했으면 "미실행".
+3) 마스터가 시킨 것만 한다. 없는 파일·조항·문장을 만들지 않는다. 설계 변경이 필요하면 하지 말고 이유만 보고.
+4) 보고 형식: [B 보고] / 만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것. 코드 펜스 없이.
+5) 한국어로 보고.

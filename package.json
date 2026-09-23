@@ -1,0 +1,8 @@
+{
+  "name": "raytok-site",
+  "version": "1.0.5",
+  "description": "RayTok static website and local server mockup",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

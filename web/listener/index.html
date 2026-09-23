@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RayTok 청취자</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --border: #334155;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 12px 16px;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .header-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background-color: #334155;
+      font-weight: 500;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--text-muted); }
+    .status-dot.online { background-color: var(--success); }
+    .status-dot.reconnecting { background-color: var(--warning); }
+    .status-dot.offline { background-color: var(--danger); }
+    
+    .screen { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h2 { font-size: 18px; margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    select, input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background-color: #0f172a;
+      color: var(--text);
+      font-size: 15px;
+      margin-bottom: 16px;
+      outline: none;
+    }
+    select:focus, input:focus { border-color: var(--primary); }
+    
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      background-color: var(--primary);
+      color: #0f172a;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn:active { background-color: var(--primary-hover); }
+    
+    .notice {
+      background-color: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    #chat-screen { display: none; padding: 0; }
+    #chat-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .msg-line { max-width: 90%; align-self: flex-start; }
+    .msg-bubble {
+      background-color: var(--card-bg);
+      padding: 10px 14px;
+      border-radius: 12px;
+      border-top-left-radius: 2px;
+      border: 1px solid var(--border);
+      font-size: 15px;
+      word-break: break-all;
+    }
+    .msg-tr { color: var(--primary); font-weight: 500; margin-top: 4px; }
+    .msg-src { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+    .badge-pending { background-color: var(--warning); color: #000; }
+    .badge-via { background-color: #475569; color: #fff; }
+
+    .tool-bar {
+      padding: 10px 16px;
+      background-color: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .tool-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .tool-btn.active { border-color: var(--primary); color: var(--primary); }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-content {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 320px;
+      padding: 24px;
+      text-align: center;
+    }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .summary-box {
+      background-color: #0f172a;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: left;
+      margin: 16px 0;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      RayTok 청취자
+    </div>
+    <div class="status-badge" id="status-badge">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">준비</span>
+    </div>
+  </div>
+
+  <div class="screen" id="join-screen">
+    <div class="card">
+      <h2>강의 참여</h2>
+      <label>강의 코드 (6자리)</label>
+      <input type="text" id="room-input" placeholder="000000" maxlength="6" inputmode="numeric">
+      
+      <label>언어 선택</label>
+      <select id="lang-select">
+        <option value="ko">한국어 (Korean)</option>
+      </select>
+      
+      <label>이름 (선택 사항)</label>
+      <input type="text" id="name-input" placeholder="예: 홍길동">
+      
+      <div class="notice">
+        • 강의 코드는 강사 화면의 번호를 입력하세요.<br>
+        • 소리를 켜면 번역된 내용을 음성으로 들을 수 있습니다.
+      </div>
+      
+      <button class="btn" id="btn-join">참여하기</button>
+    </div>
+    <div style="text-align: center; color: var(--text-muted); font-size: 12px;">
+      v<span id="ver-text"></span> &copy; RayTok
+    </div>
+  </div>
+
+  <div class="screen" id="chat-screen">
+    <div id="chat-list"></div>
+    <div class="tool-bar">
+      <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
+      <button class="tool-btn" id="btn-toggle-tts">🔊 소리 켜짐</button>
+    </div>
+  </div>
+
+  <!-- 세션 종료 모달 -->
+  <div class="modal" id="end-modal">
+    <div class="modal-content">
+      <div class="modal-title">강의·안내 종료</div>
+      <p style="color: var(--text-muted); font-size: 14px;">세션이 정상적으로 종료되었습니다.</p>
+      <div class="summary-box" id="end-summary"></div>
+      <button class="btn" onclick="location.reload()">새로고침</button>
+    </div>
+  </div>
+
+  <script>
+    const LISTENER_VER = '1.0.5';
+    document.getElementById('ver-text').textContent = LISTENER_VER;
+
+    const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"de","name_ko":"독일어","name_en":"German","offline":true,"fallback":null},{"code":"it","name_ko":"이탈리아어","name_en":"Italian","offline":true,"fallback":null},{"code":"pt","name_ko":"포르투갈어","name_en":"Portuguese","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"hi","name_ko":"힌디어","name_en":"Hindi","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"tr","name_ko":"튀르키예어","name_en":"Turkish","offline":true,"fallback":null},{"code":"nl","name_ko":"네덜란드어","name_en":"Dutch","offline":true,"fallback":null},{"code":"pl","name_ko":"폴란드어","name_en":"Polish","offline":true,"fallback":null},{"code":"sv","name_ko":"스웨덴어","name_en":"Swedish","offline":true,"fallback":null},{"code":"da","name_ko":"덴마크어","name_en":"Danish","offline":true,"fallback":null},{"code":"nb","name_ko":"노르웨이어","name_en":"Norwegian","offline":true,"fallback":null},{"code":"fi","name_ko":"핀란드어","name_en":"Finnish","offline":true,"fallback":null},{"code":"cs","name_ko":"체코어","name_en":"Czech","offline":true,"fallback":null},{"code":"el","name_ko":"그리스어","name_en":"Greek","offline":true,"fallback":null},{"code":"he","name_ko":"히브리어","name_en":"Hebrew","offline":true,"fallback":null},{"code":"hu","name_ko":"헝가리어","name_en":"Hungarian","offline":true,"fallback":null},{"code":"ro","name_ko":"루마니아어","name_en":"Romanian","offline":true,"fallback":null},{"code":"uk","name_ko":"우크라이나어","name_en":"Ukrainian","offline":true,"fallback":null},{"code":"ms","name_ko":"말레이어","name_en":"Malay","offline":true,"fallback":null},{"code":"fil","name_ko":"필리핀어","name_en":"Filipino","offline":true,"fallback":null},{"code":"bn","name_ko":"벵골어","name_en":"Bengali","offline":true,"fallback":null},{"code":"ta","name_ko":"타밀어","name_en":"Tamil","offline":true,"fallback":null},{"code":"te","name_ko":"텔루구어","name_en":"Telugu","offline":true,"fallback":null},{"code":"ur","name_ko":"우르두어","name_en":"Urdu","offline":true,"fallback":null},{"code":"fa","name_ko":"페르시아어","name_en":"Persian","offline":true,"fallback":null},{"code":"sw","name_ko":"스와힐리어","name_en":"Swahili","offline":true,"fallback":null},{"code":"sk","name_ko":"슬로바키아어","name_en":"Slovak","offline":true,"fallback":null},{"code":"bg","name_ko":"불가리아어","name_en":"Bulgarian","offline":true,"fallback":null},{"code":"ca","name_ko":"카탈루냐어","name_en":"Catalan","offline":true,"fallback":null},{"code":"hr","name_ko":"크로아티아어","name_en":"Croatian","offline":true,"fallback":null},{"code":"sr","name_ko":"세르비아어","name_en":"Serbian","offline":false,"fallback":null},{"code":"sl","name_ko":"슬로베니아어","name_en":"Slovenian","offline":true,"fallback":null},{"code":"lt","name_ko":"리투아니아어","name_en":"Lithuanian","offline":true,"fallback":null},{"code":"lv","name_ko":"라트비아어","name_en":"Latvian","offline":true,"fallback":null},{"code":"et","name_ko":"에스토니아어","name_en":"Estonian","offline":true,"fallback":null},{"code":"is","name_ko":"아이슬란드어","name_en":"Icelandic","offline":true,"fallback":null},{"code":"ga","name_ko":"아일랜드어","name_en":"Irish","offline":true,"fallback":null},{"code":"cy","name_ko":"웨일스어","name_en":"Welsh","offline":true,"fallback":null},{"code":"eu","name_ko":"바스크어","name_en":"Basque","offline":false,"fallback":null},{"code":"gl","name_ko":"갈리시아어","name_en":"Galician","offline":true,"fallback":null},{"code":"af","name_ko":"아프리칸스어","name_en":"Afrikaans","offline":true,"fallback":null},{"code":"zu","name_ko":"줄루어","name_en":"Zulu","offline":false,"fallback":null},{"code":"xh","name_ko":"코사어","name_en":"Xhosa","offline":false,"fallback":null},{"code":"hy","name_ko":"아르메니아어","name_en":"Armenian","offline":false,"fallback":null},{"code":"az","name_ko":"아제르바이잔어","name_en":"Azerbaijani","offline":false,"fallback":null},{"code":"ka","name_ko":"조지아어","name_en":"Georgian","offline":true,"fallback":null},{"code":"kk","name_ko":"카자흐어","name_en":"Kazakh","offline":false,"fallback":null},{"code":"uz","name_ko":"우즈베크어","name_en":"Uzbek","offline":false,"fallback":"ru"},{"code":"ky","name_ko":"키르기스어","name_en":"Kyrgyz","offline":false,"fallback":"ru"},{"code":"tg","name_ko":"타지크어","name_en":"Tajik","offline":false,"fallback":"ru"},{"code":"tet","name_ko":"테툼어","name_en":"Tetum","offline":false,"fallback":"id"},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"},{"code":"ne","name_ko":"네팔어","name_en":"Nepali","offline":false,"fallback":"hi"},{"code":"si","name_ko":"싱할라어","name_en":"Sinhala","offline":false,"fallback":"ta"},{"code":"kn","name_ko":"칸나다어","name_en":"Kannada","offline":true,"fallback":null},{"code":"ml","name_ko":"말라얄람어","name_en":"Malayalam","offline":false,"fallback":null},{"code":"mr","name_ko":"마라티어","name_en":"Marathi","offline":true,"fallback":null},{"code":"gu","name_ko":"구자라트어","name_en":"Gujarati","offline":true,"fallback":null},{"code":"pa","name_ko":"펀자브어","name_en":"Punjabi","offline":false,"fallback":null},{"code":"km","name_ko":"크메르어","name_en":"Khmer","offline":false,"fallback":null},{"code":"lo","name_ko":"라오어","name_en":"Lao","offline":false,"fallback":"th"},{"code":"my","name_ko":"미얀마어","name_en":"Burmese","offline":false,"fallback":null},{"code":"am","name_ko":"암하라어","name_en":"Amharic","offline":false,"fallback":null},{"code":"so","name_ko":"소말리어","name_en":"Somali","offline":false,"fallback":null},{"code":"mk","name_ko":"마케도니아어","name_en":"Macedonian","offline":true,"fallback":null},{"code":"sq","name_ko":"알바니아어","name_en":"Albanian","offline":true,"fallback":null},{"code":"bs","name_ko":"보스니아어","name_en":"Bosnian","offline":false,"fallback":null},{"code":"mt","name_ko":"몰타어","name_en":"Maltese","offline":true,"fallback":null},{"code":"yo","name_ko":"요루바어","name_en":"Yoruba","offline":false,"fallback":null},{"code":"ig","name_ko":"이그보어","name_en":"Igbo","offline":false,"fallback":null},{"code":"ha","name_ko":"하우사어","name_en":"Hausa","offline":false,"fallback":null}];
+
+    let langs = FALLBACK_LANGS;
+    let selectedLang = 'ko';
+    let srcLang = 'ko';
+    let myName = '';
+    let roomCode = '';
+    let deviceId = localStorage.getItem('raytok_deviceId') || Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('raytok_deviceId', deviceId);
+
+    let ws = null;
+    let lastSeq = 0;
+    let lines = [];
+    let isConnected = false;
+    let isTtsEnabled = true;
+    let currentVoice = null;
+
+    const joinScreen = document.getElementById('join-screen');
+    const chatScreen = document.getElementById('chat-screen');
+    const chatList = document.getElementById('chat-list');
+    const roomInput = document.getElementById('room-input');
+    const langSelect = document.getElementById('lang-select');
+    const nameInput = document.getElementById('name-input');
+    const btnJoin = document.getElementById('btn-join');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const currentLangText = document.getElementById('current-lang-text');
+    const btnToggleTts = document.getElementById('btn-toggle-tts');
+    const endModal = document.getElementById('end-modal');
+    const endSummary = document.getElementById('end-summary');
+
+    // 언어 목록 초기화
+    async function initLangs() {
+      try {
+        const res = await fetch('./langs.json');
+        if (res.ok) langs = await res.json();
+      } catch (e) {}
+      
+      langSelect.innerHTML = '';
+      const isKo = navigator.language.startsWith('ko');
+      langs.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.code;
+        let name = isKo ? l.name_ko : l.name_en;
+        if (!l.offline) name += isKo ? ' (강사 폰 인터넷 필요)' : ' (Requires Guide Internet)';
+        opt.textContent = name;
+        langSelect.appendChild(opt);
+      });
+      
+      const savedLang = localStorage.getItem('raytok_lang');
+      if (savedLang) langSelect.value = savedLang;
+      selectedLang = langSelect.value;
+    }
+    initLangs();
+
+    langSelect.addEventListener('change', () => {
+      selectedLang = langSelect.value;
+      localStorage.setItem('raytok_lang', selectedLang);
+      if (isConnected) {
+        sendHello();
+        renderAllLines();
+      }
+    });
+
+    // TTS 설정
+    function updateVoice() {
+      const voices = speechSynthesis.getVoices();
+      currentVoice = voices.find(v => v.lang.startsWith(selectedLang)) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+    }
+    speechSynthesis.onvoiceschanged = updateVoice;
+
+    btnToggleTts.addEventListener('click', () => {
+      isTtsEnabled = !isTtsEnabled;
+      btnToggleTts.textContent = isTtsEnabled ? '🔊 소리 켜짐' : '🔇 소리 끔';
+      btnToggleTts.classList.toggle('active', !isTtsEnabled);
+    });
+
+    function speak(text, via) {
+      if (!isTtsEnabled || !text) return;
+      speechSynthesis.cancel();
+      const uttr = new SpeechSynthesisUtterance(text);
+      
+      const voices = speechSynthesis.getVoices();
+      
+      // Determine voice lang strategy
+      let targetLang = selectedLang;
+      if (via) {
+        // If via exists, speak in via voice
+        targetLang = via;
+      }
+      
+      let voice = voices.find(v => v.lang.startsWith(targetLang));
+      
+      if (!voice) {
+        // Fallback: If voice not found for via, try selectedLang voice
+        if (via) {
+          voice = voices.find(v => v.lang.startsWith(selectedLang));
+        }
+        // Fallback to langs.json fallback voice if still not found
+        if (!voice) {
+          const langObj = langs.find(l => l.code === selectedLang);
+          if (langObj && langObj.fallback) {
+            voice = voices.find(v => v.lang.startsWith(langObj.fallback));
+          }
+        }
+      }
+      
+      if (voice) {
+        uttr.voice = voice;
+        uttr.lang = voice.lang;
+        speechSynthesis.speak(uttr);
+      }
+    }
+
+    // 연결 관리
+    function connect() {
+      if (ws) ws.close();
+      
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const params = new URLSearchParams(location.search);
+      const wsPort = params.get('ws') || '8081';
+      const wsUrl = params.get('ws') ? `ws://${location.hostname}:${wsPort}` : `${protocol}//${location.host}/ws?room=${roomCode}`;
+      
+      statusText.textContent = '연결 중...';
+      statusDot.className = 'status-dot reconnecting';
+      
+      ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        sendHello();
+      };
+      
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        handleMessage(msg);
+      };
+      
+      ws.onclose = () => {
+        isConnected = false;
+        if (statusText.textContent !== '종료됨' && statusText.textContent !== '거부됨') {
+          statusText.textContent = '재연결 중...';
+          statusDot.className = 'status-dot reconnecting';
+          setTimeout(connect, 3000);
+        }
+      };
+    }
+
+    function sendHello() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      const langObj = langs.find(l => l.code === selectedLang);
+      const payload = {
+        hello: 1,
+        ver: LISTENER_VER,
+        room: roomCode,
+        lang: selectedLang,
+        name: myName,
+        deviceId: deviceId,
+        caps: { tts: true, tr: false }
+      };
+      if (langObj && langObj.fallback) payload.fallbackLang = langObj.fallback;
+      const last = localStorage.getItem(`raytok_last_seq_${roomCode}`);
+      if (last) payload.resume_from = parseInt(last);
+      
+      ws.send(JSON.stringify(payload));
+    }
+
+    function handleMessage(msg) {
+      if ('__ping' in msg) return;
+      
+      if ('welcome' in msg) {
+        isConnected = true;
+        srcLang = msg.src_lang || 'ko';
+        statusText.textContent = '연결됨';
+        statusDot.className = 'status-dot online';
+        joinScreen.style.display = 'none';
+        chatScreen.style.display = 'flex';
+        currentLangText.textContent = langs.find(l => l.code === selectedLang)?.name_ko || selectedLang;
+        return;
+      }
+      
+      if ('bye' in msg) {
+        statusText.textContent = '거부됨';
+        statusDot.className = 'status-dot offline';
+        ws.close();
+        alert('연결이 거부되었습니다: ' + (msg.why || '알 수 없는 이유'));
+        return;
+      }
+      
+      if ('end' in msg) {
+        statusText.textContent = '종료됨';
+        statusDot.className = 'status-dot offline';
+        ws.close();
+        showEnd(msg.summary);
+        return;
+      }
+
+      if ('text' in msg) { // line
+        const line = {
+          seq: msg.seq,
+          text: msg.text,
+          tr: msg.tr || {},
+          pending: !!msg.pending,
+          via: msg.via
+        };
+        lines.push(line);
+        lastSeq = msg.seq;
+        localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
+        addLine(line);
+        if (line.tr[selectedLang]) speak(line.tr[selectedLang], line.via);
+      } else if ('tr' in msg && !('text' in msg)) { // tr
+        const line = lines.find(l => l.seq === msg.seq);
+        if (line) {
+          Object.assign(line.tr, msg.tr);
+          line.pending = false;
+          if (msg.via) line.via = msg.via;
+          updateLineUI(line);
+          if (msg.tr[selectedLang]) speak(msg.tr[selectedLang], line.via);
+        }
+      } else if ('no_tr' in msg) {
+        const line = lines.find(l => l.seq === msg.seq);
+        if (line) {
+          line.pending = false;
+          updateLineUI(line);
+        }
+      }
+    }
+
+    function addLine(line) {
+      const div = document.createElement('div');
+      div.className = 'msg-line';
+      div.id = `msg-${line.seq}`;
+      div.innerHTML = `
+        <div class="msg-bubble">
+          <div class="msg-text">${line.text}</div>
+          <div class="msg-tr"></div>
+        </div>
+        <div class="msg-src">#${line.seq} ${srcLang.toUpperCase()}</div>
+      `;
+      chatList.appendChild(div);
+      updateLineUI(line);
+      chatList.scrollTop = chatList.scrollHeight;
+    }
+
+    function updateLineUI(line) {
+      const div = document.getElementById(`msg-${line.seq}`);
+      if (!div) return;
+      const trDiv = div.querySelector('.msg-tr');
+      
+      let trText = line.tr[selectedLang] || '';
+      let badges = '';
+      if (line.pending) badges += '<span class="badge badge-pending">번역 대기 중</span>';
+      
+      const voices = speechSynthesis.getVoices();
+      let hasVoice = false;
+      let targetLang = selectedLang;
+      if (line.via) targetLang = line.via;
+      
+      let voice = voices.find(v => v.lang.startsWith(targetLang));
+      if (!voice && line.via) voice = voices.find(v => v.lang.startsWith(selectedLang));
+      if (!voice) {
+        const langObj = langs.find(l => l.code === selectedLang);
+        if (langObj && langObj.fallback) {
+          voice = voices.find(v => v.lang.startsWith(langObj.fallback));
+        }
+      }
+      if (voice) hasVoice = true;
+
+      if (line.via) {
+        const viaLang = langs.find(l => l.code === line.via);
+        const viaName = viaLang ? (navigator.language.startsWith('ko') ? viaLang.name_ko : viaLang.name_en) : line.via;
+        badges += `<span class="badge badge-via">대체 번역(${viaName})</span>`;
+      }
+      
+      if (trText && !hasVoice) {
+        badges += '<span class="badge" style="background-color: var(--danger); color: #fff;">음성 없음</span>';
+      }
+      
+      trDiv.innerHTML = trText + badges;
+    }
+
+    function renderAllLines() {
+      chatList.innerHTML = '';
+      lines.forEach(addLine);
+      currentLangText.textContent = langs.find(l => l.code === selectedLang)?.name_ko || selectedLang;
+      updateVoice();
+    }
+
+    function showEnd(summary) {
+      const s = summary || {};
+      let html = `• 총 강의 라인: <b>${s.lines || lastSeq} 줄</b><br>
+                  • 진행 시간: <b>${s.minutes || 0} 분</b>`;
+      if (s.joined_max > 0) {
+        html += `<br>• 최대 동시 참여: <b>${s.joined_max} 명</b>`;
+      }
+      endSummary.innerHTML = html;
+      endModal.style.display = 'flex';
+    }
+
+    btnJoin.addEventListener('click', () => {
+      roomCode = roomInput.value.trim();
+      myName = nameInput.value.trim();
+      if (roomCode.length !== 6) {
+        alert('강의 코드 6자리를 입력하세요.');
+        return;
+      }
+      connect();
+    });
+  </script>
+</body>
+</html>
