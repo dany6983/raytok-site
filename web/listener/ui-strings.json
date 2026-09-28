@@ -2,148 +2,364 @@
   "ver": 1,
   "langs": [
     "ko",
-    "en"
+    "en",
+    "vi",
+    "th",
+    "id",
+    "fil",
+    "si",
+    "uz"
   ],
   "strings": {
     "page_title": {
       "ko": "RayTok 청취자",
-      "en": "RayTok Listener"
+      "en": "RayTok Listener",
+      "vi": "Người nghe RayTok",
+      "th": "ผู้ฟัง RayTok",
+      "id": "Pendengar RayTok",
+      "fil": "Tagapakinig ng RayTok",
+      "si": "RayTok සවන්දෙන්නා",
+      "uz": "RayTok tinglovchisi"
     },
     "header_title": {
       "ko": "RayTok 청취자",
-      "en": "RayTok Listener"
+      "en": "RayTok Listener",
+      "vi": "Người nghe RayTok",
+      "th": "ผู้ฟัง RayTok",
+      "id": "Pendengar RayTok",
+      "fil": "Tagapakinig ng RayTok",
+      "si": "RayTok සවන්දෙන්නා",
+      "uz": "RayTok tinglovchisi"
     },
     "status_ready": {
       "ko": "준비",
-      "en": "Ready"
+      "en": "Ready",
+      "vi": "Sẵn sàng",
+      "th": "พร้อม",
+      "id": "Siap",
+      "fil": "Handa",
+      "si": "සූදානම්",
+      "uz": "Tayyor"
     },
     "status_connecting": {
       "ko": "연결 중...",
-      "en": "Connecting…"
+      "en": "Connecting…",
+      "vi": "Đang kết nối…",
+      "th": "กำลังเชื่อมต่อ…",
+      "id": "Menghubungkan…",
+      "fil": "Kumukonekta…",
+      "si": "සම්බන්ධ වෙමින්…",
+      "uz": "Ulanmoqda…"
     },
     "status_connected": {
       "ko": "연결됨",
-      "en": "Connected"
+      "en": "Connected",
+      "vi": "Đã kết nối",
+      "th": "เชื่อมต่อแล้ว",
+      "id": "Terhubung",
+      "fil": "Konektado",
+      "si": "සම්බන්ධ විය",
+      "uz": "Ulandi"
     },
     "status_reconnecting": {
       "ko": "재연결 중...",
-      "en": "Reconnecting…"
+      "en": "Reconnecting…",
+      "vi": "Đang kết nối lại…",
+      "th": "กำลังเชื่อมต่อใหม่…",
+      "id": "Menghubungkan ulang…",
+      "fil": "Muling kumukonekta…",
+      "si": "නැවත සම්බන්ධ වෙමින්…",
+      "uz": "Qayta ulanmoqda…"
     },
     "status_rejected": {
       "ko": "거부됨",
-      "en": "Rejected"
+      "en": "Rejected",
+      "vi": "Bị từ chối",
+      "th": "ถูกปฏิเสธ",
+      "id": "Ditolak",
+      "fil": "Tinanggihan",
+      "si": "ප්‍රතික්ෂේප විය",
+      "uz": "Rad etildi"
     },
     "status_ended": {
       "ko": "종료됨",
-      "en": "Ended"
+      "en": "Ended",
+      "vi": "Đã kết thúc",
+      "th": "สิ้นสุดแล้ว",
+      "id": "Berakhir",
+      "fil": "Natapos na",
+      "si": "අවසන් විය",
+      "uz": "Tugadi"
     },
     "join_title": {
       "ko": "강의 참여",
-      "en": "Join Session"
+      "en": "Join Session",
+      "vi": "Tham gia phiên",
+      "th": "เข้าร่วมเซสชัน",
+      "id": "Gabung ke Sesi",
+      "fil": "Sumali sa Sesyon",
+      "si": "සැසියට එක්වන්න",
+      "uz": "Sessiyaga qo'shilish"
     },
     "room_code_label": {
       "ko": "강의 코드 (6자리)",
-      "en": "Session code (6 digits)"
+      "en": "Session code (6 digits)",
+      "vi": "Mã phiên (6 chữ số)",
+      "th": "รหัสเซสชัน (6 หลัก)",
+      "id": "Kode sesi (6 digit)",
+      "fil": "Code ng sesyon (6 na digit)",
+      "si": "සැසි කේතය (ඉලක්කම් 6)",
+      "uz": "Sessiya kodi (6 xonali)"
     },
     "room_code_placeholder": {
       "ko": "000000",
-      "en": "000000"
+      "en": "000000",
+      "vi": "000000",
+      "th": "000000",
+      "id": "000000",
+      "fil": "000000",
+      "si": "000000",
+      "uz": "000000"
     },
     "lang_select_label": {
       "ko": "언어 선택",
-      "en": "Select language"
+      "en": "Select language",
+      "vi": "Chọn ngôn ngữ",
+      "th": "เลือกภาษา",
+      "id": "Pilih bahasa",
+      "fil": "Pumili ng wika",
+      "si": "භාෂාව තෝරන්න",
+      "uz": "Tilni tanlang"
     },
     "lang_need_net": {
       "ko": " (강사 폰 인터넷 필요)",
-      "en": " (Requires Guide Internet)"
+      "en": " (guide's phone needs internet)",
+      "vi": " (điện thoại của người hướng dẫn cần có internet)",
+      "th": " (โทรศัพท์ของผู้นำทางต้องใช้อินเทอร์เน็ต)",
+      "id": " (ponsel pemandu memerlukan internet)",
+      "fil": " (kailangan ng internet ng telepono ng gabay)",
+      "si": " (මාර්ගෝපදේශකයාගේ දුරකථනයට අන්තර්ජාලය අවශ්‍යයි)",
+      "uz": " (yo'riqchi telefoniga internet kerak)"
     },
     "name_label": {
       "ko": "이름 (선택 사항)",
-      "en": "Name (optional)"
+      "en": "Name (optional)",
+      "vi": "Tên (không bắt buộc)",
+      "th": "ชื่อ (ไม่บังคับ)",
+      "id": "Nama (opsional)",
+      "fil": "Pangalan (opsyonal)",
+      "si": "නම (විකල්ප)",
+      "uz": "Ism (ixtiyoriy)"
     },
     "name_placeholder": {
       "ko": "예: 홍길동",
-      "en": "e.g. John Doe"
+      "en": "e.g. John Doe",
+      "vi": "ví dụ: Nguyễn Văn A",
+      "th": "เช่น สมชาย",
+      "id": "contoh: Budi",
+      "fil": "hal.: Juan",
+      "si": "උදා: කමල්",
+      "uz": "masalan: Ali"
     },
     "notice_code": {
       "ko": "• 강의 코드는 강사 화면의 번호를 입력하세요.",
-      "en": "• Enter the code on the guide's screen."
+      "en": "• Enter the code on the guide's screen.",
+      "vi": "• Nhập mã hiển thị trên màn hình người hướng dẫn.",
+      "th": "• ป้อนรหัสที่แสดงบนหน้าจอของผู้นำทาง",
+      "id": "• Masukkan kode yang tampil di layar pemandu.",
+      "fil": "• Ilagay ang code na makikita sa screen ng gabay.",
+      "si": "• මාර්ගෝපදේශකයාගේ තිරයේ ඇති කේතය ඇතුළත් කරන්න.",
+      "uz": "• Yo'riqchi ekranida ko'rsatilgan kodni kiriting."
     },
     "notice_sound": {
       "ko": "• 소리를 켜면 번역된 내용을 음성으로 들을 수 있습니다.",
-      "en": "• Turn on sound to hear translations read aloud."
+      "en": "• Turn on sound to hear translations read aloud.",
+      "vi": "• Bật âm thanh để nghe bản dịch được đọc thành tiếng.",
+      "th": "• เปิดเสียงเพื่อฟังคำแปลแบบออกเสียง",
+      "id": "• Nyalakan suara untuk mendengarkan terjemahan dibacakan.",
+      "fil": "• I-on ang tunog para marinig ang binabasang pagsasalin.",
+      "si": "• පරිවර්තනය ශබ්ද නඟා ඇසීමට ශබ්දය ක්‍රියාත්මක කරන්න.",
+      "uz": "• Tarjimani ovozli eshitish uchun ovozni yoqing."
     },
     "join_button": {
       "ko": "참여하기",
-      "en": "Join"
+      "en": "Join",
+      "vi": "Tham gia",
+      "th": "เข้าร่วม",
+      "id": "Gabung",
+      "fil": "Sumali",
+      "si": "එක්වන්න",
+      "uz": "Qo'shilish"
     },
     "tts_on": {
       "ko": "🔊 소리 켜짐",
-      "en": "🔊 Sound on"
+      "en": "🔊 Sound on",
+      "vi": "🔊 Bật âm thanh",
+      "th": "🔊 เปิดเสียง",
+      "id": "🔊 Suara aktif",
+      "fil": "🔊 Naka-on ang tunog",
+      "si": "🔊 ශබ්දය සක්‍රියයි",
+      "uz": "🔊 Ovoz yoniq"
     },
     "tts_off": {
       "ko": "🔇 소리 끔",
-      "en": "🔇 Sound off"
+      "en": "🔇 Sound off",
+      "vi": "🔇 Tắt âm thanh",
+      "th": "🔇 ปิดเสียง",
+      "id": "🔇 Suara nonaktif",
+      "fil": "🔇 Naka-off ang tunog",
+      "si": "🔇 ශබ්දය අක්‍රියයි",
+      "uz": "🔇 Ovoz o'chiq"
     },
     "end_title": {
       "ko": "강의·안내 종료",
-      "en": "Session ended"
+      "en": "Session ended",
+      "vi": "Phiên đã kết thúc",
+      "th": "สิ้นสุดเซสชัน",
+      "id": "Sesi berakhir",
+      "fil": "Natapos na ang sesyon",
+      "si": "සැසිය අවසන්",
+      "uz": "Sessiya tugadi"
     },
     "end_desc": {
       "ko": "세션이 정상적으로 종료되었습니다.",
-      "en": "The session has ended normally."
+      "en": "The session has ended normally.",
+      "vi": "Phiên đã kết thúc bình thường.",
+      "th": "เซสชันสิ้นสุดลงตามปกติแล้ว",
+      "id": "Sesi telah berakhir secara normal.",
+      "fil": "Normal na natapos ang sesyon.",
+      "si": "සැසිය සාමාන්‍ය පරිදි අවසන් විය.",
+      "uz": "Sessiya odatdagidek tugadi."
     },
     "reload_button": {
       "ko": "새로고침",
-      "en": "Refresh"
+      "en": "Refresh",
+      "vi": "Làm mới",
+      "th": "โหลดใหม่",
+      "id": "Muat ulang",
+      "fil": "I-refresh",
+      "si": "නැවුම් කරන්න",
+      "uz": "Yangilash"
     },
     "badge_pending": {
       "ko": "번역 대기 중",
-      "en": "Translating…"
+      "en": "Translating…",
+      "vi": "Đang dịch…",
+      "th": "กำลังแปล…",
+      "id": "Menerjemahkan…",
+      "fil": "Nagsasalin…",
+      "si": "පරිවර්තනය වෙමින්…",
+      "uz": "Tarjima qilinmoqda…"
     },
     "badge_via": {
       "ko": "대체 번역",
-      "en": "Via"
+      "en": "Fallback",
+      "vi": "Dự phòng",
+      "th": "สำรอง",
+      "id": "Cadangan",
+      "fil": "Fallback",
+      "si": "විකල්ප",
+      "uz": "Zaxira"
     },
     "no_voice_badge": {
       "ko": "음성 없음",
-      "en": "No voice"
+      "en": "No voice",
+      "vi": "Không có giọng đọc",
+      "th": "ไม่มีเสียงอ่าน",
+      "id": "Tanpa suara",
+      "fil": "Walang boses",
+      "si": "හඬක් නැත",
+      "uz": "Ovoz yo'q"
     },
     "summary_total_lines": {
       "ko": "총 강의 라인",
-      "en": "Total lines"
+      "en": "Total lines",
+      "vi": "Tổng số dòng",
+      "th": "จำนวนบรรทัดทั้งหมด",
+      "id": "Total baris",
+      "fil": "Kabuuang linya",
+      "si": "මුළු පේළි ගණන",
+      "uz": "Jami qatorlar"
     },
     "summary_lines_unit": {
       "ko": "줄",
-      "en": "lines"
+      "en": "lines",
+      "vi": "dòng",
+      "th": "บรรทัด",
+      "id": "baris",
+      "fil": "linya",
+      "si": "පේළි",
+      "uz": "qator"
     },
     "summary_duration": {
       "ko": "진행 시간",
-      "en": "Duration"
+      "en": "Duration",
+      "vi": "Thời lượng",
+      "th": "ระยะเวลา",
+      "id": "Durasi",
+      "fil": "Tagal",
+      "si": "කාලසීමාව",
+      "uz": "Davomiyligi"
     },
     "summary_minutes_unit": {
       "ko": "분",
-      "en": "min"
+      "en": "min",
+      "vi": "phút",
+      "th": "นาที",
+      "id": "menit",
+      "fil": "min",
+      "si": "මිනිත්තු",
+      "uz": "daqiqa"
     },
     "summary_max_joined": {
       "ko": "최대 동시 참여",
-      "en": "Max concurrent listeners"
+      "en": "Max concurrent listeners",
+      "vi": "Người nghe tối đa đồng thời",
+      "th": "ผู้ฟังสูงสุดพร้อมกัน",
+      "id": "Maks. pendengar bersamaan",
+      "fil": "Pinakamaraming sabay na tagapakinig",
+      "si": "උපරිම සමගාමී සවන්දෙන්නන්",
+      "uz": "Maksimal bir vaqtdagi tinglovchilar"
     },
     "summary_joined_unit": {
       "ko": "명",
-      "en": "listeners"
+      "en": "listeners",
+      "vi": "người",
+      "th": "คน",
+      "id": "orang",
+      "fil": "tagapakinig",
+      "si": "දෙනෙක්",
+      "uz": "kishi"
     },
     "alert_invalid_code": {
       "ko": "강의 코드 6자리를 입력하세요.",
-      "en": "Enter the 6-digit session code."
+      "en": "Enter the 6-digit session code.",
+      "vi": "Vui lòng nhập mã phiên gồm 6 chữ số.",
+      "th": "โปรดป้อนรหัสเซสชัน 6 หลัก",
+      "id": "Silakan masukkan 6 digit kode sesi.",
+      "fil": "Mangyaring ilagay ang 6-digit na code ng sesyon.",
+      "si": "කරුණාකර ඉලක්කම් 6 ක සැසි කේතය ඇතුළත් කරන්න.",
+      "uz": "Iltimos, 6 xonali sessiya kodini kiriting."
     },
     "alert_rejected": {
       "ko": "연결이 거부되었습니다: ",
-      "en": "Connection rejected: "
+      "en": "Connection rejected: ",
+      "vi": "Kết nối bị từ chối: ",
+      "th": "การเชื่อมต่อถูกปฏิเสธ: ",
+      "id": "Koneksi ditolak: ",
+      "fil": "Tinanggihan ang koneksyon: ",
+      "si": "සම්බන්ධතාවය ප්‍රතික්ෂේප විය: ",
+      "uz": "Ulanish rad etildi: "
     },
     "unknown_reason": {
       "ko": "알 수 없는 이유",
-      "en": "Unknown reason"
+      "en": "Unknown reason",
+      "vi": "Lý do không xác định",
+      "th": "ไม่ทราบสาเหตุ",
+      "id": "Alasan tidak diketahui",
+      "fil": "Hindi malamang dahilan",
+      "si": "නොදන්නා හේතුවක්",
+      "uz": "Noma'lum sabab"
     }
   }
 }
