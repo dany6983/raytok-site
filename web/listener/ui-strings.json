@@ -8,7 +8,13 @@
     "id",
     "fil",
     "si",
-    "uz"
+    "uz",
+    "ky",
+    "tg",
+    "tet",
+    "mn",
+    "ne",
+    "km"
   ],
   "strings": {
     "page_title": {
@@ -19,7 +25,13 @@
       "id": "Pendengar RayTok",
       "fil": "Tagapakinig ng RayTok",
       "si": "RayTok සවන්දෙන්නා",
-      "uz": "RayTok tinglovchisi"
+      "uz": "RayTok tinglovchisi",
+      "ky": "RayTok угуучусу",
+      "tg": "Шунавандаи RayTok",
+      "tet": "Rona-na'in RayTok",
+      "mn": "RayTok сонсогч",
+      "ne": "RayTok स्रोता",
+      "km": "អ្នកស្តាប់ RayTok"
     },
     "header_title": {
       "ko": "RayTok 청취자",
@@ -29,7 +41,13 @@
       "id": "Pendengar RayTok",
       "fil": "Tagapakinig ng RayTok",
       "si": "RayTok සවන්දෙන්නා",
-      "uz": "RayTok tinglovchisi"
+      "uz": "RayTok tinglovchisi",
+      "ky": "RayTok угуучусу",
+      "tg": "Шунавандаи RayTok",
+      "tet": "Rona-na'in RayTok",
+      "mn": "RayTok сонсогч",
+      "ne": "RayTok स्रोता",
+      "km": "អ្នកស្តាប់ RayTok"
     },
     "status_ready": {
       "ko": "준비",
@@ -39,7 +57,13 @@
       "id": "Siap",
       "fil": "Handa",
       "si": "සූදානම්",
-      "uz": "Tayyor"
+      "uz": "Tayyor",
+      "ky": "Даяр",
+      "tg": "Омода",
+      "tet": "Prontu",
+      "mn": "Бэлэн",
+      "ne": "तयार",
+      "km": "រួចរាល់"
     },
     "status_connecting": {
       "ko": "연결 중...",
@@ -49,7 +73,13 @@
       "id": "Menghubungkan…",
       "fil": "Kumukonekta…",
       "si": "සම්බන්ධ වෙමින්…",
-      "uz": "Ulanmoqda…"
+      "uz": "Ulanmoqda…",
+      "ky": "Туташууда…",
+      "tg": "Пайвастшавӣ…",
+      "tet": "Ligando…",
+      "mn": "Холбогдож байна…",
+      "ne": "जडान हुँदैछ…",
+      "km": "កំពុងភ្ជាប់…"
     },
     "status_connected": {
       "ko": "연결됨",
@@ -59,7 +89,13 @@
       "id": "Terhubung",
       "fil": "Konektado",
       "si": "සම්බන්ධ විය",
-      "uz": "Ulandi"
+      "uz": "Ulandi",
+      "ky": "Туташты",
+      "tg": "Пайваст шуд",
+      "tet": "Ligadu",
+      "mn": "Холбогдсон",
+      "ne": "जडान भयो",
+      "km": "បានភ្ជាប់"
     },
     "status_reconnecting": {
       "ko": "재연결 중...",
@@ -69,7 +105,13 @@
       "id": "Menghubungkan ulang…",
       "fil": "Muling kumukonekta…",
       "si": "නැවත සම්බන්ධ වෙමින්…",
-      "uz": "Qayta ulanmoqda…"
+      "uz": "Qayta ulanmoqda…",
+      "ky": "Кайра туташууда…",
+      "tg": "Пайвастшавии дубора…",
+      "tet": "Liga fali…",
+      "mn": "Дахин холбогдож байна…",
+      "ne": "पुनः जडान हुँदैछ…",
+      "km": "កំពុងភ្ជាប់ឡើងវិញ…"
     },
     "status_rejected": {
       "ko": "거부됨",
@@ -79,7 +121,13 @@
       "id": "Ditolak",
       "fil": "Tinanggihan",
       "si": "ප්‍රතික්ෂේප විය",
-      "uz": "Rad etildi"
+      "uz": "Rad etildi",
+      "ky": "Четке кагылды",
+      "tg": "Рад шуд",
+      "tet": "Rujeita tiha",
+      "mn": "Татгалзсан",
+      "ne": "अस्वीकृत गरियो",
+      "km": "ត្រូវបានបដិសេធ"
     },
     "status_ended": {
       "ko": "종료됨",
@@ -89,7 +137,13 @@
       "id": "Berakhir",
       "fil": "Natapos na",
       "si": "අවසන් විය",
-      "uz": "Tugadi"
+      "uz": "Tugadi",
+      "ky": "Аяктады",
+      "tg": "Анҷом ёфт",
+      "tet": "Remata ona",
+      "mn": "Дууссан",
+      "ne": "समाप्त भयो",
+      "km": "បានបញ្ចប់"
     },
     "join_title": {
       "ko": "강의 참여",
@@ -99,7 +153,13 @@
       "id": "Gabung ke Sesi",
       "fil": "Sumali sa Sesyon",
       "si": "සැසියට එක්වන්න",
-      "uz": "Sessiyaga qo'shilish"
+      "uz": "Sessiyaga qo'shilish",
+      "ky": "Сессияга кошулуу",
+      "tg": "Вуруд ба ҷаласа",
+      "tet": "Tama ba Sesaun",
+      "mn": "Хуралдаанд нэгдэх",
+      "ne": "सत्रमा सामेल हुनुहोस्",
+      "km": "ចូលរួមវគ្គ"
     },
     "room_code_label": {
       "ko": "강의 코드 (6자리)",
@@ -109,7 +169,13 @@
       "id": "Kode sesi (6 digit)",
       "fil": "Code ng sesyon (6 na digit)",
       "si": "සැසි කේතය (ඉලක්කම් 6)",
-      "uz": "Sessiya kodi (6 xonali)"
+      "uz": "Sessiya kodi (6 xonali)",
+      "ky": "Сессия коду (6 орундуу)",
+      "tg": "Рамзи ҷаласа (6-рақама)",
+      "tet": "Kódigu sesaun (díxitu 6)",
+      "mn": "Хуралдааны код (6 оронтой)",
+      "ne": "सत्र कोड (६ अंक)",
+      "km": "កូដវគ្គ (៦ ខ្ទង់)"
     },
     "room_code_placeholder": {
       "ko": "000000",
@@ -119,7 +185,13 @@
       "id": "000000",
       "fil": "000000",
       "si": "000000",
-      "uz": "000000"
+      "uz": "000000",
+      "ky": "000000",
+      "tg": "000000",
+      "tet": "000000",
+      "mn": "000000",
+      "ne": "000000",
+      "km": "000000"
     },
     "lang_select_label": {
       "ko": "언어 선택",
@@ -129,7 +201,13 @@
       "id": "Pilih bahasa",
       "fil": "Pumili ng wika",
       "si": "භාෂාව තෝරන්න",
-      "uz": "Tilni tanlang"
+      "uz": "Tilni tanlang",
+      "ky": "Тилди тандоо",
+      "tg": "Интихоби забон",
+      "tet": "Hili lian",
+      "mn": "Хэл сонгох",
+      "ne": "भाषा छान्नुहोस्",
+      "km": "ជ្រើសរើសភាសា"
     },
     "lang_need_net": {
       "ko": " (강사 폰 인터넷 필요)",
@@ -139,7 +217,13 @@
       "id": " (ponsel pemandu memerlukan internet)",
       "fil": " (kailangan ng internet ng telepono ng gabay)",
       "si": " (මාර්ගෝපදේශකයාගේ දුරකථනයට අන්තර්ජාලය අවශ්‍යයි)",
-      "uz": " (yo'riqchi telefoniga internet kerak)"
+      "uz": " (yo'riqchi telefoniga internet kerak)",
+      "ky": " (гиддин телефонуна интернет керек)",
+      "tg": " (телефони роҳнамо ба интернет ниёз дорад)",
+      "tet": " (telefone guia nian presiza internet)",
+      "mn": " (хөтчийн утсанд интернет шаардлагатай)",
+      "ne": " (गाइडको फोनमा इन्टरनेट चाहिन्छ)",
+      "km": " (ទូរស័ព្ទមគ្គុទ្ទេសក៍ត្រូវការអ៊ីនធឺណិត)"
     },
     "name_label": {
       "ko": "이름 (선택 사항)",
@@ -149,7 +233,13 @@
       "id": "Nama (opsional)",
       "fil": "Pangalan (opsyonal)",
       "si": "නම (විකල්ප)",
-      "uz": "Ism (ixtiyoriy)"
+      "uz": "Ism (ixtiyoriy)",
+      "ky": "Аты (милдеттүү эмес)",
+      "tg": "Ном (ихтиёрӣ)",
+      "tet": "Naran (opsionál)",
+      "mn": "Нэр (заавал биш)",
+      "ne": "नाम (वैकल्पिक)",
+      "km": "ឈ្មោះ (ស្រេចចិត្ត)"
     },
     "name_placeholder": {
       "ko": "예: 홍길동",
@@ -159,7 +249,13 @@
       "id": "contoh: Budi",
       "fil": "hal.: Juan",
       "si": "උදා: කමල්",
-      "uz": "masalan: Ali"
+      "uz": "masalan: Ali",
+      "ky": "мис.: Азамат",
+      "tg": "мас.: Рустам",
+      "tet": "ez.: João",
+      "mn": "жишээ нь: Бат",
+      "ne": "उदा.: राम",
+      "km": "ឧទាហរណ៍៖ សុខា"
     },
     "notice_code": {
       "ko": "• 강의 코드는 강사 화면의 번호를 입력하세요.",
@@ -169,7 +265,13 @@
       "id": "• Masukkan kode yang tampil di layar pemandu.",
       "fil": "• Ilagay ang code na makikita sa screen ng gabay.",
       "si": "• මාර්ගෝපදේශකයාගේ තිරයේ ඇති කේතය ඇතුළත් කරන්න.",
-      "uz": "• Yo'riqchi ekranida ko'rsatilgan kodni kiriting."
+      "uz": "• Yo'riqchi ekranida ko'rsatilgan kodni kiriting.",
+      "ky": "• Гиддин экранындагы кодду киргизиңиз.",
+      "tg": "• Рамзи дар экрани роҳнамо бударо ворид кунед.",
+      "tet": "• Hatama kódigu ne'ebé mosu iha guia nia ekrã.",
+      "mn": "• Хөтчийн дэлгэц дээрх кодыг оруулна уу.",
+      "ne": "• गाइडको स्क्रिनमा देखाइएको कोड प्रविष्ट गर्नुहोस्।",
+      "km": "• បញ្ចូលកូដដែលបង្ហាញនៅលើអេក្រង់មគ្គុទ្ទេសក៍។"
     },
     "notice_sound": {
       "ko": "• 소리를 켜면 번역된 내용을 음성으로 들을 수 있습니다.",
@@ -179,7 +281,13 @@
       "id": "• Nyalakan suara untuk mendengarkan terjemahan dibacakan.",
       "fil": "• I-on ang tunog para marinig ang binabasang pagsasalin.",
       "si": "• පරිවර්තනය ශබ්ද නඟා ඇසීමට ශබ්දය ක්‍රියාත්මක කරන්න.",
-      "uz": "• Tarjimani ovozli eshitish uchun ovozni yoqing."
+      "uz": "• Tarjimani ovozli eshitish uchun ovozni yoqing.",
+      "ky": "• Котормону угуу үчүн үндү күйгүзүңүз.",
+      "tg": "• Барои шунидани тарҷума овозро фаъол кунед.",
+      "tet": "• Loke lian atu rona tradusaun ne'ebé lee sai.",
+      "mn": "• Орчуулгыг дуугаар сонсохын тулд дууг асаана уу.",
+      "ne": "• अनुवाद सुन्नको लागि आवाज अन गर्नुहोस्।",
+      "km": "• បើកសំឡេងដើម្បីស្តាប់ការបកប្រែដែលអានឮៗ។"
     },
     "join_button": {
       "ko": "참여하기",
@@ -189,7 +297,13 @@
       "id": "Gabung",
       "fil": "Sumali",
       "si": "එක්වන්න",
-      "uz": "Qo'shilish"
+      "uz": "Qo'shilish",
+      "ky": "Кошулуу",
+      "tg": "Пайваст шудан",
+      "tet": "Tama",
+      "mn": "Нэгдэх",
+      "ne": "सामेल हुनुहोस्",
+      "km": "ចូលរួម"
     },
     "tts_on": {
       "ko": "🔊 소리 켜짐",
@@ -199,7 +313,13 @@
       "id": "🔊 Suara aktif",
       "fil": "🔊 Naka-on ang tunog",
       "si": "🔊 ශබ්දය සක්‍රියයි",
-      "uz": "🔊 Ovoz yoniq"
+      "uz": "🔊 Ovoz yoniq",
+      "ky": "🔊 Үн күйүк",
+      "tg": "🔊 Овоз фаъол",
+      "tet": "🔊 Lian lakan",
+      "mn": "🔊 Дуу асаалттай",
+      "ne": "🔊 आवाज अन",
+      "km": "🔊 បើកសំឡេង"
     },
     "tts_off": {
       "ko": "🔇 소리 끔",
@@ -209,7 +329,13 @@
       "id": "🔇 Suara nonaktif",
       "fil": "🔇 Naka-off ang tunog",
       "si": "🔇 ශබ්දය අක්‍රියයි",
-      "uz": "🔇 Ovoz o'chiq"
+      "uz": "🔇 Ovoz o'chiq",
+      "ky": "🔇 Үн өчүк",
+      "tg": "🔇 Овоз хомӯш",
+      "tet": "🔇 Lian mate",
+      "mn": "🔇 Дуу унтраалттай",
+      "ne": "🔇 आवाज अफ",
+      "km": "🔇 បិទសំឡេង"
     },
     "end_title": {
       "ko": "강의·안내 종료",
@@ -219,7 +345,13 @@
       "id": "Sesi berakhir",
       "fil": "Natapos na ang sesyon",
       "si": "සැසිය අවසන්",
-      "uz": "Sessiya tugadi"
+      "uz": "Sessiya tugadi",
+      "ky": "Сессия аяктады",
+      "tg": "Ҷаласа анҷом ёфт",
+      "tet": "Sesaun remata ona",
+      "mn": "Хуралдаан дууссан",
+      "ne": "सत्र समाप्त भयो",
+      "km": "វគ្គត្រូវបានបញ្ចប់"
     },
     "end_desc": {
       "ko": "세션이 정상적으로 종료되었습니다.",
@@ -229,7 +361,13 @@
       "id": "Sesi telah berakhir secara normal.",
       "fil": "Normal na natapos ang sesyon.",
       "si": "සැසිය සාමාන්‍ය පරිදි අවසන් විය.",
-      "uz": "Sessiya odatdagidek tugadi."
+      "uz": "Sessiya odatdagidek tugadi.",
+      "ky": "Сессия кадимкидей аяктады.",
+      "tg": "Ҷаласа ба таври муқаррарӣ анҷом ёфт.",
+      "tet": "Sesaun remata tiha ona ho normál.",
+      "mn": "Хуралдаан хэвийн дууслаа.",
+      "ne": "सत्र सामान्य रूपमा समाप्त भयो।",
+      "km": "វគ្គបានបញ្ចប់ជាធម្មតា។"
     },
     "reload_button": {
       "ko": "새로고침",
@@ -239,7 +377,13 @@
       "id": "Muat ulang",
       "fil": "I-refresh",
       "si": "නැවුම් කරන්න",
-      "uz": "Yangilash"
+      "uz": "Yangilash",
+      "ky": "Жаңылоо",
+      "tg": "Навсозӣ",
+      "tet": "Foun fali",
+      "mn": "Шинэчлэх",
+      "ne": "ताजा गर्नुहोस्",
+      "km": "ផ្ទុកឡើងវិញ"
     },
     "badge_pending": {
       "ko": "번역 대기 중",
@@ -249,7 +393,13 @@
       "id": "Menerjemahkan…",
       "fil": "Nagsasalin…",
       "si": "පරිවර්තනය වෙමින්…",
-      "uz": "Tarjima qilinmoqda…"
+      "uz": "Tarjima qilinmoqda…",
+      "ky": "Которулууда…",
+      "tg": "Дар ҳоли тарҷума…",
+      "tet": "Tradús daudauk…",
+      "mn": "Орчуулж байна…",
+      "ne": "अनुवाद हुँदैछ…",
+      "km": "កំពុងបកប្រែ…"
     },
     "badge_via": {
       "ko": "대체 번역",
@@ -259,7 +409,13 @@
       "id": "Cadangan",
       "fil": "Fallback",
       "si": "විකල්ප",
-      "uz": "Zaxira"
+      "uz": "Zaxira",
+      "ky": "Резервдик",
+      "tg": "Эҳтиётӣ",
+      "tet": "Rezerva",
+      "mn": "Нөөц",
+      "ne": "वैकल्पिक",
+      "km": "ជំនួស"
     },
     "no_voice_badge": {
       "ko": "음성 없음",
@@ -269,7 +425,13 @@
       "id": "Tanpa suara",
       "fil": "Walang boses",
       "si": "හඬක් නැත",
-      "uz": "Ovoz yo'q"
+      "uz": "Ovoz yo'q",
+      "ky": "Үн жок",
+      "tg": "Овоз нест",
+      "tet": "Lian la iha",
+      "mn": "Дуу хоолой байхгүй",
+      "ne": "आवाज छैन",
+      "km": "គ្មានសំឡេង"
     },
     "summary_total_lines": {
       "ko": "총 강의 라인",
@@ -279,7 +441,13 @@
       "id": "Total baris",
       "fil": "Kabuuang linya",
       "si": "මුළු පේළි ගණන",
-      "uz": "Jami qatorlar"
+      "uz": "Jami qatorlar",
+      "ky": "Жалпы саптар",
+      "tg": "Ҳамагӣ сатрҳо",
+      "tet": "Liña hotu",
+      "mn": "Нийт мөр",
+      "ne": "कुल पङ्क्तिहरू",
+      "km": "បន្ទាត់សរុប"
     },
     "summary_lines_unit": {
       "ko": "줄",
@@ -289,7 +457,13 @@
       "id": "baris",
       "fil": "linya",
       "si": "පේළි",
-      "uz": "qator"
+      "uz": "qator",
+      "ky": "сап",
+      "tg": "сатр",
+      "tet": "liña",
+      "mn": "мөр",
+      "ne": "पङ्क्ति",
+      "km": "បន្ទាត់"
     },
     "summary_duration": {
       "ko": "진행 시간",
@@ -299,7 +473,13 @@
       "id": "Durasi",
       "fil": "Tagal",
       "si": "කාලසීමාව",
-      "uz": "Davomiyligi"
+      "uz": "Davomiyligi",
+      "ky": "Узактыгы",
+      "tg": "Давомнокӣ",
+      "tet": "Durasaun",
+      "mn": "Үргэлжилсэн хугацаа",
+      "ne": "समय अवधि",
+      "km": "រយៈពេល"
     },
     "summary_minutes_unit": {
       "ko": "분",
@@ -309,7 +489,13 @@
       "id": "menit",
       "fil": "min",
       "si": "මිනිත්තු",
-      "uz": "daqiqa"
+      "uz": "daqiqa",
+      "ky": "мүн",
+      "tg": "дақ",
+      "tet": "min",
+      "mn": "мин",
+      "ne": "मिनेट",
+      "km": "នាទី"
     },
     "summary_max_joined": {
       "ko": "최대 동시 참여",
@@ -319,7 +505,13 @@
       "id": "Maks. pendengar bersamaan",
       "fil": "Pinakamaraming sabay na tagapakinig",
       "si": "උපරිම සමගාමී සවන්දෙන්නන්",
-      "uz": "Maksimal bir vaqtdagi tinglovchilar"
+      "uz": "Maksimal bir vaqtdagi tinglovchilar",
+      "ky": "Эң көп бир убактагы угуучулар",
+      "tg": "Шунавандагони ҳадди аксар ҳамзамон",
+      "tet": "Rona-na'in másimu hamutuk",
+      "mn": "Зэрэгцээ хамгийн их сонсогч",
+      "ne": "अधिकतम समवर्ती स्रोताहरू",
+      "km": "អ្នកស្តាប់ដំណាលគ្នាច្រើនបំផុត"
     },
     "summary_joined_unit": {
       "ko": "명",
@@ -329,7 +521,13 @@
       "id": "orang",
       "fil": "tagapakinig",
       "si": "දෙනෙක්",
-      "uz": "kishi"
+      "uz": "kishi",
+      "ky": "адам",
+      "tg": "нафар",
+      "tet": "ema",
+      "mn": "хүн",
+      "ne": "जना",
+      "km": "នាក់"
     },
     "alert_invalid_code": {
       "ko": "강의 코드 6자리를 입력하세요.",
@@ -339,7 +537,13 @@
       "id": "Silakan masukkan 6 digit kode sesi.",
       "fil": "Mangyaring ilagay ang 6-digit na code ng sesyon.",
       "si": "කරුණාකර ඉලක්කම් 6 ක සැසි කේතය ඇතුළත් කරන්න.",
-      "uz": "Iltimos, 6 xonali sessiya kodini kiriting."
+      "uz": "Iltimos, 6 xonali sessiya kodini kiriting.",
+      "ky": "6 орундуу сессия кодун киргизиңиз.",
+      "tg": "Лутфан рамзи 6-рақамаи ҷаласаро ворид кунед.",
+      "tet": "Favór hatama kódigu sesaun díxitu 6.",
+      "mn": "6 оронтой хуралдааны кодыг оруулна уу.",
+      "ne": "कृपया ६-अङ्कको सत्र कोड प्रविष्ट गर्नुहोस्।",
+      "km": "សូមបញ្ចូលកូដវគ្គ ៦ ខ្ទង់។"
     },
     "alert_rejected": {
       "ko": "연결이 거부되었습니다: ",
@@ -349,7 +553,13 @@
       "id": "Koneksi ditolak: ",
       "fil": "Tinanggihan ang koneksyon: ",
       "si": "සම්බන්ධතාවය ප්‍රතික්ෂේප විය: ",
-      "uz": "Ulanish rad etildi: "
+      "uz": "Ulanish rad etildi: ",
+      "ky": "Туташуу четке кагылды: ",
+      "tg": "Пайвастшавӣ рад шуд: ",
+      "tet": "Ligasaun rujeita tiha: ",
+      "mn": "Холболтоос татгалзлаа: ",
+      "ne": "जडान अस्वीकृत भयो: ",
+      "km": "ការតភ្ជាប់ត្រូវបានបដិសេធ៖ "
     },
     "unknown_reason": {
       "ko": "알 수 없는 이유",
@@ -359,7 +569,13 @@
       "id": "Alasan tidak diketahui",
       "fil": "Hindi malamang dahilan",
       "si": "නොදන්නා හේතුවක්",
-      "uz": "Noma'lum sabab"
+      "uz": "Noma'lum sabab",
+      "ky": "Белгисиз себеп",
+      "tg": "Сабаби номаълум",
+      "tet": "Razaun la koñesidu",
+      "mn": "Тодорхойгүй шалтгаан",
+      "ne": "अज्ञात कारण",
+      "km": "មូលហេតុមិនស្គាល់"
     }
   }
 }
