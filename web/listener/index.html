@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>RayTok 청취자</title>
+  <title data-i18n="page_title">RayTok 청취자</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -53,7 +53,7 @@
     .status-dot.online { background-color: var(--success); }
     .status-dot.reconnecting { background-color: var(--warning); }
     .status-dot.offline { background-color: var(--danger); }
-    
+
     .screen { padding: 16px; flex: 1; display: flex; flex-direction: column; }
     .card {
       background-color: var(--card-bg);
@@ -76,7 +76,7 @@
       outline: none;
     }
     select:focus, input:focus { border-color: var(--primary); }
-    
+
     .btn {
       width: 100%;
       padding: 14px;
@@ -89,7 +89,7 @@
       cursor: pointer;
     }
     .btn:active { background-color: var(--primary-hover); }
-    
+
     .notice {
       background-color: rgba(245, 158, 11, 0.1);
       border: 1px solid rgba(245, 158, 11, 0.3);
@@ -180,37 +180,37 @@
   <div class="header">
     <div class="header-title">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-      RayTok 청취자
+      <span data-i18n="header_title">RayTok 청취자</span>
     </div>
     <div class="status-badge" id="status-badge">
       <div class="status-dot" id="status-dot"></div>
-      <span id="status-text">준비</span>
+      <span id="status-text" data-i18n="status_ready">준비</span>
     </div>
   </div>
 
   <div class="screen" id="join-screen">
     <div class="card">
-      <h2>강의 참여</h2>
-      <label>강의 코드 (6자리)</label>
-      <input type="text" id="room-input" placeholder="000000" maxlength="6" inputmode="numeric">
-      
-      <label>언어 선택</label>
+      <h2 data-i18n="join_title">강의 참여</h2>
+      <label data-i18n="room_code_label">강의 코드 (6자리)</label>
+      <input type="text" id="room-input" placeholder="000000" maxlength="6" inputmode="numeric" data-i18n="room_code_placeholder">
+
+      <label data-i18n="lang_select_label">언어 선택</label>
       <select id="lang-select">
         <option value="ko">한국어 (Korean)</option>
       </select>
-      
-      <label>이름 (선택 사항)</label>
-      <input type="text" id="name-input" placeholder="예: 홍길동">
-      
+
+      <label data-i18n="name_label">이름 (선택 사항)</label>
+      <input type="text" id="name-input" placeholder="예: 홍길동" data-i18n="name_placeholder">
+
       <div class="notice">
-        • 강의 코드는 강사 화면의 번호를 입력하세요.<br>
-        • 소리를 켜면 번역된 내용을 음성으로 들을 수 있습니다.
+        <div data-i18n="notice_code">• 강의 코드는 강사 화면의 번호를 입력하세요.</div>
+        <div data-i18n="notice_sound">• 소리를 켜면 번역된 내용을 음성으로 들을 수 있습니다.</div>
       </div>
-      
-      <button class="btn" id="btn-join">참여하기</button>
+
+      <button class="btn" id="btn-join" data-i18n="join_button">참여하기</button>
     </div>
     <div style="text-align: center; color: var(--text-muted); font-size: 12px;">
-      v<span id="ver-text"></span> &copy; RayTok
+      v<span id="ver-text">1.0.6</span> &copy; RayTok <!-- v1.0.6 -->
     </div>
   </div>
 
@@ -218,27 +218,57 @@
     <div id="chat-list"></div>
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
-      <button class="tool-btn" id="btn-toggle-tts">🔊 소리 켜짐</button>
+      <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
     </div>
   </div>
 
   <!-- 세션 종료 모달 -->
   <div class="modal" id="end-modal">
     <div class="modal-content">
-      <div class="modal-title">강의·안내 종료</div>
-      <p style="color: var(--text-muted); font-size: 14px;">세션이 정상적으로 종료되었습니다.</p>
-      <div class="summary-box" id="end-summary"></div>
-      <button class="btn" onclick="location.reload()">새로고침</button>
+      <div class="modal-title" data-i18n="end_title">강의·안내 종료</div>
+      <p style="color: var(--text-muted); font-size: 14px;" data-i18n="end_desc">세션이 정상적으로 종료되었습니다.</p>
+      <div class="summary-box" id="end-summary">
+        • <span data-i18n="summary_total_lines">총 강의 라인</span>: <b id="sum-lines">0</b>
+        <span data-i18n="summary_lines_unit">줄</span><br>
+        • <span data-i18n="summary_duration">진행 시간</span>: <b id="sum-minutes">0</b>
+        <span data-i18n="summary_minutes_unit">분</span>
+        <div id="sum-joined-row" style="display:none">
+          • <span data-i18n="summary_max_joined">최대 동시 참여</span>: <b id="sum-joined">0</b>
+          <span data-i18n="summary_joined_unit">명</span>
+        </div>
+      </div>
+      <button class="btn" onclick="location.reload()" data-i18n="reload_button">새로고침</button>
     </div>
   </div>
 
+  <!-- 숨겨진 i18n 템플릿/참조 항목 -->
+  <div style="display:none" aria-hidden="true">
+    <span data-i18n="status_connecting">연결 중...</span>
+    <span data-i18n="status_connected">연결됨</span>
+    <span data-i18n="status_reconnecting">재연결 중...</span>
+    <span data-i18n="status_rejected">거부됨</span>
+    <span data-i18n="status_ended">종료됨</span>
+    <span data-i18n="tts_off">🔇 소리 끔</span>
+    <span data-i18n="lang_need_net"> (강사 폰 인터넷 필요)</span>
+    <span data-i18n="badge_pending">번역 대기 중</span>
+    <span data-i18n="badge_via">대체 번역</span>
+    <span data-i18n="no_voice_badge">음성 없음</span>
+    <span data-i18n="alert_invalid_code">강의 코드 6자리를 입력하세요.</span>
+    <span data-i18n="alert_rejected">연결이 거부되었습니다: </span>
+    <span data-i18n="unknown_reason">알 수 없는 이유</span>
+  </div>
+
   <script>
-    const LISTENER_VER = '1.0.5';
+    const LISTENER_VER = '1.0.6'; // v1.0.6
     document.getElementById('ver-text').textContent = LISTENER_VER;
 
     const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"de","name_ko":"독일어","name_en":"German","offline":true,"fallback":null},{"code":"it","name_ko":"이탈리아어","name_en":"Italian","offline":true,"fallback":null},{"code":"pt","name_ko":"포르투갈어","name_en":"Portuguese","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"hi","name_ko":"힌디어","name_en":"Hindi","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"tr","name_ko":"튀르키예어","name_en":"Turkish","offline":true,"fallback":null},{"code":"nl","name_ko":"네덜란드어","name_en":"Dutch","offline":true,"fallback":null},{"code":"pl","name_ko":"폴란드어","name_en":"Polish","offline":true,"fallback":null},{"code":"sv","name_ko":"스웨덴어","name_en":"Swedish","offline":true,"fallback":null},{"code":"da","name_ko":"덴마크어","name_en":"Danish","offline":true,"fallback":null},{"code":"nb","name_ko":"노르웨이어","name_en":"Norwegian","offline":true,"fallback":null},{"code":"fi","name_ko":"핀란드어","name_en":"Finnish","offline":true,"fallback":null},{"code":"cs","name_ko":"체코어","name_en":"Czech","offline":true,"fallback":null},{"code":"el","name_ko":"그리스어","name_en":"Greek","offline":true,"fallback":null},{"code":"he","name_ko":"히브리어","name_en":"Hebrew","offline":true,"fallback":null},{"code":"hu","name_ko":"헝가리어","name_en":"Hungarian","offline":true,"fallback":null},{"code":"ro","name_ko":"루마니아어","name_en":"Romanian","offline":true,"fallback":null},{"code":"uk","name_ko":"우크라이나어","name_en":"Ukrainian","offline":true,"fallback":null},{"code":"ms","name_ko":"말레이어","name_en":"Malay","offline":true,"fallback":null},{"code":"fil","name_ko":"필리핀어","name_en":"Filipino","offline":true,"fallback":null},{"code":"bn","name_ko":"벵골어","name_en":"Bengali","offline":true,"fallback":null},{"code":"ta","name_ko":"타밀어","name_en":"Tamil","offline":true,"fallback":null},{"code":"te","name_ko":"텔루구어","name_en":"Telugu","offline":true,"fallback":null},{"code":"ur","name_ko":"우르두어","name_en":"Urdu","offline":true,"fallback":null},{"code":"fa","name_ko":"페르시아어","name_en":"Persian","offline":true,"fallback":null},{"code":"sw","name_ko":"스와힐리어","name_en":"Swahili","offline":true,"fallback":null},{"code":"sk","name_ko":"슬로바키아어","name_en":"Slovak","offline":true,"fallback":null},{"code":"bg","name_ko":"불가리아어","name_en":"Bulgarian","offline":true,"fallback":null},{"code":"ca","name_ko":"카탈루냐어","name_en":"Catalan","offline":true,"fallback":null},{"code":"hr","name_ko":"크로아티아어","name_en":"Croatian","offline":true,"fallback":null},{"code":"sr","name_ko":"세르비아어","name_en":"Serbian","offline":false,"fallback":null},{"code":"sl","name_ko":"슬로베니아어","name_en":"Slovenian","offline":true,"fallback":null},{"code":"lt","name_ko":"리투아니아어","name_en":"Lithuanian","offline":true,"fallback":null},{"code":"lv","name_ko":"라트비아어","name_en":"Latvian","offline":true,"fallback":null},{"code":"et","name_ko":"에스토니아어","name_en":"Estonian","offline":true,"fallback":null},{"code":"is","name_ko":"아이슬란드어","name_en":"Icelandic","offline":true,"fallback":null},{"code":"ga","name_ko":"아일랜드어","name_en":"Irish","offline":true,"fallback":null},{"code":"cy","name_ko":"웨일스어","name_en":"Welsh","offline":true,"fallback":null},{"code":"eu","name_ko":"바스크어","name_en":"Basque","offline":false,"fallback":null},{"code":"gl","name_ko":"갈리시아어","name_en":"Galician","offline":true,"fallback":null},{"code":"af","name_ko":"아프리칸스어","name_en":"Afrikaans","offline":true,"fallback":null},{"code":"zu","name_ko":"줄루어","name_en":"Zulu","offline":false,"fallback":null},{"code":"xh","name_ko":"코사어","name_en":"Xhosa","offline":false,"fallback":null},{"code":"hy","name_ko":"아르메니아어","name_en":"Armenian","offline":false,"fallback":null},{"code":"az","name_ko":"아제르바이잔어","name_en":"Azerbaijani","offline":false,"fallback":null},{"code":"ka","name_ko":"조지아어","name_en":"Georgian","offline":true,"fallback":null},{"code":"kk","name_ko":"카자흐어","name_en":"Kazakh","offline":false,"fallback":null},{"code":"uz","name_ko":"우즈베크어","name_en":"Uzbek","offline":false,"fallback":"ru"},{"code":"ky","name_ko":"키르기스어","name_en":"Kyrgyz","offline":false,"fallback":"ru"},{"code":"tg","name_ko":"타지크어","name_en":"Tajik","offline":false,"fallback":"ru"},{"code":"tet","name_ko":"테툼어","name_en":"Tetum","offline":false,"fallback":"id"},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"},{"code":"ne","name_ko":"네팔어","name_en":"Nepali","offline":false,"fallback":"hi"},{"code":"si","name_ko":"싱할라어","name_en":"Sinhala","offline":false,"fallback":"ta"},{"code":"kn","name_ko":"칸나다어","name_en":"Kannada","offline":true,"fallback":null},{"code":"ml","name_ko":"말라얄람어","name_en":"Malayalam","offline":false,"fallback":null},{"code":"mr","name_ko":"마라티어","name_en":"Marathi","offline":true,"fallback":null},{"code":"gu","name_ko":"구자라트어","name_en":"Gujarati","offline":true,"fallback":null},{"code":"pa","name_ko":"펀자브어","name_en":"Punjabi","offline":false,"fallback":null},{"code":"km","name_ko":"크메르어","name_en":"Khmer","offline":false,"fallback":null},{"code":"lo","name_ko":"라오어","name_en":"Lao","offline":false,"fallback":"th"},{"code":"my","name_ko":"미얀마어","name_en":"Burmese","offline":false,"fallback":null},{"code":"am","name_ko":"암하라어","name_en":"Amharic","offline":false,"fallback":null},{"code":"so","name_ko":"소말리어","name_en":"Somali","offline":false,"fallback":null},{"code":"mk","name_ko":"마케도니아어","name_en":"Macedonian","offline":true,"fallback":null},{"code":"sq","name_ko":"알바니아어","name_en":"Albanian","offline":true,"fallback":null},{"code":"bs","name_ko":"보스니아어","name_en":"Bosnian","offline":false,"fallback":null},{"code":"mt","name_ko":"몰타어","name_en":"Maltese","offline":true,"fallback":null},{"code":"yo","name_ko":"요루바어","name_en":"Yoruba","offline":false,"fallback":null},{"code":"ig","name_ko":"이그보어","name_en":"Igbo","offline":false,"fallback":null},{"code":"ha","name_ko":"하우사어","name_en":"Hausa","offline":false,"fallback":null}];
 
     let langs = FALLBACK_LANGS;
+    let uiStrings = null;
+    let currentUiLang = 'en';
+    let currentStatusKey = 'status_ready';
+
     let selectedLang = 'ko';
     let srcLang = 'ko';
     let myName = '';
@@ -267,33 +297,154 @@
     const endModal = document.getElementById('end-modal');
     const endSummary = document.getElementById('end-summary');
 
-    // 언어 목록 초기화
-    async function initLangs() {
-      try {
-        const res = await fetch('./langs.json');
-        if (res.ok) langs = await res.json();
-      } catch (e) {}
-      
+    function normalizeLangCode(code) {
+      if (!code) return '';
+      const lower = code.toLowerCase();
+      if (lower.startsWith('zh')) return 'zh';
+      if (lower === 'tl' || lower.startsWith('tl-') || lower === 'fil' || lower.startsWith('fil-')) return 'fil';
+      return lower.split('-')[0];
+    }
+
+    function t(key, lang = currentUiLang) {
+      if (!uiStrings || !uiStrings.strings || !uiStrings.strings[key]) return '';
+      const item = uiStrings.strings[key];
+      return item[lang] || item['en'] || item['ko'] || '';
+    }
+
+    function determineLanguage(availableLangs) {
+      // 1. URL ?lang=
+      const params = new URLSearchParams(location.search);
+      const qLang = params.get('lang');
+      if (qLang) {
+        const norm = normalizeLangCode(qLang);
+        if (availableLangs.includes(norm)) return norm;
+      }
+
+      // 2. 언어 선택 드롭다운 값 (또는 localStorage에 저장된 언어)
+      const savedLang = localStorage.getItem('raytok_lang');
+      if (savedLang) {
+        const norm = normalizeLangCode(savedLang);
+        if (availableLangs.includes(norm)) return norm;
+      }
+      if (langSelect && langSelect.value) {
+        const norm = normalizeLangCode(langSelect.value);
+        if (availableLangs.includes(norm)) return norm;
+      }
+
+      // 3. navigator.language 앞 2자(zh-CN→zh, fil은 tl도 인정)
+      const nav = (navigator.language || '').trim();
+      if (nav) {
+        const norm = normalizeLangCode(nav);
+        if (availableLangs.includes(norm)) return norm;
+        const sub = nav.substring(0, 2).toLowerCase();
+        const subNorm = normalizeLangCode(sub);
+        if (availableLangs.includes(subNorm)) return subNorm;
+      }
+
+      // 4. en
+      return 'en';
+    }
+
+    function applyStrings(lang) {
+      currentUiLang = lang;
+      document.documentElement.lang = lang;
+      document.documentElement.setAttribute('dir', lang === 'ur' ? 'rtl' : 'ltr');
+      document.title = t('page_title', lang);
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = t(key, lang);
+        if (el.tagName === 'INPUT') {
+          el.placeholder = val;
+        } else {
+          el.textContent = val;
+        }
+      });
+
+      btnToggleTts.textContent = isTtsEnabled ? t('tts_on', lang) : t('tts_off', lang);
+      if (currentStatusKey) {
+        statusText.textContent = t(currentStatusKey, lang);
+      }
+
+      updateLangSelectOptions();
+      if (isConnected) {
+        updateCurrentLangText();
+        renderAllLines();
+      }
+    }
+
+    function updateLangSelectOptions() {
+      if (!langs || langs.length === 0) return;
+      const curVal = langSelect.value || selectedLang;
       langSelect.innerHTML = '';
-      const isKo = navigator.language.startsWith('ko');
+      const isKo = currentUiLang === 'ko';
       langs.forEach(l => {
         const opt = document.createElement('option');
         opt.value = l.code;
         let name = isKo ? l.name_ko : l.name_en;
-        if (!l.offline) name += isKo ? ' (강사 폰 인터넷 필요)' : ' (Requires Guide Internet)';
+        if (!l.offline) name += t('lang_need_net', currentUiLang);
         opt.textContent = name;
         langSelect.appendChild(opt);
       });
-      
-      const savedLang = localStorage.getItem('raytok_lang');
-      if (savedLang) langSelect.value = savedLang;
-      selectedLang = langSelect.value;
+      if (curVal && langs.some(l => l.code === curVal)) {
+        langSelect.value = curVal;
+      }
     }
-    initLangs();
+
+    function updateCurrentLangText() {
+      const isKo = currentUiLang === 'ko';
+      const cur = langs.find(l => l.code === selectedLang);
+      currentLangText.textContent = cur ? (isKo ? cur.name_ko : cur.name_en) : selectedLang;
+    }
+
+    function setStatus(key, dotClass) {
+      currentStatusKey = key;
+      statusText.textContent = t(key, currentUiLang);
+      if (dotClass) statusDot.className = dotClass;
+    }
+
+    async function initApp() {
+      try {
+        const res = await fetch('./langs.json');
+        if (res.ok) langs = await res.json();
+      } catch (e) {}
+
+      try {
+        const res = await fetch('./ui-strings.json');
+        if (res.ok) uiStrings = await res.json();
+      } catch (e) {}
+
+      const availableLangs = (uiStrings && uiStrings.langs) || ['ko', 'en'];
+
+      const params = new URLSearchParams(location.search);
+      const qLang = params.get('lang');
+      const savedLang = localStorage.getItem('raytok_lang');
+
+      if (qLang && langs.some(l => l.code === qLang)) {
+        selectedLang = qLang;
+      } else if (savedLang && langs.some(l => l.code === savedLang)) {
+        selectedLang = savedLang;
+      } else {
+        const nav = (navigator.language || '').trim();
+        const norm = normalizeLangCode(nav);
+        const match = langs.find(l => l.code === nav || l.code === norm || l.code.startsWith(norm));
+        if (match) selectedLang = match.code;
+        else selectedLang = 'en';
+      }
+
+      const initialUiLang = determineLanguage(availableLangs);
+      applyStrings(initialUiLang);
+      if (selectedLang) langSelect.value = selectedLang;
+    }
+    initApp();
 
     langSelect.addEventListener('change', () => {
       selectedLang = langSelect.value;
       localStorage.setItem('raytok_lang', selectedLang);
+
+      const newUiLang = normalizeLangCode(selectedLang);
+      applyStrings(newUiLang);
+
       if (isConnected) {
         sendHello();
         renderAllLines();
@@ -309,7 +460,7 @@
 
     btnToggleTts.addEventListener('click', () => {
       isTtsEnabled = !isTtsEnabled;
-      btnToggleTts.textContent = isTtsEnabled ? '🔊 소리 켜짐' : '🔇 소리 끔';
+      btnToggleTts.textContent = isTtsEnabled ? t('tts_on', currentUiLang) : t('tts_off', currentUiLang);
       btnToggleTts.classList.toggle('active', !isTtsEnabled);
     });
 
@@ -317,32 +468,21 @@
       if (!isTtsEnabled || !text) return;
       speechSynthesis.cancel();
       const uttr = new SpeechSynthesisUtterance(text);
-      
+
       const voices = speechSynthesis.getVoices();
-      
-      // Determine voice lang strategy
+
       let targetLang = selectedLang;
-      if (via) {
-        // If via exists, speak in via voice
-        targetLang = via;
-      }
-      
+      if (via) targetLang = via;
+
       let voice = voices.find(v => v.lang.startsWith(targetLang));
-      
+      if (!voice && via) voice = voices.find(v => v.lang.startsWith(selectedLang));
       if (!voice) {
-        // Fallback: If voice not found for via, try selectedLang voice
-        if (via) {
-          voice = voices.find(v => v.lang.startsWith(selectedLang));
-        }
-        // Fallback to langs.json fallback voice if still not found
-        if (!voice) {
-          const langObj = langs.find(l => l.code === selectedLang);
-          if (langObj && langObj.fallback) {
-            voice = voices.find(v => v.lang.startsWith(langObj.fallback));
-          }
+        const langObj = langs.find(l => l.code === selectedLang);
+        if (langObj && langObj.fallback) {
+          voice = voices.find(v => v.lang.startsWith(langObj.fallback));
         }
       }
-      
+
       if (voice) {
         uttr.voice = voice;
         uttr.lang = voice.lang;
@@ -353,31 +493,29 @@
     // 연결 관리
     function connect() {
       if (ws) ws.close();
-      
+
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const params = new URLSearchParams(location.search);
       const wsPort = params.get('ws') || '8081';
       const wsUrl = params.get('ws') ? `ws://${location.hostname}:${wsPort}` : `${protocol}//${location.host}/ws?room=${roomCode}`;
-      
-      statusText.textContent = '연결 중...';
-      statusDot.className = 'status-dot reconnecting';
-      
+
+      setStatus('status_connecting', 'status-dot reconnecting');
+
       ws = new WebSocket(wsUrl);
-      
+
       ws.onopen = () => {
         sendHello();
       };
-      
+
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         handleMessage(msg);
       };
-      
+
       ws.onclose = () => {
         isConnected = false;
-        if (statusText.textContent !== '종료됨' && statusText.textContent !== '거부됨') {
-          statusText.textContent = '재연결 중...';
-          statusDot.className = 'status-dot reconnecting';
+        if (currentStatusKey !== 'status_ended' && currentStatusKey !== 'status_rejected') {
+          setStatus('status_reconnecting', 'status-dot reconnecting');
           setTimeout(connect, 3000);
         }
       };
@@ -398,41 +536,38 @@
       if (langObj && langObj.fallback) payload.fallbackLang = langObj.fallback;
       const last = localStorage.getItem(`raytok_last_seq_${roomCode}`);
       if (last) payload.resume_from = parseInt(last);
-      
+
       ws.send(JSON.stringify(payload));
     }
 
     function handleMessage(msg) {
       if ('__ping' in msg) return;
-      
+
       if ('welcome' in msg) {
         isConnected = true;
         srcLang = msg.src_lang || 'ko';
-        statusText.textContent = '연결됨';
-        statusDot.className = 'status-dot online';
+        setStatus('status_connected', 'status-dot online');
         joinScreen.style.display = 'none';
         chatScreen.style.display = 'flex';
-        currentLangText.textContent = langs.find(l => l.code === selectedLang)?.name_ko || selectedLang;
+        updateCurrentLangText();
         return;
       }
-      
+
       if ('bye' in msg) {
-        statusText.textContent = '거부됨';
-        statusDot.className = 'status-dot offline';
+        setStatus('status_rejected', 'status-dot offline');
         ws.close();
-        alert('연결이 거부되었습니다: ' + (msg.why || '알 수 없는 이유'));
+        alert(t('alert_rejected', currentUiLang) + (msg.why || t('unknown_reason', currentUiLang)));
         return;
       }
-      
+
       if ('end' in msg) {
-        statusText.textContent = '종료됨';
-        statusDot.className = 'status-dot offline';
+        setStatus('status_ended', 'status-dot offline');
         ws.close();
         showEnd(msg.summary);
         return;
       }
 
-      if ('text' in msg) { // line
+      if ('text' in msg) {
         const line = {
           seq: msg.seq,
           text: msg.text,
@@ -445,7 +580,7 @@
         localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
         addLine(line);
         if (line.tr[selectedLang]) speak(line.tr[selectedLang], line.via);
-      } else if ('tr' in msg && !('text' in msg)) { // tr
+      } else if ('tr' in msg && !('text' in msg)) {
         const line = lines.find(l => l.seq === msg.seq);
         if (line) {
           Object.assign(line.tr, msg.tr);
@@ -483,16 +618,16 @@
       const div = document.getElementById(`msg-${line.seq}`);
       if (!div) return;
       const trDiv = div.querySelector('.msg-tr');
-      
+
       let trText = line.tr[selectedLang] || '';
       let badges = '';
-      if (line.pending) badges += '<span class="badge badge-pending">번역 대기 중</span>';
-      
+      if (line.pending) badges += `<span class="badge badge-pending">${t('badge_pending', currentUiLang)}</span>`;
+
       const voices = speechSynthesis.getVoices();
       let hasVoice = false;
       let targetLang = selectedLang;
       if (line.via) targetLang = line.via;
-      
+
       let voice = voices.find(v => v.lang.startsWith(targetLang));
       if (!voice && line.via) voice = voices.find(v => v.lang.startsWith(selectedLang));
       if (!voice) {
@@ -505,32 +640,36 @@
 
       if (line.via) {
         const viaLang = langs.find(l => l.code === line.via);
-        const viaName = viaLang ? (navigator.language.startsWith('ko') ? viaLang.name_ko : viaLang.name_en) : line.via;
-        badges += `<span class="badge badge-via">대체 번역(${viaName})</span>`;
+        const viaName = viaLang ? (currentUiLang === 'ko' ? viaLang.name_ko : viaLang.name_en) : line.via;
+        badges += `<span class="badge badge-via">${t('badge_via', currentUiLang)}(${viaName})</span>`;
       }
-      
+
       if (trText && !hasVoice) {
-        badges += '<span class="badge" style="background-color: var(--danger); color: #fff;">음성 없음</span>';
+        badges += `<span class="badge" style="background-color: var(--danger); color: #fff;">${t('no_voice_badge', currentUiLang)}</span>`;
       }
-      
+
       trDiv.innerHTML = trText + badges;
     }
 
     function renderAllLines() {
       chatList.innerHTML = '';
       lines.forEach(addLine);
-      currentLangText.textContent = langs.find(l => l.code === selectedLang)?.name_ko || selectedLang;
+      updateCurrentLangText();
       updateVoice();
     }
 
     function showEnd(summary) {
       const s = summary || {};
-      let html = `• 총 강의 라인: <b>${s.lines || lastSeq} 줄</b><br>
-                  • 진행 시간: <b>${s.minutes || 0} 분</b>`;
+      document.getElementById('sum-lines').textContent = s.lines || lastSeq;
+      document.getElementById('sum-minutes').textContent = s.minutes || 0;
+      const joinedRow = document.getElementById('sum-joined-row');
       if (s.joined_max > 0) {
-        html += `<br>• 최대 동시 참여: <b>${s.joined_max} 명</b>`;
+        document.getElementById('sum-joined').textContent = s.joined_max;
+        joinedRow.style.display = 'block';
+      } else {
+        joinedRow.style.display = 'none';
       }
-      endSummary.innerHTML = html;
+      applyStrings(currentUiLang);
       endModal.style.display = 'flex';
     }
 
@@ -538,7 +677,7 @@
       roomCode = roomInput.value.trim();
       myName = nameInput.value.trim();
       if (roomCode.length !== 6) {
-        alert('강의 코드 6자리를 입력하세요.');
+        alert(t('alert_invalid_code', currentUiLang));
         return;
       }
       connect();
