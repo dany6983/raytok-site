@@ -1,0 +1,149 @@
+{
+  "ver": 1,
+  "langs": [
+    "ko",
+    "en"
+  ],
+  "strings": {
+    "page_title": {
+      "ko": "RayTok 청취자",
+      "en": "RayTok Listener"
+    },
+    "header_title": {
+      "ko": "RayTok 청취자",
+      "en": "RayTok Listener"
+    },
+    "status_ready": {
+      "ko": "준비",
+      "en": "Ready"
+    },
+    "status_connecting": {
+      "ko": "연결 중...",
+      "en": "Connecting…"
+    },
+    "status_connected": {
+      "ko": "연결됨",
+      "en": "Connected"
+    },
+    "status_reconnecting": {
+      "ko": "재연결 중...",
+      "en": "Reconnecting…"
+    },
+    "status_rejected": {
+      "ko": "거부됨",
+      "en": "Rejected"
+    },
+    "status_ended": {
+      "ko": "종료됨",
+      "en": "Ended"
+    },
+    "join_title": {
+      "ko": "강의 참여",
+      "en": "Join Session"
+    },
+    "room_code_label": {
+      "ko": "강의 코드 (6자리)",
+      "en": "Session code (6 digits)"
+    },
+    "room_code_placeholder": {
+      "ko": "000000",
+      "en": "000000"
+    },
+    "lang_select_label": {
+      "ko": "언어 선택",
+      "en": "Select language"
+    },
+    "lang_need_net": {
+      "ko": " (강사 폰 인터넷 필요)",
+      "en": " (Requires Guide Internet)"
+    },
+    "name_label": {
+      "ko": "이름 (선택 사항)",
+      "en": "Name (optional)"
+    },
+    "name_placeholder": {
+      "ko": "예: 홍길동",
+      "en": "e.g. John Doe"
+    },
+    "notice_code": {
+      "ko": "• 강의 코드는 강사 화면의 번호를 입력하세요.",
+      "en": "• Enter the code on the guide's screen."
+    },
+    "notice_sound": {
+      "ko": "• 소리를 켜면 번역된 내용을 음성으로 들을 수 있습니다.",
+      "en": "• Turn on sound to hear translations read aloud."
+    },
+    "join_button": {
+      "ko": "참여하기",
+      "en": "Join"
+    },
+    "tts_on": {
+      "ko": "🔊 소리 켜짐",
+      "en": "🔊 Sound on"
+    },
+    "tts_off": {
+      "ko": "🔇 소리 끔",
+      "en": "🔇 Sound off"
+    },
+    "end_title": {
+      "ko": "강의·안내 종료",
+      "en": "Session ended"
+    },
+    "end_desc": {
+      "ko": "세션이 정상적으로 종료되었습니다.",
+      "en": "The session has ended normally."
+    },
+    "reload_button": {
+      "ko": "새로고침",
+      "en": "Refresh"
+    },
+    "badge_pending": {
+      "ko": "번역 대기 중",
+      "en": "Translating…"
+    },
+    "badge_via": {
+      "ko": "대체 번역",
+      "en": "Via"
+    },
+    "no_voice_badge": {
+      "ko": "음성 없음",
+      "en": "No voice"
+    },
+    "summary_total_lines": {
+      "ko": "총 강의 라인",
+      "en": "Total lines"
+    },
+    "summary_lines_unit": {
+      "ko": "줄",
+      "en": "lines"
+    },
+    "summary_duration": {
+      "ko": "진행 시간",
+      "en": "Duration"
+    },
+    "summary_minutes_unit": {
+      "ko": "분",
+      "en": "min"
+    },
+    "summary_max_joined": {
+      "ko": "최대 동시 참여",
+      "en": "Max concurrent listeners"
+    },
+    "summary_joined_unit": {
+      "ko": "명",
+      "en": "listeners"
+    },
+    "alert_invalid_code": {
+      "ko": "강의 코드 6자리를 입력하세요.",
+      "en": "Enter the 6-digit session code."
+    },
+    "alert_rejected": {
+      "ko": "연결이 거부되었습니다: ",
+      "en": "Connection rejected: "
+    },
+    "unknown_reason": {
+      "ko": "알 수 없는 이유",
+      "en": "Unknown reason"
+    }
+  }
+}
