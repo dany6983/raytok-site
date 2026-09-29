@@ -191,7 +191,7 @@
       "ur": "ختم ہو گیا"
     },
     "join_title": {
-      "ko": "강의 참여",
+      "ko": "세션 참여",
       "en": "Join Session",
       "vi": "Tham gia phiên",
       "th": "เข้าร่วมเซสชัน",
@@ -212,7 +212,7 @@
       "ur": "سیشن میں شامل ہوں"
     },
     "room_code_label": {
-      "ko": "강의 코드 (6자리)",
+      "ko": "세션 코드 (6자리)",
       "en": "Session code (6 digits)",
       "vi": "Mã phiên (6 chữ số)",
       "th": "รหัสเซสชัน (6 หลัก)",
@@ -338,7 +338,7 @@
       "ur": "مثال: علی"
     },
     "notice_code": {
-      "ko": "• 강의 코드는 강사 화면의 번호를 입력하세요.",
+      "ko": "• 세션 코드는 강사 화면의 번호를 입력하세요.",
       "en": "• Enter the code on the guide's screen.",
       "vi": "• Nhập mã hiển thị trên màn hình người hướng dẫn.",
       "th": "• ป้อนรหัสที่แสดงบนหน้าจอของผู้นำทาง",
@@ -443,7 +443,7 @@
       "ur": "🔇 آواز بند"
     },
     "end_title": {
-      "ko": "강의·안내 종료",
+      "ko": "세션·안내 종료",
       "en": "Session ended",
       "vi": "Phiên đã kết thúc",
       "th": "สิ้นสุดเซสชัน",
@@ -569,7 +569,7 @@
       "ur": "کوئی آواز نہیں"
     },
     "summary_total_lines": {
-      "ko": "총 강의 라인",
+      "ko": "총 세션 라인",
       "en": "Total lines",
       "vi": "Tổng số dòng",
       "th": "จำนวนบรรทัดทั้งหมด",
@@ -695,7 +695,7 @@
       "ur": "افراد"
     },
     "alert_invalid_code": {
-      "ko": "강의 코드 6자리를 입력하세요.",
+      "ko": "세션 코드 6자리를 입력하세요.",
       "en": "Enter the 6-digit session code.",
       "vi": "Vui lòng nhập mã phiên gồm 6 chữ số.",
       "th": "โปรดป้อนรหัสเซสชัน 6 หลัก",
