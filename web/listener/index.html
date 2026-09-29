@@ -548,6 +548,7 @@
       btnToggleTts.classList.toggle('active', !isTtsEnabled);
     });
 
+    // RULE P-03: speak only confirmed `tr`, never `pending`
     function speak(text, via) {
       if (!isTtsEnabled || !text) return;
       speechSynthesis.cancel();
