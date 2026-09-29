@@ -43,7 +43,7 @@ async function run() {
   const listenerMessages = [[], [], []];
 
   for (let i = 0; i < 3; i++) {
-    const ws = new WebSocket(`${WS_BASE_URL}/ws?room=${code}&role=listener`);
+    const ws = new WebSocket(`${WS_BASE_URL}/ws?room=${code}&role=listener`, { closeTimeout: 1000 });
     const idx = i;
     ws.on('message', (data) => {
       const str = data.toString();
@@ -90,7 +90,7 @@ async function run() {
   // 6. 늦은 청취자 접속 -> 버퍼 5개 수신 확인
   console.log('\n[Step 6] Connecting late listener and verifying 5 buffered messages...');
   const lateMessages = [];
-  const lateWs = new WebSocket(`${WS_BASE_URL}/ws?room=${code}&role=listener`);
+  const lateWs = new WebSocket(`${WS_BASE_URL}/ws?room=${code}&role=listener`, { closeTimeout: 1000 });
   lateWs.on('message', (data) => {
     lateMessages.push(data.toString());
   });

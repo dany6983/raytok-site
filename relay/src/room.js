@@ -36,7 +36,7 @@ export class Room {
     const url = new URL(request.url);
 
     // 1. 내부 초기화 호출
-    if (url.pathname === '/internal/init' && request.method === 'POST') {
+    if (url.pathname === '/init' && request.method === 'POST') {
       const body = await request.json();
       this.code = body.code;
       this.hostToken = body.host_token;
@@ -55,8 +55,8 @@ export class Room {
       });
     }
 
-    // 2. 방 정보 조회 (GET /room/CODE)
-    if (url.pathname === '/internal/info' || url.pathname.startsWith('/room/')) {
+    // 2. 방 정보 조회 (/info)
+    if (url.pathname === '/info' || url.pathname === '/internal/info' || url.pathname.startsWith('/room/')) {
       if (!this.initialized) {
         return new Response(JSON.stringify({ exists: false, listeners: 0, started_at: null }), {
           headers: { 'Content-Type': 'application/json' }
@@ -114,7 +114,10 @@ export class Room {
       return new Response(null, { status: 101, webSocket: client });
     }
 
-    return new Response('Not Found', { status: 404 });
+    return new Response(JSON.stringify({ error: 'not_found' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   async webSocketMessage(ws, message) {
@@ -174,13 +177,18 @@ export class Room {
       }
 
       if (isEnd) {
-        setTimeout(() => {
-          for (const listenerWs of this.ctx.getWebSockets('listener')) {
-            try {
-              listenerWs.close(1000, 'end');
-            } catch (e) {}
-          }
-        }, 5000);
+        this.ctx.waitUntil(
+          new Promise((resolve) => {
+            setTimeout(() => {
+              for (const listenerWs of this.ctx.getWebSockets('listener')) {
+                try {
+                  listenerWs.close(1000, 'end');
+                } catch (e) {}
+              }
+              resolve();
+            }, 5000);
+          })
+        );
       }
     } else if (isListener) {
       // 청취자 → 호스트에게만 전달
@@ -193,6 +201,9 @@ export class Room {
   }
 
   async webSocketClose(ws, code, reason, wasClean) {
+    try {
+      ws.close(code, reason || 'closed');
+    } catch (e) {}
     const tags = this.ctx.getTags(ws);
     if (tags.includes('host')) {
       const remainingHosts = this.ctx.getWebSockets('host').filter(w => w !== ws);
@@ -216,13 +227,18 @@ export class Room {
           listenerWs.send(endMsg);
         } catch (e) {}
       }
-      setTimeout(() => {
-        for (const listenerWs of this.ctx.getWebSockets('listener')) {
-          try {
-            listenerWs.close(1000, 'host_timeout');
-          } catch (e) {}
-        }
-      }, 5000);
+      this.ctx.waitUntil(
+        new Promise((resolve) => {
+          setTimeout(() => {
+            for (const listenerWs of this.ctx.getWebSockets('listener')) {
+              try {
+                listenerWs.close(1000, 'host_timeout');
+              } catch (e) {}
+            }
+            resolve();
+          }, 5000);
+        })
+      );
     }
   }
 }

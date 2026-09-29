@@ -65,15 +65,7 @@ export default {
       const id = env.ROOM.idFromName(code);
       const room = env.ROOM.get(id);
 
-      const res = await room.fetch(new Request('http://internal/info'));
-      const data = await res.json();
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...CORS_HEADERS
-        }
-      });
+      return room.fetch(new Request('http://internal/info'));
     }
 
     // 3. WebSocket 중계: GET /ws?room=CODE&role=...
