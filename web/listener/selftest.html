@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RayTok 청취자 환경 점검 (Self Test)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --border: #334155;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 16px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: rgba(51, 65, 85, 0.4);
+      color: var(--text-muted);
+      width: 32%;
+      font-weight: 600;
+    }
+    td {
+      background-color: #0f172a;
+      word-break: break-all;
+    }
+    .status-ok { color: var(--success); font-weight: 600; }
+    .status-warn { color: var(--warning); font-weight: 600; }
+    .status-fail { color: var(--danger); font-weight: 600; }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: none;
+      background-color: var(--primary);
+      color: #0f172a;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn:active { background-color: var(--primary-hover); }
+    .btn-secondary {
+      background-color: var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:active { background-color: #475569; }
+    #sound-result {
+      margin-top: 12px;
+      font-size: 14px;
+      min-height: 22px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-right: 4px;
+      background-color: #334155;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>RayTok 청취자 환경 점검</h1>
+  <p class="subtitle">구형 폰 현장 점검용 자가 진단 도구</p>
+
+  <div class="card">
+    <table id="test-table">
+      <tbody>
+        <tr>
+          <th>User Agent</th>
+          <td id="val-ua">-</td>
+        </tr>
+        <tr>
+          <th>WebSocket</th>
+          <td id="val-ws">-</td>
+        </tr>
+        <tr>
+          <th>localStorage</th>
+          <td id="val-storage">-</td>
+        </tr>
+        <tr>
+          <th>speechSynthesis</th>
+          <td id="val-speech">-</td>
+        </tr>
+        <tr>
+          <th>음성(Voices) 수</th>
+          <td id="val-voices">-</td>
+        </tr>
+        <tr>
+          <th>Wake Lock API</th>
+          <td id="val-wakelock">-</td>
+        </tr>
+        <tr>
+          <th>HTTPS 연결</th>
+          <td id="val-https">-</td>
+        </tr>
+        <tr>
+          <th>document.hidden</th>
+          <td id="val-hidden">-</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="btn-group">
+      <button class="btn" id="btn-sound-test">소리 시험</button>
+      <button class="btn btn-secondary" id="btn-copy-result">결과 복사</button>
+    </div>
+    <div id="sound-result"></div>
+  </div>
+
+  <script>
+    var soundTestStatus = '미실행';
+
+    function checkLocalStorage() {
+      try {
+        var testKey = '__raytok_test__';
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        return { ok: true, text: '지원 (정상)' };
+      } catch (e) {
+        return { ok: false, text: '미지원 또는 제한됨 (' + (e.message || e) + ')' };
+      }
+    }
+
+    function getVoiceStats() {
+      if (typeof window.speechSynthesis === 'undefined') {
+        return { available: false, total: 0, ko: 0, en: 0, vi: 0, th: 0 };
+      }
+      var voices = window.speechSynthesis.getVoices() || [];
+      var ko = 0, en = 0, vi = 0, th = 0;
+      for (var i = 0; i < voices.length; i++) {
+        var lang = (voices[i].lang || '').toLowerCase();
+        if (lang.indexOf('ko') === 0) ko++;
+        else if (lang.indexOf('en') === 0) en++;
+        else if (lang.indexOf('vi') === 0) vi++;
+        else if (lang.indexOf('th') === 0) th++;
+      }
+      return { available: true, total: voices.length, ko: ko, en: en, vi: vi, th: th };
+    }
+
+    function renderDiag() {
+      // 1. UA
+      document.getElementById('val-ua').textContent = navigator.userAgent;
+
+      // 2. WebSocket
+      var hasWs = typeof window.WebSocket !== 'undefined';
+      var elWs = document.getElementById('val-ws');
+      elWs.textContent = hasWs ? '지원 (O)' : '미지원 (X)';
+      elWs.className = hasWs ? 'status-ok' : 'status-fail';
+
+      // 3. localStorage
+      var storageRes = checkLocalStorage();
+      var elStorage = document.getElementById('val-storage');
+      elStorage.textContent = storageRes.text;
+      elStorage.className = storageRes.ok ? 'status-ok' : 'status-fail';
+
+      // 4. speechSynthesis
+      var hasSpeech = typeof window.speechSynthesis !== 'undefined';
+      var elSpeech = document.getElementById('val-speech');
+      elSpeech.textContent = hasSpeech ? '지원 (O)' : '미지원 (X)';
+      elSpeech.className = hasSpeech ? 'status-ok' : 'status-fail';
+
+      // 5. voices count (ko/en/vi/th)
+      var voiceStats = getVoiceStats();
+      var elVoices = document.getElementById('val-voices');
+      if (!voiceStats.available) {
+        elVoices.textContent = 'speechSynthesis 미지원';
+        elVoices.className = 'status-fail';
+      } else {
+        var voiceText = '총 ' + voiceStats.total + '개 (ko: ' + voiceStats.ko + ', en: ' + voiceStats.en + ', vi: ' + voiceStats.vi + ', th: ' + voiceStats.th + ')';
+        elVoices.textContent = voiceText;
+        elVoices.className = (voiceStats.total > 0) ? 'status-ok' : 'status-warn';
+      }
+
+      // 6. Wake Lock API
+      var hasWakeLock = ('wakeLock' in navigator && !!navigator.wakeLock);
+      var elWake = document.getElementById('val-wakelock');
+      elWake.textContent = hasWakeLock ? '지원 (O)' : '미지원 (X, NoSleep 비디오 대체 동작)';
+      elWake.className = hasWakeLock ? 'status-ok' : 'status-warn';
+
+      // 7. HTTPS
+      var isHttps = location.protocol === 'https:';
+      var elHttps = document.getElementById('val-https');
+      elHttps.textContent = isHttps ? 'HTTPS (O)' : 'HTTP (X - ' + location.protocol + ')';
+      elHttps.className = isHttps ? 'status-ok' : 'status-warn';
+
+      // 8. document.hidden
+      var hasHidden = typeof document.hidden !== 'undefined';
+      var elHidden = document.getElementById('val-hidden');
+      elHidden.textContent = hasHidden ? '지원 (O)' : '미지원 (X)';
+      elHidden.className = hasHidden ? 'status-ok' : 'status-warn';
+    }
+
+    if (typeof window.speechSynthesis !== 'undefined') {
+      window.speechSynthesis.onvoiceschanged = function() {
+        renderDiag();
+      };
+    }
+    renderDiag();
+
+    // 소리 시험
+    var btnSound = document.getElementById('btn-sound-test');
+    var elSoundResult = document.getElementById('sound-result');
+
+    btnSound.addEventListener('click', function() {
+      if (typeof window.speechSynthesis === 'undefined') {
+        soundTestStatus = '실패 (speechSynthesis 미지원)';
+        elSoundResult.textContent = '소리 시험: ' + soundTestStatus;
+        elSoundResult.className = 'status-fail';
+        return;
+      }
+      elSoundResult.textContent = '소리 시험: 재생 시도 중...';
+      elSoundResult.className = 'status-warn';
+      try {
+        window.speechSynthesis.cancel();
+        var uttr = new SpeechSynthesisUtterance('test');
+        uttr.lang = 'en-US';
+        uttr.onend = function() {
+          soundTestStatus = '재생됨 (성공)';
+          elSoundResult.textContent = '소리 시험: ' + soundTestStatus;
+          elSoundResult.className = 'status-ok';
+        };
+        uttr.onerror = function(e) {
+          soundTestStatus = '실패 (' + (e.error || '오류 발생') + ')';
+          elSoundResult.textContent = '소리 시험: ' + soundTestStatus;
+          elSoundResult.className = 'status-fail';
+        };
+        window.speechSynthesis.speak(uttr);
+      } catch (err) {
+        soundTestStatus = '실패 (' + (err.message || err) + ')';
+        elSoundResult.textContent = '소리 시험: ' + soundTestStatus;
+        elSoundResult.className = 'status-fail';
+      }
+    });
+
+    // 결과 복사
+    function getReportText() {
+      var lines = [];
+      lines.push('[RayTok 청취자 환경 점검 결과]');
+      lines.push('- UA: ' + navigator.userAgent);
+      lines.push('- WebSocket: ' + (typeof window.WebSocket !== 'undefined' ? 'O' : 'X'));
+      lines.push('- localStorage: ' + checkLocalStorage().text);
+      lines.push('- speechSynthesis: ' + (typeof window.speechSynthesis !== 'undefined' ? 'O' : 'X'));
+      var v = getVoiceStats();
+      lines.push('- Voices: 총 ' + v.total + ' (ko: ' + v.ko + ', en: ' + v.en + ', vi: ' + v.vi + ', th: ' + v.th + ')');
+      lines.push('- Wake Lock: ' + ('wakeLock' in navigator && !!navigator.wakeLock ? 'O' : 'X'));
+      lines.push('- HTTPS: ' + (location.protocol === 'https:' ? 'O' : 'X'));
+      lines.push('- document.hidden: ' + (typeof document.hidden !== 'undefined' ? 'O' : 'X'));
+      lines.push('- 소리 시험: ' + soundTestStatus);
+      lines.push('- URL: ' + location.href);
+      return lines.join('\n');
+    }
+
+    var btnCopy = document.getElementById('btn-copy-result');
+    btnCopy.addEventListener('click', function() {
+      var text = getReportText();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          alert('점검 결과가 클립보드에 복사되었습니다.');
+        }).catch(function() {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    });
+
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        var successful = document.execCommand('copy');
+        if (successful) {
+          alert('점검 결과가 클립보드에 복사되었습니다.');
+        } else {
+          alert('클립보드 복사에 실패했습니다.');
+        }
+      } catch (err) {
+        alert('복사 중 오류가 발생했습니다.');
+      }
+      document.body.removeChild(ta);
+    }
+  </script>
+</body>
+</html>
