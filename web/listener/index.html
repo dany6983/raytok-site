@@ -125,6 +125,8 @@
     }
     .badge-pending { background-color: var(--warning); color: #000; }
     .badge-via { background-color: #475569; color: #fff; }
+    .badge-meeting { background-color: #0369a1; color: #e0f2fe; }
+    .badge-me { background-color: #047857; color: #d1fae5; }
 
     .tool-bar {
       padding: 10px 16px;
@@ -519,6 +521,14 @@
       const initialUiLang = determineLanguage(availableLangs);
       applyStrings(initialUiLang);
       if (selectedLang) langSelect.value = selectedLang;
+
+      const qRoom = params.get('room');
+      if (qRoom) {
+        roomInput.value = qRoom.toUpperCase();
+        if (params.get('auto') === '1') {
+          setTimeout(() => btnJoin.click(), 500);
+        }
+      }
     }
     initApp();
 
@@ -549,9 +559,26 @@
     });
 
     // RULE P-03: speak only confirmed `tr`, never `pending`
-    function speak(text, via) {
-      if (!isTtsEnabled || !text) return;
+    function speak(text, via, audioUrl) {
+      if (!isTtsEnabled) return;
       speechSynthesis.cancel();
+
+      if (audioUrl) {
+        try {
+          const audio = new Audio(audioUrl);
+          audio.play().catch(e => {
+            console.warn('[Audio play failed, fallback to speechSynthesis]:', e);
+            speakWebTts(text, via);
+          });
+          return;
+        } catch (_) {}
+      }
+
+      speakWebTts(text, via);
+    }
+
+    function speakWebTts(text, via) {
+      if (!text) return;
       const uttr = new SpeechSynthesisUtterance(text);
 
       const voices = speechSynthesis.getVoices();
@@ -582,7 +609,8 @@
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const params = new URLSearchParams(location.search);
       const wsPort = params.get('ws') || '8081';
-      const wsUrl = params.get('ws') ? `ws://${location.hostname}:${wsPort}` : `${protocol}//${location.host}/ws?room=${roomCode}`;
+      const relayHost = params.get('relay') || (location.port === '8788' ? `${location.hostname}:8787` : location.host);
+      const wsUrl = params.get('ws') ? `ws://${location.hostname}:${wsPort}` : `${protocol}//${relayHost}/ws?room=${roomCode}&role=listener`;
 
       setStatus('status_connecting', 'status-dot reconnecting');
 
@@ -653,10 +681,47 @@
         return;
       }
 
+      if (msg.pending && !msg.seq && 'text' in msg) {
+        let pendingDiv = document.getElementById('msg-pending');
+        if (!pendingDiv) {
+          pendingDiv = document.createElement('div');
+          pendingDiv.id = 'msg-pending';
+          pendingDiv.className = 'msg-line';
+          pendingDiv.innerHTML = `
+            <div class="msg-bubble" style="border: 1px dashed var(--warning); opacity: 0.85;">
+              <div class="msg-text" style="color: var(--text-muted); font-style: italic;"></div>
+              <div class="msg-tr" style="font-size: 12px; color: var(--warning);"><span class="badge badge-pending">${t('badge_pending', currentUiLang)}</span></div>
+            </div>
+            <div class="msg-src" style="color: var(--warning);">[실시간 임시] ${srcLang.toUpperCase()}</div>
+          `;
+          chatList.appendChild(pendingDiv);
+        }
+        pendingDiv.querySelector('.msg-text').textContent = msg.text;
+        chatList.scrollTop = chatList.scrollHeight;
+        return;
+      }
+
+      if (msg.fix && msg.seq && msg.spk) {
+        const line = lines.find(l => l.seq === msg.seq);
+        if (line) {
+          line.spk = msg.spk;
+          const badge = document.getElementById(`spk-badge-${msg.seq}`);
+          if (badge) {
+            badge.className = `badge ${msg.spk === 'meeting' ? 'badge-meeting' : 'badge-me'}`;
+            badge.textContent = msg.spk === 'meeting' ? '회의 (meeting)' : '나 (me)';
+          }
+        }
+        return;
+      }
+
       if ('text' in msg) {
+        const pendingDiv = document.getElementById('msg-pending');
+        if (pendingDiv) pendingDiv.remove();
+
         const line = {
           seq: msg.seq,
           text: msg.text,
+          spk: msg.spk || 'meeting',
           tr: msg.tr || {},
           pending: !!msg.pending,
           via: msg.via
@@ -665,7 +730,7 @@
         lastSeq = msg.seq;
         localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
         addLine(line);
-        if (line.tr[selectedLang]) speak(line.tr[selectedLang], line.via);
+        if (line.tr[selectedLang]) speak(line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
       } else if ('tr' in msg && !('text' in msg)) {
         const line = lines.find(l => l.seq === msg.seq);
         if (line) {
@@ -673,7 +738,7 @@
           line.pending = false;
           if (msg.via) line.via = msg.via;
           updateLineUI(line);
-          if (msg.tr[selectedLang]) speak(msg.tr[selectedLang], line.via);
+          if (msg.tr[selectedLang]) speak(msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
         }
       } else if ('no_tr' in msg) {
         const line = lines.find(l => l.seq === msg.seq);
@@ -688,12 +753,14 @@
       const div = document.createElement('div');
       div.className = 'msg-line';
       div.id = `msg-${line.seq}`;
+      const spkClass = line.spk === 'meeting' ? 'badge-meeting' : 'badge-me';
+      const spkLabel = line.spk === 'meeting' ? '회의 (meeting)' : '나 (me)';
       div.innerHTML = `
         <div class="msg-bubble">
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src">#${line.seq} ${srcLang.toUpperCase()}</div>
+        <div class="msg-src">#${line.seq} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}">${spkLabel}</span></div>
       `;
       div.querySelector('.msg-text').textContent = line.text;
       chatList.appendChild(div);

@@ -1,5 +1,5 @@
 export { Room } from './room.js';
-import { verifyLicense } from './license.js';
+import { verifyLicense, mintLicense, computeSub } from './license.js';
 
 // Crockford Base32 (I, L, O, U 제외 32자)
 const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -44,6 +44,24 @@ function checkRateLimit(key, limit = 60) {
   return true;
 }
 
+// License issue rate limiting: max 5 per day per sub
+const issueLimitMap = new Map();
+
+function checkIssueLimit(sub) {
+  const now = Date.now();
+  let entry = issueLimitMap.get(sub);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 1, resetAt: now + 86400000 }; // 24 hours
+    issueLimitMap.set(sub, entry);
+    return true;
+  }
+  if (entry.count >= 5) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
 // In-memory fallback cache if Cache API is unavailable
 const memoryCache = new Map();
 
@@ -74,7 +92,47 @@ export default {
 
     const url = new URL(request.url);
 
-    // 0. 번역 엔드포인트: POST /translate
+    // 0. 토큰 발급 엔드포인트: POST /license/issue (부트스트랩 허용)
+    if (url.pathname === '/license/issue' && request.method === 'POST') {
+      let body;
+      try {
+        body = await request.json();
+      } catch (_) {
+        return jsonError('bad_request', 'Invalid JSON body', 400);
+      }
+
+      const { device } = body || {};
+      if (!device || typeof device !== 'string' || device.trim().length === 0) {
+        return jsonError('bad_request', 'device is required', 400);
+      }
+
+      const salt = env.LICENSE_SALT;
+      const secret = env.LICENSE_SECRET;
+      if (!salt || !secret) {
+        return jsonError('upstream', 'Server configuration error: missing salt or secret', 500);
+      }
+
+      // sha256(device + LICENSE_SALT) -> sub (원본은 저장·기록하지 않음)
+      const sub = await computeSub(device.trim(), salt);
+
+      // 같은 sub 로 하루 5회까지만 발급 (초과 429)
+      if (!checkIssueLimit(sub)) {
+        return jsonError('rate_limited', 'Daily license issuance limit reached (max 5 per day)', 429);
+      }
+
+      // 발급 토큰: exp = 30일, flags = 0x02 (camera)
+      const { token, exp } = await mintLicense(sub, 30, 0x02, secret);
+
+      return new Response(JSON.stringify({ token, exp }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
+    // 0-1. 번역 엔드포인트: POST /translate
     if (url.pathname === '/translate' && request.method === 'POST') {
       // 1) 라이선스 토큰 검증: 0x02 (camera) 또는 0x04 (meet) 필요
       const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x02 | 0x04);

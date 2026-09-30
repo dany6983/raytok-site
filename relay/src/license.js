@@ -1,5 +1,5 @@
 // Base64URL helpers
-function base64UrlEncode(bytes) {
+export function base64UrlEncode(bytes) {
   let str = '';
   for (let i = 0; i < bytes.length; i++) {
     str += String.fromCharCode(bytes[i]);
@@ -10,7 +10,7 @@ function base64UrlEncode(bytes) {
     .replace(/=+$/, '');
 }
 
-function base64UrlDecode(str) {
+export function base64UrlDecode(str) {
   let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
   while (base64.length % 4) {
     base64 += '=';
@@ -23,7 +23,7 @@ function base64UrlDecode(str) {
   return bytes;
 }
 
-async function verifyHmac(payloadStr, sigB64, secret) {
+export async function verifyHmac(payloadStr, sigB64, secret) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
@@ -36,6 +36,58 @@ async function verifyHmac(payloadStr, sigB64, secret) {
   const expectedSigBytes = await crypto.subtle.sign('HMAC', key, payloadBytes);
   const expectedSigB64 = base64UrlEncode(new Uint8Array(expectedSigBytes));
   return expectedSigB64 === sigB64;
+}
+
+/**
+ * Mint a License Bearer Token using Web Crypto API
+ * @param {string} sub
+ * @param {number} days
+ * @param {number} flags
+ * @param {string} secret
+ * @returns {Promise<{ token: string, exp: number }>}
+ */
+export async function mintLicense(sub, days, flags, secret) {
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = Math.floor(iat + days * 86400);
+
+  const payloadObj = {
+    sub,
+    exp,
+    flags: Number(flags),
+    iat
+  };
+
+  const payloadJson = JSON.stringify(payloadObj);
+  const enc = new TextEncoder();
+  const b64Payload = base64UrlEncode(enc.encode(payloadJson));
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const sigBytes = await crypto.subtle.sign('HMAC', key, enc.encode(payloadJson));
+  const b64Sig = base64UrlEncode(new Uint8Array(sigBytes));
+
+  return {
+    token: `${b64Payload}.${b64Sig}`,
+    exp
+  };
+}
+
+/**
+ * Compute hashed sub from device and salt: sha256(device + LICENSE_SALT)
+ * @param {string} device
+ * @param {string} salt
+ * @returns {Promise<string>}
+ */
+export async function computeSub(device, salt) {
+  const input = `${device}${salt}`;
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
