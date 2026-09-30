@@ -1,4 +1,5 @@
 export { Room } from './room.js';
+import { verifyLicense } from './license.js';
 
 // Crockford Base32 (I, L, O, U 제외 32자)
 const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -25,18 +26,18 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': '*'
 };
 
-// Rate limiting: 60 requests per minute per IP
+// Rate limiting: per key (sub / IP)
 const rateLimitMap = new Map();
 
-function checkRateLimit(ip) {
+function checkRateLimit(key, limit = 60) {
   const now = Date.now();
-  let entry = rateLimitMap.get(ip);
+  let entry = rateLimitMap.get(key);
   if (!entry || now > entry.resetAt) {
     entry = { count: 1, resetAt: now + 60000 };
-    rateLimitMap.set(ip, entry);
+    rateLimitMap.set(key, entry);
     return true;
   }
-  if (entry.count >= 60) {
+  if (entry.count >= limit) {
     return false;
   }
   entry.count++;
@@ -75,15 +76,26 @@ export default {
 
     // 0. 번역 엔드포인트: POST /translate
     if (url.pathname === '/translate' && request.method === 'POST') {
-      // 1) Rate Limit: IP당 분당 60요청
+      // 1) 라이선스 토큰 검증: 0x02 (camera) 또는 0x04 (meet) 필요
+      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x02 | 0x04);
+      if (!licenseRes.valid) {
+        return jsonError(licenseRes.error, licenseRes.message, licenseRes.status);
+      }
+
+      // 2) Rate Limit: 토큰 sub당 분당 60회 (IP 한도는 보조로 유지)
+      const sub = licenseRes.payload.sub;
+      if (!checkRateLimit(`sub:${sub}`)) {
+        return jsonError('rate_limited', 'Rate limit exceeded for token subject (60 requests per minute)', 429);
+      }
+
       const clientIp = request.headers.get('CF-Connecting-IP') ||
                        request.headers.get('X-Forwarded-For') ||
                        '127.0.0.1';
-      if (!checkRateLimit(clientIp)) {
-        return jsonError('rate_limited', 'Rate limit exceeded (60 requests per minute)', 429);
+      if (!checkRateLimit(`ip:${clientIp}`, 300)) {
+        return jsonError('rate_limited', 'Rate limit exceeded for IP (300 requests per minute)', 429);
       }
 
-      // 2) Body parsing
+      // 3) Body parsing
       let body;
       try {
         body = await request.json();
@@ -93,7 +105,7 @@ export default {
 
       const { q, source, target } = body || {};
 
-      // 3) q 배열 검사 (최대 50개, 합계 5000자)
+      // 4) q 배열 검사 (최대 50개, 합계 5000자)
       if (!Array.isArray(q) || q.length === 0 || q.length > 50) {
         return jsonError('too_many', 'q must be an array with 1 to 50 items', 400);
       }
@@ -110,7 +122,7 @@ export default {
         return jsonError('too_long', 'Total characters in q cannot exceed 5000', 400);
       }
 
-      // 4) 언어 코드 검사
+      // 5) 언어 코드 검사
       if (!target || typeof target !== 'string' || !LANG_CODE_REGEX.test(target.trim())) {
         return jsonError('bad_lang', 'Invalid or missing target language', 400);
       }
@@ -124,7 +136,7 @@ export default {
         sourceLang = source.trim();
       }
 
-      // 5) 캐시 조회 (Workers Cache API + Memory Fallback)
+      // 6) 캐시 조회 (Workers Cache API + Memory Fallback)
       let cache = null;
       try {
         if (typeof caches !== 'undefined' && caches.default) {
@@ -165,7 +177,7 @@ export default {
         }
       }
 
-      // 6) 상류(Google Translate v3 REST) 호출 (미적중분 1회 묶음 발송)
+      // 7) 상류(Google Translate v3 REST) 호출 (미적중분 1회 묶음 발송)
       if (uncachedTexts.length > 0) {
         const apiKey = env.GOOGLE_TRANSLATE_KEY;
         if (!apiKey) {

@@ -1,7 +1,8 @@
 {
   "scripts": {
     "test:smoke": "node test/smoke.mjs",
-    "test:translate": "node test/translate.mjs"
+    "test:translate": "node test/translate.mjs",
+    "test:license": "node test/license.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.143.0",

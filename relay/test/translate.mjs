@@ -1,4 +1,27 @@
+import { mintLicenseToken } from '../tools/mint-license.mjs';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BASE_URL = process.env.RELAY_URL || 'http://127.0.0.1:8787';
+
+let secret = process.env.LICENSE_SECRET;
+if (!secret) {
+  const devVarsPath = path.resolve(__dirname, '../.dev.vars');
+  if (fs.existsSync(devVarsPath)) {
+    const lines = fs.readFileSync(devVarsPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const match = line.match(/^LICENSE_SECRET=(.*)$/);
+      if (match) {
+        secret = match[1].trim();
+        break;
+      }
+    }
+  }
+}
+
+const testToken = mintLicenseToken({ sub: 'translate-test-dev', days: 30, flags: 6, secret });
 
 async function main() {
   console.log('=== Relay /translate Endpoint Test ===');
@@ -16,7 +39,10 @@ async function main() {
   const startT1 = Date.now();
   const res1 = await fetch(`${BASE_URL}/translate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${testToken}`
+    },
     body: JSON.stringify(t1Body)
   });
   const elapsedT1 = Date.now() - startT1;
@@ -44,7 +70,10 @@ async function main() {
   const startT2 = Date.now();
   const res2 = await fetch(`${BASE_URL}/translate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${testToken}`
+    },
     body: JSON.stringify(t1Body)
   });
   const elapsedT2 = Date.now() - startT2;
@@ -67,7 +96,10 @@ async function main() {
   const q51 = Array.from({ length: 51 }, (_, i) => `Sentence #${i + 1}`);
   const res3 = await fetch(`${BASE_URL}/translate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${testToken}`
+    },
     body: JSON.stringify({ q: q51, source: 'en', target: 'ko' })
   });
   const data3 = await res3.json();
@@ -84,7 +116,10 @@ async function main() {
   console.log('\n[Test 4] Invalid language code test -> bad_lang expected');
   const res4 = await fetch(`${BASE_URL}/translate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${testToken}`
+    },
     body: JSON.stringify({ q: ['Hello'], source: 'en', target: 'invalid_code_123456!' })
   });
   const data4 = await res4.json();
