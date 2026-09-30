@@ -3,4 +3,6 @@ package-lock.json
 relay/dev.log
 relay/dev.err
 .wrangler/
+.dev.vars
+relay/.dev.vars
 

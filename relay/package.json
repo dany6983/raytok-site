@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "test:smoke": "node test/smoke.mjs",
+    "test:translate": "node test/translate.mjs"
+  },
   "devDependencies": {
     "wrangler": "^4.143.0",
     "ws": "^8.22.0"
