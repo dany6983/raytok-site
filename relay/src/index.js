@@ -180,20 +180,12 @@ export default {
 
     // 0-0. 관리자 특정 IP 레이트 리밋 리셋: POST /limit/reset
     if (url.pathname === '/limit/reset' && request.method === 'POST') {
-      const adminSecret = (env.ADMIN_SECRET || '').trim();
-      if (!adminSecret) {
-        return jsonError('upstream', 'Server configuration error: ADMIN_SECRET is not configured', 500);
-      }
+      const clientIp = request.headers.get('CF-Connecting-IP') ||
+                       request.headers.get('X-Forwarded-For') ||
+                       '127.0.0.1';
 
-      const authHeader = request.headers.get('Authorization') || '';
-      const customSecret = request.headers.get('X-Admin-Secret') || '';
-      const providedSecret = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : customSecret.trim();
-
-      if (providedSecret !== adminSecret) {
-        return jsonError('unauthorized', 'Invalid admin secret', 401);
-      }
-
-      // 엔드포인트 자체 한도: 하루 10회
+      // 1) 보안: 비밀값 무차별 대입(브루트포스) 방지를 위해 시크릿 검증 전 엔드포인트 자체 한도 검사를 선행 실행
+      // 전역 시도 한도 (하루 10회)
       try {
         const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
         const limiter = env.ROOM.get(limiterId);
@@ -208,8 +200,28 @@ export default {
             return jsonError('rate_limited', 'Admin reset daily quota exceeded (max 10 per day)', 429);
           }
         }
-      } catch (_) {}
+      } catch (_) {
+        if (!checkRateLimit(`admin_reset_ip:${clientIp}`, 5)) {
+          return jsonError('rate_limited', 'Too many admin reset attempts from this IP', 429);
+        }
+      }
 
+      // 2) 시크릿 설정 여부 검사
+      const adminSecret = (env.ADMIN_SECRET || '').trim();
+      if (!adminSecret) {
+        return jsonError('upstream', 'Server configuration error: ADMIN_SECRET is not configured', 500);
+      }
+
+      // 3) 시크릿 일치 검증
+      const authHeader = request.headers.get('Authorization') || '';
+      const customSecret = request.headers.get('X-Admin-Secret') || '';
+      const providedSecret = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : customSecret.trim();
+
+      if (providedSecret !== adminSecret) {
+        return jsonError('unauthorized', 'Invalid admin secret', 401);
+      }
+
+      // 4) 바디 파싱 및 단일 IP 검증 (전체 초기화 및 와일드카드 금지)
       let body;
       try {
         body = await request.json();
@@ -223,7 +235,7 @@ export default {
       }
       const targetIp = ip.trim();
 
-      // 특정 IP 리셋 실행 (DO 내부)
+      // 5) 특정 IP 리셋 실행 (DO 내부)
       const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
       const limiter = env.ROOM.get(limiterId);
       await limiter.fetch(new Request('http://internal/limit/reset', {
@@ -236,7 +248,7 @@ export default {
       rateLimitMap.delete(`issue_ip:${targetIp}`);
       rateLimitMap.delete(`ip:${targetIp}`);
 
-      // 로그 남기기: 언제 어느 IP를 지웠는지
+      // 6) 감사 로그 남기기: 언제 어느 IP를 지웠는지
       console.log(`[ADMIN_RESET] ${new Date().toISOString()} reset limits for IP: ${targetIp}`);
 
       return new Response(JSON.stringify({ ok: true, reset_ip: targetIp }), {
