@@ -1,406 +1,513 @@
 {
  "ver": 1,
  "lang": "en",
+ "cats": {
+  "1": "Start/Stop Task",
+  "2": "Danger Warning",
+  "3": "Wearing protective gear",
+  "4": "Emergency Actions",
+  "5": "Rest and Meal"
+ },
  "items": [
   {
    "id": 1,
-   "tr": "We will now begin our work."
+   "cat": 1,
+   "tr": "I will start the work now."
   },
   {
    "id": 2,
-   "tr": "Please gather around. We will hold the pre-work safety meeting."
+   "cat": 1,
+   "tr": "Everyone, please gather. We will proceed with the pre-work safety inspection meeting."
   },
   {
    "id": 3,
-   "tr": "I will share today's work details."
+   "cat": 1,
+   "tr": "I will deliver today's work details."
   },
   {
    "id": 4,
-   "tr": "Please check the condition of the machinery and tools before starting work."
+   "cat": 1,
+   "tr": "Please check the condition of the machine and tools before starting work."
   },
   {
    "id": 5,
-   "tr": "If you feel unwell or have any physical issues, please let us know immediately."
+   "cat": 1,
+   "tr": "Please let me know immediately if you experience any physical abnormalities or are not feeling well."
   },
   {
    "id": 6,
-   "tr": "Please use only the designated pathways within the work area."
+   "cat": 1,
+   "tr": "Please move only through the designated passages within the work area."
   },
   {
    "id": 7,
-   "tr": "Please proceed with the work in sequence as instructed by the supervisor."
+   "cat": 1,
+   "tr": "Please perform the work in order according to the instructions of the work instructor."
   },
   {
    "id": 8,
-   "tr": "Do not operate any machinery or change settings without authorization."
+   "cat": 1,
+   "tr": "Do not arbitrarily operate the machine or change the settings."
   },
   {
    "id": 9,
-   "tr": "Never work alone in areas where two-person buddy operations are required."
+   "cat": 1,
+   "tr": "Never work alone in a two-person work area."
   },
   {
    "id": 10,
-   "tr": "Please verify the locations of the power switches and emergency stop buttons in advance."
+   "cat": 1,
+   "tr": "Please check the location of the power switch and emergency stop button in advance."
   },
   {
    "id": 11,
-   "tr": "Clear any obstacles around the work area and keep it clean and organized."
+   "cat": 1,
+   "tr": "Please clear obstacles around the work area and tidy up."
   },
   {
    "id": 12,
-   "tr": "Please check if safety devices or protective guards are functioning properly."
+   "cat": 1,
+   "tr": "Check if the safety device or protective cover is functioning properly."
   },
   {
    "id": 13,
-   "tr": "Using smartphones and wearing earphones during work is strictly prohibited."
+   "cat": 1,
+   "tr": "Using smartphones and wearing earphones during work is prohibited."
   },
   {
    "id": 14,
-   "tr": "If you detect any hazard, stop work immediately and report it."
+   "cat": 1,
+   "tr": "If you discover any risk factors, stop the work immediately and report it."
   },
   {
    "id": 15,
-   "tr": "Shift handover details must be thoroughly verified by the oncoming workers."
+   "cat": 1,
+   "tr": "Shift workers, please check the handover details accurately."
   },
   {
    "id": 16,
-   "tr": "Do not rush high-risk work; please adhere strictly to safety regulations."
+   "cat": 1,
+   "tr": "Do not rush during dangerous work, and follow safety regulations."
   },
   {
    "id": 17,
-   "tr": "Please temporarily pause the work."
+   "cat": 1,
+   "tr": "Please pause the operation."
   },
   {
    "id": 18,
-   "tr": "All work for today has been completed."
+   "cat": 1,
+   "tr": "Ending all tasks for today."
   },
   {
    "id": 19,
-   "tr": "After finishing work, please turn off the machinery and unplug it."
+   "cat": 1,
+   "tr": "After finishing the work, turn off the machine power and unplug it."
   },
   {
    "id": 20,
-   "tr": "Please return used tools and protective equipment to their designated places."
+   "cat": 1,
+   "tr": "Please put used tools and protective equipment back in their proper places."
   },
   {
    "id": 21,
-   "tr": "Danger! Please step back."
+   "cat": 2,
+   "tr": "It is dangerous! Step back."
   },
   {
    "id": 22,
-   "tr": "To avoid electric shock, do not touch electrical equipment with wet hands."
+   "cat": 2,
+   "tr": "Do not touch electrical equipment with wet hands due to the risk of electric shock."
   },
   {
    "id": 23,
-   "tr": "This is a pinch point hazard zone. Watch your hands and loose clothing."
+   "cat": 2,
+   "tr": "This is a pinch (entrapment) risk zone. Please watch your hands and clothing."
   },
   {
    "id": 24,
-   "tr": "This is a fall hazard zone. Do not lean against the guardrails."
+   "cat": 2,
+   "tr": "This is a fall hazard zone. Do not lean on the railing."
   },
   {
    "id": 25,
-   "tr": "Watch for falling objects. Always look up and check overhead."
+   "cat": 2,
+   "tr": "This is a falling object warning zone. Please always keep an eye on the area above."
   },
   {
    "id": 26,
-   "tr": "A forklift is approaching. Please stop and verify it is safe."
+   "cat": 2,
+   "tr": "A forklift is approaching. Please stop and ensure safety."
   },
   {
    "id": 27,
-   "tr": "Crane lifting operations are underway. Do not walk under suspended loads."
+   "cat": 2,
+   "tr": "Crane lifting operation in progress. Please do not pass under the lifted object."
   },
   {
    "id": 28,
-   "tr": "Caution, high-temperature equipment! Do not touch the surface to prevent burns."
+   "cat": 2,
+   "tr": "Caution regarding high-temperature equipment! Do not touch the surface due to the risk of burns."
   },
   {
    "id": 29,
-   "tr": "Caution, rotating parts! Never put your hands inside while the machine is running."
+   "cat": 2,
+   "tr": "Caution: Rotating parts! Do not put your hands in while the machine is rotating."
   },
   {
    "id": 30,
-   "tr": "This is a fire hazard area. Smoking and open flames are strictly prohibited."
+   "cat": 2,
+   "tr": "This is a fire hazard zone. Smoking and the use of open flames are strictly prohibited."
   },
   {
    "id": 31,
-   "tr": "Toxic gas and suffocation hazard zone. Do not enter confined spaces without authorization."
+   "cat": 2,
+   "tr": "This is a toxic gas and suffocation hazard zone. Do not enter the enclosed space without permission."
   },
   {
    "id": 32,
+   "cat": 2,
    "tr": "Caution when handling chemicals! Avoid skin contact and inhalation."
   },
   {
    "id": 33,
-   "tr": "The floor is slippery, so please watch your step to avoid slipping."
+   "cat": 2,
+   "tr": "The floor is slippery, so please be careful not to slip when walking."
   },
   {
    "id": 34,
-   "tr": "When lifting heavy objects, bend your knees to protect your back."
+   "cat": 2,
+   "tr": "Bend your knees when lifting heavy objects to avoid injuring your back."
   },
   {
    "id": 35,
-   "tr": "Danger of collapse or tipping. Do not lean against stacked materials."
+   "cat": 2,
+   "tr": "Do not lean on the cargo as there is a risk of collapse and tipping."
   },
   {
    "id": 36,
-   "tr": "Do not perform welding or hot work near flammable materials."
+   "cat": 2,
+   "tr": "Do not perform welding or flame work near flammable materials."
   },
   {
    "id": 37,
-   "tr": "Do not look directly at lasers or welding arcs with naked eyes."
+   "cat": 2,
+   "tr": "Do not look directly at laser or welding lights with your naked eyes."
   },
   {
    "id": 38,
-   "tr": "Do not expose high-pressure gas cylinders to impact or direct sunlight."
+   "cat": 2,
+   "tr": "Do not expose high-pressure gas containers to impact or direct sunlight."
   },
   {
    "id": 39,
-   "tr": "Always check the pressure level when opening or closing valves and piping."
+   "cat": 2,
+   "tr": "Be sure to check the pressure status when opening and closing valves and piping."
   },
   {
    "id": 40,
-   "tr": "High dust area. Please turn on the ventilation system."
+   "cat": 2,
+   "tr": "This is an area with high dust levels. Please turn on the ventilation system."
   },
   {
    "id": 41,
-   "tr": "Do not stand in pathways designated for vehicles and heavy equipment."
+   "cat": 2,
+   "tr": "Do not stand in the passageways for vehicles and heavy equipment."
   },
   {
    "id": 42,
-   "tr": "Do not stack items beyond the designated loading height limit."
+   "cat": 2,
+   "tr": "Do not stack items beyond the loading height limit."
   },
   {
    "id": 43,
-   "tr": "Please check and strictly follow safety signs and hazard warnings."
+   "cat": 2,
+   "tr": "Be sure to check and comply with safety signs and hazard signs."
   },
   {
    "id": 44,
-   "tr": "Do not climb using uncertified ladders or unstable platforms."
+   "cat": 2,
+   "tr": "Do not step on uncertified ladders or unstable platforms."
   },
   {
    "id": 45,
-   "tr": "Hang a 'Do Not Operate - Under Maintenance' sign during machine inspections."
+   "cat": 2,
+   "tr": "Please attach a 'Do Not Operate During Inspection' sign during machine inspection."
   },
   {
    "id": 46,
-   "tr": "Always fasten your safety helmet chin strap before entering the worksite."
+   "cat": 3,
+   "tr": "Be sure to fasten your safety helmet chin strap before entering the workplace."
   },
   {
    "id": 47,
-   "tr": "Please wear safety shoes to protect your feet."
+   "cat": 3,
+   "tr": "Be sure to wear safety shoes to protect your feet."
   },
   {
    "id": 48,
-   "tr": "Wear a safety harness and secure the safety hook when working at heights."
+   "cat": 3,
+   "tr": "Wear a safety harness and fasten the safety hook when working at heights."
   },
   {
    "id": 49,
-   "tr": "Wear a dust mask or respirator when working with dust and hazardous substances."
+   "cat": 3,
+   "tr": "Wear a dust mask or gas mask when working with dust and hazardous materials."
   },
   {
    "id": 50,
-   "tr": "Always wear safety glasses as flying debris may occur."
+   "cat": 3,
+   "tr": "Be sure to wear safety glasses as debris may fly."
   },
   {
    "id": 51,
-   "tr": "Please wear earplugs in noisy work areas."
+   "cat": 3,
+   "tr": "Please wear earplugs (hearing protection) in noisy workplaces."
   },
   {
    "id": 52,
-   "tr": "Wearing gloves that can get caught is prohibited when operating rotating machinery."
+   "cat": 3,
+   "tr": "Wearing gloves that may get caught when operating rotating machinery is prohibited."
   },
   {
    "id": 53,
+   "cat": 3,
    "tr": "Wear chemical-resistant rubber gloves and protective clothing when handling chemicals."
   },
   {
    "id": 54,
-   "tr": "Wear a welding face shield and leather gloves during welding work."
+   "cat": 3,
+   "tr": "Wear a welding mask and leather gloves when welding."
   },
   {
    "id": 55,
+   "cat": 3,
    "tr": "Wear cut-resistant gloves when cutting or handling sharp materials."
   },
   {
    "id": 56,
-   "tr": "Inspect your protective equipment daily for any damage or wear."
+   "cat": 3,
+   "tr": "Check the protective equipment daily for any damage or breakage."
   },
   {
    "id": 57,
-   "tr": "Replace damaged helmets or protective gear immediately with new ones."
+   "cat": 3,
+   "tr": "Replace damaged safety helmets or protective gear with new ones immediately."
   },
   {
    "id": 58,
-   "tr": "Please wear a reflective vest when working at night or in dark places."
+   "cat": 3,
+   "tr": "Wear a reflective vest when working at night or in dark places."
   },
   {
    "id": 59,
-   "tr": "Wear heat-resistant or cold-weather clothing appropriate for the working environment."
+   "cat": 3,
+   "tr": "Please wear heat-resistant and cold-resistant clothing suitable for the work environment."
   },
   {
    "id": 60,
-   "tr": "Please tie long hair back neatly inside your safety helmet."
+   "cat": 3,
+   "tr": "Please tie your long hair neatly inside your safety helmet."
   },
   {
    "id": 61,
-   "tr": "Loose workwear or drawstrings can get caught in machinery, so please keep them neat."
+   "cat": 3,
+   "tr": "Please keep loose work clothes or clothing with strings neat, as they may get caught in the machine."
   },
   {
    "id": 62,
-   "tr": "Please lower your face shield when performing insulation or grinding work."
+   "cat": 3,
+   "tr": "Lower the safety shield and proceed with insulation and grinding work."
   },
   {
    "id": 63,
-   "tr": "Wear insulated gloves and insulated shoes when performing electrical inspections."
+   "cat": 3,
+   "tr": "Wear insulating gloves and insulating shoes when performing electrical inspections."
   },
   {
    "id": 64,
-   "tr": "Access to the work area is restricted without proper protective equipment."
+   "cat": 3,
+   "tr": "Entry to the workplace is restricted if protective equipment is not worn."
   },
   {
    "id": 65,
-   "tr": "Clean your protective gear after work and store it in the designated locker."
+   "cat": 3,
+   "tr": "After finishing work, wipe the protective equipment clean and store it in the storage box."
   },
   {
    "id": 66,
-   "tr": "If the emergency alarm sounds, stop working immediately and evacuate."
+   "cat": 4,
+   "tr": "If the emergency bell rings, stop work immediately and evacuate."
   },
   {
    "id": 67,
-   "tr": "Press the emergency stop button to halt the machine immediately."
+   "cat": 4,
+   "tr": "Press the emergency stop button to stop the machine immediately."
   },
   {
    "id": 68,
-   "tr": "Fire! Shout 'Fire!' loudly to alert everyone around you."
+   "cat": 4,
+   "tr": "Fire! Shout \"Fire!\" loudly and alert those around you."
   },
   {
    "id": 69,
-   "tr": "Cover your nose and mouth with a wet towel or cloth, stay low, and evacuate."
+   "cat": 4,
+   "tr": "Cover your nose and mouth with a wet towel or clothing, and evacuate while keeping your posture low."
   },
   {
    "id": 70,
-   "tr": "Do not use elevators; please escape using the emergency stairs."
+   "cat": 4,
+   "tr": "Do not take the elevator; use the emergency stairs to escape."
   },
   {
    "id": 71,
-   "tr": "In case of power outage, calmly follow the emergency exit signs."
+   "cat": 4,
+   "tr": "In the event of a power outage, remain calm and follow the emergency exit signs."
   },
   {
    "id": 72,
-   "tr": "Locate the fire extinguisher, and pull the safety pin to suppress early-stage fire."
+   "cat": 4,
+   "tr": "Check the location of the fire extinguisher and pull the safety pin to extinguish the initial fire."
   },
   {
    "id": 73,
-   "tr": "If someone is injured, notify the supervisor immediately."
+   "cat": 4,
+   "tr": "If an injury occurs, notify the supervisor immediately."
   },
   {
    "id": 74,
-   "tr": "If the person is unconscious, call emergency services and perform CPR."
+   "cat": 4,
+   "tr": "If the patient is unconscious, call 119 and perform cardiopulmonary resuscitation."
   },
   {
    "id": 75,
-   "tr": "If chemicals splash on skin or eyes, flush with the emergency eyewash for at least 15 minutes."
+   "cat": 4,
+   "tr": "If chemicals splash into your eyes or skin, wash with an emergency washcloth for at least 15 minutes."
   },
   {
    "id": 76,
-   "tr": "If a gas leak is suspected, do not turn on light switches; open windows to ventilate."
+   "cat": 4,
+   "tr": "If you suspect a gas leak, do not turn on the light switch; instead, open the windows to ventilate."
   },
   {
    "id": 77,
-   "tr": "Gather quickly at the designated outdoor assembly point for a head count."
+   "cat": 4,
+   "tr": "Please gather promptly at the designated outdoor assembly point and check the number of personnel."
   },
   {
    "id": 78,
-   "tr": "Do not block emergency exits or pathways with stacked items."
+   "cat": 4,
+   "tr": "Do not store items in emergency exits and emergency passageways."
   },
   {
    "id": 79,
-   "tr": "In an earthquake, take cover under a sturdy table and protect your head."
+   "cat": 4,
+   "tr": "In the event of an earthquake, hide under a sturdy table and protect your head."
   },
   {
    "id": 80,
-   "tr": "If a collapse or falling object hazard occurs, cover your head and flee to a safe place."
+   "cat": 4,
+   "tr": "In the event of a collapse or falling objects, cover your head and move to a safe place."
   },
   {
    "id": 81,
-   "tr": "In case of electrocution, do not touch the person directly; cut the power source first."
+   "cat": 4,
+   "tr": "In the event of an electric shock, do not touch it directly; cut off the power first."
   },
   {
    "id": 82,
-   "tr": "Do not disturb the accident scene; wait for instructions from management."
+   "cat": 4,
+   "tr": "Do not arbitrarily damage the accident scene and wait for instructions from the manager."
   },
   {
    "id": 83,
-   "tr": "Please cooperate with the instructions of emergency medical technicians and firefighters."
+   "cat": 4,
+   "tr": "Please cooperate with the guidance of the 119 paramedics and firefighters."
   },
   {
    "id": 84,
-   "tr": "Always be aware of the location of the onsite first aid kit."
+   "cat": 4,
+   "tr": "Always be familiar with the location of the first aid kit at the scene."
   },
   {
    "id": 85,
-   "tr": "Please participate actively in emergency evacuation drills."
+   "cat": 4,
+   "tr": "Please actively participate in emergency evacuation drills."
   },
   {
    "id": 86,
-   "tr": "We will now take a 15-minute break."
+   "cat": 5,
+   "tr": "It is now a 15-minute break."
   },
   {
    "id": 87,
-   "tr": "Put down your work tools and move to the designated break room."
+   "cat": 5,
+   "tr": "Please put down your work tools and move to the designated break room."
   },
   {
    "id": 88,
-   "tr": "Heatwave warning! Please rest in a cool shade and drink plenty of water."
+   "cat": 5,
+   "tr": "Heatwave alert! Rest in the cool shade and drink plenty of water."
   },
   {
    "id": 89,
-   "tr": "Cold wave warning! Drink warm beverages and stay warm."
+   "cat": 5,
+   "tr": "Cold wave alert! Drink warm beverages and take care to stay warm."
   },
   {
    "id": 90,
-   "tr": "Do not stay near hazard zones or machinery during break times."
+   "cat": 5,
+   "tr": "Do not stay in danger zones or near machinery during breaks."
   },
   {
    "id": 91,
-   "tr": "It is lunchtime. Please proceed to the cafeteria."
+   "cat": 5,
+   "tr": "It is lunchtime. Please go to the cafeteria."
   },
   {
    "id": 92,
-   "tr": "Always wash your hands thoroughly before meals."
+   "cat": 5,
+   "tr": "Please be sure to wash your hands thoroughly before meals."
   },
   {
    "id": 93,
-   "tr": "After eating, return to the work area at least 10 minutes before work resumes."
+   "cat": 5,
+   "tr": "Please return to the workplace 10 minutes before resuming work after the meal."
   },
   {
    "id": 94,
-   "tr": "Do light stretching before starting work after the break to warm up."
+   "cat": 5,
+   "tr": "Loosen up your body with light stretching after a break before starting work."
   },
   {
    "id": 95,
-   "tr": "Please keep quiet and tidy up in the break room."
+   "cat": 5,
+   "tr": "Please maintain silence and keep the lounge tidy."
   },
   {
    "id": 96,
-   "tr": "Smoking is strictly permitted only in designated smoking areas."
+   "cat": 5,
+   "tr": "Please be sure to smoke only in designated smoking areas."
   },
   {
    "id": 97,
-   "tr": "Drinking alcohol or bringing alcoholic beverages into the workplace is strictly prohibited."
+   "cat": 5,
+   "tr": "Drinking alcohol and bringing alcohol into the workplace are strictly prohibited."
   },
   {
    "id": 98,
-   "tr": "There are 5 minutes left before resuming work. Please get ready."
+   "cat": 5,
+   "tr": "Work will resume in 5 minutes. Please prepare for work."
   },
   {
    "id": 99,
-   "tr": "Prevent heat illness by consuming adequate water and salt."
+   "cat": 5,
+   "tr": "Prevent heat-related illnesses by consuming adequate fluids and salt."
   },
   {
    "id": 100,
-   "tr": "We will start the afternoon work. Please move to your respective stations."
+   "cat": 5,
+   "tr": "We will begin the afternoon work. Please move to your respective positions."
   }
  ]
 }

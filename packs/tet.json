@@ -1,106 +1,513 @@
 {
  "ver": 1,
  "lang": "tet",
+ "cats": {
+  "1": "Hahú/Hapara Tarefa",
+  "2": "Alerta kona-ba perigu",
+  "3": "Uza ekipamentu protesaun",
+  "4": "Asaun Emerjénsia sira",
+  "5": "Deskansa no han"
+ },
  "items": [
-  {"id": 1, "tr": "Ita sei komesa ita-nia serbisu agora."},
-  {"id": 2, "tr": "Favór ida halibur hamutuk. Ita sei hala'o reuniaun seguransa nian antes komesa serbisu."},
-  {"id": 3, "tr": "Ha'u sei fahe detalle serbisu nian ba ohin."},
-  {"id": 4, "tr": "Favór ida verifika kondisaun hosi mákina no kail sira antes komesa serbisu."},
-  {"id": 5, "tr": "Se ita sente la di'ak ka iha problema fíziku ruma, favór ida fó-hatene ami kedas."},
-  {"id": 6, "tr": "Favór ida uza de'it dalan ne'ebé deside tiha ona iha área serbisu laran."},
-  {"id": 7, "tr": "Favór ida hala'o serbisu tuir sekuénsia ne'ebé fó-hatene hosi supervisór."},
-  {"id": 8, "tr": "Keta ezekuta mákina ruma ka troka konfigurasaun sira lahó autorizasaun."},
-  {"id": 9, "tr": "Keta serbisu mesak iha área ne'ebé presiza serbisu hamutuk hosi ema na'in-rua."},
-  {"id": 10, "tr": "Favór ida verifika uluk fatin switch kbiit nian no kadiak parajen urjénsia nian."},
-  {"id": 11, "tr": "Hamoos tuda-malik hotu iha área serbisu nian no manteun nafatin hamoos no ordenadu."},
-  {"id": 12, "tr": "Favór ida verifika se kadiak seguransa ka kapa proteksaun nian funksiona ho di'ak."},
-  {"id": 13, "tr": "Uza telemóvel no uza fone-gardiak hodi rona múzika prohibited tebes durante serbisu."},
-  {"id": 14, "tr": "Se ita hetan ruma ne'ebé perigu, para serbisu kedas no relata."},
-  {"id": 15, "tr": "Detalle entrega serbisu nian tenke verifika ho didi'ak hosi serbisu-na'in foun."},
-  {"id": 16, "tr": "Keta hakilar serbisu ne'ebé iha risku boot; favór ida tuir nafatin regulamentu seguransa nian."},
-  {"id": 17, "tr": "Favór ida para serbisu provizoriamente."},
-  {"id": 18, "tr": "Serbisu hotu-hotu ba ohin remata ona."},
-  {"id": 19, "tr": "Depois de remata serbisu, favór ida hamate mákina no hasai fiu hosi tomada."},
-  {"id": 20, "tr": "Favór ida hatutan fali kail no ekipamentu proteksaun nian ba sira-nia fatin orijinál."},
-  {"id": 21, "tr": "Perigu! Favór ida hakat ba kotuk."},
-  {"id": 22, "tr": "Atu evita xoke elétriku, keta kaer ekipamentu elétriku ho liman ne'ebé bokon."},
-  {"id": 23, "tr": "Ne'e mak área risku ba kapa-liman. Atensaun ba liman no roupa ne'ebé naruk ka luan."},
-  {"id": 24, "tr": "Ne'e mak área risku atu monu. Keta sadere ba korre-seguransa sira."},
-  {"id": 25, "tr": "Atensaun ba buat ne'ebé atu monu hosi leten. Hateke ba leten nafatin hodi verifika."},
-  {"id": 26, "tr": "Forklift ida daudaun besik ona. Favór ida para no verifika katak seguru duni."},
-  {"id": 27, "tr": "Serbisu hasae sasán nian ho kadiak guindaste daudaun hala'o hela. Keta la'o iha sasán ne'ebé tara nia okos."},
-  {"id": 28, "tr": "Atensaun, ekipamentu ho temperatura aas! Keta kaer superfísie hodi evita kanek ho ahi."},
-  {"id": 29, "tr": "Atensaun, parte sira ne'ebé roda! Keta hatama liman ba laran bainhira mákina daudaun funksiona."},
-  {"id": 30, "tr": "Ne'e mak área risku ba ahi. Fuma no uza ahi nakloke prohibited tebes."},
-  {"id": 31, "tr": "Área perigu ba gás venenu no sufokamentu. Keta hatama laran fatin ne'ebé kloot lahó autorizasaun."},
-  {"id": 32, "tr": "Atensaun bainhira kaer kímiku sira! Evita kontaktu ho oas no keta dada iis kímiku sira."},
-  {"id": 33, "tr": "Rai-kotuk monu-kraik (mabeur), tan ne'e hateke didi'ak ba pasu atu labele monu."},
-  {"id": 34, "tr": "Bainhira foti sasán todan, foti hodi luri ita-nia ain-tur atu proteje ruin-kotuk."},
-  {"id": 35, "tr": "Iha perigu atu monu ka baku-fila. Keta sadere ba sasán sira ne'ebé tau hamutuk."},
-  {"id": 36, "tr": "Keta hala'o soldadura ka serbisu ahi-lakan besik material sira ne'ebé fasil atu lakan."},
-  {"id": 37, "tr": "Keta hateke loloos ba lazar ka ahi soldadura nian ho matan de'it."},
-  {"id": 38, "tr": "Keta fó impaktu ka fó loro-matan loloos ba botija gás ho presaun aas."},
-  {"id": 39, "tr": "Verifika nafatin presaun nian bainhira loke ka xave tula-fiu no kano sira."},
-  {"id": 40, "tr": "Área ne'ebé iha poeira barak. Favór ida lakan sistema ventilasaun nian."},
-  {"id": 41, "tr": "Keta hamriik iha dalan ne'ebé deside tiha ona ba veíkulu no ekipamentu todan sira."},
-  {"id": 42, "tr": "Keta tula sasán liu fali tula-leten ne'ebé deside tiha ona."},
-  {"id": 43, "tr": "Favór ida verifika no tuir didi'ak sinal seguransa no avizu perigu sira."},
-  {"id": 44, "tr": "Keta sa'e ho uza eskada ne'ebé la seguru ka plataforma ne'ebé labele metin."},
-  {"id": 45, "tr": "Tara dezenu 'Keta Ezekuta - Daudaun Manutensaun' durante inspesaun mákina nian."},
-  {"id": 46, "tr": "Korre nafatin fita-seguransa kaskete nian antes tama ba fatin serbisu."},
-  {"id": 47, "tr": "Favór ida uza sapatu seguransa nian hodi proteje ita-nia ain."},
-  {"id": 48, "tr": "Uza kintu-seguransa ba leten no kesi kail-seguransa bainhira serbisu iha fatin aas."},
-  {"id": 49, "tr": "Uza máskara poeira ka respiradór bainhira serbisu ho poeira no substánsia perigu sira."},
-  {"id": 50, "tr": "Uza ókulu seguransa nian nafatin tanba bele iha buat ki'ik ne'ebé semo."},
-  {"id": 51, "tr": "Favór ida uza protetór-tanba iha área serbisu ne'ebé barullu boot."},
-  {"id": 52, "tr": "Prohibidu uza luvas ne'ebé bele luri ba laran bainhira ezekuta mákina ne'ebé roda."},
-  {"id": 53, "tr": "Uza luvas borracha ne'ebé tahan kímiku no roupa proteksaun bainhira kaer kímiku sira."},
-  {"id": 54, "tr": "Uza kaskete soldadura no luvas kulit durante serbisu soldadura nian."},
-  {"id": 55, "tr": "Uza luvas ne'ebé tahan ba buat kro'at bainhira tesi ka kaer sasán kro'at sira."},
-  {"id": 56, "tr": "Inspeksiona ita-nia ekipamentu proteksaun loron-loron hodi verifika se iha estragu ruma."},
-  {"id": 57, "tr": "Troka kaskete ka ekipamentu proteksaun ne'ebé estragu ona ho foun kedas."},
-  {"id": 58, "tr": "Favór ida uza koletor refletivu bainhira serbisu iha kalan ka iha fatin nakukun."},
-  {"id": 59, "tr": "Uza roupa ne'ebé tahan manas ka roupa malirin ne'ebé hili tuir fatin serbisu."},
-  {"id": 60, "tr": "Favór ida kesi fuuk naruk ho didi'ak iha kaskete seguransa laran."},
-  {"id": 61, "tr": "Roupa serbisu ne'ebé luan ka kintu naruk bele luri ba mákina laran, nune'e favór ida hamoos di'ak."},
-  {"id": 62, "tr": "Favór ida hatun proteksaun oas nian bainhira hala'o serbisu izolamentu ka sili-sasán."},
-  {"id": 63, "tr": "Uza luvas ho sapatu izoladu nian bainhira hala'o inspesaun elétriku."},
-  {"id": 64, "tr": "Labele tama ba área serbisu se la uza ekipamentu proteksaun ne'ebé loos."},
-  {"id": 65, "tr": "Hamoos ekipamentu proteksaun depois de remata serbisu no rai iha armáriu ne'ebé deside tiha ona."},
-  {"id": 66, "tr": "Se alarma urjénsia nian rona, para serbisu kedas no evakua."},
-  {"id": 67, "tr": "Hanehan kadiak parajen urjénsia nian hodi hamate mákina kedas."},
-  {"id": 68, "tr": "Ahi lakan! Hakilar 'Ahi lakan!' ho lian boot hodi fó-hatene ema hotu iha besik."},
-  {"id": 69, "tr": "Tapa inur no ibun ho toalla bokon ka hena ruma, hakat kraik, no evakua de'it."},
-  {"id": 70, "tr": "Keta sa'e elevadór; favór ida uza eskada urjénsia nian hodi sai."},
-  {"id": 71, "tr": "Bainhira mate ahi, la'o ho kalma tuir de'it sinal sira ba saída urjénsia nian."},
-  {"id": 72, "tr": "Hateke didi'ak estintór ahi nian, no hasai pregu seguransa hodi hamate ahi foin lakan."},
-  {"id": 73, "tr": "Se ema ruma kanek, fó-hatene kedas ba supervisór."},
-  {"id": 74, "tr": "Se ema ne'e la luri fali, telefone ba servisu urjénsia no hala'o CPR (reanimasaun)."},
-  {"id": 75, "tr": "Se kímiku suli ba matan ka oas, fase ho hamoos-matan urjénsia nian pelumenus minutu 15."},
-  {"id": 76, "tr": "Se deskonfia iha gás suli, keta lakan switch naroman nian; loke janela sira hodi dada iis."},
-  {"id": 77, "tr": "Halibur lalais iha fatin halibur outdoor nian ne'ebé deside tiha ona hodi sura ema."},
-  {"id": 78, "tr": "Keta taka dalan saída urjénsia ka korredór sira ho sasán ne'ebé tula de'it."},
-  {"id": 79, "tr": "Iha rai-nakdoko laran, subar iha meza ne'ebé metin nia okos no proteje ita-nia ulun."},
-  {"id": 80, "tr": "Se sasán ruma monu ka tuda, proteje ita-nia ulun no halai ba fatin ne'ebé seguru."},
-  {"id": 81, "tr": "Se ema hetan xoke elétriku, keta kaer loloos ema ne'e; hamate uluk fonte elétriku nian."},
-  {"id": 82, "tr": "Keta halo aat fatin akidente nian; hein de'it instrusaun hosi administrasaun."},
-  {"id": 83, "tr": "Favór ida koopera ho instrusaun hosi tékniku ambulánsia no bombeiru sira."},
-  {"id": 84, "tr": "Hatene nafatin fatin kaisa ai-moruk primeiru-sokorru nian iha fatin serbisu."},
-  {"id": 85, "tr": "Favór ida hola parte ho ksolok iha treinu evakuasaun urjénsia nian."},
-  {"id": 86, "tr": "Ita sei foti tempu deskansu minutu 15 agora."},
-  {"id": 87, "tr": "Tau kraik kail serbisu nian no hakat ba fatin deskansu ne'ebé deside tiha ona."},
-  {"id": 88, "tr": "Avizu loron-manas boot! Favór ida deskansu iha mahon malirin no hemu bee barak."},
-  {"id": 89, "tr": "Avizu malirin boot! Hemu bee-manas no manteun isin-manas."},
-  {"id": 90, "tr": "Keta hela besik área perigu ka mákina sira durante tempu deskansu."},
-  {"id": 91, "tr": "Ne'e tempu han-meio-dia nian. Favór ida hakat ba kafetaria."},
-  {"id": 92, "tr": "Fase nafatin liman ho moos antes han."},
-  {"id": 93, "tr": "Depois de han, fila fali ba área serbisu pelumenus minutu 10 antes serbisu komesa fali."},
-  {"id": 94, "tr": "Hala'o ezersísiu uitoan de'it antes komesa serbisu fali depois de deskansu hodi isin-manas."},
-  {"id": 95, "tr": "Favór ida manteun silénsiu no hamoos didi'ak fatin deskansu nian."},
-  {"id": 96, "tr": "Fuma de'it ho didi'ak iha área fuma nian ne'ebé deside tiha ona."},
-  {"id": 97, "tr": "Hemu tua ka luri tua-moruk ba fatin serbisu prohibited tebes."},
-  {"id": 98, "tr": "Iha tan minutu 5 antes serbisu komesa fali. Favór ida prepara an."},
-  {"id": 99, "tr": "Evita moras tanba loron-manas hodi hemu bee no masin ne'ebé natoon."},
-  {"id": 100, "tr": "Ita sei komesa serbisu lokraik nian. Favór ida hakat ba ita-nia fatin serbisu de'it."}
+  {
+   "id": 1,
+   "cat": 1,
+   "tr": "Ha'u sei hahú serbisu agora."
+  },
+  {
+   "id": 2,
+   "cat": 1,
+   "tr": "Ema hotu, favór ida halibur hamutuk. Ami sei kontinua ho enkontru inspesaun seguransa nian antes serbisu."
+  },
+  {
+   "id": 3,
+   "cat": 1,
+   "tr": "Ha'u sei entrega detallu sira serbisu nian ohin nian."
+  },
+  {
+   "id": 4,
+   "cat": 1,
+   "tr": "Favor verifika kondisaun mákina no ferramenta sira nian molok hahú serbisu."
+  },
+  {
+   "id": 5,
+   "cat": 1,
+   "tr": "Favor fó hatene kedas mai ha'u se ita-boot hetan abnormalidade fíziku ruma ka la sente di'ak."
+  },
+  {
+   "id": 6,
+   "cat": 1,
+   "tr": "Favor ida, la'o de'it liuhosi pasajen sira ne'ebé dezignadu iha área serbisu nian."
+  },
+  {
+   "id": 7,
+   "cat": 1,
+   "tr": "Favor hala'o serbisu tuir orden tuir instrusaun husi instrutór serbisu nian."
+  },
+  {
+   "id": 8,
+   "cat": 1,
+   "tr": "Labele opera mákina arbiru ka muda konfigurasaun sira."
+  },
+  {
+   "id": 9,
+   "cat": 1,
+   "tr": "Nunka serbisu mesak iha área serbisu ema na'in-rua nian."
+  },
+  {
+   "id": 10,
+   "cat": 1,
+   "tr": "Favor verifika antes fatin ba saída enerjia nian no botaun para emerjénsia nian."
+  },
+  {
+   "id": 11,
+   "cat": 1,
+   "tr": "Favor hamoos obstákulu sira iha área serbisu nian no hamoos."
+  },
+  {
+   "id": 12,
+   "cat": 1,
+   "tr": "Verifika se dispozitivu seguransa ka kapa protesaun nian funsiona ho di'ak."
+  },
+  {
+   "id": 13,
+   "cat": 1,
+   "tr": "Uza smartphone no uza fone tilun durante serbisu maka bandu."
+  },
+  {
+   "id": 14,
+   "cat": 1,
+   "tr": "Se ita-boot deskobre fatór risku ruma, hapara kedas serbisu no relata ida-ne'e."
+  },
+  {
+   "id": 15,
+   "cat": 1,
+   "tr": "Traballadór turnu sira, favór ida verifika detalle sira kona-ba entrega ho loloos."
+  },
+  {
+   "id": 16,
+   "cat": 1,
+   "tr": "Labele halai lalais durante serbisu ne'ebé perigozu, no halo tuir regulamentu seguransa nian."
+  },
+  {
+   "id": 17,
+   "cat": 1,
+   "tr": "Favor ida, hapara operasaun."
+  },
+  {
+   "id": 18,
+   "cat": 1,
+   "tr": "Hakotu knaar hotu-hotu ba ohin."
+  },
+  {
+   "id": 19,
+   "cat": 1,
+   "tr": "Hafoin remata serbisu, hamate mákina nia enerjia no hasai nia ligasaun."
+  },
+  {
+   "id": 20,
+   "cat": 1,
+   "tr": "Favor tau fali ferramenta no ekipamentu protesaun sira ne'ebé uza ona iha sira nia fatin loloos."
+  },
+  {
+   "id": 21,
+   "cat": 2,
+   "tr": "Ne'e perigozu! Hakat ba kotuk."
+  },
+  {
+   "id": 22,
+   "cat": 2,
+   "tr": "Labele kaer ekipamentu elétriku ho liman ne'ebé bokon tanba risku atu hetan xoke elétriku."
+  },
+  {
+   "id": 23,
+   "cat": 2,
+   "tr": "Ida-ne'e maka zona risku ida (entrapamentu). Favor kuidadu ita-boot nia liman no hatais."
+  },
+  {
+   "id": 24,
+   "cat": 2,
+   "tr": "Ida-ne'e maka zona perigu monu nian. Labele sadere ba baranda."
+  },
+  {
+   "id": 25,
+   "cat": 2,
+   "tr": "Ida-ne'e maka zona alerta ba objetu ne'ebé monu. Favor ida, tau matan nafatin ba área iha leten."
+  },
+  {
+   "id": 26,
+   "cat": 2,
+   "tr": "Forklift ida besik daudaun. Favor para no asegura seguransa."
+  },
+  {
+   "id": 27,
+   "cat": 2,
+   "tr": "Operasaun hasa'e grua iha hela prosesu. Favor ida keta liu iha objetu ne'ebé hasa'e nia okos."
+  },
+  {
+   "id": 28,
+   "cat": 2,
+   "tr": "Kuidadu kona-ba ekipamentu ho temperatura aas! Labele kona superfísie tanba risku atu hetan sunu."
+  },
+  {
+   "id": 29,
+   "cat": 2,
+   "tr": "Atensaun: Parte sira ne'ebé maka fila! Labele tau ita-boot nia liman sira bainhira mákina ne'e rota hela."
+  },
+  {
+   "id": 30,
+   "cat": 2,
+   "tr": "Ida-ne'e maka zona perigu inséndiu nian. Fuma no uza ahi-lakan sira maka bandu tebes."
+  },
+  {
+   "id": 31,
+   "cat": 2,
+   "tr": "Ida-ne'e maka zona perigu ba gás tóxiku no sufokasaun. Labele tama iha espasu ne'ebé taka lahó lisensa."
+  },
+  {
+   "id": 32,
+   "cat": 2,
+   "tr": "Kuidadu bainhira kaer kímiku sira! Evita kontaktu ho kulit no inalasaun."
+  },
+  {
+   "id": 33,
+   "cat": 2,
+   "tr": "Rai ne'e glide, nune'e favór ida kuidadu atu labele sidi bainhira la'o."
+  },
+  {
+   "id": 34,
+   "cat": 2,
+   "tr": "Hakruuk ita-boot nia ain-tuur bainhira foti sasán todan sira atu evita kanek ita-boot nia kotuk-laran."
+  },
+  {
+   "id": 35,
+   "cat": 2,
+   "tr": "Labele sadere ba karga tanba iha risku atu monu no monu."
+  },
+  {
+   "id": 36,
+   "cat": 2,
+   "tr": "Labele halo soldadura ka serbisu ho ahi besik materiál sira ne'ebé bele sunu."
+  },
+  {
+   "id": 37,
+   "cat": 2,
+   "tr": "Labele hateke diretamente ba laser ka lampu soldadura ho ita-boot nia matan delek."
+  },
+  {
+   "id": 38,
+   "cat": 2,
+   "tr": "Labele espoin kontentór gás ho presaun aas ba impaktu ka loro-matan direta."
+  },
+  {
+   "id": 39,
+   "cat": 2,
+   "tr": "Labele haluha atu verifika estatutu presaun nian bainhira loke no taka válvula sira no tubulasaun sira."
+  },
+  {
+   "id": 40,
+   "cat": 2,
+   "tr": "Ida-ne'e maka área ida ho rai-rahun ne'ebé aas. Favor loke sistema ventilasaun."
+  },
+  {
+   "id": 41,
+   "cat": 2,
+   "tr": "Labele hamriik iha pasajen ba veíkulu no ekipamentu pezadu sira."
+  },
+  {
+   "id": 42,
+   "cat": 2,
+   "tr": "Labele tau hamutuk sasán sira liu limite aas karregamentu nian."
+  },
+  {
+   "id": 43,
+   "cat": 2,
+   "tr": "Asegura atu verifika no kumpre ho sinál seguransa no sinál perigu sira."
+  },
+  {
+   "id": 44,
+   "cat": 2,
+   "tr": "Labele hakat ba eskada sira ne'ebé la sertifikadu ka plataforma sira ne'ebé la estavel."
+  },
+  {
+   "id": 45,
+   "cat": 2,
+   "tr": "Favor tau sinál 'Labele Opera Durante Inspesaun' durante inspesaun mákina nian."
+  },
+  {
+   "id": 46,
+   "cat": 3,
+   "tr": "Asegura atu kesi metin ita-boot nia kapasete seguransa nia tali iha kidun molok tama ba servisu fatin."
+  },
+  {
+   "id": 47,
+   "cat": 3,
+   "tr": "Tenke uza sapatu seguransa nian hodi proteje ita-boot nia ain."
+  },
+  {
+   "id": 48,
+   "cat": 3,
+   "tr": "Uza arnes seguransa nian no kesi metin gancho seguransa nian bainhira serbisu iha fatin aas."
+  },
+  {
+   "id": 49,
+   "cat": 3,
+   "tr": "Uza máskara ba rai-rahun ka máskara gás nian bainhira serbisu ho rai-rahun no materiál perigozu sira."
+  },
+  {
+   "id": 50,
+   "cat": 3,
+   "tr": "Tenke uza ókulu seguransa nian tanba rai-rahun bele semo."
+  },
+  {
+   "id": 51,
+   "cat": 3,
+   "tr": "Favor uza taka tilun (protesaun tilun) iha servisu fatin ne'ebé barullu."
+  },
+  {
+   "id": 52,
+   "cat": 3,
+   "tr": "Bandu uza luvas ne'ebé bele kaer bainhira uza mákina ne'ebé rota."
+  },
+  {
+   "id": 53,
+   "cat": 3,
+   "tr": "Uza luvas borraxa ne'ebé rezistente ba kímiku sira no roupa protesaun nian bainhira kaer kímiku sira."
+  },
+  {
+   "id": 54,
+   "cat": 3,
+   "tr": "Uza máskara soldadura nian no luvas kulit nian bainhira halo soldadura."
+  },
+  {
+   "id": 55,
+   "cat": 3,
+   "tr": "Uza luvas ne'ebé labele tesi bainhira tesi ka kaer sasán sira ne'ebé maka kro'at."
+  },
+  {
+   "id": 56,
+   "cat": 3,
+   "tr": "Verifika ekipamentu protesaun nian loroloron ba estragu ka kotu ruma."
+  },
+  {
+   "id": 57,
+   "cat": 3,
+   "tr": "Troka kedas kapasete seguransa ka ekipamentu protesaun ne'ebé estraga ho ida foun."
+  },
+  {
+   "id": 58,
+   "cat": 3,
+   "tr": "Uza kolete refletivu bainhira serbisu iha kalan ka iha fatin nakukun."
+  },
+  {
+   "id": 59,
+   "cat": 3,
+   "tr": "Favor uza roupa ne'ebé tahan manas no tahan malirin ne'ebé apropriadu ba ambiente serbisu nian."
+  },
+  {
+   "id": 60,
+   "cat": 3,
+   "tr": "Favor ida, kesi ita-boot nia fuuk naruk ho di'ak iha ita-boot nia kapasete seguransa nia laran."
+  },
+  {
+   "id": 61,
+   "cat": 3,
+   "tr": "Favor rai roupa serbisu nian ne'ebé nakloke ka roupa ho tali sira moos, tanba sira bele kaer iha mákina."
+  },
+  {
+   "id": 62,
+   "cat": 3,
+   "tr": "Hatun eskudu seguransa nian no kontinua ho serbisu izolamentu no hamoos nian."
+  },
+  {
+   "id": 63,
+   "cat": 3,
+   "tr": "Uza luvas izolamentu no sapatu izolamentu bainhira hala'o inspesaun elétriku sira."
+  },
+  {
+   "id": 64,
+   "cat": 3,
+   "tr": "Tama ba servisu fatin hetan restrisaun se ekipamentu protesaun la uza."
+  },
+  {
+   "id": 65,
+   "cat": 3,
+   "tr": "Hafoin remata serbisu, hamoos ekipamentu protesaun nian no rai iha kaixa armazenamentu nian."
+  },
+  {
+   "id": 66,
+   "cat": 4,
+   "tr": "Se sinál emerjénsia nian lian, para kedas serbisu no evakua."
+  },
+  {
+   "id": 67,
+   "cat": 4,
+   "tr": "Hanehan butaun para emerjénsia nian hodi para kedas mákina."
+  },
+  {
+   "id": 68,
+   "cat": 4,
+   "tr": "Ahi! Hakilar \"Ahi!\" ho lian maka'as no alerta sira ne'ebé hale'u ita-boot."
+  },
+  {
+   "id": 69,
+   "cat": 4,
+   "tr": "Taka ita-boot nia inus no ibun ho toalla ka roupa ne'ebé maran, no sai enkuantu ita-boot nia postura tun."
+  },
+  {
+   "id": 70,
+   "cat": 4,
+   "tr": "Labele sa'e elevadór; uza eskada emerjénsia nian hodi halai sai."
+  },
+  {
+   "id": 71,
+   "cat": 4,
+   "tr": "Iha kazu enerjia mate, kalma nafatin no tuir sinál sira saída emerjénsia nian."
+  },
+  {
+   "id": 72,
+   "cat": 4,
+   "tr": "Verifika fatin husi aparellu hamate ahi nian no dada alfinete seguransa nian hodi hamate ahi inisiál."
+  },
+  {
+   "id": 73,
+   "cat": 4,
+   "tr": "Karik akontese kanek ruma, fó hatene kedas ba supervizór."
+  },
+  {
+   "id": 74,
+   "cat": 4,
+   "tr": "Se pasiente la iha konxiénsia, liga ba 119 no halo resusitasaun kardiopulmonár."
+  },
+  {
+   "id": 75,
+   "cat": 4,
+   "tr": "Se kímiku sira suli ba ita-boot nia matan ka kulit, fase ho hena emerjénsia nian durante pelumenus minutu 15."
+  },
+  {
+   "id": 76,
+   "cat": 4,
+   "tr": "Se ita-boot deskonfia iha vazamentu gás nian, keta loke saída lampu nian; envezde, loke janela sira hodi halo ventilasaun."
+  },
+  {
+   "id": 77,
+   "cat": 4,
+   "tr": "Favor halibur lalais iha pontu montajen iha liur ne'ebé dezignadu no verifika númeru pesoál sira."
+  },
+  {
+   "id": 78,
+   "cat": 4,
+   "tr": "Labele rai sasán sira iha saída emerjénsia nian no pasajen emerjénsia nian."
+  },
+  {
+   "id": 79,
+   "cat": 4,
+   "tr": "Iha kazu rai-nakdoko, subar iha meza ne'ebé metin nia okos no proteje ita-boot nia ulun."
+  },
+  {
+   "id": 80,
+   "cat": 4,
+   "tr": "Iha kazu ruma monu ka sasán sira monu, taka ita-boot nia ulun no muda ba fatin seguru."
+  },
+  {
+   "id": 81,
+   "cat": 4,
+   "tr": "Iha kazu xoke elétriku, labele kona diretamente; tesi uluk enerjia."
+  },
+  {
+   "id": 82,
+   "cat": 4,
+   "tr": "Labele estraga fatin asidente arbiru no hein instrusaun husi jestór."
+  },
+  {
+   "id": 83,
+   "cat": 4,
+   "tr": "Favor koopera ho orientasaun husi paramédiku no bombeiru na'in 119."
+  },
+  {
+   "id": 84,
+   "cat": 4,
+   "tr": "Sempre hatene kona-ba fatin ba kit primeiru sokorru nian iha fatin akontesimentu."
+  },
+  {
+   "id": 85,
+   "cat": 4,
+   "tr": "Favor partisipa ativamente iha ezersísiu evakuasaun emerjénsia nian."
+  },
+  {
+   "id": 86,
+   "cat": 5,
+   "tr": "Agora ne'e deskansa minutu 15."
+  },
+  {
+   "id": 87,
+   "cat": 5,
+   "tr": "Favor tau ita-boot nia ferramenta serbisu nian no muda ba sala deskansa ne'ebé dezignadu."
+  },
+  {
+   "id": 88,
+   "cat": 5,
+   "tr": "Alerta ba onda manas! Deskansa iha mahon malirin no hemu bee barak."
+  },
+  {
+   "id": 89,
+   "cat": 5,
+   "tr": "Alerta ba laloran malirin! Hemu bebidas manas no kuidadu atu manas nafatin."
+  },
+  {
+   "id": 90,
+   "cat": 5,
+   "tr": "Labele hela iha zona perigu sira ka besik mákina sira durante deskansa."
+  },
+  {
+   "id": 91,
+   "cat": 5,
+   "tr": "Oras almosu ona. Favor ida ba iha kafetaria."
+  },
+  {
+   "id": 92,
+   "cat": 5,
+   "tr": "Favor ida, asegura atu fase ita-boot nia liman ho didi'ak molok han."
+  },
+  {
+   "id": 93,
+   "cat": 5,
+   "tr": "Favor fila fali ba servisu fatin minutu 10 molok hahú fali servisu hafoin han."
+  },
+  {
+   "id": 94,
+   "cat": 5,
+   "tr": "Hakmatek ita-boot nia isin ho alongamentu kmaan hafoin deskansa antes hahú serbisu."
+  },
+  {
+   "id": 95,
+   "cat": 5,
+   "tr": "Favor ida, mantein silénsiu no mantein sala-vizita ne'ebé moos."
+  },
+  {
+   "id": 96,
+   "cat": 5,
+   "tr": "Favor ida, asegura atu fuma de'it iha área fuma nian ne'ebé dezignadu."
+  },
+  {
+   "id": 97,
+   "cat": 5,
+   "tr": "Hemu tua no lori tua ba servisu fatin maka bandu tebes."
+  },
+  {
+   "id": 98,
+   "cat": 5,
+   "tr": "Serbisu sei hahú fali iha minutu 5 nia laran. Favor prepara ba servisu."
+  },
+  {
+   "id": 99,
+   "cat": 5,
+   "tr": "Prevene moras sira ne'ebé relasiona ho manas liuhosi konsumu líkidu no masin ne'ebé adekuadu."
+  },
+  {
+   "id": 100,
+   "cat": 5,
+   "tr": "Ita sei hahú serbisu lokraik nian. Favor muda ba ita-boot nia pozisaun ida-idak."
+  }
  ]
 }

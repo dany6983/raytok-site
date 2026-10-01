@@ -1,106 +1,513 @@
 {
  "ver": 1,
  "lang": "uz",
+ "cats": {
+  "1": "Vazifani boshlash/to'xtatish",
+  "2": "Xavf haqida ogohlantirish",
+  "3": "Himoya vositalarini kiyish",
+  "4": "Favqulodda harakatlar",
+  "5": "Dam olish va ovqatlanish"
+ },
  "items": [
-  {"id": 1, "tr": "Hozir biz ishimizni boshlaymiz."},
-  {"id": 2, "tr": "Iltimos, barchangiz to'planing. Ish boshlashdan oldin xavfsizlik bo'yicha yig'ilish o'tkazamiz."},
-  {"id": 3, "tr": "Men bugungi ish tafsilotlarini tushuntiraman."},
-  {"id": 4, "tr": "Ishni boshlashdan oldin iltimos, mashina va asboblarning holatini tekshiring."},
-  {"id": 5, "tr": "Agar o'zingizni yomon his qilsangiz yoki jismoniy muammo bo'lsa, iltimos, darhol bizga xabar bering."},
-  {"id": 6, "tr": "Iltimos, ish joyida faqat belgilangan yo'laklardan harakatlaning."},
-  {"id": 7, "tr": "Iltimos, ishni nazoratchi ko'rsatmasi bo'yicha ketma-ketlikda bajaring."},
-  {"id": 8, "tr": "Ruxsatsiz biron bir mashinani ishlatmang yoki sozlamalarini o'zgartirmang."},
-  {"id": 9, "tr": "Ikki kishilik hamkorlik talab etiladigan joylarda hech qachon yolg'iz ishlamang."},
-  {"id": 10, "tr": "Iltimos, elektr kalitlari va favqulodda to'xtatish tugmalari joylashgan joylarni oldindan tekshirib oling."},
-  {"id": 11, "tr": "Ish joyi atrofidagi to'siqlarni olib tashlang va uni toza hamda tartibli saqlang."},
-  {"id": 12, "tr": "Iltimos, xavfsizlik moslamalari yoki himoya qopqoqlari to'g'ri ishlayotganini tekshiring."},
-  {"id": 13, "tr": "Ish vaqtida smartfonlardan foydalanish va quloqchin taqish qat'iyan taqiqlanadi."},
-  {"id": 14, "tr": "Agar biron bir xavfni aniqlasangiz, ishni darhol to'xtating va bu haqda xabar bering."},
-  {"id": 15, "tr": "Smena topshirish tafsilotlari navbatchi ishchilar tomonidan to'liq tekshirilishi kerak."},
-  {"id": 16, "tr": "Yuqori xavfli ishlarni shoshiltirmang; iltimos, xavfsizlik qoidalariga qat'iy rioya qiling."},
-  {"id": 17, "tr": "Iltimos, ishni vaqtincha to'xtatib turing."},
-  {"id": 18, "tr": "Bugungi barcha ishlar yakunlandi."},
-  {"id": 19, "tr": "Ishni tugatgandan so'ng, iltimos, mashinalarni o'chiring va vilkasini rozetkadan sug'uring."},
-  {"id": 20, "tr": "Iltimos, ishlatilgan asboblar va himoya vositalarini belgilangan joylariga qaytaring."},
-  {"id": 21, "tr": "Xavf! Iltimos, orqaga turing."},
-  {"id": 22, "tr": "Elektr urishidan saqlanish uchun elektr jihozlariga ho'l qo'l bilan tegmang."},
-  {"id": 23, "tr": "Bu qisilish xavfi bo'lgan hudud. Qo'lingizga va keng kiyimlaringizga ehtiyot bo'ling."},
-  {"id": 24, "tr": "Bu yiqilish xavfi bo'lgan hudud. Panjaralarga suyanmang."},
-  {"id": 25, "tr": "Yiqiluvchi narsalardan ehtiyot bo'ling. Har doim tepaga qarang va tekshiring."},
-  {"id": 26, "tr": "Yuk ko'targich (forklift) yaqinlashmoqda. Iltimos, to'xtang va xavfsiz ekanligini tekshiring."},
-  {"id": 27, "tr": "Kran yordamida yuk ko'tarish ishlari olib borilmoqda. Muallaq yuklar ostidan o'tmang."},
-  {"id": 28, "tr": "Diqqat, yuqori haroratli uskunalar! Kuymaslik uchun sirtga tegmang."},
-  {"id": 29, "tr": "Diqqat, aylanuvchi qismlar! Mashina ishlayotganda hech qachon qo'lingizni ichkariga tiqmang."},
-  {"id": 30, "tr": "Bu yong'in xavfi bo'lgan hudud. Chekish va ochiq olovdan foydalanish qat'iyan taqiqlanadi."},
-  {"id": 31, "tr": "Zaharli gaz va bo'g'ilish xavfi bo'lgan hudud. Ruxsatsiz yopiq joylarga kirmang."},
-  {"id": 32, "tr": "Kimyoviy moddalar bilan ishlashda ehtiyot bo'ling! Teri bilan aloqa qilishdan va nafas olishdan saqlaning."},
-  {"id": 33, "tr": "Pol sirpanchiq, shuning uchun yiqilib tushmaslik uchun qadamlaringizga ehtiyot bo'ling."},
-  {"id": 34, "tr": "Og'ir narsalarni ko'tarayotganda belingizni shikastlamaslik uchun tizzalaringizni buking."},
-  {"id": 35, "tr": "Yiqilish yoki ag'darilish xavfi bor. Taxlangan materiallarga suyanmang."},
-  {"id": 36, "tr": "Yonuvchan materiallar yaqinida payvandlash yoki uchqun chiqaradigan ishlarni bajarmang."},
-  {"id": 37, "tr": "Lazer yoki payvandlash nurlariga oddiy ko'z bilan to'g'ridan-to'g'ri qaramang."},
-  {"id": 38, "tr": "Yuqori bosimli gaz ballonlarini zarbalarga yoki to'g'ridan-to'g'ri quyosh nuriga ta'sir qildirmang."},
-  {"id": 39, "tr": "Klapanlar va quvurlarni ochish yoki yopishda har doim bosim darajasini tekshiring."},
-  {"id": 40, "tr": "Chang darajasi yuqori bo'lgan hudud. Iltimos, shamollatish tizimini yoqing."},
-  {"id": 41, "tr": "Avtotransport va og'ir uskunalar uchun mo'ljallangan yo'laklarda turmang."},
-  {"id": 42, "tr": "Yuklarni belgilangan maksimal yuklash balandligidan oshirib taxlamang."},
-  {"id": 43, "tr": "Iltimos, xavfsizlik belgilari va xavf haqidagi ogohlantirishlarni tekshiring va ularga qat'iy rioya qiling."},
-  {"id": 44, "tr": "Sertifikatlanmagan narvonlar yoki beqaror platformalarga chiqmang."},
-  {"id": 45, "tr": "Mashinalarni tekshirish paytida 'Ishlatilmasin - Texnik xizmat ko'rsatilmoqda' belgisini osib qo'ying."},
-  {"id": 46, "tr": "Ish joyiga kirishdan oldin har doim xavfsizlik kaskasining iyak kamarini bog'lang."},
-  {"id": 47, "tr": "Oyoqlaringizni himoya qilish uchun iltimos, maxsus poyabzal (maxsus botinka) kiying."},
-  {"id": 48, "tr": "Balandlikda ishlayotganda xavfsizlik kamarini taqing va xavfsizlik karabinini mahkamlang."},
-  {"id": 49, "tr": "Chang va xavfli moddalar bilan ishlashda respirator yoki niqob taqing."},
-  {"id": 50, "tr": "Har doim himoya ko'zoynagini taqing, chunki uchib ketuvchi qismlar shikast yetkazishi mumkin."},
-  {"id": 51, "tr": "Shovqinli ish joylarida iltimos, quloq tiqinlarini taqing."},
-  {"id": 52, "tr": "Aylanadigan mashinalarni boshqarishda qo'l qisilib qolishi mumkin bo'lgan qo'lqoplarni kiyish taqiqlanadi."},
-  {"id": 53, "tr": "Kimyoviy moddalar bilan ishlashda kimyoviy moddalarga chidamli rezina qo'lqop va himoya kiyimlarini kiying."},
-  {"id": 54, "tr": "Payvandlash ishlari davomida payvandlash niqobi va charm qo'lqop kiying."},
-  {"id": 55, "tr": "O'tkir materiallarni kesish yoki qayta ishlashda kesilishdan himoya qiluvchi qo'lqop kiying."},
-  {"id": 56, "tr": "Himoya vositalaringizni har kuni shikastlanish yoki eskirish bor-yo'qligini tekshiring."},
-  {"id": 57, "tr": "Shikastlangan kaskalarni yoki himoya vositalarini darhol yangisiga almashtiring."},
-  {"id": 58, "tr": "Kechasi yoki qorong'i joyda ishlayotganda iltimos, nur qaytaruvchi nimcha kiying."},
-  {"id": 59, "tr": "Ish muhitiga mos keladigan issiqqa chidamli yoki sovuqqa qarshi kiyim kiying."},
-  {"id": 60, "tr": "Iltimos, uzun sochlarni xavfsizlik kaskasi ichiga yaxshilab yig'ib bog'lang."},
-  {"id": 61, "tr": "Keng kiyimlar yoki osilib turgan iplar mashinaga qisilib qolishi mumkin, shuning uchun ularni tartibga soling."},
-  {"id": 62, "tr": "Izolyatsiya yoki silliqlash ishlarini bajarayotganda yuz himoya qalqonini tushiring."},
-  {"id": 63, "tr": "Elektr tekshiruvlarini o'tkazishda izolyatsiyalangan qo'lqop va izolyatsiyalangan poyabzal kiying."},
-  {"id": 64, "tr": "Tegishli himoya vositalarisiz ish joyiga kirish cheklangan."},
-  {"id": 65, "tr": "Ishdan keyin himoya vositalarini tozalang va belgilangan shkafda saqlang."},
-  {"id": 66, "tr": "Favqulodda signal chalinganda, ishni darhol to'xtating va evakuatsiya qiling."},
-  {"id": 67, "tr": "Mashinani zudlik bilan to'xtatish uchun favqulodda to'xtatish tugmasini bosing."},
-  {"id": 68, "tr": "Yong'in! Atrofdagilarni ogohlantirish uchun baland ovozda 'Yong'in!' deb baqiring."},
-  {"id": 69, "tr": "Burun va og'zingizni ho'l sochiq yoki mato bilan yoping, past egilib evakuatsiya qiling."},
-  {"id": 70, "tr": "Liftlardan foydalanmang; iltimos, favqulodda zinapoyalar orqali evakuatsiya qiling."},
-  {"id": 71, "tr": "Elektr uzilganda, xotirjamlik bilan favqulodda chiqish belgilariga amal qiling."},
-  {"id": 72, "tr": "O't o'chirgichning joyini aniqlang va yong'inni dastlabki bosqichda o'chirish uchun xavfsizlik chekasini sug'uring."},
-  {"id": 73, "tr": "Agar biron bir kishi jarohatlansa, darhol nazoratchiga xabar bering."},
-  {"id": 74, "tr": "Agar odam hushsiz bo'lsa, tez yordam chaqiring va sun'iy nafas berish (CPR) mashqini bajaring."},
-  {"id": 75, "tr": "Agar kimyoviy moddalar teriga yoki ko'zga sachrasa, kamida 15 daqiqa davomida favqulodda ko'z yuvish vositasi bilan yuving."},
-  {"id": 76, "tr": "Gaz sizib chiqishi shubha qilinsa, chiroq kalitlarini yoqmang; shamollatish uchun oynalarni oching."},
-  {"id": 77, "tr": "Odamlarni sanash uchun belgilangan ochiq yig'ilish joyiga tezda to'planing."},
-  {"id": 78, "tr": "Favqulodda chiqish yo'llarini yoki yo'laklarni taxlangan narsalar bilan to'sib qo'ymang."},
-  {"id": 79, "tr": "Zilzila paytida mustahkam stol ostiga yashiring va boshingizni himoya qiling."},
-  {"id": 80, "tr": "Agar qulash yoki narsalar tushishi xavfi yuzaga kelsa, boshingizni yoping va xavfsiz joyga qoching."},
-  {"id": 81, "tr": "Elektr toki urganda, odamga to'g'ridan-to'g'ri tegmang; birinchi navbatda quvvat manbaini o'chiring."},
-  {"id": 82, "tr": "Voqea joyiga tegmang; rahbariyatdan ko'rsatmalarni kuting."},
-  {"id": 83, "tr": "Iltimos, favqulodda tibbiy yordam xodimlari va o't o'chiruvchilarning ko'rsatmalariga rioya qiling."},
-  {"id": 84, "tr": "Har doim birinchi tibbiy yordam qutisi qayerda joylashganligini bilib qo'ying."},
-  {"id": 85, "tr": "Favqulodda evakuatsiya mashg'ulotlarida faol ishtirok eting."},
-  {"id": 86, "tr": "Hozir biz 15 daqiqalik tanaffus qilamiz."},
-  {"id": 87, "tr": "Ish qurollarini qo'yib, belgilangan dam olish xonasiga o'ting."},
-  {"id": 88, "tr": "Jazirama issiq haqida ogohlantirish! Iltimos, salqin soyada dam oling va ko'p suv iching."},
-  {"id": 89, "tr": "Qattiq sovuq haqida ogohlantirish! Issiq ichimliklar iching va issiq kiyining."},
-  {"id": 90, "tr": "Dam olish vaqtida xavfli hududlar yoki mashinalar yaqinida turmang."},
-  {"id": 91, "tr": "Tushlik vaqti bo'ldi. Iltimos, oshxonaga boring."},
-  {"id": 92, "tr": "Ovqatlanishdan oldin har doim qo'lingizni yaxshilab yuving."},
-  {"id": 93, "tr": "Ovqatlangandan so'ng, ish boshlanishidan kamida 10 daqiqa oldin ish joyiga qayting."},
-  {"id": 94, "tr": "Tanaffusdan keyin ishni boshlashdan oldin isinish uchun engil jismoniy mashqlar qiling."},
-  {"id": 95, "tr": "Iltimos, dam olish xonasida tinchlikni saqlang va tartibga rioya qiling."},
-  {"id": 96, "tr": "Chekishga faqat belgilangan chekish joylarida qat'iy ruxsat beriladi."},
-  {"id": 97, "tr": "Ish joyida spirtli ichimliklar ichish yoki spirtli ichimliklarni olib kelish qat'iyan taqiqlanadi."},
-  {"id": 98, "tr": "Ish boshlanishiga 5 daqiqa qoldi. Iltimos, tayyorlaning."},
-  {"id": 99, "tr": "Etarli miqdorda suv va tuz iste'mol qilish orqali issiq urishining oldini oling."},
-  {"id": 100, "tr": "Tushdan keyingi ishni boshlaymiz. Iltimos, o'z joylaringizga o'ting."}
+  {
+   "id": 1,
+   "cat": 1,
+   "tr": "Men hozir ishni boshlayman."
+  },
+  {
+   "id": 2,
+   "cat": 1,
+   "tr": "Hamma, iltimos, yig'ilsin. Biz ishdan oldingi xavfsizlik tekshiruvi yig'ilishini davom ettiramiz."
+  },
+  {
+   "id": 3,
+   "cat": 1,
+   "tr": "Bugungi ish tafsilotlarini taqdim etaman."
+  },
+  {
+   "id": 4,
+   "cat": 1,
+   "tr": "Ishni boshlashdan oldin, mashina va asboblarning holatini tekshiring."
+  },
+  {
+   "id": 5,
+   "cat": 1,
+   "tr": "Agar biron bir jismoniy anomaliyani sezsangiz yoki o'zingizni yaxshi his qilmasangiz, darhol menga xabar bering."
+  },
+  {
+   "id": 6,
+   "cat": 1,
+   "tr": "Iltimos, faqat ish joyidagi belgilangan o'tish joylaridan o'ting."
+  },
+  {
+   "id": 7,
+   "cat": 1,
+   "tr": "Iltimos, ishni o'qituvchining ko'rsatmalariga muvofiq tartibda bajaring."
+  },
+  {
+   "id": 8,
+   "cat": 1,
+   "tr": "Mashinani o'zboshimchalik bilan ishlatmang yoki sozlamalarni o'zgartirmang."
+  },
+  {
+   "id": 9,
+   "cat": 1,
+   "tr": "Ikki kishilik ish joyida hech qachon yolg'iz ishlamang."
+  },
+  {
+   "id": 10,
+   "cat": 1,
+   "tr": "Iltimos, quvvat tugmasi va favqulodda to'xtatish tugmasining joylashuvini oldindan tekshiring."
+  },
+  {
+   "id": 11,
+   "cat": 1,
+   "tr": "Iltimos, ish joyi atrofidagi to'siqlarni olib tashlang va tartibga keltiring."
+  },
+  {
+   "id": 12,
+   "cat": 1,
+   "tr": "Xavfsizlik moslamasi yoki himoya qopqog'i to'g'ri ishlayotganini tekshiring."
+  },
+  {
+   "id": 13,
+   "cat": 1,
+   "tr": "Ish vaqtida smartfonlardan foydalanish va quloqchin taqish taqiqlanadi."
+  },
+  {
+   "id": 14,
+   "cat": 1,
+   "tr": "Agar biron bir xavf omillarini aniqlasangiz, darhol ishni to'xtating va bu haqda xabar bering."
+  },
+  {
+   "id": 15,
+   "cat": 1,
+   "tr": "Smena ishchilari, iltimos, topshirish tafsilotlarini aniq tekshiring."
+  },
+  {
+   "id": 16,
+   "cat": 1,
+   "tr": "Xavfli ish paytida shoshilmang va xavfsizlik qoidalariga rioya qiling."
+  },
+  {
+   "id": 17,
+   "cat": 1,
+   "tr": "Iltimos, operatsiyani to'xtatib turing."
+  },
+  {
+   "id": 18,
+   "cat": 1,
+   "tr": "Bugungi barcha vazifalarni yakunlash."
+  },
+  {
+   "id": 19,
+   "cat": 1,
+   "tr": "Ish tugagandan so'ng, mashinani elektrdan uzing va elektrdan uzing."
+  },
+  {
+   "id": 20,
+   "cat": 1,
+   "tr": "Iltimos, ishlatilgan asboblar va himoya vositalarini o'z joylariga qaytaring."
+  },
+  {
+   "id": 21,
+   "cat": 2,
+   "tr": "Bu xavfli! Orqaga chekining."
+  },
+  {
+   "id": 22,
+   "cat": 2,
+   "tr": "Elektr toki urishi xavfi tufayli elektr jihozlariga nam qo'llar bilan tegmang."
+  },
+  {
+   "id": 23,
+   "cat": 2,
+   "tr": "Bu chimchilash (tuzoqqa ilinish) xavfi zonasi. Iltimos, qo'llaringiz va kiyimlaringizga ehtiyot bo'ling."
+  },
+  {
+   "id": 24,
+   "cat": 2,
+   "tr": "Bu yiqilish xavfi mavjud zona. Panjara ustiga suyanmang."
+  },
+  {
+   "id": 25,
+   "cat": 2,
+   "tr": "Bu qulab tushayotgan obyekt haqida ogohlantirish zonasi. Iltimos, har doim yuqoridagi hududga e'tibor bering."
+  },
+  {
+   "id": 26,
+   "cat": 2,
+   "tr": "Forklift yaqinlashmoqda. Iltimos, to'xtang va xavfsizlikni ta'minlang."
+  },
+  {
+   "id": 27,
+   "cat": 2,
+   "tr": "Kranni ko'tarish jarayoni davom etmoqda. Iltimos, ko'tarilgan buyum ostidan o'tmang."
+  },
+  {
+   "id": 28,
+   "cat": 2,
+   "tr": "Yuqori haroratli uskunalarga nisbatan ehtiyot bo'ling! Kuyish xavfi tufayli sirtga tegmang."
+  },
+  {
+   "id": 29,
+   "cat": 2,
+   "tr": "Diqqat: Aylanayotgan qismlar! Mashina aylanayotganda qo'llaringizni ichiga tiqmang."
+  },
+  {
+   "id": 30,
+   "cat": 2,
+   "tr": "Bu yong'in xavfi yuqori bo'lgan hudud. Chekish va ochiq olovdan foydalanish qat'iyan man etiladi."
+  },
+  {
+   "id": 31,
+   "cat": 2,
+   "tr": "Bu zaharli gaz va bo'g'ilish xavfi mavjud zona. Ruxsatsiz yopiq joyga kirmang."
+  },
+  {
+   "id": 32,
+   "cat": 2,
+   "tr": "Kimyoviy moddalar bilan ishlashda ehtiyot bo'ling! Teri bilan aloqa qilishdan va nafas olishdan saqlaning."
+  },
+  {
+   "id": 33,
+   "cat": 2,
+   "tr": "Zamin sirpanchiq, shuning uchun yurganda sirpanmaslikka ehtiyot bo'ling."
+  },
+  {
+   "id": 34,
+   "cat": 2,
+   "tr": "Og'ir narsalarni ko'tarayotganda belingizga shikast yetkazmaslik uchun tizzalaringizni buking."
+  },
+  {
+   "id": 35,
+   "cat": 2,
+   "tr": "Yukga suyanmang, chunki qulash va ag'darilish xavfi mavjud."
+  },
+  {
+   "id": 36,
+   "cat": 2,
+   "tr": "Yonuvchan materiallar yaqinida payvandlash yoki olov ishlarini bajarmang."
+  },
+  {
+   "id": 37,
+   "cat": 2,
+   "tr": "Yalang'och ko'zlaringiz bilan lazer yoki payvandlash chiroqlariga to'g'ridan-to'g'ri qaramang."
+  },
+  {
+   "id": 38,
+   "cat": 2,
+   "tr": "Yuqori bosimli gaz idishlarini zarba yoki to'g'ridan-to'g'ri quyosh nuri ta'siriga qo'ymang."
+  },
+  {
+   "id": 39,
+   "cat": 2,
+   "tr": "Klapanlar va quvurlarni ochish va yopishda bosim holatini tekshirishni unutmang."
+  },
+  {
+   "id": 40,
+   "cat": 2,
+   "tr": "Bu yerda chang darajasi yuqori. Iltimos, shamollatish tizimini yoqing."
+  },
+  {
+   "id": 41,
+   "cat": 2,
+   "tr": "Transport vositalari va og'ir texnika uchun yo'laklarda turmang."
+  },
+  {
+   "id": 42,
+   "cat": 2,
+   "tr": "Yuklash balandligi chegarasidan tashqari narsalarni qo'ymang."
+  },
+  {
+   "id": 43,
+   "cat": 2,
+   "tr": "Xavfsizlik belgilari va xavf belgilarini tekshirishga va ularga rioya qilishga ishonch hosil qiling."
+  },
+  {
+   "id": 44,
+   "cat": 2,
+   "tr": "Sertifikatlanmagan narvonlarga yoki beqaror platformalarga chiqmang."
+  },
+  {
+   "id": 45,
+   "cat": 2,
+   "tr": "Mashinani tekshirish paytida \"Tekshirish paytida ishlamang\" belgisini ilova qiling."
+  },
+  {
+   "id": 46,
+   "cat": 3,
+   "tr": "Ish joyiga kirishdan oldin xavfsizlik dubulg'angizning iyak kamarini mahkamlang."
+  },
+  {
+   "id": 47,
+   "cat": 3,
+   "tr": "Oyoqlaringizni himoya qilish uchun xavfsizlik poyabzallarini kiyganingizga ishonch hosil qiling."
+  },
+  {
+   "id": 48,
+   "cat": 3,
+   "tr": "Balandlikda ishlaganda xavfsizlik kamarini taqing va xavfsizlik ilgagini mahkamlang."
+  },
+  {
+   "id": 49,
+   "cat": 3,
+   "tr": "Chang va xavfli materiallar bilan ishlaganda chang niqobi yoki gaz niqobini taqing."
+  },
+  {
+   "id": 50,
+   "cat": 3,
+   "tr": "Xavfsizlik ko'zoynaklarini taqib qo'yganingizga ishonch hosil qiling, chunki chiqindilar uchib ketishi mumkin."
+  },
+  {
+   "id": 51,
+   "cat": 3,
+   "tr": "Shovqinli ish joylarida quloqchinlarni (eshitish qobiliyatini himoya qiluvchi) taqing."
+  },
+  {
+   "id": 52,
+   "cat": 3,
+   "tr": "Aylanadigan mashinalar bilan ishlaganda tiqilib qolishi mumkin bo'lgan qo'lqop kiyish taqiqlanadi."
+  },
+  {
+   "id": 53,
+   "cat": 3,
+   "tr": "Kimyoviy moddalar bilan ishlaganda kimyoviy moddalarga chidamli rezina qo'lqop va himoya kiyimlarini taqing."
+  },
+  {
+   "id": 54,
+   "cat": 3,
+   "tr": "Payvandlash paytida payvandlash niqobi va charm qo'lqop kiying."
+  },
+  {
+   "id": 55,
+   "cat": 3,
+   "tr": "O'tkir materiallarni kesishda yoki ular bilan ishlashda kesilishga chidamli qo'lqop kiying."
+  },
+  {
+   "id": 56,
+   "cat": 3,
+   "tr": "Himoya vositalarini har kuni har qanday shikastlanish yoki sinish uchun tekshirib turing."
+  },
+  {
+   "id": 57,
+   "cat": 3,
+   "tr": "Shikastlangan xavfsizlik dubulg'alari yoki himoya vositalarini darhol yangilari bilan almashtiring."
+  },
+  {
+   "id": 58,
+   "cat": 3,
+   "tr": "Kechasi yoki qorong'i joylarda ishlayotganingizda aks ettiruvchi yelek kiying."
+  },
+  {
+   "id": 59,
+   "cat": 3,
+   "tr": "Iltimos, ish muhitiga mos keladigan issiqqa va sovuqqa chidamli kiyim kiying."
+  },
+  {
+   "id": 60,
+   "cat": 3,
+   "tr": "Iltimos, uzun sochlaringizni xavfsizlik dubulg'angiz ichiga chiroyli qilib bog'lang."
+  },
+  {
+   "id": 61,
+   "cat": 3,
+   "tr": "Iltimos, keng ish kiyimlari yoki ipli kiyimlarni toza saqlang, chunki ular mashinaga tiqilib qolishi mumkin."
+  },
+  {
+   "id": 62,
+   "cat": 3,
+   "tr": "Xavfsizlik qalqonini tushiring va izolyatsiya va silliqlash ishlarini davom ettiring."
+  },
+  {
+   "id": 63,
+   "cat": 3,
+   "tr": "Elektr tekshiruvlarini o'tkazishda izolyatsiya qo'lqoplari va izolyatsiya poyabzallarini kiying."
+  },
+  {
+   "id": 64,
+   "cat": 3,
+   "tr": "Agar himoya vositalari taqilmagan bo'lsa, ish joyiga kirish cheklangan."
+  },
+  {
+   "id": 65,
+   "cat": 3,
+   "tr": "Ish tugagandan so'ng, himoya vositalarini artib tozalang va saqlash qutisiga soling."
+  },
+  {
+   "id": 66,
+   "cat": 4,
+   "tr": "Agar favqulodda qo'ng'iroq chalinsa, darhol ishni to'xtating va evakuatsiya qiling."
+  },
+  {
+   "id": 67,
+   "cat": 4,
+   "tr": "Mashinani darhol to'xtatish uchun favqulodda to'xtatish tugmasini bosing."
+  },
+  {
+   "id": 68,
+   "cat": 4,
+   "tr": "Yong'in! \"Yong'in!\" deb baland ovozda baqiring va atrofingizdagilarni ogohlantiring."
+  },
+  {
+   "id": 69,
+   "cat": 4,
+   "tr": "Burun va og'zingizni nam sochiq yoki kiyim bilan yoping va past holatda bo'lgan holda evakuatsiya qiling."
+  },
+  {
+   "id": 70,
+   "cat": 4,
+   "tr": "Liftga chiqmang; qochish uchun favqulodda zinapoyadan foydalaning."
+  },
+  {
+   "id": 71,
+   "cat": 4,
+   "tr": "Elektr uzilishi yuz bergan taqdirda, xotirjam bo'ling va favqulodda chiqish belgilariga amal qiling."
+  },
+  {
+   "id": 72,
+   "cat": 4,
+   "tr": "Yong'in o'chirgichning joylashuvini tekshiring va dastlabki yong'inni o'chirish uchun xavfsizlik ignasini torting."
+  },
+  {
+   "id": 73,
+   "cat": 4,
+   "tr": "Agar jarohat yuzaga kelsa, darhol rahbarga xabar bering."
+  },
+  {
+   "id": 74,
+   "cat": 4,
+   "tr": "Agar bemor hushidan ketgan bo'lsa, 119 raqamiga qo'ng'iroq qiling va yurak-o'pka reanimatsiyasini o'tkazing."
+  },
+  {
+   "id": 75,
+   "cat": 4,
+   "tr": "Agar kimyoviy moddalar ko'zingizga yoki teringizga tushsa, kamida 15 daqiqa davomida favqulodda vaziyatlar uchun mo'ljallangan sochiq bilan yuving."
+  },
+  {
+   "id": 76,
+   "cat": 4,
+   "tr": "Agar gaz sizib chiqqanidan shubhalansangiz, chiroqni yoqmang; buning o'rniga shamollatish uchun derazalarni oching."
+  },
+  {
+   "id": 77,
+   "cat": 4,
+   "tr": "Iltimos, belgilangan ochiq yig'ilish joyiga zudlik bilan to'planing va xodimlar sonini tekshiring."
+  },
+  {
+   "id": 78,
+   "cat": 4,
+   "tr": "Favqulodda chiqish joylarida va favqulodda o'tish joylarida narsalarni saqlamang."
+  },
+  {
+   "id": 79,
+   "cat": 4,
+   "tr": "Zilzila sodir bo'lgan taqdirda, mustahkam stol ostiga yashirinib, boshingizni himoya qiling."
+  },
+  {
+   "id": 80,
+   "cat": 4,
+   "tr": "Yiqilish yoki narsalar yiqilish holatida, boshingizni yoping va xavfsiz joyga ko'chiring."
+  },
+  {
+   "id": 81,
+   "cat": 4,
+   "tr": "Elektr toki urishi holatida, unga to'g'ridan-to'g'ri tegmang; avval elektrni uzing."
+  },
+  {
+   "id": 82,
+   "cat": 4,
+   "tr": "Baxtsiz hodisa joyiga o'zboshimchalik bilan zarar yetkazmang va menejerning ko'rsatmalarini kuting."
+  },
+  {
+   "id": 83,
+   "cat": 4,
+   "tr": "Iltimos, 119 tez tibbiy yordam xodimlari va o't o'chiruvchilarning ko'rsatmalariga amal qiling."
+  },
+  {
+   "id": 84,
+   "cat": 4,
+   "tr": "Voqea joyida birinchi tibbiy yordam to'plamining joylashuvi bilan doimo tanish bo'ling."
+  },
+  {
+   "id": 85,
+   "cat": 4,
+   "tr": "Iltimos, favqulodda evakuatsiya mashqlarida faol ishtirok eting."
+  },
+  {
+   "id": 86,
+   "cat": 5,
+   "tr": "Hozir 15 daqiqalik tanaffus."
+  },
+  {
+   "id": 87,
+   "cat": 5,
+   "tr": "Iltimos, ish asboblaringizni qo'ying va belgilangan dam olish xonasiga o'ting."
+  },
+  {
+   "id": 88,
+   "cat": 5,
+   "tr": "Issiq havo haqida ogohlantirish! Salqin soyada dam oling va ko'p suv iching."
+  },
+  {
+   "id": 89,
+   "cat": 5,
+   "tr": "Sovuq to'lqinlar haqida ogohlantirish! Iliq ichimliklar iching va iliq bo'lishga ehtiyot bo'ling."
+  },
+  {
+   "id": 90,
+   "cat": 5,
+   "tr": "Tanaffuslar paytida xavfli zonalarda yoki mashinalar yonida qolmang."
+  },
+  {
+   "id": 91,
+   "cat": 5,
+   "tr": "Tushlik vaqti. Iltimos, oshxonaga boring."
+  },
+  {
+   "id": 92,
+   "cat": 5,
+   "tr": "Ovqatlanishdan oldin qo'llaringizni yaxshilab yuvishingizga ishonch hosil qiling."
+  },
+  {
+   "id": 93,
+   "cat": 5,
+   "tr": "Ovqatdan keyin ishga qaytishdan 10 daqiqa oldin ish joyiga qayting."
+  },
+  {
+   "id": 94,
+   "cat": 5,
+   "tr": "Ishni boshlashdan oldin tanaffusdan keyin yengil cho'zish mashqlari bilan tanangizni bo'shashtiring."
+  },
+  {
+   "id": 95,
+   "cat": 5,
+   "tr": "Iltimos, jimlikni saqlang va zalni ozoda tuting."
+  },
+  {
+   "id": 96,
+   "cat": 5,
+   "tr": "Iltimos, faqat belgilangan chekish joylarida chekishingizga ishonch hosil qiling."
+  },
+  {
+   "id": 97,
+   "cat": 5,
+   "tr": "Ish joyiga spirtli ichimliklar olib kirish va ichish qat'iyan man etiladi."
+  },
+  {
+   "id": 98,
+   "cat": 5,
+   "tr": "Ish 5 daqiqadan so'ng davom etadi. Iltimos, ishga tayyorlaning."
+  },
+  {
+   "id": 99,
+   "cat": 5,
+   "tr": "Yetarli miqdorda suyuqlik va tuz iste'mol qilish orqali issiqlik bilan bog'liq kasalliklarning oldini oling."
+  },
+  {
+   "id": 100,
+   "cat": 5,
+   "tr": "Biz tushdan keyin ish boshlaymiz. Iltimos, o'z lavozimlaringizga o'ting."
+  }
  ]
 }
