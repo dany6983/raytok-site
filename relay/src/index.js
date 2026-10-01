@@ -209,7 +209,7 @@ export default {
       // 2) 시크릿 설정 여부 검사
       const adminSecret = (env.ADMIN_SECRET || '').trim();
       if (!adminSecret) {
-        return jsonError('upstream', 'Server configuration error: ADMIN_SECRET is not configured', 500);
+        return jsonError('admin_disabled', 'Admin reset is disabled (ADMIN_SECRET not configured)', 503);
       }
 
       // 3) 시크릿 일치 검증
