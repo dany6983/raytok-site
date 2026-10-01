@@ -59,6 +59,23 @@ export class Room {
       });
     }
 
+    // 0-1. 내부 특정 IP rate limit 리셋 호출 (/limit/reset)
+    if (url.pathname === '/limit/reset' && request.method === 'POST') {
+      const { ip } = await request.json();
+      if (!ip || typeof ip !== 'string' || ip.trim().length === 0) {
+        return new Response(JSON.stringify({ error: 'ip required' }), { status: 400 });
+      }
+      const targetIp = ip.trim();
+      let deleted = 0;
+      if (this.limits) {
+        if (this.limits.delete(`issue_ip:${targetIp}`)) deleted++;
+        if (this.limits.delete(`ip:${targetIp}`)) deleted++;
+      }
+      return new Response(JSON.stringify({ ok: true, deleted, ip: targetIp }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // 1. 내부 초기화 호출
     if (url.pathname === '/init' && request.method === 'POST') {
       const body = await request.json();

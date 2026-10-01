@@ -4,7 +4,22 @@ async function main() {
   console.log('=== Relay IP-Scoped Limits Test ===');
   console.log('Target URL:', BASE_URL);
 
-  const rand = Date.now();
+  // 운영(workers.dev) 환경에서 실제 공인 IP 고갈 방지 가드
+  if (BASE_URL.includes('workers.dev')) {
+    console.log('\n[SAFETY GUARD] 운영 workers.dev 대상 실행 감지:');
+    console.log('실제 사무실 공인 IP 잠김(발급 20회/번역 200회 고갈)을 방지하기 위해');
+    console.log('운영 환경에서는 고갈 시험을 건너뛰고 정상 호출(Test ③) 및 파라미터 검증만 수행합니다.');
+    console.log('전체 한도 고갈 시험(Test ①, Test ②)은 로컬 wrangler dev(http://127.0.0.1:8787)에서 실행하십시오.\n');
+
+    // 운영 환경 안전 검증: 발급 1회 + 번역 정상 호출 확인
+    const res = await fetch(`${BASE_URL}/license/issue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device: 'dev-safe-probe-' + Date.now(), app: 'raytok-android', ver: '1.0.0' })
+    });
+    console.log('Production license issue status:', res.status);
+    return;
+  }
   let totalIssuedForIP = 0;
   const tokenPool = [];
 

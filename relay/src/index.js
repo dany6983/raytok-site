@@ -178,6 +178,76 @@ export default {
       });
     }
 
+    // 0-0. 관리자 특정 IP 레이트 리밋 리셋: POST /limit/reset
+    if (url.pathname === '/limit/reset' && request.method === 'POST') {
+      const adminSecret = (env.ADMIN_SECRET || '').trim();
+      if (!adminSecret) {
+        return jsonError('upstream', 'Server configuration error: ADMIN_SECRET is not configured', 500);
+      }
+
+      const authHeader = request.headers.get('Authorization') || '';
+      const customSecret = request.headers.get('X-Admin-Secret') || '';
+      const providedSecret = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : customSecret.trim();
+
+      if (providedSecret !== adminSecret) {
+        return jsonError('unauthorized', 'Invalid admin secret', 401);
+      }
+
+      // 엔드포인트 자체 한도: 하루 10회
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const adminLimitRes = await limiter.fetch(new Request('http://internal/limit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'global:admin_reset_daily', limit: 10, windowMs: 86400000 })
+        }));
+        if (adminLimitRes.ok) {
+          const aData = await adminLimitRes.json();
+          if (!aData.allowed) {
+            return jsonError('rate_limited', 'Admin reset daily quota exceeded (max 10 per day)', 429);
+          }
+        }
+      } catch (_) {}
+
+      let body;
+      try {
+        body = await request.json();
+      } catch (_) {
+        return jsonError('bad_request', 'Invalid JSON body', 400);
+      }
+
+      const { ip } = body || {};
+      if (!ip || typeof ip !== 'string' || ip.trim().length === 0 || ip.includes('*')) {
+        return jsonError('bad_request', 'A single valid IP address is required', 400);
+      }
+      const targetIp = ip.trim();
+
+      // 특정 IP 리셋 실행 (DO 내부)
+      const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+      const limiter = env.ROOM.get(limiterId);
+      await limiter.fetch(new Request('http://internal/limit/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip: targetIp })
+      }));
+
+      // 로컬 fallback 맵도 함께 정리
+      rateLimitMap.delete(`issue_ip:${targetIp}`);
+      rateLimitMap.delete(`ip:${targetIp}`);
+
+      // 로그 남기기: 언제 어느 IP를 지웠는지
+      console.log(`[ADMIN_RESET] ${new Date().toISOString()} reset limits for IP: ${targetIp}`);
+
+      return new Response(JSON.stringify({ ok: true, reset_ip: targetIp }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
     // 0-1. 번역 엔드포인트: POST /translate
     if (url.pathname === '/translate' && request.method === 'POST') {
       // 1) 라이선스 토큰 검증: 0x02 (camera) 또는 0x04 (meet) 필요
