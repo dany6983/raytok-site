@@ -23,7 +23,8 @@ function generateHostToken() {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': '*'
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Expose-Headers': 'X-Cache, X-Cache-Hits, X-Upstream-Count, X-Upstream-Chars'
 };
 
 // Rate limiting: per key (sub / IP)
@@ -65,11 +66,12 @@ function checkIssueLimit(sub) {
 // In-memory fallback cache if Cache API is unavailable
 const memoryCache = new Map();
 
-async function computeCacheKey(source, target, text) {
+// Compute normalized cache key: https://${host}/__cache/tr/<sha256>
+async function computeCacheKey(host, source, target, text) {
   const input = `${source || ''}|${target}|${text}`;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   const hex = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
-  return `http://cache.internal/tr/${hex}`;
+  return `https://${host}/__cache/tr/${hex}`;
 }
 
 const LANG_CODE_REGEX = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4})?$/;
@@ -106,8 +108,8 @@ export default {
         return jsonError('bad_request', 'device is required', 400);
       }
 
-      const salt = env.LICENSE_SALT;
-      const secret = env.LICENSE_SECRET;
+      const salt = (env.LICENSE_SALT || '').trim().replace(/^["']|["']$/g, '');
+      const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
       if (!salt || !secret) {
         return jsonError('upstream', 'Server configuration error: missing salt or secret', 500);
       }
@@ -115,8 +117,25 @@ export default {
       // sha256(device + LICENSE_SALT) -> sub (원본은 저장·기록하지 않음)
       const sub = await computeSub(device.trim(), salt);
 
-      // 같은 sub 로 하루 5회까지만 발급 (초과 429)
-      if (!checkIssueLimit(sub)) {
+      // 같은 sub 로 하루 5회까지만 발급 (초과 429, Durable Object로 전역 카운팅 보장)
+      let allowed = true;
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const limitRes = await limiter.fetch(new Request('http://internal/limit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: `issue:${sub}`, limit: 5, windowMs: 86400000 })
+        }));
+        if (limitRes.ok) {
+          const lData = await limitRes.json();
+          allowed = lData.allowed;
+        }
+      } catch (_) {
+        allowed = checkIssueLimit(sub);
+      }
+
+      if (!allowed) {
         return jsonError('rate_limited', 'Daily license issuance limit reached (max 5 per day)', 429);
       }
 
@@ -140,9 +159,26 @@ export default {
         return jsonError(licenseRes.error, licenseRes.message, licenseRes.status);
       }
 
-      // 2) Rate Limit: 토큰 sub당 분당 60회 (IP 한도는 보조로 유지)
+      // 2) Rate Limit: 토큰 sub당 분당 60회 (Durable Object로 전역 카운팅 보장)
       const sub = licenseRes.payload.sub;
-      if (!checkRateLimit(`sub:${sub}`)) {
+      let subAllowed = true;
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const limitRes = await limiter.fetch(new Request('http://internal/limit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: `sub:${sub}`, limit: 60, windowMs: 60000 })
+        }));
+        if (limitRes.ok) {
+          const lData = await limitRes.json();
+          subAllowed = lData.allowed;
+        }
+      } catch (_) {
+        subAllowed = checkRateLimit(`sub:${sub}`, 60);
+      }
+
+      if (!subAllowed) {
         return jsonError('rate_limited', 'Rate limit exceeded for token subject (60 requests per minute)', 429);
       }
 
@@ -205,6 +241,7 @@ export default {
       const results = new Array(q.length);
       const uncachedIndices = [];
       const uncachedTexts = [];
+      let detectedSrc = sourceLang || null;
 
       for (let i = 0; i < q.length; i++) {
         const text = q[i];
@@ -213,22 +250,37 @@ export default {
           continue;
         }
 
-        const cacheUrl = await computeCacheKey(sourceLang, targetLang, text);
+        const cacheUrl = await computeCacheKey(url.host, sourceLang, targetLang, text);
         let cachedVal = null;
 
         if (cache) {
           try {
             const matchRes = await cache.match(new Request(cacheUrl));
             if (matchRes) {
-              cachedVal = await matchRes.text();
+              const raw = await matchRes.text();
+              try {
+                cachedVal = JSON.parse(raw);
+              } catch (_) {
+                cachedVal = { t: raw, src: sourceLang };
+              }
             }
           } catch (_) {}
         } else {
-          cachedVal = memoryCache.get(cacheUrl) || null;
+          const rawMem = memoryCache.get(cacheUrl);
+          if (rawMem) {
+            try {
+              cachedVal = JSON.parse(rawMem);
+            } catch (_) {
+              cachedVal = { t: rawMem, src: sourceLang };
+            }
+          }
         }
 
-        if (cachedVal !== null) {
-          results[i] = cachedVal;
+        if (cachedVal !== null && cachedVal.t !== undefined) {
+          results[i] = cachedVal.t;
+          if (!detectedSrc && cachedVal.src) {
+            detectedSrc = cachedVal.src;
+          }
         } else {
           uncachedIndices.push(i);
           uncachedTexts.push(text);
@@ -236,8 +288,14 @@ export default {
       }
 
       // 7) 상류(Google Translate v3 REST) 호출 (미적중분 1회 묶음 발송)
+      let upstreamCount = 0;
+      let upstreamChars = 0;
+
       if (uncachedTexts.length > 0) {
-        const apiKey = env.GOOGLE_TRANSLATE_KEY;
+        upstreamCount = 1;
+        upstreamChars = uncachedTexts.reduce((sum, s) => sum + s.length, 0);
+
+        const apiKey = (env.GOOGLE_TRANSLATE_KEY || '').trim().replace(/^["']|["']$/g, '');
         if (!apiKey) {
           return jsonError('upstream', 'GOOGLE_TRANSLATE_KEY is not configured', 500);
         }
@@ -286,16 +344,27 @@ export default {
           return jsonError('upstream', 'Upstream response length mismatch', 502);
         }
 
-        // 결과 병합 및 캐시 저장 (TTL 30일 = 2,592,000초)
+        // 상류가 감지한 언어 코드 추출
+        if (!detectedSrc && translations[0]?.detectedSourceLanguage) {
+          detectedSrc = translations[0].detectedSourceLanguage;
+        }
+
+        // 결과 병합 및 캐시 저장 (TTL 30일 = 2,592,000초, JSON 포맷 { t, src })
         for (let k = 0; k < translations.length; k++) {
           const originalIdx = uncachedIndices[k];
-          const transText = translations[k].translatedText;
+          const transItem = translations[k];
+          const transText = transItem.translatedText;
+          const itemSrc = sourceLang || transItem.detectedSourceLanguage || detectedSrc || 'unknown';
           results[originalIdx] = transText;
 
-          const cacheUrl = await computeCacheKey(sourceLang, targetLang, uncachedTexts[k]);
+          const cacheEntry = { t: transText, src: itemSrc };
+          const cacheUrl = await computeCacheKey(url.host, sourceLang, targetLang, uncachedTexts[k]);
+          const cacheValStr = JSON.stringify(cacheEntry);
+
           if (cache) {
-            const saveRes = new Response(transText, {
+            const saveRes = new Response(cacheValStr, {
               headers: {
+                'Content-Type': 'application/json',
                 'Cache-Control': 'public, max-age=2592000'
               }
             });
@@ -304,17 +373,34 @@ export default {
               ctx.waitUntil(putPromise);
             }
           } else {
-            memoryCache.set(cacheUrl, transText);
+            memoryCache.set(cacheUrl, cacheValStr);
           }
         }
       }
 
-      return new Response(JSON.stringify({ t: results }), {
+      // 8) 캐시 판정 헤더 계산
+      const hits = q.length - uncachedTexts.length;
+      let xCache = 'MISS';
+      if (hits === q.length) {
+        xCache = 'HIT';
+      } else if (hits > 0) {
+        xCache = 'PARTIAL';
+      }
+
+      const responseHeaders = {
+        'Content-Type': 'application/json',
+        'X-Cache': xCache,
+        'X-Cache-Hits': String(hits),
+        'X-Upstream-Count': String(upstreamCount),
+        'X-Upstream-Chars': String(upstreamChars),
+        ...CORS_HEADERS
+      };
+
+      const finalSrc = detectedSrc || sourceLang || 'unknown';
+
+      return new Response(JSON.stringify({ t: results, src: finalSrc }), {
         status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...CORS_HEADERS
-        }
+        headers: responseHeaders
       });
     }
 

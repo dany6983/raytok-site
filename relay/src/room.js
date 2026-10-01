@@ -35,6 +35,30 @@ export class Room {
   async fetch(request) {
     const url = new URL(request.url);
 
+    // 0. 내부 rate limit 검사 호출 (/limit)
+    if (url.pathname === '/limit' && request.method === 'POST') {
+      const { key, limit = 5, windowMs = 86400000 } = await request.json();
+      const now = Date.now();
+      if (!this.limits) this.limits = new Map();
+      let record = this.limits.get(key);
+      if (!record || now > record.resetAt) {
+        record = { count: 1, resetAt: now + windowMs };
+        this.limits.set(key, record);
+        return new Response(JSON.stringify({ allowed: true, count: 1 }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      if (record.count >= limit) {
+        return new Response(JSON.stringify({ allowed: false, count: record.count }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      record.count++;
+      return new Response(JSON.stringify({ allowed: true, count: record.count }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // 1. 내부 초기화 호출
     if (url.pathname === '/init' && request.method === 'POST') {
       const body = await request.json();
