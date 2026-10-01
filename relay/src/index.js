@@ -323,40 +323,54 @@ export default {
       try {
         body = await request.json();
       } catch (_) {
-        return jsonError('bad_lang', 'Invalid JSON body', 400);
+        return jsonError('bad_request', 'Invalid JSON body', 400, { why: 'invalid_json' });
       }
 
       const { q, source, target } = body || {};
 
       // 4) q 배열 검사 (최대 50개, 합계 5000자)
-      if (!Array.isArray(q) || q.length === 0 || q.length > 50) {
-        return jsonError('too_many', 'q must be an array with 1 to 50 items', 400);
+      if (!Array.isArray(q)) {
+        return jsonError('bad_request', 'q must be an array', 400, { why: 'q_not_array' });
+      }
+      if (q.length === 0) {
+        return jsonError('too_many', 'q must have at least 1 item', 400, { why: 'empty_q' });
+      }
+      if (q.length > 50) {
+        return jsonError('too_many', 'q cannot exceed 50 items', 400, { why: 'q_exceeds_50', count: q.length });
       }
 
       let totalChars = 0;
       for (let i = 0; i < q.length; i++) {
         if (typeof q[i] !== 'string') {
-          return jsonError('too_many', 'All items in q must be strings', 400);
+          return jsonError('too_many', `Item at index ${i} in q is not a string`, 400, { why: 'item_not_string', index: i });
         }
         totalChars += q[i].length;
       }
 
       if (totalChars > 5000) {
-        return jsonError('too_long', 'Total characters in q cannot exceed 5000', 400);
+        return jsonError('too_long', 'Total characters in q cannot exceed 5000', 400, { why: 'chars_exceed_5000', totalChars });
       }
 
-      // 5) 언어 코드 검사
-      if (!target || typeof target !== 'string' || !LANG_CODE_REGEX.test(target.trim())) {
-        return jsonError('bad_lang', 'Invalid or missing target language', 400);
+      // 5) 언어 코드 검사 및 호환성 처리 (언더스코어 및 auto 처리)
+      if (!target || typeof target !== 'string') {
+        return jsonError('bad_lang', 'target language is required', 400, { why: 'missing_target' });
       }
-      const targetLang = target.trim();
+      const targetNorm = target.trim().replace('_', '-');
+      if (!LANG_CODE_REGEX.test(targetNorm)) {
+        return jsonError('bad_lang', `Invalid target language code: '${target}'`, 400, { why: 'invalid_target_lang', val: target });
+      }
+      const targetLang = targetNorm;
 
       let sourceLang = null;
-      if (source) {
-        if (typeof source !== 'string' || !LANG_CODE_REGEX.test(source.trim())) {
-          return jsonError('bad_lang', 'Invalid source language', 400);
+      if (source && typeof source === 'string') {
+        const srcTrim = source.trim();
+        if (srcTrim.length > 0 && srcTrim.toLowerCase() !== 'auto' && srcTrim.toLowerCase() !== 'und') {
+          const srcNorm = srcTrim.replace('_', '-');
+          if (!LANG_CODE_REGEX.test(srcNorm)) {
+            return jsonError('bad_lang', `Invalid source language code: '${source}'`, 400, { why: 'invalid_source_lang', val: source });
+          }
+          sourceLang = srcNorm;
         }
-        sourceLang = source.trim();
       }
 
       // 6) 캐시 조회 (Workers Cache API + Memory Fallback)
@@ -527,7 +541,12 @@ export default {
 
       const finalSrc = detectedSrc || sourceLang || 'unknown';
 
-      return new Response(JSON.stringify({ t: results, src: finalSrc }), {
+      return new Response(JSON.stringify({
+        t: results,
+        src: finalSrc,
+        chars: totalChars,
+        lines: q.length
+      }), {
         status: 200,
         headers: responseHeaders
       });
