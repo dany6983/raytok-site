@@ -3,7 +3,8 @@
     "test:smoke": "node test/smoke.mjs",
     "test:translate": "node test/translate.mjs",
     "test:license": "node test/license.mjs",
-    "test:cache": "node test/cache.mjs"
+    "test:cache": "node test/cache.mjs",
+    "test:limits": "node test/limits.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.143.0",

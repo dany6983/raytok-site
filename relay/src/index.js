@@ -76,8 +76,8 @@ async function computeCacheKey(host, source, target, text) {
 
 const LANG_CODE_REGEX = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4})?$/;
 
-function jsonError(code, message, status = 400) {
-  return new Response(JSON.stringify({ error: code, message }), {
+function jsonError(code, message, status = 400, extra = {}) {
+  return new Response(JSON.stringify({ error: code, message, ...extra }), {
     status,
     headers: {
       'Content-Type': 'application/json',
@@ -114,29 +114,56 @@ export default {
         return jsonError('upstream', 'Server configuration error: missing salt or secret', 500);
       }
 
-      // sha256(device + LICENSE_SALT) -> sub (원본은 저장·기록하지 않음)
-      const sub = await computeSub(device.trim(), salt);
+      // IP 추출 (로그에는 IP를 남기지 않고 카운터 키로만 사용)
+      const clientIp = request.headers.get('CF-Connecting-IP') ||
+                       request.headers.get('X-Forwarded-For') ||
+                       '127.0.0.1';
 
-      // 같은 sub 로 하루 5회까지만 발급 (초과 429, Durable Object로 전역 카운팅 보장)
-      let allowed = true;
+      // 1. IP당 제한: 하루 20회 (초과 시 429 { error: 'rate_limited', scope: 'ip' })
+      let ipAllowed = true;
       try {
         const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
         const limiter = env.ROOM.get(limiterId);
         const limitRes = await limiter.fetch(new Request('http://internal/limit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: `issue:${sub}`, limit: 5, windowMs: 86400000 })
+          body: JSON.stringify({ key: `issue_ip:${clientIp}`, limit: 20, windowMs: 86400000 })
         }));
         if (limitRes.ok) {
           const lData = await limitRes.json();
-          allowed = lData.allowed;
+          ipAllowed = lData.allowed;
         }
       } catch (_) {
-        allowed = checkIssueLimit(sub);
+        ipAllowed = checkRateLimit(`issue_ip:${clientIp}`, 20);
       }
 
-      if (!allowed) {
-        return jsonError('rate_limited', 'Daily license issuance limit reached (max 5 per day)', 429);
+      if (!ipAllowed) {
+        return jsonError('rate_limited', 'Daily license issuance limit reached for IP (20 per day)', 429, { scope: 'ip' });
+      }
+
+      // sha256(device + LICENSE_SALT) -> sub (원본은 저장·기록하지 않음)
+      const sub = await computeSub(device.trim(), salt);
+
+      // 2. device(sub)당 제한: 하루 5회 (초과 시 429)
+      let subAllowed = true;
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const limitRes = await limiter.fetch(new Request('http://internal/limit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: `issue_sub:${sub}`, limit: 5, windowMs: 86400000 })
+        }));
+        if (limitRes.ok) {
+          const lData = await limitRes.json();
+          subAllowed = lData.allowed;
+        }
+      } catch (_) {
+        subAllowed = checkIssueLimit(sub);
+      }
+
+      if (!subAllowed) {
+        return jsonError('rate_limited', 'Daily license issuance limit reached for device (max 5 per day)', 429, { scope: 'device' });
       }
 
       // 발급 토큰: exp = 30일, flags = 0x02 (camera)
@@ -182,11 +209,31 @@ export default {
         return jsonError('rate_limited', 'Rate limit exceeded for token subject (60 requests per minute)', 429);
       }
 
+      // IP당 분당 200회 보조 한도 (Durable Object로 전역 카운팅 보장)
       const clientIp = request.headers.get('CF-Connecting-IP') ||
                        request.headers.get('X-Forwarded-For') ||
                        '127.0.0.1';
-      if (!checkRateLimit(`ip:${clientIp}`, 300)) {
-        return jsonError('rate_limited', 'Rate limit exceeded for IP (300 requests per minute)', 429);
+      let ipAllowed = true;
+      let ipCount = 0;
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const limitRes = await limiter.fetch(new Request('http://internal/limit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: `ip:${clientIp}`, limit: 200, windowMs: 60000 })
+        }));
+        if (limitRes.ok) {
+          const lData = await limitRes.json();
+          ipAllowed = lData.allowed;
+          ipCount = lData.count;
+        }
+      } catch (_) {
+        ipAllowed = checkRateLimit(`ip:${clientIp}`, 200);
+      }
+
+      if (!ipAllowed) {
+        return jsonError('rate_limited', 'Rate limit exceeded for IP (200 requests per minute)', 429, { scope: 'ip', count: ipCount });
       }
 
       // 3) Body parsing
