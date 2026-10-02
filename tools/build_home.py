@@ -22,15 +22,15 @@ IDS = {
  # OWS
  "oprod":"20261002_061100_e7592acb-7824-4b4d-92e0-4ab543c163b6","ocafe":"20261002_061100_d9dd4b21-71d4-41d4-9ead-ba78a4b54901",
  "ohand":"20261002_061100_8e6493af-cdc1-42d7-a732-dbfe286de7e9","omkt":"20261002_061100_1f17f515-3c07-4e12-b3df-6c2d64781307",
- "omeet":"20261002_072156_42f2722b-db4c-459d-9dbb-e21a19aad288","ocafe2":"20261002_072157_ca463df6-1189-4727-9edb-f7096f45cea8",
 }
 import hashlib
-CSSV = hashlib.md5(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"assets","site.css"),"rb").read()).hexdigest()[:8]
+CSSV = hashlib.md5(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"assets","site.css"),"rb").read().replace(b"\r\n", b"\n")).hexdigest()[:8]  # 줄바꿈(CRLF/LF) 차이로 해시가 바뀌지 않게
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ⚠️ CDN 직접 참조 금지: 모든 미디어는 저장소 img/ 로 받아서 쓴다 (python tools/fetch_media.py).
 # Higgsfield 계정·CDN 변경 시 외부 주소는 깨지므로 HTML에는 항상 저장소 경로(/img/...)만 쓴다.
 # 아래 CDN, VID 상수는 tools/fetch_media.py 가 다운로드 출처를 파싱하기 위해 보존하는 것임.
 def img(k):
+    # omeet·ocafe2(영상 포스터)는 좌우 반전본이라 img/ 에만 있다 — IDS 에 넣지 말 것(fetch_media 가 원본으로 덮어씀).
     p = os.path.join(ROOT, "img", k + ".webp")
     if not os.path.exists(p):
         print(f"⚠️ 경고: img/{k}.webp 파일이 없습니다. python tools/fetch_media.py 를 실행하세요.")
@@ -45,8 +45,8 @@ V_FIELD = vid("field", VID+"e3812fd1-3847-4125-88a3-f80e31294d9e.mp4")
 V_TOUR  = vid("tour", VID+"7cf21e1f-95fb-477b-9a63-6bb09f6c1520.mp4")
 V_FIELD2 = vid("field2", VID+"b78f41e3-75be-4a3b-b3b6-ef2cd79be40a.mp4")   # 물류창고
 V_TOUR2  = vid("tour2", VID+"56997d8e-e294-4d4c-8e1d-f905daacd01e.mp4")    # 광장시장 (세로 3:4)
-V_OWS1   = vid("ows1", VID+"81e43e05-80cd-4ac5-aec4-77a18f968d09.mp4")     # 회의장에서 건네기
-V_OWS2   = vid("ows2", VID+"a79e62a2-72c5-4668-83da-a6c9e8f0b114.mp4")     # 카페에서 건네기
+V_OWS1   = vid("ows1", VID+"d81f4185-bf08-4292-b257-bae10cb16dce.mp4")     # 회의장에서 오른쪽 이어폰 건네기 (좌우 반전본)
+V_OWS2   = vid("ows2", VID+"e189a395-9cd8-4351-9607-6608eba433e6.mp4")     # 카페에서 오른쪽 이어폰 건네기 (좌우 반전본)
 def loopvid(src, poster, label):
     # 소리 없이 자동 반복 재생 (OWS 건네는 장면)
     return f'<div class="vid"><video autoplay muted loop playsinline preload="metadata" poster="{poster}" src="{src}" aria-label="{label}"></video></div>'
