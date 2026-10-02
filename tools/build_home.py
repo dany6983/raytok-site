@@ -308,7 +308,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 <tr><th>그룹 인원</th><td>가이드 폰 단독 약 10명 · 휴대용 공유기 연결 시 20~50명 (환경에 따라 다름)</td></tr>
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 가이드 폰이 인터넷에 연결되면 소수 언어 추가</td></tr>
 <tr><th>손님 준비물</th><td>자기 스마트폰과 이어폰. 수신기를 나눠 주고 걷을 필요가 없습니다</td></tr>
-<tr><th>요금</th><td>쿠폰 1장 5,000원 — 손님 1명이 7일 동안 사용 · 30명까지 무료 체험</td></tr>
+<tr><th>요금</th><td>쿠폰 1장 5,000원(부가세 포함) — 손님 1명이 7일 동안 사용 · 30명까지 무료 체험</td></tr>
 </table>
 </div></section>
 
@@ -316,9 +316,9 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 <p class="eyebrow">가격</p>
 <h2>쿠폰 한 장에 7일, 5,000원</h2>
 <p class="sub">손님 한 명이 쿠폰 한 장으로 7일 동안 씁니다. 언어 수와 투어 횟수는 상관없습니다.</p>
-<div class="price"><div><b>5,000원</b><span>쿠폰 1장 · 손님 1명 · 7일</span></div><div><b>30명 무료</b><span>여행사·가이드 누구나 체험</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
+<div class="price"><div><b>5,000원</b><span>쿠폰 1장 · 손님 1명 · 7일 (부가세 포함)</span></div><div><b>30명 무료</b><span>여행사·가이드 누구나 체험</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
 <table>
-<tr><th>예시</th><th>비용</th></tr>
+<tr><th>예시</th><th>비용 (부가세 포함)</th></tr>
 <tr><td>손님 10명, 3박 4일 투어</td><td><b>5만원</b></td></tr>
 <tr><td>손님 20명, 6박 7일 투어</td><td><b>10만원</b></td></tr>
 </table>
