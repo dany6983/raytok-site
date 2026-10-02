@@ -135,3 +135,8 @@ section[id]{scroll-margin-top:96px}
 @media(max-width:1100px){.hpat{font-size:13px}.hpat ul{gap:4px 18px}}
 @media(max-width:900px){.hpat ul{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 14px}.hpat b{display:block}}
 @media(max-width:560px){.hpat ul{grid-template-columns:repeat(2,1fr)}}
+
+/* 가로 영상 + 세로(3:4) 영상을 같은 높이로 나란히 */
+.vduo{display:grid;grid-template-columns:2.37fr 1fr;gap:18px;align-items:start}
+.vid.tall video{aspect-ratio:3/4}
+@media(max-width:700px){.vduo{grid-template-columns:1fr}.vduo>div:last-child{max-width:340px}}

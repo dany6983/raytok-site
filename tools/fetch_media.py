@@ -9,7 +9,7 @@ CDN = re.search(r'^CDN = "(.+?)"', src, re.M).group(1)
 VID = re.search(r'^VID = "(.+?)"', src, re.M).group(1)
 ids = dict(re.findall(r'"(\w+)":"(\d{8}_\d{6}_[0-9a-f-]{36})"', src))
 jobs = [(f"{k}.webp", f"{CDN}hf_{v}_min.webp") for k, v in ids.items()]
-jobs += [("field.mp4", VID + "e3812fd1-3847-4125-88a3-f80e31294d9e.mp4"), ("tour.mp4", VID + "7cf21e1f-95fb-477b-9a63-6bb09f6c1520.mp4")]
+jobs += [(n + ".mp4", VID + u) for n, u in re.findall(r'vid\("(\w+)", VID\+"([0-9a-f-]{36}\.mp4)"\)', src)]  # build_home.py 의 vid(...) 전부
 os.makedirs(os.path.join(ROOT, "img"), exist_ok=True)
 bad = 0
 for name, url in jobs:

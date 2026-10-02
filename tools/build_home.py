@@ -22,6 +22,7 @@ IDS = {
  # OWS
  "oprod":"20261002_061100_e7592acb-7824-4b4d-92e0-4ab543c163b6","ocafe":"20261002_061100_d9dd4b21-71d4-41d4-9ead-ba78a4b54901",
  "ohand":"20261002_061100_8e6493af-cdc1-42d7-a732-dbfe286de7e9","omkt":"20261002_061100_1f17f515-3c07-4e12-b3df-6c2d64781307",
+ "omeet":"20261002_072156_42f2722b-db4c-459d-9dbb-e21a19aad288","ocafe2":"20261002_072157_ca463df6-1189-4727-9edb-f7096f45cea8",
 }
 import hashlib
 CSSV = hashlib.md5(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"assets","site.css"),"rb").read()).hexdigest()[:8]
@@ -35,6 +36,13 @@ def vid(name, cdn_url):
     return cdn_url
 V_FIELD = vid("field", VID+"e3812fd1-3847-4125-88a3-f80e31294d9e.mp4")
 V_TOUR  = vid("tour", VID+"7cf21e1f-95fb-477b-9a63-6bb09f6c1520.mp4")
+V_FIELD2 = vid("field2", VID+"b78f41e3-75be-4a3b-b3b6-ef2cd79be40a.mp4")   # 물류창고
+V_TOUR2  = vid("tour2", VID+"56997d8e-e294-4d4c-8e1d-f905daacd01e.mp4")    # 광장시장 (세로 3:4)
+V_OWS1   = vid("ows1", VID+"81e43e05-80cd-4ac5-aec4-77a18f968d09.mp4")     # 회의장에서 건네기
+V_OWS2   = vid("ows2", VID+"a79e62a2-72c5-4668-83da-a6c9e8f0b114.mp4")     # 카페에서 건네기
+def loopvid(src, poster, label):
+    # 소리 없이 자동 반복 재생 (OWS 건네는 장면)
+    return f'<div class="vid"><video autoplay muted loop playsinline preload="metadata" poster="{poster}" src="{src}" aria-label="{label}"></video></div>'
 
 def mailto(subject, body=""):
     from urllib.parse import quote
@@ -178,11 +186,12 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 
 <section class="dark"><div class="wrap">
 <p class="eyebrow">영상으로 보기</p>
-<h2>현장과 투어, 10초씩</h2>
-<p class="sub">소리를 켜고 보세요. 한국어로 말하는 장면이며, 듣는 사람에게는 각자의 언어로 전달됩니다.</p>
-<div class="g2">
+<h2>현장, 투어, 대화 — 10초씩</h2>
+<p class="sub">현장과 투어 영상은 소리를 켜고 보세요. 한국어로 말하는 장면이며, 듣는 사람에게는 각자의 언어로 전달됩니다.</p>
+<div class="g3">
 <div><div class="vid"><video controls playsinline preload="none" poster="{img("ship")}" src="{V_FIELD}"></video></div><p class="vcap">조선소 — "비계 밑으로는 절대 지나가지 마세요."</p></div>
 <div><div class="vid"><video controls playsinline preload="none" poster="{img("bukc")}" src="{V_TOUR}"></video></div><p class="vcap">북촌 — "조금만 조용히 걸어 주세요."</p></div>
+<div>{loopvid(V_OWS2, img("ocafe2"), "카페에서 이어폰 한쪽을 건네고 대화하는 두 사람")}<p class="vcap">OWS 이어폰 — 한쪽을 건네면 대화가 시작됩니다.</p></div>
 </div></div></section>
 ''' + TECH + cta("먼저 써 보고 결정하세요", "시연은 무료입니다. 현장교육은 30일, 관광가이드는 30명까지 무료로 체험할 수 있습니다.", "[RayTok] 무료 체험·도입 문의") + FOOT
 write("/", home)
@@ -219,8 +228,11 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 자�
 <div class="step"><div class="n">2</div><h3>근로자는 QR 한 번</h3><p>자기 폰으로 QR을 찍고 언어를 고릅니다. 설치·가입·개인정보 입력이 없습니다.</p></div>
 <div class="step"><div class="n">3</div><h3>귀로, 화면으로</h3><p>본인 이어폰으로 듣고 자막을 봅니다. 시선은 강사와 작업 현장에 둡니다.</p></div>
 </div>
-<div class="vid" style="margin-top:22px"><video controls playsinline preload="none" poster="{img("ship")}" src="{V_FIELD}"></video></div>
-<p class="vcap">연출 영상 — 조선소 안전 지시 (소리 있음)</p>
+<div class="g2" style="margin-top:22px">
+<div><div class="vid"><video controls playsinline preload="none" poster="{img("ship")}" src="{V_FIELD}"></video></div><p class="vcap">조선소 — 비계 아래 통행 금지 지시</p></div>
+<div><div class="vid"><video controls playsinline preload="none" poster="{img("ware")}" src="{V_FIELD2}"></video></div><p class="vcap">물류창고 — 지게차 길과 보행로 안내</p></div>
+</div>
+<p class="vcap">연출 영상입니다. 소리를 켜고 보세요.</p>
 </div></section>
 
 <section><div class="wrap">
@@ -294,8 +306,11 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 <div class="step"><div class="n">2</div><h3>손님은 QR 한 번</h3><p>자기 폰으로 QR을 찍고 언어를 고릅니다. 설치·가입이 없습니다.</p></div>
 <div class="step"><div class="n">3</div><h3>이어폰으로 듣기</h3><p>본인 이어폰으로 자기 언어를 듣습니다. 눈은 궁궐과 바다와 시장에 둡니다.</p></div>
 </div>
-<div class="vid" style="margin-top:22px"><video controls playsinline preload="none" poster="{img("bukc")}" src="{V_TOUR}"></video></div>
-<p class="vcap">연출 영상 — 북촌 한옥마을 해설 (소리 있음)</p>
+<div class="vduo" style="margin-top:22px">
+<div><div class="vid"><video controls playsinline preload="none" poster="{img("bukc")}" src="{V_TOUR}"></video></div><p class="vcap">북촌 한옥마을 — 조용히 걸어 달라는 안내</p></div>
+<div><div class="vid tall"><video controls playsinline preload="none" poster="{img("gwang")}" src="{V_TOUR2}"></video></div><p class="vcap">광장시장 — 음식 소개</p></div>
+</div>
+<p class="vcap">연출 영상입니다. 소리를 켜고 보세요.</p>
 </div></section>
 
 <section><div class="wrap">
@@ -367,7 +382,10 @@ ows = head("RayTok OWS 통역 이어폰 — 건네도 괜찮은 통역 이어폰
 <div class="step"><div class="n">2</div><h3>그냥 말합니다</h3><p>상대의 말은 내 귀에 내 언어로, 내 말은 상대 귀에 상대 언어로 들립니다.</p></div>
 <div class="step"><div class="n">3</div><h3>인터넷이 없어도</h3><p>언어 팩을 미리 받아 두면 비행기 안, 로밍이 안 되는 곳에서도 씁니다.</p></div>
 </div>
-<img class="wide" style="margin-top:22px" loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 끼고 마주 보며 대화하는 장면">
+<div class="g2" style="margin-top:22px">
+<div>{loopvid(V_OWS1, img("omeet"), "회의장에서 이어폰 오른쪽을 상대에게 건네고 대화하는 두 사람")}<p class="vcap">회의장 — 처음 만난 상대에게 오른쪽을 건넵니다.</p></div>
+<div>{loopvid(V_OWS2, img("ocafe2"), "카페에서 이어폰 오른쪽을 상대에게 건네고 대화하는 두 사람")}<p class="vcap">카페 — 받아서 귀에 걸면 바로 이야기합니다.</p></div>
+</div>
 <table style="margin-top:22px">
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 인터넷 연결 시 더 많은 언어</td></tr>
 <tr><th>형태</th><td>귀를 막지 않는 오픈형(OWS) · 충전 케이스 포함</td></tr>
