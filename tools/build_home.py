@@ -27,13 +27,20 @@ IDS = {
 import hashlib
 CSSV = hashlib.md5(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"assets","site.css"),"rb").read()).hexdigest()[:8]
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# ⚠️ CDN 직접 참조 금지: 모든 미디어는 저장소 img/ 로 받아서 쓴다 (python tools/fetch_media.py).
+# Higgsfield 계정·CDN 변경 시 외부 주소는 깨지므로 HTML에는 항상 저장소 경로(/img/...)만 쓴다.
+# 아래 CDN, VID 상수는 tools/fetch_media.py 가 다운로드 출처를 파싱하기 위해 보존하는 것임.
 def img(k):
-    # 저장소 img/<이름>.webp 가 있으면 그것을 쓴다 (tools/fetch_media.py 가 내려받음). 없으면 CDN.
-    if os.path.exists(os.path.join(ROOT, "img", k + ".webp")): return f"/img/{k}.webp"
-    return f"{CDN}hf_{IDS[k]}_min.webp"
+    p = os.path.join(ROOT, "img", k + ".webp")
+    if not os.path.exists(p):
+        print(f"⚠️ 경고: img/{k}.webp 파일이 없습니다. python tools/fetch_media.py 를 실행하세요.")
+    return f"/img/{k}.webp"
+
 def vid(name, cdn_url):
-    if os.path.exists(os.path.join(ROOT, "img", name + ".mp4")): return f"/img/{name}.mp4"
-    return cdn_url
+    p = os.path.join(ROOT, "img", name + ".mp4")
+    if not os.path.exists(p):
+        print(f"⚠️ 경고: img/{name}.mp4 파일이 없습니다. python tools/fetch_media.py 를 실행하세요.")
+    return f"/img/{name}.mp4"
 V_FIELD = vid("field", VID+"e3812fd1-3847-4125-88a3-f80e31294d9e.mp4")
 V_TOUR  = vid("tour", VID+"7cf21e1f-95fb-477b-9a63-6bb09f6c1520.mp4")
 V_FIELD2 = vid("field2", VID+"b78f41e3-75be-4a3b-b3b6-ef2cd79be40a.mp4")   # 물류창고
@@ -198,7 +205,7 @@ write("/", home)
 
 # ───────────── 현장교육 ─────────────
 field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 자기 말로",
-             "외국인 근로자 안전교육·작업지시를 위한 통역 도구. 현장 인터넷 불필요, 근로자 앱 설치 불필요, 교육 기록 자동 생성. 근로자 1인 월 1만원, 30일 무료.", "/field/", img("ship")) + top("field") + f'''
+             "외국인 근로자 안전교육·작업지시를 위한 통역 도구. 현장 인터넷 불필요, 근로자 앱 설치 불필요, 교육 기록 자동 생성. 근로자 1인 월 1만원(부가세 포함), 30일 무료.", "/field/", img("ship")) + top("field") + f'''
 <div class="hero"><img src="{img("ship")}" alt="조선소 도크에서 안전 지시를 하는 관리자와 이어폰을 낀 외국인 근로자들">
 <div class="wrap">
 <span class="tag">현장교육 · 2026년 11월 출시 예정</span>
