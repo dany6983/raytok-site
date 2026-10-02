@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm --prefix *)",
+      "Bash(npm test*)",
+      "Bash(npx jest*)",
+      "Bash(npx wrangler dev*)",
+      "Bash(npx wrangler tail*)",
+      "Bash(node test/*)",
+      "Bash(node relay/test/*)",
+      "Bash(node relay/tools/*)",
+      "Bash(node packs/*)",
+      "Bash(node samples/*)",
+      "Bash(node -e *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git restore*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(wrangler dev*)",
+      "Bash(wrangler tail*)"
+    ],
+    "ask": [
+      "Bash(rm *)",
+      "Bash(del *)",
+      "Bash(rmdir *)",
+      "Bash(wrangler deploy*)",
+      "Bash(npx wrangler deploy*)",
+      "Bash(wrangler secret*)",
+      "Bash(npx wrangler secret*)",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ]
+  }
+}
