@@ -76,7 +76,7 @@ def head(title, desc, path, og):
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="https://raytok.kr{path}">
-<meta property="og:image" content="https://raytok.kr/assets/og.jpg">
+<meta property="og:image" content="https://raytok.kr/assets/og.jpg?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="theme-color" content="#0A0F1F">
