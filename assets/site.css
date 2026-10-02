@@ -1,0 +1,113 @@
+/* RayTok 소개 페이지 공용 스타일 (/, /field/, /tour/, /ows/) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+:root{--ink:#0A0F1F;--ink2:#3d4457;--mut:#6b7386;--bg:#f3f2f2;--card:#fff;--line:#e2e4ea;--ac:#f28c28;--ac2:#0f6b72;--r:16px;--w:1120px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Pretendard Variable",Pretendard,system-ui,-apple-system,"Noto Sans KR",sans-serif;color:var(--ink);background:var(--bg);line-height:1.65;font-size:16px;word-break:keep-all}
+img,video{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:var(--w);margin:0 auto;padding:0 20px}
+
+/* 머리 */
+.top{position:sticky;top:0;z-index:20;background:rgba(10,15,31,.92);backdrop-filter:blur(10px);color:#fff}
+.top .wrap{display:flex;align-items:center;gap:14px;height:56px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.4px;text-decoration:none;margin-right:auto}
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{white-space:nowrap;text-decoration:none;font-size:14.5px;padding:8px 10px;border-radius:8px;opacity:.82}
+.nav a:hover,.nav a[aria-current]{opacity:1;background:rgba(255,255,255,.1)}
+.get{white-space:nowrap;text-decoration:none;font-weight:700;font-size:14px;background:#fff;color:var(--ink);padding:8px 14px;border-radius:999px}
+@media(max-width:640px){.top .wrap{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:6px;row-gap:4px}.nav{order:3;width:100%;margin:0 -6px}}
+
+/* 히어로 */
+.hero{position:relative;color:#fff;background:var(--ink);overflow:hidden}
+.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,15,31,.35) 0%,rgba(10,15,31,.5) 45%,rgba(10,15,31,.94) 100%)}
+.hero .wrap{position:relative;z-index:1;padding-top:clamp(120px,26vw,300px);padding-bottom:clamp(36px,6vw,72px)}
+.kick{font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--ac);margin:0 0 10px}
+.hero h1{font-size:clamp(30px,6.2vw,60px);line-height:1.18;letter-spacing:-.03em;margin:0 0 14px;font-weight:800}
+.hero p.lead{font-size:clamp(16px,2.2vw,20px);max-width:36em;margin:0 0 24px;opacity:.93}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-block;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:12px;font-size:16px;text-align:center}
+.btn.p{background:var(--ac);color:#fff}
+.btn.w{background:#fff;color:var(--ink)}
+.btn.g{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.btn.d{background:var(--ink);color:#fff}
+.tag{display:inline-block;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.16);margin-bottom:14px}
+
+/* 구역 */
+section{padding:clamp(44px,7vw,88px) 0}
+section.alt{background:#fff}
+section.dark{background:var(--ink);color:#fff}
+h2{font-size:clamp(24px,4vw,38px);line-height:1.25;letter-spacing:-.025em;margin:0 0 12px;font-weight:800}
+.sub{font-size:clamp(15.5px,1.8vw,18px);color:var(--ink2);max-width:42em;margin:0 0 28px}
+.dark .sub{color:rgba(255,255,255,.8)}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--ac);margin:0 0 8px}
+
+/* 카드 */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:860px){.g3,.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.g3,.g2{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border-radius:var(--r);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column}
+.alt .card{background:var(--bg);border-color:transparent}
+.card>img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.card .in{padding:18px 18px 20px;display:flex;flex-direction:column;gap:6px;flex:1}
+.card h3{margin:0;font-size:20px;letter-spacing:-.02em}
+.card p{margin:0;color:var(--ink2);font-size:15px}
+.card .more{margin-top:auto;padding-top:10px;font-weight:700;text-decoration:none;color:var(--ink)}
+.card .st{font-size:12.5px;font-weight:700;color:var(--ac)}
+a.card{text-decoration:none;transition:transform .15s}
+a.card:hover{transform:translateY(-3px)}
+
+.step{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--line)}
+.alt .step{background:var(--bg);border-color:transparent}
+.dark .step{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}
+.step .n{font-size:28px;font-weight:800;color:var(--ac);line-height:1}
+.step h3{margin:8px 0 4px;font-size:18px}
+.step p{margin:0;font-size:15px;color:var(--ink2)}
+.dark .step p{color:rgba(255,255,255,.78)}
+
+/* 사진 모음 */
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:700px){.shots{grid-template-columns:1fr 1fr}}
+.shots figure{margin:0}
+.shots img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px}
+.shots figcaption{font-size:13.5px;color:var(--mut);margin-top:6px}
+.wide{border-radius:var(--r);width:100%;aspect-ratio:16/9;object-fit:cover}
+
+/* 영상 */
+.vid{border-radius:var(--r);overflow:hidden;background:#000}
+.vid video{width:100%;aspect-ratio:16/9;object-fit:cover}
+.vcap{font-size:14px;color:var(--mut);margin:8px 2px 0}
+.dark .vcap{color:rgba(255,255,255,.7)}
+
+/* 표·가격 */
+table{width:100%;border-collapse:collapse;font-size:15px;background:var(--card);border-radius:12px;overflow:hidden}
+th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{background:#eceef3;font-weight:700;white-space:nowrap}
+tr:last-child td,tr:last-child th{border-bottom:0}
+.price{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:700px){.price{grid-template-columns:1fr}}
+.price div{background:var(--ink);color:#fff;border-radius:var(--r);padding:20px}
+.price b{display:block;font-size:30px;font-weight:800;color:var(--ac);line-height:1.2;letter-spacing:-.02em}
+.price span{font-size:14px;opacity:.85}
+.note{font-size:13.5px;color:var(--mut);margin-top:12px}
+.dark .note{color:rgba(255,255,255,.6)}
+
+/* FAQ */
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+summary{font-weight:700;cursor:pointer;font-size:16px}
+details p{margin:10px 0 0;color:var(--ink2);font-size:15px}
+
+/* 문의 띠 */
+.cta{text-align:center}
+.cta h2{margin-bottom:8px}
+.cta .btns{justify-content:center;margin-top:20px}
+.mail{font-size:15px;opacity:.8;margin-top:14px}
+
+footer{background:#070b17;color:rgba(255,255,255,.66);font-size:13.5px;padding:32px 0 44px}
+footer a{color:rgba(255,255,255,.85)}
+footer .row{display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:12px}
+footer p{margin:4px 0}
