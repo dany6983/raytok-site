@@ -108,6 +108,12 @@ PATS = [
  ("자막과 음성을 따로 다루는 처리","실시간 통역에서 표시 단위와 음성 출력 단위를 분리하여 처리하는 방법 및 시스템","10-2026-0189505","2026.10"),
  ("준비한 원고와 즉석 발언을 함께, 출처를 나눠 기록","사전 번역된 원고와 실시간 발화를 혼합 송출하고 출처를 구분하여 기록 및 보고하는 다국어 통역 방법 및 시스템","10-2026-0189470","2026.10"),
 ]
+PSHORT = ["근거리 통역 연결","위변조 검출 교육 기록","통역음 재인식 억제","다국어 방송·자막 병용","자막·음성 단위 분리","원고·실시간 혼합 기록"]
+PBAND = '''<a class="pband" href="#tech" aria-label="특허 출원 6건 자세히 보기"><div class="wrap">
+<div class="ph"><b>특허 출원 중 6건</b><span>자체 개발 기술 · 자세히 →</span></div>
+<ul>''' + "".join(f'<li><span>{PSHORT[i]}</span><b>{no}</b></li>' for i,(t,o,no,d) in enumerate(PATS)) + '''</ul>
+</div></a>
+'''
 TECH = '''<section id="tech"><div class="wrap">
 <p class="eyebrow">기술</p>
 <h2>기술을 직접 만드는 회사입니다</h2>
@@ -133,7 +139,7 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 <p class="lead">번역은 말하는 사람의 폰 안에서 이뤄집니다. 현장에 인터넷이 없어도 되고, 듣는 사람은 앱을 깔지 않아도 됩니다.</p>
 <div class="btns"><a class="btn w" href="/download/">앱 설치하기</a><a class="btn g" href="{mailto("[RayTok] 무료 체험·도입 문의", BODY)}">무료 체험·도입 문의</a></div>
 </div></div>
-
+''' + PBAND + f'''
 <section><div class="wrap">
 <p class="eyebrow">어디에 쓰나요</p>
 <h2>세 가지 쓰임</h2>
