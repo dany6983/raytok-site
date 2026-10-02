@@ -127,6 +127,14 @@
     .badge-via { background-color: #475569; color: #fff; }
     .badge-meeting { background-color: #0369a1; color: #e0f2fe; }
     .badge-me { background-color: #047857; color: #d1fae5; }
+    [dir="rtl"] .msg-bubble {
+      border-top-left-radius: 12px;
+      border-top-right-radius: 2px;
+    }
+    [dir="rtl"] .badge {
+      margin-left: 0;
+      margin-right: 4px;
+    }
 
     .tool-bar {
       padding: 10px 16px;
@@ -388,8 +396,12 @@
       const lower = code.toLowerCase();
       if (lower.startsWith('zh')) return 'zh';
       if (lower === 'tl' || lower.startsWith('tl-') || lower === 'fil' || lower.startsWith('fil-')) return 'fil';
+      if (lower === 'in' || lower.startsWith('in-')) return 'id';
+      if (lower === 'iw' || lower.startsWith('iw-')) return 'he';
       return lower.split('-')[0];
     }
+
+    const RTL = new Set(['ar', 'he', 'iw', 'fa', 'ur']); // iw 는 he 의 옛 코드
 
     function t(key, lang = currentUiLang) {
       if (!uiStrings || !uiStrings.strings || !uiStrings.strings[key]) return '';
@@ -434,7 +446,7 @@
     function applyStrings(lang) {
       currentUiLang = lang;
       document.documentElement.lang = lang;
-      document.documentElement.setAttribute('dir', lang === 'ur' ? 'rtl' : 'ltr');
+      document.documentElement.setAttribute('dir', RTL.has(normalizeLangCode(lang)) ? 'rtl' : 'ltr');
       document.title = t('page_title', lang);
 
       document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -483,6 +495,11 @@
       currentLangText.textContent = cur ? (isKo ? cur.name_ko : cur.name_en) : selectedLang;
     }
 
+    function updateSubtitleDir() {
+      const isRtl = RTL.has(normalizeLangCode(selectedLang));
+      chatList.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+    }
+
     function setStatus(key, dotClass) {
       currentStatusKey = key;
       statusText.textContent = t(key, currentUiLang);
@@ -521,6 +538,7 @@
       const initialUiLang = determineLanguage(availableLangs);
       applyStrings(initialUiLang);
       if (selectedLang) langSelect.value = selectedLang;
+      updateSubtitleDir();
 
       const qRoom = params.get('room');
       if (qRoom) {
@@ -538,6 +556,7 @@
 
       const newUiLang = normalizeLangCode(selectedLang);
       applyStrings(newUiLang);
+      updateSubtitleDir();
 
       if (isConnected) {
         sendHello();
@@ -760,9 +779,11 @@
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src">#${line.seq} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}">${spkLabel}</span></div>
+        <div class="msg-src" dir="ltr">#${line.seq} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}">${spkLabel}</span></div>
       `;
-      div.querySelector('.msg-text').textContent = line.text;
+      const textDiv = div.querySelector('.msg-text');
+      textDiv.textContent = line.text;
+      textDiv.setAttribute('dir', RTL.has(normalizeLangCode(srcLang)) ? 'rtl' : 'ltr');
       chatList.appendChild(div);
       updateLineUI(line);
       chatList.scrollTop = chatList.scrollHeight;
@@ -773,6 +794,7 @@
       if (!div) return;
       const trDiv = div.querySelector('.msg-tr');
 
+      trDiv.setAttribute('dir', RTL.has(normalizeLangCode(selectedLang)) ? 'rtl' : 'ltr');
       const trText = line.tr[selectedLang] || '';
       trDiv.textContent = trText;
 
