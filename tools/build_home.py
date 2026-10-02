@@ -22,6 +22,9 @@ IDS = {
  # OWS
  "oprod":"20261002_061100_e7592acb-7824-4b4d-92e0-4ab543c163b6","ocafe":"20261002_061100_d9dd4b21-71d4-41d4-9ead-ba78a4b54901",
  "ohand":"20261002_061100_8e6493af-cdc1-42d7-a732-dbfe286de7e9","omkt":"20261002_061100_1f17f515-3c07-4e12-b3df-6c2d64781307",
+ # Meet (화상회의)
+ "mhero":"20261002_092350_90c57896-896c-4fbb-b150-ddbf46189dc9","mroom":"20261002_092349_141b2e69-5fb0-418d-9cdf-4652817ce398",
+ "mmove":"20261002_092349_877168a2-47d0-440f-b265-bc2788874a08",
 }
 import hashlib
 CSSV = hashlib.md5(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"assets","site.css"),"rb").read().replace(b"\r\n", b"\n")).hexdigest()[:8]  # 줄바꿈(CRLF/LF) 차이로 해시가 바뀌지 않게
@@ -47,6 +50,9 @@ V_FIELD2 = vid("field2", VID+"b78f41e3-75be-4a3b-b3b6-ef2cd79be40a.mp4")   # 물
 V_TOUR2  = vid("tour2", VID+"56997d8e-e294-4d4c-8e1d-f905daacd01e.mp4")    # 광장시장 (세로 3:4)
 V_OWS1   = vid("ows1", VID+"d81f4185-bf08-4292-b257-bae10cb16dce.mp4")     # 회의장에서 오른쪽 이어폰 건네기 (좌우 반전본)
 V_OWS2   = vid("ows2", VID+"e189a395-9cd8-4351-9607-6608eba433e6.mp4")     # 카페에서 오른쪽 이어폰 건네기 (좌우 반전본)
+def mimg(k, alt, extra=""):
+    # 아직 img/ 에 없을 수 있는 새 사진: 없으면 깨진 그림 대신 조용히 숨긴다
+    return f'<img loading="lazy" src="{img(k)}" alt="{alt}"{extra} onerror="this.style.display=\'none\'">'
 def loopvid(src, poster, label):
     # 소리 없이 자동 반복 재생 (OWS 건네는 장면)
     return f'<div class="vid"><video autoplay muted loop playsinline preload="metadata" poster="{poster}" src="{src}" aria-label="{label}"></video></div>'
@@ -87,13 +93,13 @@ def top(cur):
         return f'<a href="{href}"{c}>{label}</a>'
     return f'''<header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
-<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/#tech","기술","tech")}{a("/guide/","사용설명서","guide")}</nav>
+<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/meet/",'Meet<span class="d-desk"> 화상회의</span>',"meet")}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}</nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 '''
 
 FOOT = f'''<footer><div class="wrap">
-<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
+<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/meet/">Meet 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
 <p>주식회사 피엔엘에코 · 경기도 화성시 동탄대로 635, 1동 1507호 · <a href="mailto:{MAIL}">{MAIL}</a></p>
 <p>특허 출원 중 (10-2026-0166695 외 5건) · 사진과 영상은 연출 이미지입니다.</p>
 <p>RayTok은 통역 도구입니다. 교육기관·통역사·관광통역안내사를 대신하지 않으며, 기계 번역에는 오역이 있을 수 있습니다.</p>
@@ -147,7 +153,7 @@ TECH = '''<section id="tech"><div class="wrap">
 
 # ───────────── 첫 화면 ─────────────
 home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습니다",
-            "인터넷 없이 폰 안에서 통역합니다. 외국인 근로자 현장교육, 다국어 관광 가이드, 나눠 끼는 통역 이어폰.", "/", img("yard")) + top("home") + f'''
+            "외국인 근로자 현장교육, 다국어 관광 가이드, 나눠 끼는 통역 이어폰, 화상회의 통역. 현장용 앱은 인터넷 없이 폰 안에서 통역합니다.", "/", img("yard")) + top("home") + f'''
 <!--
   제품 포장에는 짧은 주소(raytok.kr)만 인쇄될 수 있다. 그래서 첫 화면에서
   한 번 눌러 설치까지 가야 한다 — 머리의 "앱 설치"와 아래 "앱 설치하기"가
@@ -164,15 +170,17 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 
 <section><div class="wrap">
 <p class="eyebrow">어디에 쓰나요</p>
-<h2>세 가지 쓰임</h2>
-<p class="sub">같은 기술을 세 곳에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
-<div class="g3">
+<h2>네 가지 쓰임</h2>
+<p class="sub">말이 통해야 하는 네 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
+<div class="cards4">
 <a class="card" href="/field/"><img loading="lazy" src="{img("ship")}" alt="조선소에서 안전 지시를 듣는 외국인 근로자들">
 <div class="in"><span class="st">사업장 · 교육기관 · 2026년 11월 출시 예정</span><h3>현장교육</h3><p>강사는 한국어로, 외국인 근로자는 자기 말로. 교육이 끝나면 참석·청취 기록이 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/tour/"><img loading="lazy" src="{img("bukc")}" alt="북촌 한옥마을에서 설명하는 가이드와 관광객">
 <div class="in"><span class="st">여행사 · 가이드 · 2026년 11월 출시 예정</span><h3>관광가이드</h3><p>가이드 한 명이 여러 나라 손님에게 동시에. 손님은 자기 폰과 이어폰이면 됩니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
+<a class="card" href="/meet/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
+<div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Meet 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
 </div></div></section>
 
 <section class="alt"><div class="wrap">
@@ -417,3 +425,101 @@ ows = head("RayTok OWS 통역 이어폰 — 건네도 괜찮은 통역 이어폰
 </div></section>
 ''' + FOOT
 write("/ows/", ows)
+
+# ───────────── Meet 화상회의 ─────────────
+# 규칙(claude/RayTok-Meet_경쟁조사_1002.md §6): 경쟁사 가격·실명 비교 금지, "끝나면 문서가 남는다" 금지(리포트 화면 전),
+# 82개 언어는 Meet 숫자(오프라인 59와 섞지 않음), 가격 미공개, 인터넷·외부 전송 고지.
+MEET_BODY = "회사명:\n담당자:\n연락처:\n쓰는 회의 앱:\n한 달 회의 시간(대략):\n상대방 언어:\n"
+MEET_M = mailto("[RayTok Meet] 베타 신청", MEET_BODY)
+meet = head("RayTok Meet — 상대 회사가 아무것도 사지 않아도 되는 화상회의 통역",
+            "내 PC 하나로 화상회의를 통역합니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다. 봇 없음, 관리자 설정 없음. 2026년 11월 출시 예정.", "/meet/", img("mhero")) + top("meet") + f'''
+<div class="hero">{mimg("mhero","노트북으로 해외 거래처와 화상회의를 하는 직원",' style="transform:scaleX(-1)"').replace(' loading="lazy"','')}
+<div class="wrap">
+<span class="tag">RayTok Meet · 2026년 11월 출시 예정 · Windows</span>
+<h1>상대 회사가 아무것도<br>사지 않아도 됩니다.</h1>
+<p class="lead">내 PC에 RayTok Meet 하나면 됩니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다.</p>
+<div class="btns"><a class="btn p" href="{MEET_M}">베타 신청하기</a><a class="btn g" href="#how">쓰는 방법 보기</a></div>
+</div></div>
+
+<section><div class="wrap">
+<p class="eyebrow">왜 필요한가</p>
+<h2>해외 거래처와 화상회의,<br>번역이 막히는 세 군데</h2>
+<div class="g3">
+<div class="step"><h3>회의를 연 쪽에 달려 있습니다</h3><p>회의 앱에 딸린 번역 기능은 회의를 연 회사의 요금제와 관리자 설정에 따라 켜지기도, 안 켜지기도 합니다. 손님으로 들어간 회의에서는 내가 정할 수 없습니다.</p></div>
+<div class="step"><h3>거래처마다 회의 앱이 다릅니다</h3><p>이 회사는 이 앱, 저 회사는 저 앱을 씁니다. 앱마다 번역을 따로 준비하기는 어렵습니다.</p></div>
+<div class="step"><h3>자막은 화면을 봐야 합니다</h3><p>현장을 돌고 있거나 손이 바쁠 때는 자막을 읽을 수 없습니다.</p></div>
+</div></div></section>
+
+<section class="alt"><div class="wrap">
+<p class="eyebrow">RayTok Meet</p>
+<h2>내 PC 하나로 끝납니다</h2>
+<p class="sub">회의 앱을 바꾸지 않습니다. 회의 앱에 무엇을 설치하지도 않습니다.</p>
+<div class="g3">
+<div class="step"><h3>상대는 사지 않습니다</h3><p>상대 회사는 설치도, 구매도, 관리자 설정도 하지 않습니다. 회의 채팅에 올라온 링크만 엽니다.</p></div>
+<div class="step"><h3>귀로 듣습니다</h3><p>참석자는 자기 폰에서 자막을 보고, 음성으로도 듣습니다. 화면을 못 보는 자리에서도 회의를 따라갑니다.</p></div>
+<div class="step"><h3>봇이 들어가지 않습니다</h3><p>회의방에 낯선 참석자가 추가되지 않습니다. 회의 앱 연동이나 승인 절차도 없습니다.</p></div>
+</div>
+<div class="shots two" style="margin-top:22px">
+<figure>{mimg("mroom","회의실에서 벽면 화면의 해외 거래처와 회의하며 각자 이어폰으로 듣는 직원들")}<figcaption>회의실 — 여럿이 한 화면을 보며 각자 자기 폰으로 듣습니다</figcaption></figure>
+<figure>{mimg("mmove","공장 안을 걸으며 이어폰으로 회의를 듣는 관리자")}<figcaption>현장 — 화면을 보지 않고 귀로 회의를 따라갑니다</figcaption></figure>
+</div></div></section>
+
+<section id="how"><div class="wrap">
+<p class="eyebrow">쓰는 방법</p>
+<h2>평소 쓰던 회의 앱 그대로</h2>
+<div class="g3">
+<div class="step"><div class="n">1</div><h3>RayTok Meet을 켭니다</h3><p>내 PC에서 RayTok Meet을 켜고, 평소 쓰던 회의 앱으로 회의에 들어갑니다.</p></div>
+<div class="step"><div class="n">2</div><h3>링크를 올립니다</h3><p>화면에 나온 링크나 QR을 회의 채팅에 붙여 넣습니다.</p></div>
+<div class="step"><div class="n">3</div><h3>각자 자기 언어로</h3><p>참석자는 링크를 열고 언어를 고릅니다. 상대의 말은 내 언어로, 내 말은 상대의 언어로 전달됩니다.</p></div>
+</div>
+<div class="chips"><span>Zoom</span><span>Google Meet</span><span>Microsoft Teams</span><span>Webex</span><span>그 밖에 PC에서 소리가 나는 회의 앱</span></div>
+<table style="margin-top:22px">
+<tr><th>내 PC</th><td>Windows (macOS는 준비 중)</td></tr>
+<tr><th>회의 앱</th><td>회의 앱에 따로 설치하거나 연동할 것이 없습니다</td></tr>
+<tr><th>참석자</th><td>링크 또는 QR로 접속 · 설치·가입 없음 · 폰과 PC 브라우저</td></tr>
+<tr><th>언어</th><td>82개 언어 (출시 시점 기준)</td></tr>
+<tr><th>인터넷</th><td>필요합니다. 오프라인 모드는 없습니다</td></tr>
+<tr><th>출시</th><td>2026년 11월 예정 · 국내 기업 대상</td></tr>
+</table>
+</div></section>
+
+<section class="alt"><div class="wrap">
+<p class="eyebrow">요금</p>
+<h2>사람 수가 아니라, 쓴 시간만큼</h2>
+<p class="sub">회의에 몇 명이 들어오든 요금은 통역을 켠 시간으로 셉니다. 시간 묶음을 미리 사 두고 쓰는 방식을 준비하고 있습니다. 가격은 베타 기간에 실제 사용 시간을 재고 나서 공개합니다.</p>
+<div class="price">
+<div><b>베타 모집</b><span>먼저 써 볼 기업을 찾습니다</span></div>
+<div><b>시간 기준</b><span>참석자 수와 무관 · 시간 묶음 선불 방식 준비 중</span></div>
+<div><b>11월</b><span>2026년 11월 출시 예정</span></div>
+</div>
+<div class="step notice"><h3>먼저 알려 드립니다</h3><ul>
+<li>회의 음성은 인식과 번역을 위해 인터넷으로 외부 클라우드 서비스에 전송됩니다. 인터넷 없이 폰 안에서 처리하는 RayTok 앱의 오프라인 모드와 다릅니다.</li>
+<li>음성과 번역문의 처리·보관 방식은 출시 전에 개인정보 처리방침에 적습니다.</li>
+<li>회의 참석자에게 통역 도구를 쓴다는 것을 미리 알려 주세요.</li>
+<li>기계 번역에는 오역이 있을 수 있습니다. 계약 조건처럼 중요한 내용은 문서로 다시 확인하세요.</li>
+</ul></div>
+</div></section>
+
+<section><div class="wrap">
+<p class="eyebrow">자주 묻는 질문</p>
+<h2>도입 전에 확인하실 것</h2>
+''' + faq([
+ ("상대방도 무엇을 설치해야 합니까?", "아니요. 상대방은 회의 채팅에 올라온 링크를 열고 언어만 고릅니다. 설치와 가입이 없습니다."),
+ ("어떤 회의 앱에서 됩니까?", "PC에서 소리가 나는 회의 앱이면 됩니다. Zoom, Google Meet, Microsoft Teams, Webex에서 쓰도록 만들고 있습니다. 회의 앱에 플러그인이나 봇을 넣지 않습니다."),
+ ("내 말도 상대에게 번역됩니까?", "네. 상대의 말과 내 말을 함께 받아 각자의 언어로 전달합니다."),
+ ("인터넷 없이도 됩니까?", "아니요. RayTok Meet은 인터넷이 필요합니다. 인터넷 없이 쓰는 것은 현장교육·관광가이드용 폰 앱입니다."),
+ ("맥에서도 됩니까?", "출시 때는 Windows만 지원합니다. macOS는 준비 중입니다."),
+ ("가격은 얼마입니까?", "아직 정하지 않았습니다. 베타 기간에 실제 사용 시간을 재고 나서 공개합니다. 사람 수가 아니라 쓴 시간으로 세는 방식입니다."),
+ ("번역은 정확합니까?", "기계 번역이므로 오역이 있을 수 있습니다. 짧고 분명하게 말하면 정확도가 올라갑니다. 계약 조건처럼 중요한 내용은 문서로 다시 확인하세요."),
+]) + f'''
+<p class="note">Zoom, Google Meet, Microsoft Teams, Webex는 각 회사의 상표이며, RayTok은 이들 회사와 제휴 관계가 없습니다. 특허 출원 중 (10-2026-0189470 외 5건).</p>
+</div></section>
+
+<section class="dark cta"><div class="wrap">
+<h2>베타로 먼저 써 보세요</h2>
+<p class="sub" style="margin:0 auto">해외 거래처와 화상회의를 자주 하는 기업을 찾습니다. 실제 회의에 써 보고 의견을 주시면 됩니다.</p>
+<div class="btns"><a class="btn p" href="{MEET_M}">베타 신청하기</a></div>
+<p class="mail">메일: <a href="mailto:{MAIL}">{MAIL}</a></p>
+</div></section>
+''' + FOOT
+write("/meet/", meet)

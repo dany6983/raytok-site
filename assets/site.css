@@ -140,3 +140,17 @@ section[id]{scroll-margin-top:96px}
 .vduo{display:grid;grid-template-columns:2.37fr 1fr;gap:18px;align-items:start}
 .vid.tall video{aspect-ratio:3/4}
 @media(max-width:700px){.vduo{grid-template-columns:1fr}.vduo>div:last-child{max-width:340px}}
+
+/* 홈 쓰임 카드 4장 */
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.cards4 .card h3{font-size:18.5px}
+@media(max-width:1020px){.cards4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.cards4{grid-template-columns:1fr}}
+/* Meet 페이지 */
+.shots.two{grid-template-columns:1fr 1fr}
+@media(max-width:600px){.shots.two{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chips span{font-size:14px;font-weight:700;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--ink2)}
+.notice ul{margin:8px 0 0;padding-left:18px;color:var(--ink2);font-size:15px}
+.notice li{margin-bottom:6px}
+@media(max-width:640px){.nav a{padding:7px 7px}}
