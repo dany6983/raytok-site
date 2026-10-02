@@ -87,7 +87,7 @@ def top(cur):
         return f'<a href="{href}"{c}>{label}</a>'
     return f'''<header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
-<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/","OWS 통역 이어폰","ows")}{a("/#tech","기술","tech")}{a("/guide/","사용설명서","guide")}</nav>
+<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/#tech","기술","tech")}{a("/guide/","사용설명서","guide")}</nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 '''

@@ -17,7 +17,7 @@ a{color:inherit}
 .nav a{white-space:nowrap;text-decoration:none;font-size:14.5px;padding:8px 10px;border-radius:8px;opacity:.82}
 .nav a:hover,.nav a[aria-current]{opacity:1;background:rgba(255,255,255,.1)}
 .get{white-space:nowrap;text-decoration:none;font-weight:700;font-size:14px;background:#fff;color:var(--ink);padding:8px 14px;border-radius:999px}
-@media(max-width:640px){.top .wrap{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:6px;row-gap:4px}.nav{order:3;width:100%;margin:0 -6px}}
+@media(max-width:640px){.top .wrap{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:6px;row-gap:4px}.nav{order:3;width:100%;margin:0 -6px}.nav a{padding:7px 8px;font-size:14px}.nav .d-desk{display:none}}
 
 /* 히어로 */
 .hero{position:relative;color:#fff;background:var(--ink);overflow:hidden}
