@@ -93,13 +93,13 @@ def top(cur):
         return f'<a href="{href}"{c}>{label}</a>'
     return f'''<header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
-<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/meet/",'Meet<span class="d-desk"> 화상회의</span>',"meet")}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}</nav>
+<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk")}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}</nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 '''
 
 FOOT = f'''<footer><div class="wrap">
-<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/meet/">Meet 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
+<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
 <p>주식회사 피엔엘에코 · 경기도 화성시 동탄대로 635, 1동 1507호 · <a href="mailto:{MAIL}">{MAIL}</a></p>
 <p>특허 출원 중 (10-2026-0166695 외 5건) · 사진과 영상은 연출 이미지입니다.</p>
 <p>RayTok은 통역 도구입니다. 교육기관·통역사·관광통역안내사를 대신하지 않으며, 기계 번역에는 오역이 있을 수 있습니다.</p>
@@ -179,8 +179,8 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 <div class="in"><span class="st">여행사 · 가이드 · 2026년 11월 출시 예정</span><h3>관광가이드</h3><p>가이드 한 명이 여러 나라 손님에게 동시에. 손님은 자기 폰과 이어폰이면 됩니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
-<a class="card" href="/meet/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
-<div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Meet 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
+<a class="card" href="/desk/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
+<div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Desk 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
 </div></div></section>
 
 <section class="alt"><div class="wrap">
@@ -426,18 +426,18 @@ ows = head("RayTok OWS 통역 이어폰 — 건네도 괜찮은 통역 이어폰
 ''' + FOOT
 write("/ows/", ows)
 
-# ───────────── Meet 화상회의 ─────────────
+# ───────────── Desk 화상회의 (구 이름 Meet, 2026-10-02 변경) ─────────────
 # 규칙(claude/RayTok-Meet_경쟁조사_1002.md §6): 경쟁사 가격·실명 비교 금지, "끝나면 문서가 남는다" 금지(리포트 화면 전),
 # 82개 언어는 Meet 숫자(오프라인 59와 섞지 않음), 가격 미공개, 인터넷·외부 전송 고지.
 MEET_BODY = "회사명:\n담당자:\n연락처:\n쓰는 회의 앱:\n한 달 회의 시간(대략):\n상대방 언어:\n"
-MEET_M = mailto("[RayTok Meet] 베타 신청", MEET_BODY)
-meet = head("RayTok Meet — 상대 회사가 아무것도 사지 않아도 되는 화상회의 통역",
-            "내 PC 하나로 화상회의를 통역합니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다. 봇 없음, 관리자 설정 없음. 2026년 11월 출시 예정.", "/meet/", img("mhero")) + top("meet") + f'''
+MEET_M = mailto("[RayTok Desk] 베타 신청", MEET_BODY)
+meet = head("RayTok Desk — 상대 회사가 아무것도 사지 않아도 되는 화상회의 통역",
+            "내 PC 하나로 화상회의를 통역합니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다. 봇 없음, 관리자 설정 없음. 2026년 11월 출시 예정.", "/desk/", img("mhero")) + top("desk") + f'''
 <div class="hero">{mimg("mhero","노트북으로 해외 거래처와 화상회의를 하는 직원",' style="transform:scaleX(-1)"').replace(' loading="lazy"','')}
 <div class="wrap">
-<span class="tag">RayTok Meet · 2026년 11월 출시 예정 · Windows</span>
+<span class="tag">RayTok Desk · 2026년 11월 출시 예정 · Windows</span>
 <h1>상대 회사가 아무것도<br>사지 않아도 됩니다.</h1>
-<p class="lead">내 PC에 RayTok Meet 하나면 됩니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다.</p>
+<p class="lead">내 PC에 RayTok Desk 하나면 됩니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다.</p>
 <div class="btns"><a class="btn p" href="{MEET_M}">베타 신청하기</a><a class="btn g" href="#how">쓰는 방법 보기</a></div>
 </div></div>
 
@@ -451,7 +451,7 @@ meet = head("RayTok Meet — 상대 회사가 아무것도 사지 않아도 되�
 </div></div></section>
 
 <section class="alt"><div class="wrap">
-<p class="eyebrow">RayTok Meet</p>
+<p class="eyebrow">RayTok Desk</p>
 <h2>내 PC 하나로 끝납니다</h2>
 <p class="sub">회의 앱을 바꾸지 않습니다. 회의 앱에 무엇을 설치하지도 않습니다.</p>
 <div class="g3">
@@ -468,7 +468,7 @@ meet = head("RayTok Meet — 상대 회사가 아무것도 사지 않아도 되�
 <p class="eyebrow">쓰는 방법</p>
 <h2>평소 쓰던 회의 앱 그대로</h2>
 <div class="g3">
-<div class="step"><div class="n">1</div><h3>RayTok Meet을 켭니다</h3><p>내 PC에서 RayTok Meet을 켜고, 평소 쓰던 회의 앱으로 회의에 들어갑니다.</p></div>
+<div class="step"><div class="n">1</div><h3>RayTok Desk을 켭니다</h3><p>내 PC에서 RayTok Desk을 켜고, 평소 쓰던 회의 앱으로 회의에 들어갑니다.</p></div>
 <div class="step"><div class="n">2</div><h3>링크를 올립니다</h3><p>화면에 나온 링크나 QR을 회의 채팅에 붙여 넣습니다.</p></div>
 <div class="step"><div class="n">3</div><h3>각자 자기 언어로</h3><p>참석자는 링크를 열고 언어를 고릅니다. 상대의 말은 내 언어로, 내 말은 상대의 언어로 전달됩니다.</p></div>
 </div>
@@ -507,7 +507,7 @@ meet = head("RayTok Meet — 상대 회사가 아무것도 사지 않아도 되�
  ("상대방도 무엇을 설치해야 합니까?", "아니요. 상대방은 회의 채팅에 올라온 링크를 열고 언어만 고릅니다. 설치와 가입이 없습니다."),
  ("어떤 회의 앱에서 됩니까?", "PC에서 소리가 나는 회의 앱이면 됩니다. Zoom, Google Meet, Microsoft Teams, Webex에서 쓰도록 만들고 있습니다. 회의 앱에 플러그인이나 봇을 넣지 않습니다."),
  ("내 말도 상대에게 번역됩니까?", "네. 상대의 말과 내 말을 함께 받아 각자의 언어로 전달합니다."),
- ("인터넷 없이도 됩니까?", "아니요. RayTok Meet은 인터넷이 필요합니다. 인터넷 없이 쓰는 것은 현장교육·관광가이드용 폰 앱입니다."),
+ ("인터넷 없이도 됩니까?", "아니요. RayTok Desk은 인터넷이 필요합니다. 인터넷 없이 쓰는 것은 현장교육·관광가이드용 폰 앱입니다."),
  ("맥에서도 됩니까?", "출시 때는 Windows만 지원합니다. macOS는 준비 중입니다."),
  ("가격은 얼마입니까?", "아직 정하지 않았습니다. 베타 기간에 실제 사용 시간을 재고 나서 공개합니다. 사람 수가 아니라 쓴 시간으로 세는 방식입니다."),
  ("번역은 정확합니까?", "기계 번역이므로 오역이 있을 수 있습니다. 짧고 분명하게 말하면 정확도가 올라갑니다. 계약 조건처럼 중요한 내용은 문서로 다시 확인하세요."),
@@ -522,4 +522,6 @@ meet = head("RayTok Meet — 상대 회사가 아무것도 사지 않아도 되�
 <p class="mail">메일: <a href="mailto:{MAIL}">{MAIL}</a></p>
 </div></section>
 ''' + FOOT
-write("/meet/", meet)
+write("/desk/", meet)
+# 옛 주소 /meet/ 는 /desk/ 로 넘긴다
+write("/meet/", '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>RayTok Desk</title><link rel="canonical" href="https://raytok.kr/desk/"><meta http-equiv="refresh" content="0; url=/desk/"><meta name="robots" content="noindex"></head><body><a href="/desk/">RayTok Desk 로 이동</a></body></html>\n')
