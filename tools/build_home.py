@@ -245,6 +245,7 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 자�
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 강사 폰이 인터넷에 연결되면 소수 언어 추가</td></tr>
 <tr><th>준비</th><td>교육 전 사무실 와이파이에서 필요한 언어만 강사 폰에 한 번 내려받기</td></tr>
 <tr><th>기록</th><td>참석 인원, 언어별 인원, 개인별 청취 시간, 강의 원문과 번역문. <b>강사 폰에만 저장</b>되고 음성은 저장하지 않습니다</td></tr>
+<tr><th>요금</th><td>외국인 근로자 1인당 월 1만원(부가세 포함) · 30일 무료 체험</td></tr>
 </table>
 </div></section>
 
@@ -252,9 +253,9 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 자�
 <p class="eyebrow">가격</p>
 <h2>근로자 한 명당 월 1만원</h2>
 <p class="sub">강사 수, 언어 수, 교육 횟수와 상관없습니다.</p>
-<div class="price"><div><b>월 1만원</b><span>외국인 근로자 1인당 (VAT 별도)</span></div><div><b>30일 무료</b><span>누구나 체험 · 자동 결제 전환 없음</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
+<div class="price"><div><b>월 1만원</b><span>외국인 근로자 1인당 (부가세 포함)</span></div><div><b>30일 무료</b><span>누구나 체험 · 자동 결제 전환 없음</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
 <table>
-<tr><th>예시</th><th>월 비용</th></tr>
+<tr><th>예시</th><th>월 비용 (부가세 포함)</th></tr>
 <tr><td>외국인 근로자 5명 사업장</td><td><b>5만원</b></td></tr>
 <tr><td>외국인 근로자 20명 사업장</td><td><b>20만원</b></td></tr>
 </table>
@@ -276,7 +277,7 @@ write("/field/", field)
 
 # ───────────── 관광가이드 ─────────────
 tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말로 듣습니다",
-            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 쿠폰 1장 7일 5,000원, 30명 무료 체험.", "/tour/", img("bukc")) + top("tour") + f'''
+            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 쿠폰 1장 7일 5,000원(부가세 포함), 30명 무료 체험.", "/tour/", img("bukc")) + top("tour") + f'''
 <div class="hero"><img src="{img("jeju")}" alt="제주 해안에서 가이드의 설명이 관광객 각자의 언어로 전달되는 장면">
 <div class="wrap">
 <span class="tag">관광가이드 · 2026년 11월 출시 예정</span>
