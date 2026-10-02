@@ -409,37 +409,45 @@
       return item[lang] || item['en'] || item['ko'] || '';
     }
 
-    function determineLanguage(availableLangs) {
+    function getAvailableLangs() {
+      return (uiStrings && uiStrings.langs) || ['ko', 'en'];
+    }
+
+    function determineLanguage() {
+      const avail = getAvailableLangs();
+
       // 1. URL ?lang=
       const params = new URLSearchParams(location.search);
       const qLang = params.get('lang');
       if (qLang) {
         const norm = normalizeLangCode(qLang);
-        if (availableLangs.includes(norm)) return norm;
+        if (avail.includes(norm)) return norm;
       }
 
-      // 2. 언어 선택 드롭다운 값 (또는 localStorage에 저장된 언어)
+      // 2. 사용자가 실제로 고른 적이 있는 저장된 값 (localStorage)
       const savedLang = localStorage.getItem('raytok_lang');
       if (savedLang) {
         const norm = normalizeLangCode(savedLang);
-        if (availableLangs.includes(norm)) return norm;
-      }
-      if (langSelect && langSelect.value) {
-        const norm = normalizeLangCode(langSelect.value);
-        if (availableLangs.includes(norm)) return norm;
+        if (avail.includes(norm)) return norm;
       }
 
-      // 3. navigator.language 앞 2자(zh-CN→zh, fil은 tl도 인정)
+      // 3. selectedLang(자막 언어)이 19개 UI 언어 안에 있으면 그것
+      if (selectedLang) {
+        const norm = normalizeLangCode(selectedLang);
+        if (avail.includes(norm)) return norm;
+      }
+
+      // 4. navigator.language 앞 2자(zh-CN→zh, fil은 tl도 인정)
       const nav = (navigator.language || '').trim();
       if (nav) {
         const norm = normalizeLangCode(nav);
-        if (availableLangs.includes(norm)) return norm;
+        if (avail.includes(norm)) return norm;
         const sub = nav.substring(0, 2).toLowerCase();
         const subNorm = normalizeLangCode(sub);
-        if (availableLangs.includes(subNorm)) return subNorm;
+        if (avail.includes(subNorm)) return subNorm;
       }
 
-      // 4. en
+      // 5. en
       return 'en';
     }
 
@@ -523,6 +531,7 @@
       const qLang = params.get('lang');
       const savedLang = localStorage.getItem('raytok_lang');
 
+      // 1. 자막 언어(selectedLang) 먼저 결정
       if (qLang && langs.some(l => l.code === qLang)) {
         selectedLang = qLang;
       } else if (savedLang && langs.some(l => l.code === savedLang)) {
@@ -535,9 +544,12 @@
         else selectedLang = 'en';
       }
 
-      const initialUiLang = determineLanguage(availableLangs);
-      applyStrings(initialUiLang);
+      // 2. langSelect.value = selectedLang (applyStrings 앞)
       if (selectedLang) langSelect.value = selectedLang;
+
+      // 3. UI 언어 결정 및 적용 (selectedLang 기반)
+      const initialUiLang = determineLanguage();
+      applyStrings(initialUiLang);
       updateSubtitleDir();
 
       const qRoom = params.get('room');
@@ -554,7 +566,7 @@
       selectedLang = langSelect.value;
       localStorage.setItem('raytok_lang', selectedLang);
 
-      const newUiLang = normalizeLangCode(selectedLang);
+      const newUiLang = determineLanguage();
       applyStrings(newUiLang);
       updateSubtitleDir();
 
