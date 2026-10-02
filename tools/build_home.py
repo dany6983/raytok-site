@@ -152,7 +152,7 @@ TECH = '''<section id="tech"><div class="wrap">
 '''
 
 # ───────────── 첫 화면 ─────────────
-home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습니다",
+home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣습니다",
             "외국인 근로자 현장교육, 다국어 관광 가이드, 나눠 끼는 통역 이어폰, 화상회의 통역. 현장용 앱은 인터넷 없이 폰 안에서 통역합니다.", "/", img("yard")) + top("home") + f'''
 <!--
   제품 포장에는 짧은 주소(raytok.kr)만 인쇄될 수 있다. 그래서 첫 화면에서
@@ -162,7 +162,7 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 <div class="hero"><img src="{img("yard")}" alt="아침 조회에서 조장의 말이 근로자 각자의 언어로 전달되는 장면">
 <div class="wrap">
 <p class="kick">RAYTOK · 실시간 통역</p>
-<h1>한 사람이 말하면,<br>모두가 자기 말로 듣습니다.</h1>
+<h1>한 사람이 말하면,<br>모두가 각자의 말로 듣습니다.</h1>
 <p class="lead">번역은 말하는 사람의 폰 안에서 이뤄집니다. 현장에 인터넷이 없어도 되고, 듣는 사람은 앱을 깔지 않아도 됩니다.</p>
 <div class="btns"><a class="btn w" href="/download/">앱 설치하기</a><a class="btn g" href="{mailto("[RayTok] 무료 체험·도입 문의", BODY)}">무료 체험·도입 문의</a></div>
 {HPAT}
@@ -174,7 +174,7 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 <p class="sub">말이 통해야 하는 네 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
 <div class="cards4">
 <a class="card" href="/field/"><img loading="lazy" src="{img("ship")}" alt="조선소에서 안전 지시를 듣는 외국인 근로자들">
-<div class="in"><span class="st">사업장 · 교육기관 · 2026년 11월 출시 예정</span><h3>현장교육</h3><p>강사는 한국어로, 외국인 근로자는 자기 말로. 교육이 끝나면 참석·청취 기록이 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
+<div class="in"><span class="st">사업장 · 교육기관 · 2026년 11월 출시 예정</span><h3>현장교육</h3><p>강사는 한국어로, 외국인 근로자는 각자의 말로. 교육이 끝나면 참석·청취 기록이 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/tour/"><img loading="lazy" src="{img("bukc")}" alt="북촌 한옥마을에서 설명하는 가이드와 관광객">
 <div class="in"><span class="st">여행사 · 가이드 · 2026년 11월 출시 예정</span><h3>관광가이드</h3><p>가이드 한 명이 여러 나라 손님에게 동시에. 손님은 자기 폰과 이어폰이면 됩니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
@@ -208,16 +208,16 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 <div><div class="vid"><video controls playsinline preload="none" poster="{img("bukc")}" src="{V_TOUR}"></video></div><p class="vcap">북촌 — "조금만 조용히 걸어 주세요."</p></div>
 <div>{loopvid(V_OWS2, img("ocafe2"), "카페에서 이어폰 한쪽을 건네고 대화하는 두 사람")}<p class="vcap">OWS 이어폰 — 한쪽을 건네면 대화가 시작됩니다.</p></div>
 </div></div></section>
-''' + TECH + cta("먼저 써 보고 결정하세요", "시연은 무료입니다. 현장교육은 30일, 관광가이드는 30명까지 무료로 체험할 수 있습니다.", "[RayTok] 무료 체험·도입 문의") + FOOT
+''' + TECH + cta("먼저 써 보고 결정하세요", "시연은 무료입니다. 현장교육과 관광가이드 모두 30일 동안 무료로 체험할 수 있습니다.", "[RayTok] 무료 체험·도입 문의") + FOOT
 write("/", home)
 
 # ───────────── 현장교육 ─────────────
-field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 자기 말로",
+field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 각자의 말로",
              "외국인 근로자 안전교육·작업지시를 위한 통역 도구. 현장 인터넷 불필요, 근로자 앱 설치 불필요, 교육 기록 자동 생성. 근로자 1인 월 1만원(부가세 포함), 30일 무료.", "/field/", img("ship")) + top("field") + f'''
 <div class="hero"><img src="{img("ship")}" alt="조선소 도크에서 안전 지시를 하는 관리자와 이어폰을 낀 외국인 근로자들">
 <div class="wrap">
 <span class="tag">현장교육 · 2026년 11월 출시 예정</span>
-<h1>강사는 한국어로,<br>근로자는 자기 말로.</h1>
+<h1>강사는 한국어로,<br>근로자는 각자의 말로.</h1>
 <p class="lead">외국인 근로자 안전교육과 작업지시를 위한 통역 도구입니다. 교육이 끝나면 누가 얼마나 들었는지 기록이 남습니다.</p>
 <div class="btns"><a class="btn p" href="{mailto("[RayTok 현장교육] 30일 무료 체험 신청", BODY)}">30일 무료 체험 신청</a><a class="btn g" href="#price">가격 보기</a></div>
 </div></div>
@@ -291,14 +291,14 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 자�
 write("/field/", field)
 
 # ───────────── 관광가이드 ─────────────
-tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말로 듣습니다",
-            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 쿠폰 1장 7일 5,000원(부가세 포함), 30명 무료 체험.", "/tour/", img("bukc")) + top("tour") + f'''
+tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 각자의 말로 듣습니다",
+            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 쿠폰 1장 7일 5,000원(부가세 포함), 30일 무료 체험.", "/tour/", img("bukc")) + top("tour") + f'''
 <div class="hero"><img src="{img("jeju")}" alt="제주 해안에서 가이드의 설명이 관광객 각자의 언어로 전달되는 장면">
 <div class="wrap">
 <span class="tag">관광가이드 · 2026년 11월 출시 예정</span>
-<h1>한 번 말하면,<br>모두가 자기 말로 듣습니다.</h1>
+<h1>한 번 말하면,<br>모두가 각자의 말로 듣습니다.</h1>
 <p class="lead">가이드는 한국어로 설명하고, 손님은 자기 폰과 이어폰으로 자기 언어를 듣습니다. 설치도, 로밍도 필요 없습니다.</p>
-<div class="btns"><a class="btn p" href="{mailto("[RayTok 관광가이드] 30명 무료 체험 신청", BODY)}">30명 무료 체험 신청</a><a class="btn g" href="#price">가격 보기</a></div>
+<div class="btns"><a class="btn p" href="{mailto("[RayTok 관광가이드] 30일 무료 체험 신청", BODY)}">30일 무료 체험 신청</a><a class="btn g" href="#price">가격 보기</a></div>
 </div></div>
 
 <section><div class="wrap">
@@ -338,7 +338,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 <tr><th>그룹 인원</th><td>가이드 폰 단독 약 10명 · 휴대용 공유기 연결 시 20~50명 (환경에 따라 다름)</td></tr>
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 가이드 폰이 인터넷에 연결되면 소수 언어 추가</td></tr>
 <tr><th>손님 준비물</th><td>자기 스마트폰과 이어폰. 수신기를 나눠 주고 걷을 필요가 없습니다</td></tr>
-<tr><th>요금</th><td>쿠폰 1장 5,000원(부가세 포함) — 손님 1명이 7일 동안 사용 · 30명까지 무료 체험</td></tr>
+<tr><th>요금</th><td>쿠폰 1장 5,000원(부가세 포함) — 손님 1명이 7일 동안 사용 · 30일 무료 체험</td></tr>
 </table>
 </div></section>
 
@@ -346,7 +346,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 <p class="eyebrow">가격</p>
 <h2>쿠폰 한 장에 7일, 5,000원</h2>
 <p class="sub">손님 한 명이 쿠폰 한 장으로 7일 동안 씁니다. 언어 수와 투어 횟수는 상관없습니다.</p>
-<div class="price"><div><b>5,000원</b><span>쿠폰 1장 · 손님 1명 · 7일 (부가세 포함)</span></div><div><b>30명 무료</b><span>여행사·가이드 누구나 체험</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
+<div class="price"><div><b>5,000원</b><span>쿠폰 1장 · 손님 1명 · 7일 (부가세 포함)</span></div><div><b>30일 무료</b><span>여행사·가이드 누구나 체험</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
 <table>
 <tr><th>예시</th><th>비용 (부가세 포함)</th></tr>
 <tr><td>손님 10명, 3박 4일 투어</td><td><b>5만원</b></td></tr>
@@ -365,7 +365,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 ("손님 개인정보는 어떻게 됩니까?","손님은 가입하지 않습니다. 연락처를 받지 않고 음성을 저장하지 않습니다."),
 ])}
 </div></section>
-''' + cta("다음 투어에서 30명까지 무료로", "여행사·가이드 누구나 신청할 수 있습니다. 메일로 일정과 손님 언어를 알려 주세요.", "[RayTok 관광가이드] 30명 무료 체험 신청", "30명 무료 체험 신청") + FOOT
+''' + cta("다음 투어부터 30일 동안 무료로", "여행사·가이드 누구나 신청할 수 있습니다. 메일로 일정과 손님 언어를 알려 주세요.", "[RayTok 관광가이드] 30일 무료 체험 신청", "30일 무료 체험 신청") + FOOT
 write("/tour/", tour)
 
 # ───────────── OWS 통역 이어폰 ─────────────
