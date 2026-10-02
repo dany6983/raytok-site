@@ -60,15 +60,15 @@ def top(cur):
         return f'<a href="{href}"{c}>{label}</a>'
     return f'''<header class="top"><div class="wrap">
 <a class="logo" href="/">RayTok</a>
-<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/","OWS 통역 이어폰","ows")}{a("/guide/","사용설명서","guide")}</nav>
+<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/","OWS 통역 이어폰","ows")}{a("/#tech","기술","tech")}{a("/guide/","사용설명서","guide")}</nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 '''
 
 FOOT = f'''<footer><div class="wrap">
-<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
+<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
 <p>주식회사 피엔엘에코 · 경기도 화성시 동탄대로 635, 1동 1507호 · <a href="mailto:{MAIL}">{MAIL}</a></p>
-<p>특허 출원 중 (10-2026-0166695 외) · 사진과 영상은 연출 이미지입니다.</p>
+<p>특허 출원 중 (10-2026-0166695 외 5건) · 사진과 영상은 연출 이미지입니다.</p>
 <p>RayTok은 통역 도구입니다. 교육기관·통역사·관광통역안내사를 대신하지 않으며, 기계 번역에는 오역이 있을 수 있습니다.</p>
 </div></footer>
 </body>
@@ -96,6 +96,25 @@ def write(path, html):
     os.makedirs(os.path.dirname(p), exist_ok=True)
     open(p, "w", encoding="utf-8", newline="\n").write(html)
     print("wrote", p, len(html))
+
+
+PATS = [
+ ("끊겨도 이어지는 근거리 통역","무선 오디오 기기 및 근거리 무선망을 이용한 실시간 통역 방법 및 시스템","10-2026-0166695","2026.09"),
+ ("고칠 수 없는 교육 이수 기록","폐쇄형 근거리 무선망에서의 역방향 통역 및 위변조 검출 가능한 교육 이수 기록 생성 방법 및 시스템","10-2026-0179094","2026.09"),
+ ("통역 음성이 다시 인식되지 않게","통역 음성 출력의 재인식을 텍스트 대조로 억제하는 방법 및 시스템","10-2026-0185125","2026.09"),
+ ("방송 음성과 폰 자막을 함께 쓰는 다국어 배포","근거리 무선망 텍스트 배포와 제한된 수의 음성 방송 스트림을 병용하는 다국어 통역 배포 방법 및 시스템","10-2026-0188144","2026.10"),
+ ("자막과 음성을 따로 다루는 처리","실시간 통역에서 표시 단위와 음성 출력 단위를 분리하여 처리하는 방법 및 시스템","10-2026-0189505","2026.10"),
+ ("준비한 원고와 즉석 발언을 함께, 출처를 나눠 기록","사전 번역된 원고와 실시간 발화를 혼합 송출하고 출처를 구분하여 기록 및 보고하는 다국어 통역 방법 및 시스템","10-2026-0189470","2026.10"),
+]
+TECH = '''<section id="tech"><div class="wrap">
+<p class="eyebrow">기술</p>
+<h2>기술을 직접 만드는 회사입니다</h2>
+<p class="sub">앱, 근거리 연결, 다국어 배포, 교육 기록까지 주식회사 피엔엘에코가 직접 설계하고 개발합니다. 현장에서 부딪힌 문제를 푼 방법 6건을 특허로 출원했습니다.</p>
+<div class="g3 kpi"><div class="step"><div class="n">6건</div><h3>특허 출원 중</h3><p>2026년 9월~10월 출원</p></div><div class="step"><div class="n">자체 개발</div><h3>앱 · 웹 청취자 · 기록</h3><p>설계부터 구현까지 직접</p></div><div class="step"><div class="n">현장 중심</div><h3>인터넷 없는 곳부터</h3><p>공장·지하·바다·산에서 되는 것을 기준으로</p></div></div>
+<ol class="pat">''' + "".join(f'<li><span class="pn">{i+1}</span><div><b>{t}</b><p>{o}</p><small>특허 출원 중 · {no} · {d}</small></div></li>' for i,(t,o,no,d) in enumerate(PATS)) + '''</ol>
+<p class="note">출원인 주식회사 피엔엘에코. 여섯 건 모두 출원 상태이며 심사 전입니다.</p>
+</div></section>
+'''
 
 # ───────────── 첫 화면 ─────────────
 home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습니다",
@@ -150,7 +169,7 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 <div><div class="vid"><video controls playsinline preload="none" poster="{img("ship")}" src="{V_FIELD}"></video></div><p class="vcap">조선소 — "비계 밑으로는 절대 지나가지 마세요."</p></div>
 <div><div class="vid"><video controls playsinline preload="none" poster="{img("bukc")}" src="{V_TOUR}"></video></div><p class="vcap">북촌 — "조금만 조용히 걸어 주세요."</p></div>
 </div></div></section>
-''' + cta("먼저 써 보고 결정하세요", "시연은 무료입니다. 현장교육은 30일, 관광가이드는 30명까지 무료로 체험할 수 있습니다.", "[RayTok] 무료 체험·도입 문의") + FOOT
+''' + TECH + cta("먼저 써 보고 결정하세요", "시연은 무료입니다. 현장교육은 30일, 관광가이드는 30명까지 무료로 체험할 수 있습니다.", "[RayTok] 무료 체험·도입 문의") + FOOT
 write("/", home)
 
 # ───────────── 현장교육 ─────────────
@@ -230,13 +249,13 @@ write("/field/", field)
 
 # ───────────── 관광가이드 ─────────────
 tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말로 듣습니다",
-            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 30명 무료 체험.", "/tour/", img("bukc")) + top("tour") + f'''
+            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 쿠폰 1장 7일 5,000원, 30명 무료 체험.", "/tour/", img("bukc")) + top("tour") + f'''
 <div class="hero"><img src="{img("jeju")}" alt="제주 해안에서 가이드의 설명이 관광객 각자의 언어로 전달되는 장면">
 <div class="wrap">
 <span class="tag">관광가이드 · 2026년 11월 출시 예정</span>
 <h1>한 번 말하면,<br>모두가 자기 말로 듣습니다.</h1>
 <p class="lead">가이드는 한국어로 설명하고, 손님은 자기 폰과 이어폰으로 자기 언어를 듣습니다. 설치도, 로밍도 필요 없습니다.</p>
-<div class="btns"><a class="btn p" href="{mailto("[RayTok 관광가이드] 30명 무료 체험 신청", BODY)}">30명 무료 체험 신청</a><a class="btn g" href="#how">쓰는 방법</a></div>
+<div class="btns"><a class="btn p" href="{mailto("[RayTok 관광가이드] 30명 무료 체험 신청", BODY)}">30명 무료 체험 신청</a><a class="btn g" href="#price">가격 보기</a></div>
 </div></div>
 
 <section><div class="wrap">
@@ -273,11 +292,23 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 <tr><th>그룹 인원</th><td>가이드 폰 단독 약 10명 · 휴대용 공유기 연결 시 20명 이상 (환경에 따라 다름)</td></tr>
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 가이드 폰이 인터넷에 연결되면 소수 언어 추가</td></tr>
 <tr><th>손님 준비물</th><td>자기 스마트폰과 이어폰. 수신기를 나눠 주고 걷을 필요가 없습니다</td></tr>
-<tr><th>요금</th><td>손님 수 기준 · 30명까지 무료 체험 · 자세한 요금은 문의</td></tr>
+<tr><th>요금</th><td>쿠폰 1장 5,000원 — 손님 1명이 7일 동안 사용 · 30명까지 무료 체험</td></tr>
 </table>
 </div></section>
 
-<section class="alt"><div class="wrap">
+<section class="alt" id="price"><div class="wrap">
+<p class="eyebrow">가격</p>
+<h2>쿠폰 한 장에 7일, 5,000원</h2>
+<p class="sub">손님 한 명이 쿠폰 한 장으로 7일 동안 씁니다. 언어 수와 투어 횟수는 상관없습니다.</p>
+<div class="price"><div><b>5,000원</b><span>쿠폰 1장 · 손님 1명 · 7일</span></div><div><b>30명 무료</b><span>여행사·가이드 누구나 체험</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
+<table>
+<tr><th>예시</th><th>비용</th></tr>
+<tr><td>손님 10명, 3박 4일 투어</td><td><b>5만원</b></td></tr>
+<tr><td>손님 20명, 6박 7일 투어</td><td><b>10만원</b></td></tr>
+</table>
+</div></section>
+
+<section><div class="wrap">
 <p class="eyebrow">자주 묻는 질문</p>
 <h2>도입 전에 확인하세요</h2>
 {faq([
