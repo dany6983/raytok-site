@@ -23,9 +23,18 @@ IDS = {
  "oprod":"20261002_061100_e7592acb-7824-4b4d-92e0-4ab543c163b6","ocafe":"20261002_061100_d9dd4b21-71d4-41d4-9ead-ba78a4b54901",
  "ohand":"20261002_061100_8e6493af-cdc1-42d7-a732-dbfe286de7e9","omkt":"20261002_061100_1f17f515-3c07-4e12-b3df-6c2d64781307",
 }
-def img(k): return f"{CDN}hf_{IDS[k]}_min.webp"
-V_FIELD = VID+"e3812fd1-3847-4125-88a3-f80e31294d9e.mp4"
-V_TOUR  = VID+"7cf21e1f-95fb-477b-9a63-6bb09f6c1520.mp4"
+import hashlib
+CSSV = hashlib.md5(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"assets","site.css"),"rb").read()).hexdigest()[:8]
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def img(k):
+    # 저장소 img/<이름>.webp 가 있으면 그것을 쓴다 (tools/fetch_media.py 가 내려받음). 없으면 CDN.
+    if os.path.exists(os.path.join(ROOT, "img", k + ".webp")): return f"/img/{k}.webp"
+    return f"{CDN}hf_{IDS[k]}_min.webp"
+def vid(name, cdn_url):
+    if os.path.exists(os.path.join(ROOT, "img", name + ".mp4")): return f"/img/{name}.mp4"
+    return cdn_url
+V_FIELD = vid("field", VID+"e3812fd1-3847-4125-88a3-f80e31294d9e.mp4")
+V_TOUR  = vid("tour", VID+"7cf21e1f-95fb-477b-9a63-6bb09f6c1520.mp4")
 
 def mailto(subject, body=""):
     from urllib.parse import quote
@@ -46,12 +55,14 @@ def head(title, desc, path, og):
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="https://raytok.kr{path}">
-<meta property="og:image" content="{og}">
+<meta property="og:image" content="https://raytok.kr/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="theme-color" content="#0A0F1F">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/raytok-icon.png">
 <link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net">
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/site.css?v={CSSV}">
 </head>
 <body>
 '''
@@ -109,11 +120,7 @@ PATS = [
  ("준비한 원고와 즉석 발언을 함께, 출처를 나눠 기록","사전 번역된 원고와 실시간 발화를 혼합 송출하고 출처를 구분하여 기록 및 보고하는 다국어 통역 방법 및 시스템","10-2026-0189470","2026.10"),
 ]
 PSHORT = ["근거리 통역 연결","위변조 검출 교육 기록","통역음 재인식 억제","다국어 방송·자막 병용","자막·음성 단위 분리","원고·실시간 혼합 기록"]
-PBAND = '''<a class="pband" href="#tech" aria-label="특허 출원 6건 자세히 보기"><div class="wrap">
-<div class="ph"><b>특허 출원 중 6건</b><span>자체 개발 기술 · 자세히 →</span></div>
-<ul>''' + "".join(f'<li><span>{PSHORT[i]}</span><b>{no}</b></li>' for i,(t,o,no,d) in enumerate(PATS)) + '''</ul>
-</div></a>
-'''
+HPAT = '<a class="hpat" href="#tech" aria-label="특허 출원 6건 자세히 보기"><span class="hl">특허 출원 중</span><ul>' + "".join(f'<li>{PSHORT[i]} <b>{no}</b></li>' for i,(t,o,no,d) in enumerate(PATS)) + '</ul></a>'
 TECH = '''<section id="tech"><div class="wrap">
 <p class="eyebrow">기술</p>
 <h2>기술을 직접 만드는 회사입니다</h2>
@@ -138,17 +145,18 @@ home = head("RayTok — 한 사람이 말하면, 모두가 자기 말로 듣습�
 <h1>한 사람이 말하면,<br>모두가 자기 말로 듣습니다.</h1>
 <p class="lead">번역은 말하는 사람의 폰 안에서 이뤄집니다. 현장에 인터넷이 없어도 되고, 듣는 사람은 앱을 깔지 않아도 됩니다.</p>
 <div class="btns"><a class="btn w" href="/download/">앱 설치하기</a><a class="btn g" href="{mailto("[RayTok] 무료 체험·도입 문의", BODY)}">무료 체험·도입 문의</a></div>
+{HPAT}
 </div></div>
-''' + PBAND + f'''
+
 <section><div class="wrap">
 <p class="eyebrow">어디에 쓰나요</p>
 <h2>세 가지 쓰임</h2>
 <p class="sub">같은 기술을 세 곳에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
 <div class="g3">
 <a class="card" href="/field/"><img loading="lazy" src="{img("ship")}" alt="조선소에서 안전 지시를 듣는 외국인 근로자들">
-<div class="in"><span class="st">사업장 · 교육기관</span><h3>현장교육</h3><p>강사는 한국어로, 외국인 근로자는 자기 말로. 교육이 끝나면 참석·청취 기록이 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
+<div class="in"><span class="st">사업장 · 교육기관 · 2026년 11월 출시 예정</span><h3>현장교육</h3><p>강사는 한국어로, 외국인 근로자는 자기 말로. 교육이 끝나면 참석·청취 기록이 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/tour/"><img loading="lazy" src="{img("bukc")}" alt="북촌 한옥마을에서 설명하는 가이드와 관광객">
-<div class="in"><span class="st">여행사 · 가이드</span><h3>관광가이드</h3><p>가이드 한 명이 여러 나라 손님에게 동시에. 손님은 자기 폰과 이어폰이면 됩니다.</p><span class="more">자세히 보기 →</span></div></a>
+<div class="in"><span class="st">여행사 · 가이드 · 2026년 11월 출시 예정</span><h3>관광가이드</h3><p>가이드 한 명이 여러 나라 손님에게 동시에. 손님은 자기 폰과 이어폰이면 됩니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
 </div></div></section>
@@ -193,8 +201,8 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 자�
 
 <section><div class="wrap">
 <p class="eyebrow">왜 지금</p>
-<h2>2027년 1월 7일부터,<br>외국인 근로자 안전교육은 의무입니다</h2>
-<p class="sub">2026년 7월 공포된 산업안전보건법 개정으로, 사업주는 채용한 외국인 근로자에게 기초안전보건교육을 이수하게 해야 합니다.</p>
+<h2>2027년 1월 8일부터,<br>외국인 근로자 안전교육은 의무입니다</h2>
+<p class="sub">2026년 7월 7일 공포된 산업안전보건법 개정(법률 제21853호)으로, 사업주는 채용하는 외국인 근로자에게 안전보건교육을 이수하게 해야 합니다.</p>
 <table>
 <tr><th></th><th>외국인</th><th>전체 근로자</th></tr>
 <tr><td>산재율 (2022)</td><td><b>0.98%</b></td><td>0.65%</td></tr>
@@ -297,7 +305,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 자기 말�
 <p class="sub">가이드 폰이 직접 연결을 만듭니다. 산·섬·지하에서도 손님은 데이터 없이 접속합니다.</p>
 {shots([("seong","성산일출봉 — 바람 부는 야외"),("bulg","불국사 — 조용한 사찰 해설"),("gwang","광장시장 — 시끄러운 음식 투어"),("hwas","수원화성 — 길게 늘어선 행렬"),("nami","남이섬 — 걸으며 설명"),("muse","박물관 — 조용히 말해도 전달")])}
 <table style="margin-top:22px">
-<tr><th>그룹 인원</th><td>가이드 폰 단독 약 10명 · 휴대용 공유기 연결 시 20명 이상 (환경에 따라 다름)</td></tr>
+<tr><th>그룹 인원</th><td>가이드 폰 단독 약 10명 · 휴대용 공유기 연결 시 20~50명 (환경에 따라 다름)</td></tr>
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 가이드 폰이 인터넷에 연결되면 소수 언어 추가</td></tr>
 <tr><th>손님 준비물</th><td>자기 스마트폰과 이어폰. 수신기를 나눠 주고 걷을 필요가 없습니다</td></tr>
 <tr><th>요금</th><td>쿠폰 1장 5,000원 — 손님 1명이 7일 동안 사용 · 30명까지 무료 체험</td></tr>
