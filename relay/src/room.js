@@ -79,14 +79,41 @@ export class Room {
     // 0-2. 내부 번역 엔진 호출/실패 기록 (/metric/record)
     if (url.pathname === '/metric/record' && request.method === 'POST') {
       const { engine, success } = await request.json();
-      if (!this.engineStats) this.engineStats = new Map();
-      let stat = this.engineStats.get(engine);
-      if (!stat) {
-        stat = { calls: 0, failures: 0 };
-        this.engineStats.set(engine, stat);
+      const eng = (engine || 'unknown').toLowerCase();
+      const now = Date.now();
+      const minute = Math.floor(now / 60000);
+
+      // 분 단위 버킷 저장 (최근 24시간 = 1440분)
+      if (!this.engineBuckets) this.engineBuckets = new Map();
+      let bMap = this.engineBuckets.get(eng);
+      if (!bMap) {
+        bMap = new Map();
+        this.engineBuckets.set(eng, bMap);
       }
-      stat.calls++;
-      if (!success) stat.failures++;
+      let bucket = bMap.get(minute);
+      if (!bucket) {
+        bucket = { calls: 0, failures: 0 };
+        bMap.set(minute, bucket);
+      }
+      bucket.calls++;
+      if (!success) bucket.failures++;
+
+      // Lifetime 누적 저장
+      if (!this.engineLifetime) this.engineLifetime = new Map();
+      let life = this.engineLifetime.get(eng);
+      if (!life) {
+        life = { calls: 0, failures: 0 };
+        this.engineLifetime.set(eng, life);
+      }
+      life.calls++;
+      if (!success) life.failures++;
+
+      // 24시간 이전 지난 분 버킷 정리
+      const oldestMinute = minute - 1440;
+      for (const m of bMap.keys()) {
+        if (m < oldestMinute) bMap.delete(m);
+      }
+
       return new Response(JSON.stringify({ ok: true }), {
         headers: { 'Content-Type': 'application/json' }
       });
@@ -94,17 +121,40 @@ export class Room {
 
     // 0-3. 내부 번역 엔진 통계 조회 (/metric/engine)
     if (url.pathname === '/metric/engine' && request.method === 'GET') {
+      const now = Date.now();
+      const currentMinute = Math.floor(now / 60000);
+      const min1h = currentMinute - 60;
+      const min24h = currentMinute - 1440;
+
       const stats = {};
-      if (this.engineStats) {
-        for (const [eng, s] of this.engineStats.entries()) {
-          const rate = s.calls > 0 ? (s.failures / s.calls) : 0;
+      const formatRate = (calls, fails) => calls > 0 ? Number(((fails / calls) * 100).toFixed(2)) + '%' : '0%';
+
+      if (this.engineBuckets) {
+        for (const [eng, bMap] of this.engineBuckets.entries()) {
+          let calls1h = 0, fail1h = 0;
+          let calls24h = 0, fail24h = 0;
+
+          for (const [m, b] of bMap.entries()) {
+            if (m >= min1h) {
+              calls1h += b.calls;
+              fail1h += b.failures;
+            }
+            if (m >= min24h) {
+              calls24h += b.calls;
+              fail24h += b.failures;
+            }
+          }
+
+          const life = (this.engineLifetime && this.engineLifetime.get(eng)) || { calls: 0, failures: 0 };
+
           stats[eng] = {
-            calls: s.calls,
-            failures: s.failures,
-            failure_rate: Number((rate * 100).toFixed(2)) + '%'
+            window_1h: { calls: calls1h, failures: fail1h, rate: formatRate(calls1h, fail1h) },
+            window_24h: { calls: calls24h, failures: fail24h, rate: formatRate(calls24h, fail24h) },
+            lifetime: { calls: life.calls, failures: life.failures, rate: formatRate(life.calls, life.failures) }
           };
         }
       }
+
       return new Response(JSON.stringify(stats), {
         headers: { 'Content-Type': 'application/json' }
       });

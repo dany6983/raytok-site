@@ -132,6 +132,13 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
     };
   }
 
+  if (engine === 'mock') {
+    return {
+      translations: texts.map(t => ({ translatedText: `[mock] ${t}` })),
+      detectedSrc: sourceLang || 'ko'
+    };
+  }
+
   // Default: google
   const apiKey = (env.GOOGLE_TRANSLATE_KEY || '').trim().replace(/^["']|["']$/g, '');
   if (!apiKey) {
@@ -512,7 +519,7 @@ export default {
         }
       } catch (_) {}
 
-      const engine = (env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
+      const engine = (request.headers.get('X-Translate-Engine') || env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
       const results = new Array(q.length);
       const uncachedIndices = [];
       const uncachedTexts = [];
@@ -650,6 +657,35 @@ export default {
 
     // 0-2. 사용량 및 번역 엔진 통계 조회: GET /usage
     if (url.pathname === '/usage' && request.method === 'GET') {
+      const authHeader = request.headers.get('Authorization') || '';
+      const customSecret = request.headers.get('X-Admin-Secret') || '';
+      const adminSecret = (env.ADMIN_SECRET || '').trim();
+
+      let isAuthorized = false;
+
+      // 1) 관리자 비밀 확인
+      if (adminSecret) {
+        const providedSecret = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : customSecret.trim();
+        if (providedSecret === adminSecret) {
+          isAuthorized = true;
+        }
+      }
+
+      // 2) 라이선스 토큰 확인
+      if (!isAuthorized) {
+        const licenseSecret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
+        if (licenseSecret) {
+          const licRes = await verifyLicense(request, licenseSecret);
+          if (licRes.valid) {
+            isAuthorized = true;
+          }
+        }
+      }
+
+      if (!isAuthorized) {
+        return jsonError('unauthorized', 'Admin secret or valid license token required to access usage metrics', 401);
+      }
+
       let stats = {};
       try {
         const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
@@ -659,23 +695,31 @@ export default {
           stats = await res.json();
         }
       } catch (_) {
+        const formatRate = (calls, fails) => calls > 0 ? Number(((fails / calls) * 100).toFixed(2)) + '%' : '0%';
         for (const [eng, s] of memoryEngineStats.entries()) {
-          const rate = s.calls > 0 ? (s.failures / s.calls) : 0;
           stats[eng] = {
-            calls: s.calls,
-            failures: s.failures,
-            failure_rate: Number((rate * 100).toFixed(2)) + '%'
+            window_1h: { calls: s.calls, failures: s.failures, rate: formatRate(s.calls, s.failures) },
+            window_24h: { calls: s.calls, failures: s.failures, rate: formatRate(s.calls, s.failures) },
+            lifetime: { calls: s.calls, failures: s.failures, rate: formatRate(s.calls, s.failures) }
           };
         }
       }
 
       const currentEngine = (env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
+      const currentStat = stats[currentEngine] || {
+        window_1h: { calls: 0, failures: 0, rate: '0%' },
+        window_24h: { calls: 0, failures: 0, rate: '0%' },
+        lifetime: { calls: 0, failures: 0, rate: '0%' }
+      };
 
       return new Response(JSON.stringify({
         engine: {
           current: currentEngine,
-          stats
-        }
+          window_1h: currentStat.window_1h,
+          window_24h: currentStat.window_24h,
+          lifetime: currentStat.lifetime
+        },
+        stats
       }), {
         status: 200,
         headers: {
