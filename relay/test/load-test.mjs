@@ -19,6 +19,7 @@ if (fs.existsSync(devVarsPath)) {
 }
 
 const LANGS_5 = ['en', 'ja', 'zh', 'vi', 'ko'];
+const bOnly = process.argv.includes('--b-only') || process.env.B_ONLY === '1';
 
 // 단일 실행 (1회차)
 async function executeIteration(listenerCount, mode, iterIdx, token) {
@@ -100,45 +101,68 @@ async function executeIteration(listenerCount, mode, iterIdx, token) {
   await Promise.all(connectPromises);
   const connectBurstMs = Date.now() - burstStart;
 
-  // 4. 캐시 비움 (Cold Start: 첫 줄) 측정
-  const coldText = `새로운 회의 원문 번역 ${Date.now()}-${Math.random()}`;
-  let coldTranslateMs = 0;
+  // 4. 캐시 비움 (Cold Start: 첫 줄) - N 및 회차마다 100% 고유 문장 생성
+  const runSentence = `[N=${listenerCount}-run=${iterIdx}] 사업 회의 실시간 번역 발언 ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const coldStart = Date.now();
+  const trCold = {};
 
   if (mode === 'diff_5_langs') {
-    const trStart = Date.now();
     await Promise.all(LANGS_5.map(async lang => {
       try {
-        await fetch(`${BASE_URL}/translate`, {
+        const res = await fetch(`${BASE_URL}/translate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ q: [coldText], source: 'ko', target: lang })
+          body: JSON.stringify({ q: [runSentence], source: 'ko', target: lang })
         });
+        const d = await res.json();
+        trCold[lang] = d.t && d.t[0];
       } catch (_) {}
     }));
-    coldTranslateMs = Date.now() - trStart;
   }
 
-  // 첫 줄 WebSocket 브로드캐스트
+  // 첫 줄 WebSocket 브로드캐스트 (발화 시작 시각 기준 _sendTime)
   hostWs.send(JSON.stringify({
     seq: 1,
-    text: coldText,
-    _sendTime: Date.now()
+    text: runSentence,
+    tr: trCold,
+    _sendTime: coldStart
   }));
 
-  // 첫 줄 전달 대기 (최대 500ms)
-  await new Promise(r => setTimeout(r, 500));
+  // 첫 줄 전달 대기
+  await new Promise(r => setTimeout(r, 600));
 
-  // 5. 캐시 채움 / 정상 전달 (Steady State: 2~10번 줄 전송)
-  const steadySentCount = 9;
+  // 5. 캐시 채움 / 정상 전달 (Steady State: 2~10번 줄 - 캐시 적중 5개 언어 번역 + 웹소켓 팬아웃)
   for (let seq = 2; seq <= 10; seq++) {
+    const warmStart = Date.now();
+    const trWarm = {};
+
+    if (mode === 'diff_5_langs') {
+      await Promise.all(LANGS_5.map(async lang => {
+        try {
+          const res = await fetch(`${BASE_URL}/translate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ q: [runSentence], source: 'ko', target: lang }) // 동일 문장 -> 캐시 적중(HIT)
+          });
+          const d = await res.json();
+          trWarm[lang] = d.t && d.t[0];
+        } catch (_) {}
+      }));
+    }
+
     hostWs.send(JSON.stringify({
       seq,
-      text: `정상 전달 스트리밍 자막 #${seq}`,
-      _sendTime: Date.now()
+      text: runSentence,
+      tr: trWarm,
+      _sendTime: warmStart
     }));
+
     await new Promise(r => setTimeout(r, 100)); // 100ms 간격
   }
 
@@ -175,7 +199,6 @@ async function executeIteration(listenerCount, mode, iterIdx, token) {
     connectSuccess,
     connectFail,
     connectBurstMs,
-    coldTranslateMs,
     coldP95,
     steadyAvg,
     steadyP95,
@@ -200,7 +223,6 @@ async function runStepWith3Iterations(listenerCount, mode) {
     await new Promise(r => setTimeout(r, 800));
   }
 
-  // Median(중앙값) 계산
   const getMedian = (arr, key) => {
     const vals = arr.map(r => r[key]).sort((a, b) => a - b);
     return vals[Math.floor(vals.length / 2)];
@@ -242,17 +264,19 @@ async function run() {
   const summaryB = [];
 
   // 1. 조합 A: 동일 언어 (All 'en')
-  console.log('\n########################################################################');
-  console.log('### [조합 A] 동일 언어 청취 (All English) - 웹소켓 팬아웃 용량 측정');
-  console.log('########################################################################');
-  for (const n of steps) {
-    const res = await runStepWith3Iterations(n, 'same_lang');
-    summaryA.push(res);
+  if (!bOnly) {
+    console.log('\n########################################################################');
+    console.log('### [조합 A] 동일 언어 청취 (All English) - 웹소켓 팬아웃 용량 측정');
+    console.log('########################################################################');
+    for (const n of steps) {
+      const res = await runStepWith3Iterations(n, 'same_lang');
+      summaryA.push(res);
+    }
   }
 
   // 2. 조합 B: 5개 다른 언어 ('en', 'ja', 'zh', 'vi', 'ko')
   console.log('\n########################################################################');
-  console.log('### [조합 B] 5개 언어 분산 청취 (en/ja/zh/vi/ko) - 번역+팬아웃 복합 부하');
+  console.log('### [조합 B] 5개 언어 분산 청취 (en/ja/zh/vi/ko) - 번역(Cold/Warm)+팬아웃 복합');
   console.log('########################################################################');
   for (const n of steps) {
     const res = await runStepWith3Iterations(n, 'diff_5_langs');
@@ -264,17 +288,19 @@ async function run() {
   console.log('                      최종 릴레이(Desk) 부하 시험 결과표');
   console.log('========================================================================');
 
-  console.log('\n[조합 A: 동일 언어 청취 (All en)]');
-  console.table(summaryA.map(s => ({
-    '청취자수(N)': s.N,
-    '연결몰림(Burst)': `${s.medianBurst}ms`,
-    '첫줄(Cold P95)': `${s.medianColdP95}ms`,
-    '정상전달(Steady P95)': `${s.medianSteadyP95}ms`,
-    '정상전달(Steady Avg)': `${s.medianSteadyAvg}ms`,
-    '최대지연(Max)': `${s.medianSteadyMax}ms`,
-    '전달율': `${s.avgDelivery.toFixed(1)}%`,
-    '판정': s.isHealthy ? '정상(PASS)' : '저하(FAIL)'
-  })));
+  if (!bOnly) {
+    console.log('\n[조합 A: 동일 언어 청취 (All en)]');
+    console.table(summaryA.map(s => ({
+      '청취자수(N)': s.N,
+      '연결몰림(Burst)': `${s.medianBurst}ms`,
+      '첫줄(Cold P95)': `${s.medianColdP95}ms`,
+      '정상전달(Steady P95)': `${s.medianSteadyP95}ms`,
+      '정상전달(Steady Avg)': `${s.medianSteadyAvg}ms`,
+      '최대지연(Max)': `${s.medianSteadyMax}ms`,
+      '전달율': `${s.avgDelivery.toFixed(1)}%`,
+      '판정': s.isHealthy ? '정상(PASS)' : '저하(FAIL)'
+    })));
+  }
 
   console.log('\n[조합 B: 5개 언어 분산 청취 (en/ja/zh/vi/ko)]');
   console.table(summaryB.map(s => ({
@@ -287,6 +313,17 @@ async function run() {
     '전달율': `${s.avgDelivery.toFixed(1)}%`,
     '판정': s.isHealthy ? '정상(PASS)' : '저하(FAIL)'
   })));
+
+  // 3회 반복 원값 출력
+  console.log('\n[조합 B 3회 반복 원값 상세]');
+  for (const s of summaryB) {
+    console.log(`N=${s.N}:`);
+    console.log(`  · 몰림(Burst): ${s.runs.map(r => r.connectBurstMs + 'ms').join(' / ')}`);
+    console.log(`  · 첫줄(Cold P95): ${s.runs.map(r => r.coldP95 + 'ms').join(' / ')}`);
+    console.log(`  · 정상(Steady P95): ${s.runs.map(r => r.steadyP95 + 'ms').join(' / ')}`);
+    console.log(`  · 정상(Steady Avg): ${s.runs.map(r => r.steadyAvg + 'ms').join(' / ')}`);
+    console.log(`  · 전달율: ${s.runs.map(r => r.deliveryRate.toFixed(1) + '%').join(' / ')}`);
+  }
 
   console.log('\n[분석 및 판정]');
   const analyze = (summary, title) => {
@@ -301,7 +338,7 @@ async function run() {
     console.log(`- ${title}: ${bottleneck}`);
   };
 
-  analyze(summaryA, '조합 A (동일 언어)');
+  if (!bOnly) analyze(summaryA, '조합 A (동일 언어)');
   analyze(summaryB, '조합 B (5개 언어 분산)');
   console.log('\n※ 주의: 본 수치는 로컬 wrangler dev(단일 프로세스 workerd) 측정치이므로 운영 에지 환경과는 절대 ms 차이가 있을 수 있습니다. 시스템이 과부하에 무너지지 않고 정상 복원됨을 검증한 결과입니다.');
 }
