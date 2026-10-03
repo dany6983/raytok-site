@@ -154,3 +154,15 @@ section[id]{scroll-margin-top:96px}
 .notice ul{margin:8px 0 0;padding-left:18px;color:var(--ink2);font-size:15px}
 .notice li{margin-bottom:6px}
 @media(max-width:640px){.nav a{padding:7px 7px}}
+/* 언어 선택 줄 + 번역 (assets/i18n.js) */
+.langbar{background:#0A0F1F;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
+.langbar .wrap{display:flex;justify-content:flex-end;gap:2px;padding-top:4px;padding-bottom:4px}
+.langbar button{font:inherit;font-size:12.5px;line-height:1;color:inherit;background:none;border:0;border-radius:6px;padding:7px 9px;opacity:.7;cursor:pointer}
+.langbar button:hover{opacity:1}
+.langbar button[aria-pressed]{opacity:1;background:rgba(255,255,255,.14);font-weight:700}
+.langbar button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.i18n-wait body{visibility:hidden}
+html[data-lang] .ko-only{display:none!important}
+@media(min-width:1021px){html[data-lang] .cards4{grid-template-columns:repeat(3,1fr)}}
+html[data-lang] body{word-break:normal;overflow-wrap:anywhere}
+html[data-lang] th{white-space:normal}

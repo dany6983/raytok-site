@@ -16,12 +16,15 @@
 <meta name="theme-color" content="#0A0F1F">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/raytok-icon.png">
-<link rel="stylesheet" href="/assets/site.css?v=3ccc721f">
+<link rel="stylesheet" href="/assets/site.css?v=78f36662">
+<script>try{var l=(location.search.match(/[?&]lang=([a-z]{2})/)||[])[1]||localStorage.getItem("raytok-lang");if(/^(en|zh|ja|vi)$/.test(l))document.documentElement.className="i18n-wait"}catch(e){}</script>
+<script defer src="/assets/i18n.js?v=6d26ae38"></script>
 </head>
 <body>
+<div class="langbar" data-noi18n><div class="wrap" role="group" aria-label="Language"><button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button><button type="button" data-lang="ja" lang="ja">日本語</button><button type="button" data-lang="vi" lang="vi">Tiếng Việt</button></div></div>
 <header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
-<nav class="nav" aria-label="주요 메뉴"><a href="/field/" aria-current="page">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS<span class="d-desk"> 통역 이어폰</span></a><a href="/desk/">Desk<span class="d-desk"> 화상회의</span></a><a class="d-desk" href="/#tech">기술</a><a href="/guide/">사용설명서</a></nav>
+<nav class="nav" aria-label="주요 메뉴"><a href="/field/" aria-current="page">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS<span class="d-desk"> 통역 이어폰</span></a><a class="ko-only" href="/desk/">Desk<span class="d-desk"> 화상회의</span></a><a class="d-desk" href="/#tech">기술</a><a href="/guide/">사용설명서</a></nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 
@@ -68,6 +71,7 @@
 <div class="shots"><figure><img loading="lazy" src="/img/ware.webp" alt="물류창고 — 지게차 동선"><figcaption>물류창고 — 지게차 동선</figcaption></figure><figure><img loading="lazy" src="/img/scaf.webp" alt="고층 비계 — 안전대 체결"><figcaption>고층 비계 — 안전대 체결</figcaption></figure><figure><img loading="lazy" src="/img/auto.webp" alt="자동차부품 라인 — 방호장치"><figcaption>자동차부품 라인 — 방호장치</figcaption></figure><figure><img loading="lazy" src="/img/food.webp" alt="식품공장 — 위생 수칙"><figcaption>식품공장 — 위생 수칙</figcaption></figure><figure><img loading="lazy" src="/img/port.webp" alt="어항·선상 — 출항 전 안전 수칙"><figcaption>어항·선상 — 출항 전 안전 수칙</figcaption></figure><figure><img loading="lazy" src="/img/orch.webp" alt="과수원 — 계절근로자 작업 요령"><figcaption>과수원 — 계절근로자 작업 요령</figcaption></figure></div>
 <table style="margin-top:22px">
 <tr><th>1회 인원</th><td>강사 폰 단독 약 10명 · 소형 공유기 연결 시 20~50명 (현장 환경에 따라 다름)</td></tr>
+<tr><th>연결</th><td>강사와 근로자가 <b>같은 와이파이</b>에 접속합니다 (강사 폰 핫스팟 또는 소형 공유기). 근로자는 한 번에 한 강사를 듣습니다</td></tr>
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 네팔어·미얀마어·크메르어·라오어·우즈베크어·싱할라어·몽골어는 강사 휴대폰의 인터넷 필요 (LTE·테더링 가능)</td></tr>
 <tr><th>준비</th><td>교육 전 사무실 와이파이에서 필요한 언어만 강사 폰에 한 번 내려받기</td></tr>
 <tr><th>기록</th><td>참석 인원, 언어별 인원, 개인별 청취 시간, 강의 원문과 번역문. <b>강사 폰에만 저장</b>되고 음성은 저장하지 않습니다</td></tr>
@@ -78,7 +82,7 @@
 <section class="alt" id="price"><div class="wrap">
 <p class="eyebrow">가격</p>
 <h2>근로자 한 명당 월 1만원</h2>
-<p class="sub">강사 수, 언어 수, 교육 횟수와 상관없습니다.</p>
+<p class="sub">언어 수, 교육 횟수와 상관없습니다. 강사 수에도 제한이 없습니다. 강사마다 각자 방을 엽니다.</p>
 <div class="price"><div><b>월 1만원</b><span>외국인 근로자 1인당 (부가세 포함)</span></div><div><b>30일 무료</b><span>누구나 체험 · 자동 결제 전환 없음</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
 <table>
 <tr><th>예시</th><th>월 비용 (부가세 포함)</th></tr>
@@ -90,7 +94,7 @@
 <section><div class="wrap">
 <p class="eyebrow">자주 묻는 질문</p>
 <h2>도입 전에 확인하세요</h2>
-<details><summary>근로자가 소리로 들을 수 있습니까?</summary><p>네. 본인 이어폰으로 듣습니다. 브라우저로 들을 때는 화면이 켜져 있어야 소리가 이어집니다. 소음이 큰 현장에서는 자막을 함께 보십시오.</p></details><details><summary>사내 와이파이를 써도 됩니까?</summary><p>보안상 기기 간 통신을 막아 둔 와이파이가 많습니다. 강사 폰 핫스팟이나 인터넷에 연결하지 않는 소형 공유기를 권합니다. 사내 전산망과 무관합니다.</p></details><details><summary>현장에 인터넷이 없으면 못 씁니까?</summary><p>근로자 휴대폰은 인터넷이 필요 없습니다. 59개 언어는 강사 휴대폰도 인터넷 없이 됩니다. 네팔어·미얀마어 등 일부 언어를 쓸 때만 강사 휴대폰이 LTE나 와이파이에 닿아야 합니다. 도입 전에 현장에서 함께 확인합니다.</p></details><details><summary>번역이 틀리면 어떻게 합니까?</summary><p>기계 번역이므로 오역이 있을 수 있습니다. 중요한 안전 지시는 시연과 시각 자료를 함께 쓰십시오. 원문과 번역문이 함께 표시됩니다.</p></details><details><summary>이 기록으로 법정 교육이 인정됩니까?</summary><p>RayTok은 통역 도구이며 안전보건교육기관이 아닙니다. 교육의 실시·증빙·이수 관리 책임은 교육기관과 사업주에게 있습니다. 기록은 그 증빙을 돕는 자료입니다.</p></details><details><summary>강사가 따로 배워야 합니까?</summary><p>앱을 열고 시작을 누르면 됩니다. 안내는 30분이면 충분합니다.</p></details>
+<details><summary>근로자가 소리로 들을 수 있습니까?</summary><p>네. 본인 이어폰으로 듣습니다. 브라우저로 들을 때는 화면이 켜져 있어야 소리가 이어집니다. 소음이 큰 현장에서는 자막을 함께 보십시오.</p></details><details><summary>사내 와이파이를 써도 됩니까?</summary><p>보안상 기기 간 통신을 막아 둔 와이파이가 많습니다. 강사 폰 핫스팟이나 인터넷에 연결하지 않는 소형 공유기를 권합니다. 사내 전산망과 무관합니다.</p></details><details><summary>폰 안에 번역 모델이 없는 언어는 어떻게 됩니까?</summary><p>말하는 사람의 휴대폰이 인터넷에 닿으면 서버 번역으로 그 언어 그대로 전달합니다. 네팔어·라오어·몽골어는 비슷한 언어(힌디어·타이어·러시아어)로 대신 표시하는 기능이 있고, 그때는 화면에 '네팔어 모델이 없어 힌디어로 표시합니다'처럼 알립니다. 이 기능은 끌 수 있습니다. 크메르어·미얀마어·우즈베크어·싱할라어는 대신 표시하지 않습니다.</p></details><details><summary>현장에 인터넷이 없으면 못 씁니까?</summary><p>근로자 휴대폰은 인터넷이 필요 없습니다. 59개 언어는 강사 휴대폰도 인터넷 없이 됩니다. 네팔어·미얀마어 등 일부 언어를 쓸 때만 강사 휴대폰이 LTE나 와이파이에 닿아야 합니다. 도입 전에 현장에서 함께 확인합니다.</p></details><details><summary>번역이 틀리면 어떻게 합니까?</summary><p>기계 번역이므로 오역이 있을 수 있습니다. 중요한 안전 지시는 시연과 시각 자료를 함께 쓰십시오. 원문과 번역문이 함께 표시됩니다.</p></details><details><summary>이 기록으로 법정 교육이 인정됩니까?</summary><p>RayTok은 통역 도구이며 안전보건교육기관이 아닙니다. 교육의 실시·증빙·이수 관리 책임은 교육기관과 사업주에게 있습니다. 기록은 그 증빙을 돕는 자료입니다.</p></details><details><summary>강사가 따로 배워야 합니까?</summary><p>앱을 열고 시작을 누르면 됩니다. 안내는 30분이면 충분합니다.</p></details>
 </div></section>
 <section class="dark cta"><div class="wrap">
 <h2>30일 동안 실제 교육에 써 보세요</h2>
@@ -99,7 +103,7 @@
 <p class="mail">메일: <a href="mailto:raytok.dany@gmail.com">raytok.dany@gmail.com</a></p>
 </div></section>
 <footer><div class="wrap">
-<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
+<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a class="ko-only" href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
 <p>주식회사 피엔엘에코 · 경기도 화성시 동탄대로 635, 1동 1507호 · <a href="mailto:raytok.dany@gmail.com">raytok.dany@gmail.com</a></p>
 <p>특허 출원 중 (10-2026-0166695 외 5건) · 사진과 영상은 연출 이미지입니다.</p>
 <p>RayTok은 통역 도구입니다. 교육기관·통역사·관광통역안내사를 대신하지 않으며, 기계 번역에는 오역이 있을 수 있습니다.</p>

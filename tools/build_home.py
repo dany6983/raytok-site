@@ -27,6 +27,15 @@ IDS = {
  "mmove":"20261002_092349_877168a2-47d0-440f-b265-bc2788874a08",
 }
 import hashlib
+I18N_LANGS = ("en", "zh", "ja", "vi")  # 번역 사전: assets/i18n/<언어>.json. 원문(한국어)을 고치면 사전도 같이 고친다 — tools/i18n_check.js 로 빠진 문장 확인
+def _i18n_ver():
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    h = hashlib.md5()
+    for f in ["assets/i18n.js"] + [f"assets/i18n/{l}.json" for l in I18N_LANGS]:
+        fp = os.path.join(root, *f.split("/"))
+        if os.path.exists(fp): h.update(open(fp, "rb").read().replace(b"\r\n", b"\n"))
+    return h.hexdigest()[:8]
+I18NV = _i18n_ver()
 CSSV = hashlib.md5(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"assets","site.css"),"rb").read().replace(b"\r\n", b"\n")).hexdigest()[:8]  # 줄바꿈(CRLF/LF) 차이로 해시가 바뀌지 않게
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ⚠️ CDN 직접 참조 금지: 모든 미디어는 저장소 img/ 로 받아서 쓴다 (python tools/fetch_media.py).
@@ -63,7 +72,10 @@ def mailto(subject, body=""):
 OWS_M = None
 BODY = "회사·단체명:\n담당자:\n연락처:\n인원(근로자/손님 수):\n사용할 언어:\n"
 
-def head(title, desc, path, og):
+def head(title, desc, path, og, i18n=True):
+    # i18n=False: 번역하지 않는 페이지(Desk — 국내 한정)
+    tr = (f'<script>try{{var l=(location.search.match(/[?&]lang=([a-z]{{2}})/)||[])[1]||localStorage.getItem("raytok-lang");if(/^(en|zh|ja|vi)$/.test(l))document.documentElement.className="i18n-wait"}}catch(e){{}}</script>\n'
+          f'<script defer src="/assets/i18n.js?v={I18NV}"></script>\n') if i18n else ""
     return f'''<!doctype html>
 <html lang="ko">
 <head>
@@ -83,7 +95,7 @@ def head(title, desc, path, og):
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/raytok-icon.png">
 <link rel="stylesheet" href="/assets/site.css?v={CSSV}">
-</head>
+{tr}</head>
 <body>
 '''
 
@@ -91,15 +103,16 @@ def top(cur):
     def a(href, label, key):
         c = ' aria-current="page"' if cur == key else ''
         return f'<a href="{href}"{c}>{label}</a>'
-    return f'''<header class="top"><div class="wrap">
+    lang = "" if cur == "desk" else '<div class="langbar" data-noi18n><div class="wrap" role="group" aria-label="Language"><button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button><button type="button" data-lang="ja" lang="ja">日本語</button><button type="button" data-lang="vi" lang="vi">Tiếng Việt</button></div></div>\n'
+    return lang + f'''<header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
-<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk")}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}</nav>
+<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk").replace("<a ",'<a class="ko-only" ')}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}</nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 '''
 
 FOOT = f'''<footer><div class="wrap">
-<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
+<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/ows/">OWS 통역 이어폰</a><a class="ko-only" href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a></div>
 <p>주식회사 피엔엘에코 · 경기도 화성시 동탄대로 635, 1동 1507호 · <a href="mailto:{MAIL}">{MAIL}</a></p>
 <p>특허 출원 중 (10-2026-0166695 외 5건) · 사진과 영상은 연출 이미지입니다.</p>
 <p>RayTok은 통역 도구입니다. 교육기관·통역사·관광통역안내사를 대신하지 않으며, 기계 번역에는 오역이 있을 수 있습니다.</p>
@@ -133,7 +146,7 @@ def write(path, html):
 
 PATS = [
  ("끊겨도 이어지는 근거리 통역","무선 오디오 기기 및 근거리 무선망을 이용한 실시간 통역 방법 및 시스템","10-2026-0166695","2026.09"),
- ("고칠 수 없는 교육 이수 기록","폐쇄형 근거리 무선망에서의 역방향 통역 및 위변조 검출 가능한 교육 이수 기록 생성 방법 및 시스템","10-2026-0179094","2026.09"),
+ ("고치면 드러나는 교육 이수 기록","폐쇄형 근거리 무선망에서의 역방향 통역 및 위변조 검출 가능한 교육 이수 기록 생성 방법 및 시스템","10-2026-0179094","2026.09"),
  ("통역 음성이 다시 인식되지 않게","통역 음성 출력의 재인식을 텍스트 대조로 억제하는 방법 및 시스템","10-2026-0185125","2026.09"),
  ("방송 음성과 폰 자막을 함께 쓰는 다국어 배포","근거리 무선망 텍스트 배포와 제한된 수의 음성 방송 스트림을 병용하는 다국어 통역 배포 방법 및 시스템","10-2026-0188144","2026.10"),
  ("자막과 음성을 따로 다루는 처리","실시간 통역에서 표시 단위와 음성 출력 단위를 분리하여 처리하는 방법 및 시스템","10-2026-0189505","2026.10"),
@@ -179,7 +192,7 @@ home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣�
 <div class="in"><span class="st">여행사 · 가이드 · 2026년 11월 출시 예정</span><h3>관광가이드</h3><p>가이드 한 명이 여러 나라 손님에게 동시에. 손님은 자기 폰과 이어폰이면 됩니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
-<a class="card" href="/desk/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
+<a class="card ko-only" href="/desk/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
 <div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Desk 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
 </div></div></section>
 
@@ -257,6 +270,7 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 각�
 {shots([("ware","물류창고 — 지게차 동선"),("scaf","고층 비계 — 안전대 체결"),("auto","자동차부품 라인 — 방호장치"),("food","식품공장 — 위생 수칙"),("port","어항·선상 — 출항 전 안전 수칙"),("orch","과수원 — 계절근로자 작업 요령")])}
 <table style="margin-top:22px">
 <tr><th>1회 인원</th><td>강사 폰 단독 약 10명 · 소형 공유기 연결 시 20~50명 (현장 환경에 따라 다름)</td></tr>
+<tr><th>연결</th><td>강사와 근로자가 <b>같은 와이파이</b>에 접속합니다 (강사 폰 핫스팟 또는 소형 공유기). 근로자는 한 번에 한 강사를 듣습니다</td></tr>
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 네팔어·미얀마어·크메르어·라오어·우즈베크어·싱할라어·몽골어는 강사 휴대폰의 인터넷 필요 (LTE·테더링 가능)</td></tr>
 <tr><th>준비</th><td>교육 전 사무실 와이파이에서 필요한 언어만 강사 폰에 한 번 내려받기</td></tr>
 <tr><th>기록</th><td>참석 인원, 언어별 인원, 개인별 청취 시간, 강의 원문과 번역문. <b>강사 폰에만 저장</b>되고 음성은 저장하지 않습니다</td></tr>
@@ -267,7 +281,7 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 각�
 <section class="alt" id="price"><div class="wrap">
 <p class="eyebrow">가격</p>
 <h2>근로자 한 명당 월 1만원</h2>
-<p class="sub">강사 수, 언어 수, 교육 횟수와 상관없습니다.</p>
+<p class="sub">언어 수, 교육 횟수와 상관없습니다. 강사 수에도 제한이 없습니다. 강사마다 각자 방을 엽니다.</p>
 <div class="price"><div><b>월 1만원</b><span>외국인 근로자 1인당 (부가세 포함)</span></div><div><b>30일 무료</b><span>누구나 체험 · 자동 결제 전환 없음</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
 <table>
 <tr><th>예시</th><th>월 비용 (부가세 포함)</th></tr>
@@ -282,6 +296,7 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 각�
 {faq([
 ("근로자가 소리로 들을 수 있습니까?","네. 본인 이어폰으로 듣습니다. 브라우저로 들을 때는 화면이 켜져 있어야 소리가 이어집니다. 소음이 큰 현장에서는 자막을 함께 보십시오."),
 ("사내 와이파이를 써도 됩니까?","보안상 기기 간 통신을 막아 둔 와이파이가 많습니다. 강사 폰 핫스팟이나 인터넷에 연결하지 않는 소형 공유기를 권합니다. 사내 전산망과 무관합니다."),
+("폰 안에 번역 모델이 없는 언어는 어떻게 됩니까?","말하는 사람의 휴대폰이 인터넷에 닿으면 서버 번역으로 그 언어 그대로 전달합니다. 네팔어·라오어·몽골어는 비슷한 언어(힌디어·타이어·러시아어)로 대신 표시하는 기능이 있고, 그때는 화면에 '네팔어 모델이 없어 힌디어로 표시합니다'처럼 알립니다. 이 기능은 끌 수 있습니다. 크메르어·미얀마어·우즈베크어·싱할라어는 대신 표시하지 않습니다."),
 ("현장에 인터넷이 없으면 못 씁니까?","근로자 휴대폰은 인터넷이 필요 없습니다. 59개 언어는 강사 휴대폰도 인터넷 없이 됩니다. 네팔어·미얀마어 등 일부 언어를 쓸 때만 강사 휴대폰이 LTE나 와이파이에 닿아야 합니다. 도입 전에 현장에서 함께 확인합니다."),
 ("번역이 틀리면 어떻게 합니까?","기계 번역이므로 오역이 있을 수 있습니다. 중요한 안전 지시는 시연과 시각 자료를 함께 쓰십시오. 원문과 번역문이 함께 표시됩니다."),
 ("이 기록으로 법정 교육이 인정됩니까?","RayTok은 통역 도구이며 안전보건교육기관이 아닙니다. 교육의 실시·증빙·이수 관리 책임은 교육기관과 사업주에게 있습니다. 기록은 그 증빙을 돕는 자료입니다."),
@@ -337,6 +352,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 각자의 �
 {shots([("seong","성산일출봉 — 바람 부는 야외"),("bulg","불국사 — 조용한 사찰 해설"),("gwang","광장시장 — 시끄러운 음식 투어"),("hwas","수원화성 — 길게 늘어선 행렬"),("nami","남이섬 — 걸으며 설명"),("muse","박물관 — 조용히 말해도 전달")])}
 <table style="margin-top:22px">
 <tr><th>그룹 인원</th><td>가이드 폰 단독 약 10명 · 휴대용 공유기 연결 시 20~50명 (환경에 따라 다름)</td></tr>
+<tr><th>연결</th><td>가이드와 손님이 <b>같은 와이파이</b>에 접속합니다 (가이드 폰 핫스팟 또는 휴대용 공유기). 손님은 한 번에 한 가이드를 듣습니다</td></tr>
 <tr><th>언어</th><td>인터넷 없이 59개 언어 · 네팔어·미얀마어 등 일부 언어는 가이드 휴대폰의 인터넷 필요</td></tr>
 <tr><th>손님 준비물</th><td>자기 스마트폰과 이어폰. 수신기를 나눠 주고 걷을 필요가 없습니다</td></tr>
 <tr><th>요금</th><td>쿠폰 1장 5,000원(부가세 포함) — 손님 1명이 7일 동안 사용 · 30일 무료 체험</td></tr>
@@ -360,6 +376,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 각자의 �
 <h2>도입 전에 확인하세요</h2>
 {faq([
 ("손님이 소리로 계속 들을 수 있습니까?","네. 본인 이어폰으로 듣습니다. 브라우저로 들을 때는 화면이 켜져 있어야 소리가 이어집니다. 자막도 함께 뜨므로 놓친 부분은 화면으로 확인할 수 있습니다."),
+("폰 안에 번역 모델이 없는 언어는 어떻게 됩니까?","말하는 사람의 휴대폰이 인터넷에 닿으면 서버 번역으로 그 언어 그대로 전달합니다. 네팔어·라오어·몽골어는 비슷한 언어(힌디어·타이어·러시아어)로 대신 표시하는 기능이 있고, 그때는 화면에 '네팔어 모델이 없어 힌디어로 표시합니다'처럼 알립니다. 이 기능은 끌 수 있습니다. 크메르어·미얀마어·우즈베크어·싱할라어는 대신 표시하지 않습니다."),
 ("손님이 이어폰이 없으면?","화면 자막으로 볼 수 있습니다. 여행사가 여분 이어폰을 준비해 두면 좋습니다."),
 ("가이드 폰 배터리는 괜찮습니까?","장시간 투어에는 보조배터리를 권합니다. 실제 코스에서 무료 체험으로 먼저 확인하십시오."),
 ("번역이 틀리면?","기계 번역이므로 오역이 있을 수 있습니다. 집합 시간이나 위험 구역 같은 안내는 짧고 분명하게 말씀하시면 좋습니다."),
@@ -433,7 +450,7 @@ write("/ows/", ows)
 MEET_BODY = "회사명:\n담당자:\n연락처:\n쓰는 회의 앱:\n한 달 회의 시간(대략):\n상대방 언어:\n"
 MEET_M = mailto("[RayTok Desk] 베타 신청", MEET_BODY)
 meet = head("RayTok Desk — 상대 회사가 아무것도 사지 않아도 되는 화상회의 통역",
-            "내 PC 하나로 화상회의를 통역합니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다. 봇 없음, 관리자 설정 없음. 2026년 11월 출시 예정.", "/desk/", img("mhero")) + top("desk") + f'''
+            "내 PC 하나로 화상회의를 통역합니다. 어느 회의 앱이든, 참석자는 링크만 열고 자기 언어로 듣고 봅니다. 봇 없음, 관리자 설정 없음. 2026년 11월 출시 예정.", "/desk/", img("mhero"), i18n=False) + top("desk") + f'''
 <div class="hero">{mimg("mhero","노트북으로 해외 거래처와 화상회의를 하는 직원",' style="transform:scaleX(-1)"').replace(' loading="lazy"','')}
 <div class="wrap">
 <span class="tag">RayTok Desk · 2026년 11월 출시 예정 · Windows</span>
