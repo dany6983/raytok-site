@@ -819,7 +819,14 @@ export default {
       await room.fetch(new Request('http://internal/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, host_token, kind })
+        body: JSON.stringify({
+          code,
+          host_token,
+          kind,
+          sub: licenseRes.payload.sub,
+          test_silence_warn_ms: body.test_silence_warn_ms,
+          test_silence_timeout_ms: body.test_silence_timeout_ms
+        })
       }));
 
       return new Response(JSON.stringify({ code, host_token }), {
@@ -829,6 +836,19 @@ export default {
           ...CORS_HEADERS
         }
       });
+    }
+
+    // 1-0. 테스트용 룸 알람 시뮬레이션: POST /room/:code/test/alarm
+    if (url.pathname.startsWith('/room/') && url.pathname.endsWith('/test/alarm') && request.method === 'POST') {
+      const pathParts = url.pathname.split('/');
+      const code = (pathParts[2] || '').toUpperCase();
+      const id = env.ROOM.idFromName(code);
+      const room = env.ROOM.get(id);
+      return room.fetch(new Request('http://internal/test/alarm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: request.body
+      }));
     }
 
     // 1-1. Deepgram STT 임시 키 발급: POST /stt/token
@@ -850,6 +870,35 @@ export default {
       }
 
       const sub = licenseRes.payload.sub;
+
+      // 1-1) Desk STT 월 안전 상한선(DESK_HARD_CAP_MIN) 검사 (기본 6000분 = 월 100시간)
+      const hardCapMin = Number(env.DESK_HARD_CAP_MIN) || 6000;
+      const now = new Date();
+      const currentMonth = now.toISOString().slice(0, 7);
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const uRes = await limiter.fetch(new Request(`http://internal/usage/summary?month=${currentMonth}&sub=${encodeURIComponent(sub)}`));
+        if (uRes.ok) {
+          const uData = await uRes.json();
+          const usedMin = uData.desk_minutes || 0;
+          if (usedMin >= hardCapMin) {
+            return new Response(JSON.stringify({
+              error: 'quota_exceeded',
+              message: `Monthly Desk STT hard cap exceeded (${usedMin}/${hardCapMin} minutes, ${Math.round(hardCapMin / 60)} hours). Contact support to increase.`,
+              scope: 'desk_minutes',
+              used: usedMin,
+              limit: hardCapMin
+            }), {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                ...CORS_HEADERS
+              }
+            });
+          }
+        }
+      } catch (_) {}
 
       // 2) Deepgram 마스터 API 키 확인
       const deepgramKey = (env.DEEPGRAM_API_KEY || '').trim().replace(/^["']|["']$/g, '');

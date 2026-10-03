@@ -23,7 +23,7 @@ export class Room {
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
-      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt']);
+      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'silenceWarnMs', 'silenceTimeoutMs']);
       if (stored.get('initialized')) {
         this.initialized = true;
         this.hostToken = stored.get('hostToken') || null;
@@ -31,8 +31,29 @@ export class Room {
         this.code = stored.get('code') || null;
         this.ringBuffer = stored.get('ringBuffer') || [];
         this.lastLineAt = stored.get('lastLineAt') || (this.startedAt ? new Date(this.startedAt).getTime() : Date.now());
+        this.kind = stored.get('kind') || 'guide';
+        this.sub = stored.get('sub') || null;
+        this.silenceWarnMs = stored.get('silenceWarnMs') || 9 * 60 * 1000;
+        this.silenceTimeoutMs = stored.get('silenceTimeoutMs') || 10 * 60 * 1000;
       }
     });
+  }
+
+  async recordDeskSessionMinutes() {
+    if (this.kind === 'desk' && this.sub && this.startedAt && !this.deskMinutesRecorded) {
+      this.deskMinutesRecorded = true;
+      const elapsedMs = Date.now() - new Date(this.startedAt).getTime();
+      const elapsedMin = Math.max(1, Math.round(elapsedMs / 60000));
+      try {
+        const limiterId = this.env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = this.env.ROOM.get(limiterId);
+        await limiter.fetch(new Request('http://internal/usage/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sub: this.sub, deskMinutes: elapsedMin })
+        }));
+      } catch (_) {}
+    }
   }
 
   async fetch(request) {
@@ -273,6 +294,21 @@ export class Room {
       });
     }
 
+    // 0-6. 테스트용 무음 알람 시뮬레이션 (/test/alarm)
+    if (url.pathname === '/test/alarm' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      if (body.advance_ms) {
+        this.lastLineAt = (this.lastLineAt || Date.now()) - body.advance_ms;
+        if (this.startedAt) {
+          this.startedAt = new Date(new Date(this.startedAt).getTime() - body.advance_ms).toISOString();
+        }
+      }
+      await this.alarm();
+      return new Response(JSON.stringify({ ok: true, silenceWarningSent: this.silenceWarningSent }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // 1. 내부 초기화 호출
     if (url.pathname === '/init' && request.method === 'POST') {
       const body = await request.json();
@@ -283,16 +319,25 @@ export class Room {
       this.ringBuffer = [];
       this.lastLineAt = Date.now();
       this.silenceWarningSent = false;
+      this.kind = body.kind || 'guide';
+      this.sub = body.sub || null;
+      this.silenceWarnMs = body.test_silence_warn_ms || 9 * 60 * 1000;
+      this.silenceTimeoutMs = body.test_silence_timeout_ms || 10 * 60 * 1000;
+      this.deskMinutesRecorded = false;
       await this.ctx.storage.put({
         code: this.code,
         hostToken: this.hostToken,
         startedAt: this.startedAt,
         initialized: true,
         ringBuffer: [],
-        lastLineAt: this.lastLineAt
+        lastLineAt: this.lastLineAt,
+        kind: this.kind,
+        sub: this.sub,
+        silenceWarnMs: this.silenceWarnMs,
+        silenceTimeoutMs: this.silenceTimeoutMs
       });
       // 10분 무음 자동 정지 기준: 9분 경고 알람 설정
-      await this.ctx.storage.setAlarm(this.lastLineAt + 9 * 60 * 1000);
+      await this.ctx.storage.setAlarm(this.lastLineAt + this.silenceWarnMs);
       return new Response(JSON.stringify({ ok: true }), {
         headers: { 'Content-Type': 'application/json' }
       });
@@ -434,11 +479,12 @@ export class Room {
             try { hostWs.send(clearMsg); } catch (_) {}
           }
         }
-        // 다음 9분 알람 예약
-        this.ctx.storage.setAlarm(this.lastLineAt + 9 * 60 * 1000);
+        // 다음 경고 알람 예약
+        this.ctx.storage.setAlarm(this.lastLineAt + (this.silenceWarnMs || 9 * 60 * 1000));
       }
 
       if (isEnd) {
+        await this.recordDeskSessionMinutes();
         this.ctx.waitUntil(
           new Promise((resolve) => {
             setTimeout(() => {
@@ -482,9 +528,12 @@ export class Room {
 
   async alarm() {
     const now = Date.now();
+    const warnMs = this.silenceWarnMs || 9 * 60 * 1000;
+    const timeoutMs = this.silenceTimeoutMs || 10 * 60 * 1000;
 
     // 1. 호스트 끊김 10분 대기 후 자동 end
     if (this.ctx.getWebSockets('host').length === 0) {
+      await this.recordDeskSessionMinutes();
       const endMsg = JSON.stringify({ end: 1, why: 'host_timeout' });
       for (const listenerWs of this.ctx.getWebSockets('listener')) {
         try {
@@ -510,7 +559,8 @@ export class Room {
     const lastTime = this.lastLineAt || (this.startedAt ? new Date(this.startedAt).getTime() : now);
     const silenceElapsed = now - lastTime;
 
-    if (silenceElapsed >= 10 * 60 * 1000) {
+    if (silenceElapsed >= timeoutMs) {
+      await this.recordDeskSessionMinutes();
       const endMsg = JSON.stringify({ end: 1, why: 'silence_timeout' });
       for (const hostWs of this.ctx.getWebSockets('host')) {
         try { hostWs.send(endMsg); } catch (e) {}
@@ -533,9 +583,9 @@ export class Room {
       return;
     }
 
-    if (silenceElapsed >= 9 * 60 * 1000 && !this.silenceWarningSent) {
+    if (silenceElapsed >= warnMs && !this.silenceWarningSent) {
       this.silenceWarningSent = true;
-      const remainingSec = Math.max(0, Math.round((10 * 60 * 1000 - silenceElapsed) / 1000));
+      const remainingSec = Math.max(0, Math.round((timeoutMs - silenceElapsed) / 1000));
       const warnMsg = JSON.stringify({
         warning: 'silence_warning',
         minutes: 9,
@@ -546,7 +596,7 @@ export class Room {
         try { hostWs.send(warnMsg); } catch (e) {}
       }
       // 10분 도달 시점 알람 설정
-      await this.ctx.storage.setAlarm(lastTime + 10 * 60 * 1000);
+      await this.ctx.storage.setAlarm(lastTime + timeoutMs);
     }
   }
 }
