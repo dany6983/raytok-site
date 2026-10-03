@@ -281,13 +281,16 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 각�
 <section class="alt" id="price"><div class="wrap">
 <p class="eyebrow">가격</p>
 <h2>현장 1곳에 월 21만원</h2>
-<p class="sub">근로자 수, 언어 수, 교육 횟수와 상관없습니다.</p>
+<p class="sub">근로자 수, 언어 수, 교육 횟수와 상관없습니다. 강사 코드 2개가 들어 있습니다.</p>
 <div class="price"><div><b>월 21만원</b><span>현장 1곳 (부가세 포함)</span></div><div><b>30일 무료</b><span>누구나 체험 · 자동 결제 전환 없음</span></div><div><b>시연 무료</b><span>방문 또는 원격</span></div></div>
 <table>
-<tr><th>예시</th><th>월 비용 (부가세 포함)</th></tr>
-<tr><td>근로자 5명 현장 1곳</td><td><b>21만원</b></td></tr>
-<tr><td>근로자 30명 현장 1곳</td><td><b>21만원</b></td></tr>
-<tr><td>현장 2곳</td><td><b>42만원</b></td></tr>
+<tr><th>항목</th><th>값 (부가세 포함)</th></tr>
+<tr><td>현장 1곳 (근로자 수 무관 · 강사 코드 2개 포함)</td><td><b>월 21만원</b></td></tr>
+<tr><td>현장 2곳</td><td><b>월 42만원</b></td></tr>
+<tr><td>강사 코드 추가</td><td><b>1개당 월 5만원</b></td></tr>
+<tr><td>교육기관 (강사 코드 1개)</td><td><b>월 21만원</b></td></tr>
+<tr><td>연 선납</td><td><b>10개월 값</b></td></tr>
+<tr><td>휴대용 공유기 (5명이 넘을 때 필요)</td><td><b>별도</b></td></tr>
 </table>
 </div></section>
 
