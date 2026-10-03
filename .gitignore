@@ -4,5 +4,6 @@ relay/dev.log
 relay/dev.err
 .wrangler/
 .dev.vars
+*.dev.vars
 relay/.dev.vars
 
