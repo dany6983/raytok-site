@@ -9,6 +9,8 @@ export class Room {
     this.initialized = false;
     this.hostMsgSec = 0;
     this.hostMsgCount = 0;
+    this.lastLineAt = null;
+    this.silenceWarningSent = false;
 
     // RULE: __ping 원문을 setWebSocketAutoResponse 로 같은 원문 되돌림
     if (typeof WebSocketRequestResponsePair !== 'undefined' && this.ctx.setWebSocketAutoResponse) {
@@ -21,13 +23,14 @@ export class Room {
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
-      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized']);
+      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt']);
       if (stored.get('initialized')) {
         this.initialized = true;
         this.hostToken = stored.get('hostToken') || null;
         this.startedAt = stored.get('startedAt') || null;
         this.code = stored.get('code') || null;
         this.ringBuffer = stored.get('ringBuffer') || [];
+        this.lastLineAt = stored.get('lastLineAt') || (this.startedAt ? new Date(this.startedAt).getTime() : Date.now());
       }
     });
   }
@@ -160,6 +163,116 @@ export class Room {
       });
     }
 
+    // 0-4. 내부 월별·코드별·언어별 사용량 기록 (/usage/record)
+    // - 원가 감시용 · 과금 근거 아님
+    if (url.pathname === '/usage/record' && request.method === 'POST') {
+      const { sub, target, chars = 0, sttKey = false, deskMinutes = 0 } = await request.json();
+      if (!sub) {
+        return new Response(JSON.stringify({ error: 'sub required' }), { status: 400 });
+      }
+
+      const now = new Date();
+      const month = now.toISOString().slice(0, 7); // 'YYYY-MM'
+      const key = `usage:${month}:${sub}`;
+
+      let record = await this.ctx.storage.get(key);
+      if (!record) {
+        record = {
+          month,
+          sub,
+          total_chars: 0,
+          total_calls: 0,
+          targets: {}, // { [targetLang]: { chars, calls } }
+          stt_keys_issued: 0,
+          desk_minutes: 0,
+          updated_at: now.toISOString()
+        };
+      }
+
+      if (chars > 0) {
+        record.total_chars += chars;
+        record.total_calls += 1;
+        if (target) {
+          const tKey = String(target).toLowerCase().trim();
+          if (!record.targets[tKey]) {
+            record.targets[tKey] = { chars: 0, calls: 0 };
+          }
+          record.targets[tKey].chars += chars;
+          record.targets[tKey].calls += 1;
+        }
+      }
+
+      if (sttKey) {
+        record.stt_keys_issued = (record.stt_keys_issued || 0) + 1;
+      }
+
+      if (deskMinutes > 0) {
+        record.desk_minutes = (record.desk_minutes || 0) + deskMinutes;
+      }
+
+      record.updated_at = now.toISOString();
+      await this.ctx.storage.put(key, record);
+
+      return new Response(JSON.stringify({ ok: true, month, sub }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 0-5. 내부 월별·코드별 사용량 조회 (/usage/summary)
+    if (url.pathname === '/usage/summary' && request.method === 'GET') {
+      const now = new Date();
+      const currentMonth = now.toISOString().slice(0, 7);
+      const month = url.searchParams.get('month') || currentMonth;
+      const sub = url.searchParams.get('sub');
+
+      if (sub) {
+        const key = `usage:${month}:${sub}`;
+        const record = await this.ctx.storage.get(key);
+        if (!record) {
+          return new Response(JSON.stringify({
+            month,
+            sub,
+            total_chars: 0,
+            total_calls: 0,
+            targets: {},
+            stt_keys_issued: 0,
+            desk_minutes: 0,
+            _note: '원가 감시용 · 과금 근거 아님'
+          }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return new Response(JSON.stringify({
+          ...record,
+          _note: '원가 감시용 · 과금 근거 아님'
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const prefix = `usage:${month}:`;
+      const map = await this.ctx.storage.list({ prefix });
+      const usageList = {};
+      for (const [k, rec] of map.entries()) {
+        usageList[rec.sub] = {
+          total_chars: rec.total_chars,
+          total_calls: rec.total_calls,
+          targets: rec.targets,
+          stt_keys_issued: rec.stt_keys_issued,
+          desk_minutes: rec.desk_minutes,
+          _note: '원가 감시용 · 과금 근거 아님'
+        };
+      }
+
+      return new Response(JSON.stringify({
+        month,
+        usage: usageList,
+        _note: '원가 감시용 · 과금 근거 아님'
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // 1. 내부 초기화 호출
     if (url.pathname === '/init' && request.method === 'POST') {
       const body = await request.json();
@@ -168,13 +281,18 @@ export class Room {
       this.startedAt = new Date().toISOString();
       this.initialized = true;
       this.ringBuffer = [];
+      this.lastLineAt = Date.now();
+      this.silenceWarningSent = false;
       await this.ctx.storage.put({
         code: this.code,
         hostToken: this.hostToken,
         startedAt: this.startedAt,
         initialized: true,
-        ringBuffer: []
+        ringBuffer: [],
+        lastLineAt: this.lastLineAt
       });
+      // 10분 무음 자동 정지 기준: 9분 경고 알람 설정
+      await this.ctx.storage.setAlarm(this.lastLineAt + 9 * 60 * 1000);
       return new Response(JSON.stringify({ ok: true }), {
         headers: { 'Content-Type': 'application/json' }
       });
@@ -292,13 +410,32 @@ export class Room {
         } catch (e) {}
       }
 
-      // 호스트가 end 보내면 전원 전달 후 5초 뒤 청취자 close(1000)
+      // 무음(새 자막 줄 없음) 판정 기준: 호스트가 보낸 메시지에 text가 있고 end가 아닌 경우 새 자막으로 판정
+      let isSubtitleLine = false;
       let isEnd = false;
       try {
         const parsed = JSON.parse(msgStr);
         if (parsed.end) isEnd = true;
+        if (!isEnd && parsed.text && (parsed.seq !== undefined || !parsed.hello)) {
+          isSubtitleLine = true;
+        }
       } catch (e) {
         if (/"end"\s*:\s*1/.test(msgStr)) isEnd = true;
+        else if (/"text"\s*:/.test(msgStr)) isSubtitleLine = true;
+      }
+
+      if (isSubtitleLine) {
+        this.lastLineAt = Date.now();
+        this.ctx.storage.put('lastLineAt', this.lastLineAt);
+        if (this.silenceWarningSent) {
+          this.silenceWarningSent = false;
+          const clearMsg = JSON.stringify({ warning_cleared: 'silence_warning' });
+          for (const hostWs of this.ctx.getWebSockets('host')) {
+            try { hostWs.send(clearMsg); } catch (_) {}
+          }
+        }
+        // 다음 9분 알람 예약
+        this.ctx.storage.setAlarm(this.lastLineAt + 9 * 60 * 1000);
       }
 
       if (isEnd) {
@@ -344,7 +481,9 @@ export class Room {
   }
 
   async alarm() {
-    // 10분 대기 후에도 호스트가 없으면 자동 end
+    const now = Date.now();
+
+    // 1. 호스트 끊김 10분 대기 후 자동 end
     if (this.ctx.getWebSockets('host').length === 0) {
       const endMsg = JSON.stringify({ end: 1, why: 'host_timeout' });
       for (const listenerWs of this.ctx.getWebSockets('listener')) {
@@ -364,6 +503,50 @@ export class Room {
           }, 5000);
         })
       );
+      return;
+    }
+
+    // 2. 무음(새 자막 줄 없음) 검사: 10분(600초) 도달 시 자동 종료, 9분(540초) 도달 시 1분 전 경고
+    const lastTime = this.lastLineAt || (this.startedAt ? new Date(this.startedAt).getTime() : now);
+    const silenceElapsed = now - lastTime;
+
+    if (silenceElapsed >= 10 * 60 * 1000) {
+      const endMsg = JSON.stringify({ end: 1, why: 'silence_timeout' });
+      for (const hostWs of this.ctx.getWebSockets('host')) {
+        try { hostWs.send(endMsg); } catch (e) {}
+      }
+      for (const listenerWs of this.ctx.getWebSockets('listener')) {
+        try { listenerWs.send(endMsg); } catch (e) {}
+      }
+      this.ctx.waitUntil(
+        new Promise((resolve) => {
+          setTimeout(() => {
+            for (const ws of [...this.ctx.getWebSockets('host'), ...this.ctx.getWebSockets('listener')]) {
+              try {
+                ws.close(1000, 'silence_timeout');
+              } catch (e) {}
+            }
+            resolve();
+          }, 5000);
+        })
+      );
+      return;
+    }
+
+    if (silenceElapsed >= 9 * 60 * 1000 && !this.silenceWarningSent) {
+      this.silenceWarningSent = true;
+      const remainingSec = Math.max(0, Math.round((10 * 60 * 1000 - silenceElapsed) / 1000));
+      const warnMsg = JSON.stringify({
+        warning: 'silence_warning',
+        minutes: 9,
+        remaining_sec: remainingSec,
+        message: '10분 동안 새 자막 줄이 없어 1분 후 세션이 자동 종료됩니다.'
+      });
+      for (const hostWs of this.ctx.getWebSockets('host')) {
+        try { hostWs.send(warnMsg); } catch (e) {}
+      }
+      // 10분 도달 시점 알람 설정
+      await this.ctx.storage.setAlarm(lastTime + 10 * 60 * 1000);
     }
   }
 }

@@ -95,6 +95,19 @@ async function recordEngineCall(env, engine, success) {
   }
 }
 
+async function recordUsage(env, { sub, target, chars = 0, sttKey = false, deskMinutes = 0 }) {
+  if (!sub) return;
+  try {
+    const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+    const limiter = env.ROOM.get(limiterId);
+    await limiter.fetch(new Request('http://internal/usage/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sub, target, chars, sttKey, deskMinutes })
+    }));
+  } catch (_) {}
+}
+
 // Translation Engine Adapter
 async function callEngine(engine, texts, sourceLang, targetLang, env) {
   if (engine === 'self') {
@@ -667,6 +680,12 @@ export default {
 
       const finalSrc = detectedSrc || sourceLang || 'unknown';
 
+      if (ctx && ctx.waitUntil) {
+        ctx.waitUntil(recordUsage(env, { sub, target: targetLang, chars: totalChars }));
+      } else {
+        await recordUsage(env, { sub, target: targetLang, chars: totalChars });
+      }
+
       return new Response(JSON.stringify({
         t: results,
         src: finalSrc,
@@ -685,6 +704,7 @@ export default {
       const adminSecret = (env.ADMIN_SECRET || '').trim();
 
       let isAuthorized = false;
+      let authedSub = null;
 
       // 1) 관리자 비밀 확인
       if (adminSecret) {
@@ -701,6 +721,7 @@ export default {
           const licRes = await verifyLicense(request, licenseSecret);
           if (licRes.valid) {
             isAuthorized = true;
+            authedSub = licRes.payload.sub;
           }
         }
       }
@@ -709,18 +730,26 @@ export default {
         return jsonError('unauthorized', 'Admin secret or valid license token required to access usage metrics', 401);
       }
 
-      let stats = {};
+      const querySub = url.searchParams.get('sub');
+      const targetSub = authedSub ? authedSub : querySub;
+      const month = url.searchParams.get('month') || '';
+
+      let engineStats = {};
+      let usageData = {};
       try {
         const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
         const limiter = env.ROOM.get(limiterId);
-        const res = await limiter.fetch(new Request('http://internal/metric/engine'));
-        if (res.ok) {
-          stats = await res.json();
-        }
+        const [engRes, useRes] = await Promise.all([
+          limiter.fetch(new Request('http://internal/metric/engine')),
+          limiter.fetch(new Request(`http://internal/usage/summary?month=${encodeURIComponent(month)}&sub=${encodeURIComponent(targetSub || '')}`))
+        ]);
+
+        if (engRes.ok) engineStats = await engRes.json();
+        if (useRes.ok) usageData = await useRes.json();
       } catch (_) {
         const formatRate = (calls, fails) => calls > 0 ? Number(((fails / calls) * 100).toFixed(2)) + '%' : '0%';
         for (const [eng, s] of memoryEngineStats.entries()) {
-          stats[eng] = {
+          engineStats[eng] = {
             window_1h: { calls: s.calls, failures: s.failures, rate: formatRate(s.calls, s.failures) },
             window_24h: { calls: s.calls, failures: s.failures, rate: formatRate(s.calls, s.failures) },
             lifetime: { calls: s.calls, failures: s.failures, rate: formatRate(s.calls, s.failures) }
@@ -729,7 +758,7 @@ export default {
       }
 
       const currentEngine = (env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
-      const currentStat = stats[currentEngine] || {
+      const currentStat = engineStats[currentEngine] || {
         window_1h: { calls: 0, failures: 0, rate: '0%' },
         window_24h: { calls: 0, failures: 0, rate: '0%' },
         lifetime: { calls: 0, failures: 0, rate: '0%' }
@@ -742,7 +771,8 @@ export default {
           window_24h: currentStat.window_24h,
           lifetime: currentStat.lifetime
         },
-        stats
+        engine_stats: engineStats,
+        ...usageData
       }), {
         status: 200,
         headers: {
@@ -904,6 +934,12 @@ export default {
 
         // 5) 발급 감사 로그 (키 원문은 절대 로깅하지 않고 ID 접두사만 기록)
         console.log(`[STT_TOKEN] Issued ephemeral key for sub=${sub.slice(0, 8)}..., key_id=${(kData.api_key_id || '').slice(0, 8)}..., ttl=${ttlSec}s`);
+
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(recordUsage(env, { sub, sttKey: true }));
+        } else {
+          await recordUsage(env, { sub, sttKey: true });
+        }
 
         return new Response(JSON.stringify({
           token: kData.key,
