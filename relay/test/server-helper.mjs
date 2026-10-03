@@ -38,8 +38,8 @@ export async function startRelayServer(timeoutMs = 30000) {
     }
     // Also verify via HTTP fetch
     try {
-      const res = await fetch('http://127.0.0.1:8787/room', { method: 'POST' });
-      if (res.ok) {
+      const res = await fetch('http://127.0.0.1:8787/room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'desk' }), signal: AbortSignal.timeout(2000) });
+      if (res.ok || res.status === 401) {
         console.log(`[RELAY HELPER] Relay responded to HTTP (${Date.now() - start}ms)`);
         return true;
       }

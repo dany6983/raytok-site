@@ -65,13 +65,144 @@ function checkIssueLimit(sub) {
 
 // In-memory fallback cache if Cache API is unavailable
 const memoryCache = new Map();
+const memoryEngineStats = new Map();
 
-// Compute normalized cache key: https://${host}/__cache/tr/<sha256>
-async function computeCacheKey(host, source, target, text) {
-  const input = `${source || ''}|${target}|${text}`;
+// Compute normalized cache key: https://${host}/__cache/tr/<engine>/<sha256>
+async function computeCacheKey(host, engine, source, target, text) {
+  const input = `${engine}|${source || ''}|${target}|${text}`;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   const hex = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
-  return `https://${host}/__cache/tr/${hex}`;
+  return `https://${host}/__cache/tr/${engine}/${hex}`;
+}
+
+async function recordEngineCall(env, engine, success) {
+  try {
+    const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+    const limiter = env.ROOM.get(limiterId);
+    await limiter.fetch(new Request('http://internal/metric/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ engine, success })
+    }));
+  } catch (_) {
+    let stat = memoryEngineStats.get(engine);
+    if (!stat) {
+      stat = { calls: 0, failures: 0 };
+      memoryEngineStats.set(engine, stat);
+    }
+    stat.calls++;
+    if (!success) stat.failures++;
+  }
+}
+
+// Translation Engine Adapter
+async function callEngine(engine, texts, sourceLang, targetLang, env) {
+  if (engine === 'self') {
+    const selfUrl = (env.SELF_TRANSLATE_URL || '').trim();
+    if (!selfUrl) {
+      const err = new Error('SELF_TRANSLATE_URL is not configured');
+      err.code = 'upstream';
+      err.status = 503;
+      throw err;
+    }
+    let res;
+    try {
+      res = await fetch(selfUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: texts, source: sourceLang, target: targetLang })
+      });
+    } catch (e) {
+      const err = new Error('Failed to connect to self translate upstream: ' + e.message);
+      err.code = 'upstream';
+      err.status = 502;
+      throw err;
+    }
+    if (!res.ok) {
+      const err = new Error(`Self translate upstream error: ${res.status}`);
+      err.code = 'upstream';
+      err.status = 502;
+      throw err;
+    }
+    const data = await res.json();
+    const rawList = data.t || data.translations || [];
+    return {
+      translations: rawList.map(item => typeof item === 'string' ? { translatedText: item } : item),
+      detectedSrc: data.src || null
+    };
+  }
+
+  // Default: google
+  const apiKey = (env.GOOGLE_TRANSLATE_KEY || '').trim().replace(/^["']|["']$/g, '');
+  if (!apiKey) {
+    const err = new Error('GOOGLE_TRANSLATE_KEY is not configured');
+    err.code = 'upstream';
+    err.status = 500;
+    throw err;
+  }
+
+  const apiUrl = 'https://translation.googleapis.com/language/translate/v2?key=' + apiKey;
+  const requestPayload = {
+    q: texts,
+    target: targetLang,
+    format: 'text'
+  };
+  if (sourceLang) {
+    requestPayload.source = sourceLang;
+  }
+
+  let apiRes;
+  try {
+    apiRes = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestPayload)
+    });
+  } catch (fetchErr) {
+    const err = new Error('Failed to connect to translation upstream: ' + fetchErr.message);
+    err.code = 'upstream';
+    err.status = 502;
+    throw err;
+  }
+
+  if (!apiRes.ok) {
+    let errBody = {};
+    try { errBody = await apiRes.json(); } catch (_) {}
+    const errMsg = errBody?.error?.message || `Upstream error (${apiRes.status})`;
+    const err = new Error(errMsg);
+    if (apiRes.status === 400 && errMsg.toLowerCase().includes('language')) {
+      err.code = 'bad_lang';
+      err.status = 400;
+    } else {
+      err.code = 'upstream';
+      err.status = 502;
+    }
+    throw err;
+  }
+
+  let apiData;
+  try {
+    apiData = await apiRes.json();
+  } catch (_) {
+    const err = new Error('Invalid JSON from upstream');
+    err.code = 'upstream';
+    err.status = 502;
+    throw err;
+  }
+
+  const translations = apiData?.data?.translations;
+  if (!Array.isArray(translations) || translations.length !== texts.length) {
+    const err = new Error('Upstream response length mismatch');
+    err.code = 'upstream';
+    err.status = 502;
+    throw err;
+  }
+
+  const detectedSrc = translations[0]?.detectedSourceLanguage || null;
+  return {
+    translations,
+    detectedSrc
+  };
 }
 
 const LANG_CODE_REGEX = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4})?$/;
@@ -381,6 +512,7 @@ export default {
         }
       } catch (_) {}
 
+      const engine = (env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
       const results = new Array(q.length);
       const uncachedIndices = [];
       const uncachedTexts = [];
@@ -393,7 +525,7 @@ export default {
           continue;
         }
 
-        const cacheUrl = await computeCacheKey(url.host, sourceLang, targetLang, text);
+        const cacheUrl = await computeCacheKey(url.host, engine, sourceLang, targetLang, text);
         let cachedVal = null;
 
         if (cache) {
@@ -430,7 +562,7 @@ export default {
         }
       }
 
-      // 7) 상류(Google Translate v3 REST) 호출 (미적중분 1회 묶음 발송)
+      // 7) 상류 번역 엔진 호출 (미적중분 1회 묶음 발송)
       let upstreamCount = 0;
       let upstreamChars = 0;
 
@@ -438,70 +570,34 @@ export default {
         upstreamCount = 1;
         upstreamChars = uncachedTexts.reduce((sum, s) => sum + s.length, 0);
 
-        const apiKey = (env.GOOGLE_TRANSLATE_KEY || '').trim().replace(/^["']|["']$/g, '');
-        if (!apiKey) {
-          return jsonError('upstream', 'GOOGLE_TRANSLATE_KEY is not configured', 500);
-        }
-
-        const apiUrl = 'https://translation.googleapis.com/language/translate/v2?key=' + apiKey;
-        const requestPayload = {
-          q: uncachedTexts,
-          target: targetLang,
-          format: 'text'
-        };
-        if (sourceLang) {
-          requestPayload.source = sourceLang;
-        }
-
-        let apiRes;
+        let engineRes;
         try {
-          apiRes = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestPayload)
-          });
-        } catch (fetchErr) {
-          return jsonError('upstream', 'Failed to connect to translation upstream: ' + fetchErr.message, 502);
-        }
-
-        if (!apiRes.ok) {
-          let errBody = {};
-          try { errBody = await apiRes.json(); } catch (_) {}
-          const errMsg = errBody?.error?.message || `Upstream error (${apiRes.status})`;
-
-          if (apiRes.status === 400 && errMsg.toLowerCase().includes('language')) {
-            return jsonError('bad_lang', errMsg, 400);
+          engineRes = await callEngine(engine, uncachedTexts, sourceLang, targetLang, env);
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(recordEngineCall(env, engine, true));
+          } else {
+            await recordEngineCall(env, engine, true);
           }
-          return jsonError('upstream', errMsg, 502);
+        } catch (engineErr) {
+          await recordEngineCall(env, engine, false);
+          return jsonError(engineErr.code || 'upstream', engineErr.message || 'Translation engine error', engineErr.status || 502);
         }
 
-        let apiData;
-        try {
-          apiData = await apiRes.json();
-        } catch (_) {
-          return jsonError('upstream', 'Invalid JSON from upstream', 502);
-        }
-
-        const translations = apiData?.data?.translations;
-        if (!Array.isArray(translations) || translations.length !== uncachedTexts.length) {
-          return jsonError('upstream', 'Upstream response length mismatch', 502);
-        }
-
-        // 상류가 감지한 언어 코드 추출
-        if (!detectedSrc && translations[0]?.detectedSourceLanguage) {
-          detectedSrc = translations[0].detectedSourceLanguage;
+        const translations = engineRes.translations;
+        if (!detectedSrc && engineRes.detectedSrc) {
+          detectedSrc = engineRes.detectedSrc;
         }
 
         // 결과 병합 및 캐시 저장 (TTL 30일 = 2,592,000초, JSON 포맷 { t, src })
         for (let k = 0; k < translations.length; k++) {
           const originalIdx = uncachedIndices[k];
           const transItem = translations[k];
-          const transText = transItem.translatedText;
+          const transText = transItem.translatedText || transItem.text || '';
           const itemSrc = sourceLang || transItem.detectedSourceLanguage || detectedSrc || 'unknown';
           results[originalIdx] = transText;
 
           const cacheEntry = { t: transText, src: itemSrc };
-          const cacheUrl = await computeCacheKey(url.host, sourceLang, targetLang, uncachedTexts[k]);
+          const cacheUrl = await computeCacheKey(url.host, engine, sourceLang, targetLang, uncachedTexts[k]);
           const cacheValStr = JSON.stringify(cacheEntry);
 
           if (cache) {
@@ -552,8 +648,71 @@ export default {
       });
     }
 
+    // 0-2. 사용량 및 번역 엔진 통계 조회: GET /usage
+    if (url.pathname === '/usage' && request.method === 'GET') {
+      let stats = {};
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const res = await limiter.fetch(new Request('http://internal/metric/engine'));
+        if (res.ok) {
+          stats = await res.json();
+        }
+      } catch (_) {
+        for (const [eng, s] of memoryEngineStats.entries()) {
+          const rate = s.calls > 0 ? (s.failures / s.calls) : 0;
+          stats[eng] = {
+            calls: s.calls,
+            failures: s.failures,
+            failure_rate: Number((rate * 100).toFixed(2)) + '%'
+          };
+        }
+      }
+
+      const currentEngine = (env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
+
+      return new Response(JSON.stringify({
+        engine: {
+          current: currentEngine,
+          stats
+        }
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
     // 1. 방 생성: POST /room -> { code, host_token }
     if (url.pathname === '/room' && request.method === 'POST') {
+      let body = {};
+      const cl = request.headers.get('content-length');
+      if (cl && cl !== '0' && request.body) {
+        try {
+          body = await request.json();
+        } catch (_) {}
+      }
+
+      const kind = (body && body.kind) ? String(body.kind).toLowerCase().trim() : 'guide';
+      const requiredFlags = kind === 'desk' ? (0x04 | 0x08) : 0x01;
+
+      const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
+      const licenseRes = await verifyLicense(request, secret, requiredFlags);
+      if (!licenseRes.valid) {
+        return new Response(JSON.stringify({
+          error: licenseRes.error || 'unauthorized',
+          message: licenseRes.message || (kind === 'desk' ? 'Desk license (0x04 or 0x08) required' : 'Guide license (0x01) required')
+        }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      }
+
       const code = generateCrockfordCode(6);
       const host_token = generateHostToken();
 
@@ -563,7 +722,7 @@ export default {
       await room.fetch(new Request('http://internal/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, host_token })
+        body: JSON.stringify({ code, host_token, kind })
       }));
 
       return new Response(JSON.stringify({ code, host_token }), {
@@ -573,6 +732,135 @@ export default {
           ...CORS_HEADERS
         }
       });
+    }
+
+    // 1-1. Deepgram STT 임시 키 발급: POST /stt/token
+    if (url.pathname === '/stt/token' && request.method === 'POST') {
+      // 1) 라이선스 검증: Desk (0x04 또는 0x08) 필수
+      const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
+      const licenseRes = await verifyLicense(request, secret, 0x04 | 0x08);
+      if (!licenseRes.valid) {
+        return new Response(JSON.stringify({
+          error: licenseRes.error || 'unauthorized',
+          message: licenseRes.message || 'Valid Desk license required for STT token'
+        }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      }
+
+      const sub = licenseRes.payload.sub;
+
+      // 2) Deepgram 마스터 API 키 확인
+      const deepgramKey = (env.DEEPGRAM_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+      if (!deepgramKey) {
+        return new Response(JSON.stringify({
+          error: 'upstream',
+          message: 'Server DEEPGRAM_API_KEY not configured',
+          debug: {
+            hasDeepgram: Boolean(env.DEEPGRAM_API_KEY),
+            valType: typeof env.DEEPGRAM_API_KEY,
+            envKeys: Object.keys(env)
+          }
+        }), {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      }
+
+      // 3) Deepgram Project ID 확인 (env 없으면 프로젝트 목록에서 첫 프로젝트 자동 조회)
+      let projectId = (env.DEEPGRAM_PROJECT_ID || '').trim().replace(/^["']|["']$/g, '');
+      if (!projectId) {
+        try {
+          const pRes = await fetch('https://api.deepgram.com/v1/projects', {
+            headers: { 'Authorization': 'Token ' + deepgramKey }
+          });
+          if (pRes.ok) {
+            const pData = await pRes.json();
+            if (pData.projects && pData.projects[0]) {
+              projectId = pData.projects[0].project_id;
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (!projectId) {
+        return new Response(JSON.stringify({
+          error: 'upstream',
+          message: 'Failed to resolve Deepgram Project ID'
+        }), {
+          status: 502,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      }
+
+      // 4) 임시 키 발급 (수명: 1시간 = 3600초, 권한: usage:write)
+      const ttlSec = 3600;
+      try {
+        const kRes = await fetch(`https://api.deepgram.com/v1/projects/${projectId}/keys`, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Token ' + deepgramKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            comment: `Ephemeral key for sub: ${sub.slice(0, 8)}`,
+            scopes: ['usage:write'],
+            time_to_live_in_seconds: ttlSec
+          })
+        });
+
+        if (!kRes.ok) {
+          const errText = await kRes.text().catch(() => '');
+          return new Response(JSON.stringify({
+            error: 'upstream',
+            message: 'Failed to mint Deepgram key: ' + errText
+          }), {
+            status: 502,
+            headers: {
+              'Content-Type': 'application/json',
+              ...CORS_HEADERS
+            }
+          });
+        }
+
+        const kData = await kRes.json();
+
+        // 5) 발급 감사 로그 (키 원문은 절대 로깅하지 않고 ID 접두사만 기록)
+        console.log(`[STT_TOKEN] Issued ephemeral key for sub=${sub.slice(0, 8)}..., key_id=${(kData.api_key_id || '').slice(0, 8)}..., ttl=${ttlSec}s`);
+
+        return new Response(JSON.stringify({
+          token: kData.key,
+          key_id: kData.api_key_id,
+          expires_in: ttlSec
+        }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          error: 'upstream',
+          message: 'Error communicating with Deepgram: ' + err.message
+        }), {
+          status: 502,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      }
     }
 
     // 2. 방 정보 조회: GET /room/CODE -> { exists, listeners, started_at }

@@ -1,7 +1,28 @@
 import WebSocket from 'ws';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { mintLicenseToken } from '../tools/mint-license.mjs';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BASE_URL = process.env.RELAY_URL || 'http://127.0.0.1:8787';
 const WS_BASE_URL = BASE_URL.replace(/^http/, 'ws');
+
+// Load secret from .dev.vars
+let secret = process.env.LICENSE_SECRET;
+if (!secret) {
+  const devVarsPath = path.resolve(__dirname, '../.dev.vars');
+  if (fs.existsSync(devVarsPath)) {
+    const lines = fs.readFileSync(devVarsPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const match = line.match(/^LICENSE_SECRET=(.*)$/);
+      if (match) {
+        secret = match[1].trim();
+        break;
+      }
+    }
+  }
+}
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -13,7 +34,14 @@ async function run() {
 
   // 1. 방 생성: POST /room -> { code, host_token }
   console.log('\n[Step 1] Creating room via POST /room...');
-  const roomRes = await fetch(`${BASE_URL}/room`, { method: 'POST' });
+  const token = mintLicenseToken({ sub: 'smoke-host', days: 1, flags: 0x01, secret });
+  const roomRes = await fetch(`${BASE_URL}/room`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
   if (!roomRes.ok) {
     throw new Error(`Failed to create room: ${roomRes.status} ${await roomRes.text()}`);
   }

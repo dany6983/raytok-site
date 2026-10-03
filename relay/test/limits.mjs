@@ -20,6 +20,7 @@ async function main() {
     console.log('Production license issue status:', res.status);
     return;
   }
+  const rand = Math.random().toString(36).substring(2, 8);
   let totalIssuedForIP = 0;
   const tokenPool = [];
 

@@ -76,6 +76,40 @@ export class Room {
       });
     }
 
+    // 0-2. 내부 번역 엔진 호출/실패 기록 (/metric/record)
+    if (url.pathname === '/metric/record' && request.method === 'POST') {
+      const { engine, success } = await request.json();
+      if (!this.engineStats) this.engineStats = new Map();
+      let stat = this.engineStats.get(engine);
+      if (!stat) {
+        stat = { calls: 0, failures: 0 };
+        this.engineStats.set(engine, stat);
+      }
+      stat.calls++;
+      if (!success) stat.failures++;
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 0-3. 내부 번역 엔진 통계 조회 (/metric/engine)
+    if (url.pathname === '/metric/engine' && request.method === 'GET') {
+      const stats = {};
+      if (this.engineStats) {
+        for (const [eng, s] of this.engineStats.entries()) {
+          const rate = s.calls > 0 ? (s.failures / s.calls) : 0;
+          stats[eng] = {
+            calls: s.calls,
+            failures: s.failures,
+            failure_rate: Number((rate * 100).toFixed(2)) + '%'
+          };
+        }
+      }
+      return new Response(JSON.stringify(stats), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // 1. 내부 초기화 호출
     if (url.pathname === '/init' && request.method === 'POST') {
       const body = await request.json();
