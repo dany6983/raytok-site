@@ -46,9 +46,13 @@ async function run() {
   });
   const { code } = await roomRes.json();
   // 6000분 경과 시뮬레이션
+  const adminSecret = process.env.ADMIN_SECRET || 'dev-admin-secret-key-12345';
   await fetch(`${BASE_URL}/room/${code}/test/alarm`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Secret': adminSecret
+    },
     body: JSON.stringify({ advance_ms: 6000 * 60 * 1000 })
   });
   console.log('   - Desk minutes advanced to cap (6000m)');

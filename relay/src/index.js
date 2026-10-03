@@ -838,8 +838,17 @@ export default {
       });
     }
 
-    // 1-0. 테스트용 룸 알람 시뮬레이션: POST /room/:code/test/alarm
+    // 1-0. 테스트용 룸 알람 시뮬레이션: POST /room/:code/test/alarm (ADMIN_SECRET 필수, 미일치 시 404 은닉)
     if (url.pathname.startsWith('/room/') && url.pathname.endsWith('/test/alarm') && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') || '';
+      const customSecret = (request.headers.get('X-Admin-Secret') || '').trim();
+      const adminSecret = (env.ADMIN_SECRET || '').trim();
+      const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
+      if (!adminSecret || (customSecret !== adminSecret && bearerToken !== adminSecret)) {
+        return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
+      }
+
       const pathParts = url.pathname.split('/');
       const code = (pathParts[2] || '').toUpperCase();
       const id = env.ROOM.idFromName(code);

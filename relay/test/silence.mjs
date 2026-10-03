@@ -64,11 +64,25 @@ async function run() {
     try { listenerMessages.push(JSON.parse(data.toString())); } catch (_) {}
   });
 
+  // 2-1. [보안 자물쇠 검증] ADMIN_SECRET 없는 /test/alarm 호출 -> 반드시 404로 은닉되어야 함!
+  console.log('\n[Security Test] Unauthorized call to /test/alarm without admin secret -> expect 404...');
+  const resUnauth = await fetch(`${BASE_URL}/room/${code}/test/alarm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ advance_ms: 1000 })
+  });
+  console.log('   - Status without admin secret:', resUnauth.status);
+  assert.strictEqual(resUnauth.status, 404, 'ADMIN_SECRET 없으면 404로 존재 자체를 숨겨야 함');
+  console.log('   - [PASS] Test route 404 lockdown verified');
+
   // 3. [단언문 1] 9분 경과 시뮬레이션 -> silence_warning 수신 검증
   console.log('\n[Step 3] Simulate 9-minute silence -> assert silence_warning...');
   const resWarn = await fetch(`${BASE_URL}/room/${code}/test/alarm`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Secret': adminSecret
+    },
     body: JSON.stringify({ advance_ms: 9 * 60 * 1000 }) // 9분(540,000ms) 경과
   });
   assert.strictEqual(resWarn.status, 200);
@@ -99,7 +113,10 @@ async function run() {
 
   const resTimeout = await fetch(`${BASE_URL}/room/${code}/test/alarm`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Secret': adminSecret
+    },
     body: JSON.stringify({ advance_ms: 10 * 60 * 1000 }) // 10분(600,000ms) 경과
   });
   assert.strictEqual(resTimeout.status, 200);
