@@ -236,7 +236,20 @@ async function runStepWith3Iterations(listenerCount, mode) {
   const avgDelivery = runs.reduce((sum, r) => sum + r.deliveryRate, 0) / runs.length;
   const allConnected = runs.every(r => r.connectSuccess === listenerCount);
 
-  const isHealthy = allConnected && avgDelivery >= 98 && medianSteadyP95 < 500;
+  // 마스터 승인 2단 판정 기준 (자막 1초 수용 기준):
+  // · PASS: 정상 전달 평균(Avg) < 500ms 및 P95 < 1500ms (연결 100%, 전달율 >= 99%)
+  // · WARN: P95 1500 ~ 2500ms
+  // · FAIL: 전달율 < 99% 또는 P95 > 2500ms
+  let verdict = 'PASS';
+  if (!allConnected || avgDelivery < 99 || medianSteadyP95 > 2500) {
+    verdict = 'FAIL';
+  } else if (medianSteadyP95 >= 1500 && medianSteadyP95 <= 2500) {
+    verdict = 'WARN';
+  } else if (medianSteadyAvg < 500 && medianSteadyP95 < 1500) {
+    verdict = 'PASS';
+  } else {
+    verdict = 'WARN';
+  }
 
   return {
     N: listenerCount,
@@ -248,7 +261,7 @@ async function runStepWith3Iterations(listenerCount, mode) {
     medianSteadyP95,
     medianSteadyMax,
     avgDelivery,
-    isHealthy
+    verdict
   };
 }
 
@@ -294,11 +307,11 @@ async function run() {
       '청취자수(N)': s.N,
       '연결몰림(Burst)': `${s.medianBurst}ms`,
       '첫줄(Cold P95)': `${s.medianColdP95}ms`,
-      '정상전달(Steady P95)': `${s.medianSteadyP95}ms`,
-      '정상전달(Steady Avg)': `${s.medianSteadyAvg}ms`,
+      '정상전달(주지표 Avg)': `${s.medianSteadyAvg}ms`,
+      '정상전달(보조 P95)': `${s.medianSteadyP95}ms`,
       '최대지연(Max)': `${s.medianSteadyMax}ms`,
       '전달율': `${s.avgDelivery.toFixed(1)}%`,
-      '판정': s.isHealthy ? '정상(PASS)' : '저하(FAIL)'
+      '판정': s.verdict
     })));
   }
 
@@ -307,11 +320,11 @@ async function run() {
     '청취자수(N)': s.N,
     '연결몰림(Burst)': `${s.medianBurst}ms`,
     '첫줄(Cold P95)': `${s.medianColdP95}ms`,
-    '정상전달(Steady P95)': `${s.medianSteadyP95}ms`,
-    '정상전달(Steady Avg)': `${s.medianSteadyAvg}ms`,
+    '정상전달(주지표 Avg)': `${s.medianSteadyAvg}ms`,
+    '정상전달(보조 P95)': `${s.medianSteadyP95}ms`,
     '최대지연(Max)': `${s.medianSteadyMax}ms`,
     '전달율': `${s.avgDelivery.toFixed(1)}%`,
-    '판정': s.isHealthy ? '정상(PASS)' : '저하(FAIL)'
+    '판정': s.verdict
   })));
 
   // 3회 반복 원값 출력
@@ -325,22 +338,11 @@ async function run() {
     console.log(`  · 전달율: ${s.runs.map(r => r.deliveryRate.toFixed(1) + '%').join(' / ')}`);
   }
 
-  console.log('\n[분석 및 판정]');
-  const analyze = (summary, title) => {
-    let bottleneck = '50명까지 전 구간 안정적 정상 동작';
-    for (const s of summary) {
-      if (!s.isHealthy) {
-        if (s.avgDelivery < 98) bottleneck = `${s.N}명 구간에서 메시지 드롭 발생 (전달율 ${s.avgDelivery.toFixed(1)}%)`;
-        else if (s.medianSteadyP95 >= 500) bottleneck = `${s.N}명 구간에서 지연 시간 급증 (P95 ${s.medianSteadyP95}ms >= 500ms)`;
-        break;
-      }
-    }
-    console.log(`- ${title}: ${bottleneck}`);
-  };
-
-  if (!bOnly) analyze(summaryA, '조합 A (동일 언어)');
-  analyze(summaryB, '조합 B (5개 언어 분산)');
-  console.log('\n※ 주의: 본 수치는 로컬 wrangler dev(단일 프로세스 workerd) 측정치이므로 운영 에지 환경과는 절대 ms 차이가 있을 수 있습니다. 시스템이 과부하에 무너지지 않고 정상 복원됨을 검증한 결과입니다.');
+  console.log('\n[판정 기준]');
+  console.log('- PASS: 정상 전달 평균(Avg) < 500ms 및 P95 < 1500ms (연결 100%, 전달율 >= 99%)');
+  console.log('- WARN: P95 1500 ~ 2500ms');
+  console.log('- FAIL: 전달율 < 99% 또는 P95 > 2500ms');
+  console.log('※ 단일 프로세스 잡음 영향이 큰 P95 대신 정상 전달 평균(Steady Avg)을 주 지표로 판정합니다.');
 }
 
 run().catch(err => {
