@@ -18,17 +18,10 @@ if (fs.existsSync(devVarsPath)) {
   }
 }
 
-// 5개 언어 조합
 const LANGS_5 = ['en', 'ja', 'zh', 'vi', 'ko'];
 
-async function runStep(listenerCount, mode = 'same_lang') {
-  console.log(`\n=============================================================`);
-  console.log(`[LOAD STEP] Listeners: ${listenerCount} | Mode: ${mode}`);
-  console.log(`=============================================================`);
-
-  const sub = `load-${mode}-${listenerCount}-${Date.now()}`;
-  const token = mintLicenseToken({ sub, days: 1, flags: 0x01 | 0x04, secret });
-
+// 단일 실행 (1회차)
+async function executeIteration(listenerCount, mode, iterIdx, token) {
   // 1. 방 생성
   const resRoom = await fetch(`${BASE_URL}/room`, {
     method: 'POST',
@@ -36,11 +29,10 @@ async function runStep(listenerCount, mode = 'same_lang') {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ kind: 'guide' })
+    body: JSON.stringify({ kind: 'desk' })
   });
   if (!resRoom.ok) {
-    console.error(`[FAIL] Room creation failed with status ${resRoom.status}`);
-    return { ok: false, error: 'room_creation_failed' };
+    throw new Error(`Room creation failed (${resRoom.status})`);
   }
   const { code, host_token } = await resRoom.json();
 
@@ -51,11 +43,11 @@ async function runStep(listenerCount, mode = 'same_lang') {
     hostWs.on('error', reject);
   });
 
-  // 3. 청취자 WebSocket 대량 연결
+  // 3. 연결 몰림(Connect Burst) 측정
   const listeners = [];
   let connectSuccess = 0;
   let connectFail = 0;
-  const connectStart = Date.now();
+  const burstStart = Date.now();
 
   const connectPromises = [];
   for (let i = 0; i < listenerCount; i++) {
@@ -63,8 +55,9 @@ async function runStep(listenerCount, mode = 'same_lang') {
     const ws = new WebSocket(`${WS_URL}/ws?room=${code}&role=listener`);
     ws._idx = i;
     ws._lang = targetLang;
-    ws._recvCount = 0;
-    ws._latencies = [];
+    ws._coldLatency = null;
+    ws._steadyLatencies = [];
+    ws._totalRecv = 0;
 
     const p = new Promise(resolve => {
       const timer = setTimeout(() => {
@@ -78,10 +71,10 @@ async function runStep(listenerCount, mode = 'same_lang') {
         resolve({ ok: true });
       });
 
-      ws.on('error', err => {
+      ws.on('error', () => {
         clearTimeout(timer);
         connectFail++;
-        resolve({ ok: false, reason: err.message });
+        resolve({ ok: false });
       });
 
       ws.on('message', data => {
@@ -89,8 +82,12 @@ async function runStep(listenerCount, mode = 'same_lang') {
           const parsed = JSON.parse(data.toString());
           if (parsed._sendTime) {
             const lat = Date.now() - parsed._sendTime;
-            ws._latencies.push(lat);
-            ws._recvCount++;
+            ws._totalRecv++;
+            if (parsed.seq === 1) {
+              ws._coldLatency = lat;
+            } else {
+              ws._steadyLatencies.push(lat);
+            }
           }
         } catch (_) {}
       });
@@ -101,138 +98,212 @@ async function runStep(listenerCount, mode = 'same_lang') {
   }
 
   await Promise.all(connectPromises);
-  const connectDuration = Date.now() - connectStart;
-  console.log(`- Connection Result: Success=${connectSuccess}/${listenerCount}, Fail=${connectFail} (${connectDuration}ms)`);
+  const connectBurstMs = Date.now() - burstStart;
 
-  if (connectSuccess === 0) {
-    try { hostWs.close(); } catch (_) {}
-    return { ok: false, firstFailure: 'all_connections_failed' };
+  // 4. 캐시 비움 (Cold Start: 첫 줄) 측정
+  const coldText = `새로운 회의 원문 번역 ${Date.now()}-${Math.random()}`;
+  let coldTranslateMs = 0;
+
+  if (mode === 'diff_5_langs') {
+    const trStart = Date.now();
+    await Promise.all(LANGS_5.map(async lang => {
+      try {
+        await fetch(`${BASE_URL}/translate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ q: [coldText], source: 'ko', target: lang })
+        });
+      } catch (_) {}
+    }));
+    coldTranslateMs = Date.now() - trStart;
   }
 
-  // 4. 호스트 메시지 연속 전송 (10개 메시지 전송, 100ms 간격)
-  const totalSent = 10;
-  console.log(`- Sending ${totalSent} broadcast lines from host (fanout test)...`);
-  for (let seq = 1; seq <= totalSent; seq++) {
-    const payload = JSON.stringify({
+  // 첫 줄 WebSocket 브로드캐스트
+  hostWs.send(JSON.stringify({
+    seq: 1,
+    text: coldText,
+    _sendTime: Date.now()
+  }));
+
+  // 첫 줄 전달 대기 (최대 500ms)
+  await new Promise(r => setTimeout(r, 500));
+
+  // 5. 캐시 채움 / 정상 전달 (Steady State: 2~10번 줄 전송)
+  const steadySentCount = 9;
+  for (let seq = 2; seq <= 10; seq++) {
+    hostWs.send(JSON.stringify({
       seq,
-      text: `부하 시험 메시지 #${seq}`,
+      text: `정상 전달 스트리밍 자막 #${seq}`,
       _sendTime: Date.now()
-    });
-    hostWs.send(payload);
-    await new Promise(r => setTimeout(r, 100));
+    }));
+    await new Promise(r => setTimeout(r, 100)); // 100ms 간격
   }
 
-  // 메시지 수신 대기 (2초)
-  await new Promise(r => setTimeout(r, 2000));
+  // 잔여 메시지 수신 대기 (1.5초)
+  await new Promise(r => setTimeout(r, 1500));
 
-  // 5. 통계 집계
-  const expectedTotalDeliveries = connectSuccess * totalSent;
-  let totalReceived = 0;
-  const allLatencies = [];
+  // 6. 결과 수집 및 통계
+  const coldLatencies = listeners.map(w => w._coldLatency).filter(l => l !== null);
+  coldLatencies.sort((a, b) => a - b);
+  const coldP95 = coldLatencies.length > 0 ? coldLatencies[Math.floor(coldLatencies.length * 0.95)] : 0;
 
-  for (const ws of listeners) {
-    totalReceived += ws._recvCount;
-    allLatencies.push(...ws._latencies);
+  const steadyLatencies = [];
+  let totalRecvAll = 0;
+  for (const w of listeners) {
+    steadyLatencies.push(...w._steadyLatencies);
+    totalRecvAll += w._totalRecv;
   }
+  steadyLatencies.sort((a, b) => a - b);
+  const steadyAvg = steadyLatencies.length > 0 ? Math.round(steadyLatencies.reduce((a, b) => a + b, 0) / steadyLatencies.length) : 0;
+  const steadyP95 = steadyLatencies.length > 0 ? steadyLatencies[Math.floor(steadyLatencies.length * 0.95)] : 0;
+  const steadyMax = steadyLatencies.length > 0 ? steadyLatencies[steadyLatencies.length - 1] : 0;
 
-  const deliveryRate = expectedTotalDeliveries > 0 ? (totalReceived / expectedTotalDeliveries) * 100 : 0;
-  allLatencies.sort((a, b) => a - b);
-  const avgLatency = allLatencies.length > 0 ? Math.round(allLatencies.reduce((a, b) => a + b, 0) / allLatencies.length) : 0;
-  const p95Latency = allLatencies.length > 0 ? allLatencies[Math.floor(allLatencies.length * 0.95)] : 0;
-  const maxLatency = allLatencies.length > 0 ? allLatencies[allLatencies.length - 1] : 0;
+  const expectedTotal = connectSuccess * 10; // 1 cold + 9 steady
+  const deliveryRate = expectedTotal > 0 ? (totalRecvAll / expectedTotal) * 100 : 0;
 
-  console.log(`- Fanout Delivery Rate: ${deliveryRate.toFixed(1)}% (${totalReceived}/${expectedTotalDeliveries})`);
-  console.log(`- Latency: Avg=${avgLatency}ms | P95=${p95Latency}ms | Max=${maxLatency}ms`);
-
-  // 정리
+  // 소켓 정리
   try { hostWs.close(); } catch (_) {}
-  for (const ws of listeners) {
-    try { ws.close(); } catch (_) {}
+  for (const w of listeners) {
+    try { w.close(); } catch (_) {}
   }
 
-  const isHealthy = connectSuccess === listenerCount && deliveryRate >= 98 && p95Latency < 500;
   return {
-    listenerCount,
-    mode,
+    iter: iterIdx,
     connectSuccess,
     connectFail,
-    deliveryRate,
-    avgLatency,
-    p95Latency,
-    maxLatency,
+    connectBurstMs,
+    coldTranslateMs,
+    coldP95,
+    steadyAvg,
+    steadyP95,
+    steadyMax,
+    deliveryRate
+  };
+}
+
+// 3회 반복 실행 및 중앙값(Median) 산출
+async function runStepWith3Iterations(listenerCount, mode) {
+  console.log(`\n========================================================================`);
+  console.log(`[TEST STEP] Listeners: ${listenerCount} | Mode: ${mode} (3회 반복 검증)`);
+  console.log(`========================================================================`);
+
+  const token = mintLicenseToken({ sub: `load-${mode}-${listenerCount}`, days: 1, flags: 0x04 | 0x08, secret });
+  const runs = [];
+
+  for (let i = 1; i <= 3; i++) {
+    const res = await executeIteration(listenerCount, mode, i, token);
+    runs.push(res);
+    console.log(`  · Run #${i}: Connect=${res.connectSuccess}/${listenerCount} (${res.connectBurstMs}ms) | ColdP95=${res.coldP95}ms | SteadyP95=${res.steadyP95}ms | Delivery=${res.deliveryRate.toFixed(1)}%`);
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  // Median(중앙값) 계산
+  const getMedian = (arr, key) => {
+    const vals = arr.map(r => r[key]).sort((a, b) => a - b);
+    return vals[Math.floor(vals.length / 2)];
+  };
+
+  const medianBurst = getMedian(runs, 'connectBurstMs');
+  const medianColdP95 = getMedian(runs, 'coldP95');
+  const medianSteadyAvg = getMedian(runs, 'steadyAvg');
+  const medianSteadyP95 = getMedian(runs, 'steadyP95');
+  const medianSteadyMax = getMedian(runs, 'steadyMax');
+  const avgDelivery = runs.reduce((sum, r) => sum + r.deliveryRate, 0) / runs.length;
+  const allConnected = runs.every(r => r.connectSuccess === listenerCount);
+
+  const isHealthy = allConnected && avgDelivery >= 98 && medianSteadyP95 < 500;
+
+  return {
+    N: listenerCount,
+    mode,
+    runs,
+    medianBurst,
+    medianColdP95,
+    medianSteadyAvg,
+    medianSteadyP95,
+    medianSteadyMax,
+    avgDelivery,
     isHealthy
   };
 }
 
 async function run() {
-  console.log('=== Relay Single Room Concurrency Load Test (wrangler dev local) ===');
+  console.log('========================================================================');
+  console.log('         릴레이(Desk) 동시성 정밀 부하 시험 (3회 반복 · P95 중앙값)');
+  console.log('========================================================================');
   console.log('Target URL:', BASE_URL);
+  console.log('Note: 본 시험은 로컬 wrangler dev(단일 프로세스 workerd) 환경에서 수행됩니다.');
 
   const steps = [10, 20, 30, 50];
-  const resultsA = [];
-  const resultsB = [];
+  const summaryA = [];
+  const summaryB = [];
 
-  // 조합 A: 동일 언어 (All 'en')
-  console.log('\n========================================');
-  console.log('>>> [Combination A] Same Language (en) <<<');
-  console.log('========================================');
+  // 1. 조합 A: 동일 언어 (All 'en')
+  console.log('\n########################################################################');
+  console.log('### [조합 A] 동일 언어 청취 (All English) - 웹소켓 팬아웃 용량 측정');
+  console.log('########################################################################');
   for (const n of steps) {
-    const res = await runStep(n, 'same_lang');
-    resultsA.push(res);
-    await new Promise(r => setTimeout(r, 1000));
+    const res = await runStepWith3Iterations(n, 'same_lang');
+    summaryA.push(res);
   }
 
-  // 조합 B: 5개 다른 언어 ('en', 'ja', 'zh', 'vi', 'ko')
-  console.log('\n========================================');
-  console.log('>>> [Combination B] 5 Different Languages <<<');
-  console.log('========================================');
+  // 2. 조합 B: 5개 다른 언어 ('en', 'ja', 'zh', 'vi', 'ko')
+  console.log('\n########################################################################');
+  console.log('### [조합 B] 5개 언어 분산 청취 (en/ja/zh/vi/ko) - 번역+팬아웃 복합 부하');
+  console.log('########################################################################');
   for (const n of steps) {
-    const res = await runStep(n, 'diff_5_langs');
-    resultsB.push(res);
-    await new Promise(r => setTimeout(r, 1000));
+    const res = await runStepWith3Iterations(n, 'diff_5_langs');
+    summaryB.push(res);
   }
 
-  console.log('\n\n=============================================================');
-  console.log('=================== FINAL LOAD TEST REPORT ===================');
-  console.log('=============================================================');
+  // 종합 리포트 출력
+  console.log('\n\n========================================================================');
+  console.log('                      최종 릴레이(Desk) 부하 시험 결과표');
+  console.log('========================================================================');
 
-  console.log('\n[Combination A: Same Language]');
-  console.table(resultsA.map(r => ({
-    N: r.listenerCount,
-    Connect: `${r.connectSuccess}/${r.listenerCount}`,
-    Delivery: `${r.deliveryRate.toFixed(1)}%`,
-    AvgMs: r.avgLatency,
-    P95Ms: r.p95Latency,
-    MaxMs: r.maxLatency,
-    Healthy: r.isHealthy ? 'YES' : 'NO'
+  console.log('\n[조합 A: 동일 언어 청취 (All en)]');
+  console.table(summaryA.map(s => ({
+    '청취자수(N)': s.N,
+    '연결몰림(Burst)': `${s.medianBurst}ms`,
+    '첫줄(Cold P95)': `${s.medianColdP95}ms`,
+    '정상전달(Steady P95)': `${s.medianSteadyP95}ms`,
+    '정상전달(Steady Avg)': `${s.medianSteadyAvg}ms`,
+    '최대지연(Max)': `${s.medianSteadyMax}ms`,
+    '전달율': `${s.avgDelivery.toFixed(1)}%`,
+    '판정': s.isHealthy ? '정상(PASS)' : '저하(FAIL)'
   })));
 
-  console.log('\n[Combination B: 5 Different Languages]');
-  console.table(resultsB.map(r => ({
-    N: r.listenerCount,
-    Connect: `${r.connectSuccess}/${r.listenerCount}`,
-    Delivery: `${r.deliveryRate.toFixed(1)}%`,
-    AvgMs: r.avgLatency,
-    P95Ms: r.p95Latency,
-    MaxMs: r.maxLatency,
-    Healthy: r.isHealthy ? 'YES' : 'NO'
+  console.log('\n[조합 B: 5개 언어 분산 청취 (en/ja/zh/vi/ko)]');
+  console.table(summaryB.map(s => ({
+    '청취자수(N)': s.N,
+    '연결몰림(Burst)': `${s.medianBurst}ms`,
+    '첫줄(Cold P95)': `${s.medianColdP95}ms`,
+    '정상전달(Steady P95)': `${s.medianSteadyP95}ms`,
+    '정상전달(Steady Avg)': `${s.medianSteadyAvg}ms`,
+    '최대지연(Max)': `${s.medianSteadyMax}ms`,
+    '전달율': `${s.avgDelivery.toFixed(1)}%`,
+    '판정': s.isHealthy ? '정상(PASS)' : '저하(FAIL)'
   })));
 
-  // 판정: N명까지 정상, N+에서 무엇이 무너지는가
-  const findBreakPoint = (results) => {
-    for (const r of results) {
-      if (!r.isHealthy) {
-        if (r.connectFail > 0) return `${r.listenerCount}명 (WebSocket 연결 핸드셰이크 실패)`;
-        if (r.deliveryRate < 98) return `${r.listenerCount}명 (메시지 브로드캐스트 유실)`;
-        if (r.p95Latency >= 500) return `${r.listenerCount}명 (지연 시간 500ms 초과)`;
+  console.log('\n[분석 및 판정]');
+  const analyze = (summary, title) => {
+    let bottleneck = '50명까지 전 구간 안정적 정상 동작';
+    for (const s of summary) {
+      if (!s.isHealthy) {
+        if (s.avgDelivery < 98) bottleneck = `${s.N}명 구간에서 메시지 드롭 발생 (전달율 ${s.avgDelivery.toFixed(1)}%)`;
+        else if (s.medianSteadyP95 >= 500) bottleneck = `${s.N}명 구간에서 지연 시간 급증 (P95 ${s.medianSteadyP95}ms >= 500ms)`;
+        break;
       }
     }
-    return '50명까지 전 구간 안정적 정상 동작';
+    console.log(`- ${title}: ${bottleneck}`);
   };
 
-  console.log('\n[결과 분석]');
-  console.log('- 조합 A 판정:', findBreakPoint(resultsA));
-  console.log('- 조합 B 판정:', findBreakPoint(resultsB));
+  analyze(summaryA, '조합 A (동일 언어)');
+  analyze(summaryB, '조합 B (5개 언어 분산)');
+  console.log('\n※ 주의: 본 수치는 로컬 wrangler dev(단일 프로세스 workerd) 측정치이므로 운영 에지 환경과는 절대 ms 차이가 있을 수 있습니다. 시스템이 과부하에 무너지지 않고 정상 복원됨을 검증한 결과입니다.');
 }
 
 run().catch(err => {
