@@ -431,10 +431,11 @@
         if (avail.includes(norm)) return norm;
       }
 
-      // 3. selectedLang(자막 언어)이 19개 UI 언어 안에 있으면 그것
+      // 3. selectedLang(자막 언어)이 지정된 경우: 19개 UI 언어에 포함되면 해당 언어, 없으면(ar, fa 등) 영문(en) fallback
       if (selectedLang) {
         const norm = normalizeLangCode(selectedLang);
         if (avail.includes(norm)) return norm;
+        return 'en';
       }
 
       // 4. navigator.language 앞 2자(zh-CN→zh, fil은 tl도 인정)

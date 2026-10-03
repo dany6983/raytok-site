@@ -78,6 +78,7 @@ function simulatePageLoad({ navLang, queryLang = null, savedLang = null }) {
     if (selectedLang) {
       const norm = normalizeLangCode(selectedLang);
       if (avail.includes(norm)) return norm;
+      return 'en';
     }
     if (navLang) {
       const norm = normalizeLangCode(navLang);
@@ -246,20 +247,22 @@ assert.strictEqual(pageKo.doc.dir, 'ltr');
 assert.strictEqual(pageKo.chatList.dir, 'ltr');
 assert.strictEqual(pageKo.uiElements.join_title, 'เข้าร่วมเซสชัน');
 
-// th -> ar (아랍어: 19개 UI에 없고, RTL임)
-// pageKo는 navLang이 'ko-KR'이므로, ar(19개 없음) -> navLang('ko')으로 fallback
+// th -> ar (아랍어: 19개 UI에 없고 82개 목록에 있음, RTL임)
+// 사용자가 19개 외 언어(ar)를 선택하면 UI는 영어('en')로 fallback, 자막은 'rtl'이어야 함!
 pageKo.onSelectChange('ar');
-console.log('- [pageKo] ar 선택: UI lang =', pageKo.doc.lang, ', UI dir =', pageKo.doc.dir, ', chatList.dir =', pageKo.chatList.dir);
-assert.strictEqual(pageKo.doc.lang, 'ko', '한국어 브라우저에서는 19개에 없는 언어 선택 시 navLang인 ko로 fallback');
-assert.strictEqual(pageKo.doc.dir, 'ltr');
-assert.strictEqual(pageKo.chatList.dir, 'rtl');
+console.log('- [pageKo] ar 선택: UI lang =', pageKo.doc.lang, ', UI dir =', pageKo.doc.dir, ', chatList.dir =', pageKo.chatList.dir, ', UI 글자 =', pageKo.uiElements.join_title);
+assert.strictEqual(pageKo.doc.lang, 'en', '19개 목록에 없는 ar 선택 시 UI는 반드시 en으로 fallback해야 함');
+assert.strictEqual(pageKo.uiElements.join_title, 'Join Session', 'UI 글자는 영어("Join Session")여야 함 (한국어 고정 버그 방지)');
+assert.strictEqual(pageKo.doc.dir, 'ltr', 'UI 방향은 ltr');
+assert.strictEqual(pageKo.chatList.dir, 'rtl', '자막 방향은 rtl이어야 함');
 
-// pageAr (navLang이 ar-SA인 환경): ar 선택 시 19개 없음 -> navLang도 19개 없음 -> 최종 fallback인 en
-pageAr.onSelectChange('ar');
-console.log('- [pageAr] ar 선택: UI lang =', pageAr.doc.lang, ', UI dir =', pageAr.doc.dir, ', chatList.dir =', pageAr.chatList.dir);
-assert.strictEqual(pageAr.doc.lang, 'en', '비지원 브라우저(ar)에서는 최종 fallback인 en으로 설정');
-assert.strictEqual(pageAr.doc.dir, 'ltr');
-assert.strictEqual(pageAr.chatList.dir, 'rtl');
+// ar -> fa (페르시아어: 19개 UI에 없고 82개 목록에 있음, RTL임)
+pageKo.onSelectChange('fa');
+console.log('- [pageKo] fa 선택: UI lang =', pageKo.doc.lang, ', UI dir =', pageKo.doc.dir, ', chatList.dir =', pageKo.chatList.dir, ', UI 글자 =', pageKo.uiElements.join_title);
+assert.strictEqual(pageKo.doc.lang, 'en', '19개 목록에 없는 fa 선택 시 UI는 반드시 en으로 fallback해야 함');
+assert.strictEqual(pageKo.uiElements.join_title, 'Join Session', 'UI 글자는 영어("Join Session")여야 함');
+assert.strictEqual(pageKo.doc.dir, 'ltr', 'UI 방향은 ltr');
+assert.strictEqual(pageKo.chatList.dir, 'rtl', '자막 방향은 rtl이어야 함');
 
 console.log('[PASS] 드롭다운 선택 변경에 따른 UI 언어 및 자막 dir 동적 갱신 완벽 통과!');
 

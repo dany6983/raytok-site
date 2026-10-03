@@ -7,19 +7,18 @@ import { mintLicenseToken } from '../tools/mint-license.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BASE_URL = process.env.RELAY_URL || 'http://127.0.0.1:8787';
 
-// Load secret from .dev.vars
+// Load secrets from .dev.vars
 let secret = process.env.LICENSE_SECRET;
-if (!secret) {
-  const devVarsPath = path.resolve(__dirname, '../.dev.vars');
-  if (fs.existsSync(devVarsPath)) {
-    const lines = fs.readFileSync(devVarsPath, 'utf8').split('\n');
-    for (const line of lines) {
-      const match = line.match(/^LICENSE_SECRET=(.*)$/);
-      if (match) {
-        secret = match[1].trim();
-        break;
-      }
-    }
+let adminSecret = process.env.ADMIN_SECRET || 'dev-admin-secret-key-12345';
+
+const devVarsPath = path.resolve(__dirname, '../.dev.vars');
+if (fs.existsSync(devVarsPath)) {
+  const lines = fs.readFileSync(devVarsPath, 'utf8').split('\n');
+  for (const line of lines) {
+    const matchSec = line.match(/^LICENSE_SECRET=(.*)$/);
+    if (matchSec) secret = matchSec[1].trim();
+    const matchAdmin = line.match(/^ADMIN_SECRET=(.*)$/);
+    if (matchAdmin) adminSecret = matchAdmin[1].trim();
   }
 }
 
@@ -31,18 +30,53 @@ async function run() {
   const testText = '동일 문장 엔진 격리 검증 ' + Date.now();
 
   // ─────────────────────────────────────────────────────────────
+  // [보안 검증] X-Translate-Engine 헤더 및 mock 엔진 인가 가드 검증
+  // ─────────────────────────────────────────────────────────────
+  console.log('\n[보안 검증] X-Translate-Engine 헤더 및 허용 목록 보안 가드:');
+
+  // 1) 일반 토큰으로 X-Translate-Engine 헤더 전달 시 -> 403 차단
+  const resSec1 = await fetch(`${BASE_URL}/translate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'X-Translate-Engine': 'mock'
+    },
+    body: JSON.stringify({ q: [testText], source: 'ko', target: 'en' })
+  });
+  console.log('1) 관리자 비밀 없는 X-Translate-Engine 요청 status:', resSec1.status);
+  assert.strictEqual(resSec1.status, 403, '일반 클라이언트가 X-Translate-Engine 사용 시 403 차단되어야 함');
+  console.log('   - [PASS] 비인가 엔진 헤더 403 차단 확인');
+
+  // 2) 허용 목록 밖의 엔진 이름 전달 시 -> 400 bad_engine 거부
+  const resSec2 = await fetch(`${BASE_URL}/translate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'X-Admin-Secret': adminSecret,
+      'X-Translate-Engine': 'invalid_random_engine_123'
+    },
+    body: JSON.stringify({ q: [testText], source: 'ko', target: 'en' })
+  });
+  console.log('2) 허용 목록 밖 엔진 요청 status:', resSec2.status);
+  assert.strictEqual(resSec2.status, 400);
+  const dataSec2 = await resSec2.json();
+  assert.strictEqual(dataSec2.error, 'bad_engine');
+  console.log('   - [PASS] 미지원 엔진 이름 400 bad_engine 거부 확인');
+
+  // ─────────────────────────────────────────────────────────────
   // [고침 1] 실제 캐시 격리 시험 (엔진이 바뀌면 동일 문장이어도 MISS)
   // ─────────────────────────────────────────────────────────────
   console.log('\n[고침 1] 엔진 간 캐시 격리 실증 시험:');
 
-  // ① engine=google 로 최초 번역 -> MISS (캐시에 저장됨)
+  // ① 기본 google 엔진으로 최초 번역 -> MISS (캐시에 저장됨)
   console.log('1) google 엔진으로 번역 요청...');
   const resG1 = await fetch(`${BASE_URL}/translate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'X-Translate-Engine': 'google'
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({ q: [testText], source: 'ko', target: 'en' })
   });
@@ -57,8 +91,7 @@ async function run() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'X-Translate-Engine': 'google'
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({ q: [testText], source: 'ko', target: 'en' })
   });
@@ -66,13 +99,14 @@ async function run() {
   assert.strictEqual(resG2.headers.get('X-Cache'), 'HIT', '동일 엔진 동일 문장은 HIT여야 함');
   console.log('   - [PASS] google 재요청 X-Cache = HIT 확인');
 
-  // ③ [핵심 단언문] 완전히 동일한 text를 mock 엔진으로 요청 -> 반드시 MISS 여야 함!
-  console.log('3) [단언문 검증] 동일 문장을 다른 엔진(mock)으로 요청...');
+  // ③ [핵심 단언문] 완전히 동일한 text를 mock 엔진으로 관리자 요청 -> 반드시 MISS 여야 함!
+  console.log('3) [단언문 검증] 동일 문장을 다른 엔진(mock)으로 관리자 요청...');
   const resM1 = await fetch(`${BASE_URL}/translate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
+      'X-Admin-Secret': adminSecret,
       'X-Translate-Engine': 'mock'
     },
     body: JSON.stringify({ q: [testText], source: 'ko', target: 'en' })
@@ -91,6 +125,7 @@ async function run() {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
+      'X-Admin-Secret': adminSecret,
       'X-Translate-Engine': 'mock'
     },
     body: JSON.stringify({ q: [testText], source: 'ko', target: 'en' })
@@ -103,8 +138,7 @@ async function run() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'X-Translate-Engine': 'google'
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({ q: [testText], source: 'ko', target: 'en' })
   });
@@ -138,12 +172,18 @@ async function run() {
   assert.strictEqual(resU3.status, 200);
   console.log('   - [PASS] 인증된 토큰으로 GET /usage 200 접근 성공');
 
+  // ④ 관리자 시크릿으로 호출 -> 200 성공
+  const resU4 = await fetch(`${BASE_URL}/usage`, {
+    headers: { 'X-Admin-Secret': adminSecret }
+  });
+  assert.strictEqual(resU4.status, 200);
+  console.log('   - [PASS] 관리자 시크릿으로 GET /usage 200 접근 성공');
+
   // ─────────────────────────────────────────────────────────────
   // [고침 3] 시간창 기반 실패율 집계 시험 (window_1h, window_24h, lifetime)
   // ─────────────────────────────────────────────────────────────
   console.log('\n[고침 3] 시간창 기반 실패율 경보 집계 시험:');
   const usageData = await resU3.json();
-  console.log('Usage Response Body:', JSON.stringify(usageData, null, 2));
 
   assert(usageData.engine, 'engine 객체 존재');
   assert(usageData.engine.current, 'current 엔진 이름 존재');
@@ -160,7 +200,7 @@ async function run() {
   console.log(`- 24시간 창: calls=${usageData.engine.window_24h.calls}, failures=${usageData.engine.window_24h.failures}, rate=${usageData.engine.window_24h.rate}`);
   console.log(`- 누적(lifetime): calls=${usageData.engine.lifetime.calls}, failures=${usageData.engine.lifetime.failures}, rate=${usageData.engine.lifetime.rate}`);
 
-  console.log('[PASS] 고침 1, 고침 2, 고침 3 전 항목 단언문 검증 통과!');
+  console.log('[PASS] 보안 가드, 고침 1, 고침 2, 고침 3 전 항목 단언문 검증 통과!');
 }
 
 run().catch(err => {

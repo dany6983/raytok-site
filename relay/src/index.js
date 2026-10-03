@@ -519,7 +519,30 @@ export default {
         }
       } catch (_) {}
 
-      const engine = (request.headers.get('X-Translate-Engine') || env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
+      // 6) 번역 엔진 결정 및 보안 가드
+      const adminSecret = (env.ADMIN_SECRET || '').trim();
+      const authHeader = request.headers.get('Authorization') || '';
+      const customAdmin = (request.headers.get('X-Admin-Secret') || '').trim();
+      const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+      const isAdmin = Boolean(adminSecret && (customAdmin === adminSecret || bearerToken === adminSecret));
+
+      let engine = (env.TRANSLATE_ENGINE || 'google').trim().toLowerCase();
+      const requestedEngine = request.headers.get('X-Translate-Engine');
+      if (requestedEngine) {
+        if (!isAdmin) {
+          return jsonError('forbidden', 'X-Translate-Engine header requires admin privileges', 403);
+        }
+        engine = requestedEngine.trim().toLowerCase();
+      }
+
+      const ALLOWED_ENGINES = ['google', 'self', 'mock'];
+      if (!ALLOWED_ENGINES.includes(engine)) {
+        return jsonError('bad_engine', `Unsupported translation engine: '${engine}'`, 400);
+      }
+      if (engine === 'mock' && !isAdmin) {
+        return jsonError('forbidden', 'mock engine requires admin privileges', 403);
+      }
+
       const results = new Array(q.length);
       const uncachedIndices = [];
       const uncachedTexts = [];
