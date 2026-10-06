@@ -168,6 +168,151 @@ function mockHost(wss) {
   many.close();
   console.log('  [PASS] 보통 보기 30줄: 최신 줄 보임 · 목록만 구름 · 도구 막대 제자리 (390×844, 360×640)');
 
+  // ── 6. 큰 화면: 방금 확정된 줄이 가장 밝다 (말하는 중인 임시 줄이 아니라) ──
+  ({ p, ctx } = await open('&view=screen&lang=en', { width: 1920, height: 1080 }));
+  let op = await p.evaluate(() => {
+    const o = (id) => parseFloat(getComputedStyle(document.getElementById(id)).opacity);
+    return { latest: o('msg-7'), older: o('msg-6'), pending: o('msg-pending'), n: document.querySelectorAll('.msg-line.is-latest').length };
+  });
+  console.log('[screen 밝기]', JSON.stringify(op));
+  assert.strictEqual(op.latest, 1, '방금 확정된 줄은 또렷하다');
+  assert(op.older < 1 && op.pending < 1, '앞 줄과 임시 줄은 흐리다');
+  assert.strictEqual(op.n, 1, '가장 밝은 줄은 하나뿐');
+  console.log('  [PASS] 큰 화면: 최신 확정 줄만 또렷');
+  await ctx.close();
+
+  // ── 7. 낱말 중간에서 줄이 끊기지 않는다 · 긴 낱말은 넘치지 않는다 · 화자 꼬리표는 보낸 때만 ──
+  const LONG = 'https://example.com/' + 'a'.repeat(90);
+  const wrapSrv = new WebSocketServer({ port: 0 });
+  await new Promise(ok => wrapSrv.on('listening', ok));
+  wrapSrv.on('connection', (sock) => sock.on('message', (raw) => {
+    if (!JSON.parse(raw).hello) return;
+    sock.send(JSON.stringify({ welcome: 1, src_lang: 'ko' }));
+    sock.send(JSON.stringify({ seq: 1, text: '먼저 지난주 출하 일정부터 차례대로 하나씩 확인하겠습니다.', tr: { en: 'First, let us go over the shipping schedule from last week together, one item after another.' } }));
+    sock.send(JSON.stringify({ seq: 2, text: '검사 성적서는 내일 오전까지 담당자에게 보내 드리겠습니다.', tr: { en: 'We will send the inspection report to the person in charge by tomorrow morning.' } }));
+    sock.send(JSON.stringify({ seq: 3, text: '주소입니다', tr: { en: LONG } }));
+    sock.send(JSON.stringify({ seq: 4, text: '회의 줄입니다', spk: 'meeting', tr: { en: 'a meeting line' } }));
+  }));
+  for (const vp of [{ width: 390, height: 844 }, { width: 360, height: 640 }, { width: 320, height: 568 }]) {
+    ctx = await b.newContext({ viewport: vp }); p = await ctx.newPage();
+    await p.goto(`http://localhost:${port}/?room=123456&auto=1&ws=${wrapSrv.address().port}&lang=en`, { waitUntil: 'load' });
+    await p.waitForSelector('#msg-4', { timeout: 10000 }); await p.waitForTimeout(300);
+    const w = await p.evaluate(() => {
+      // 낱말 하나가 두 줄에 걸치면 그 낱말의 사각형이 둘 이상이다
+      const split = [];
+      for (const id of ['msg-1', 'msg-2']) for (const sel of ['.msg-text', '.msg-tr']) {
+        const node = document.querySelector(`#${id} ${sel}`).firstChild; const txt = node.textContent;
+        const re = /\S+/g; let m, lines = new Set();
+        while ((m = re.exec(txt))) {
+          const r = document.createRange(); r.setStart(node, m.index); r.setEnd(node, m.index + m[0].length);
+          const rects = [...r.getClientRects()]; rects.forEach(x => lines.add(Math.round(x.top)));
+          if (new Set(rects.map(x => Math.round(x.top))).size > 1) split.push(m[0]);
+        }
+        if (lines.size < 2) split.push(`(${id} ${sel}: 줄바꿈이 없어 시험이 헛돈다)`);
+      }
+      const long = document.querySelector('#msg-3 .msg-bubble').getBoundingClientRect();
+      const b3 = document.getElementById('spk-badge-3'), b4 = document.getElementById('spk-badge-4');
+      return { split, longRight: Math.round(long.right), vw: innerWidth, overflowX: document.documentElement.scrollWidth > innerWidth,
+               badge3: getComputedStyle(b3).display, badge4: getComputedStyle(b4).display, badge4Text: b4.textContent };
+    });
+    console.log(`[줄바꿈 ${vp.width}x${vp.height}]`, JSON.stringify(w));
+    assert.deepStrictEqual(w.split, [], '낱말 중간에서 끊긴 곳이 없다(한국어·영어)');
+    assert(w.longRight <= w.vw && !w.overflowX, '긴 낱말(주소)은 화면 밖으로 넘치지 않는다');
+    assert.strictEqual(w.badge3, 'none', '화자를 안 보낸 줄에는 화자 꼬리표가 없다');
+    assert(w.badge4 !== 'none' && /meeting/.test(w.badge4Text), '화자를 보낸 줄에는 꼬리표가 있다');
+    await ctx.close();
+  }
+  wrapSrv.close();
+  console.log('  [PASS] 낱말 안 끊김 · 긴 낱말 안 넘침 · 화자 꼬리표는 보낸 때만 (390, 360, 320)');
+
+  // ── 8. 시연 (?demo=1): 서버 없이 처음부터 끝까지 ──
+  async function openDemo(extra, viewport, locale) {
+    const c = await b.newContext({ viewport, locale });
+    const pg = await c.newPage();
+    const out = [];
+    pg.on('request', (rq) => { const u = new URL(rq.url()); if (u.hostname !== 'localhost') out.push(rq.url()); });
+    await pg.addInitScript(() => {
+      window.__spoken = []; window.__ws = 0;
+      const RealWS = window.WebSocket; window.WebSocket = function (...a) { window.__ws++; return new RealWS(...a); };
+      window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
+      if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices = () => ['en-US', 'ja-JP', 'zh-CN', 'vi-VN', 'id-ID'].map(l => ({ lang: l, name: l }));
+        window.speechSynthesis.speak = function (u) { if (u && u.text) window.__spoken.push(u.text); };
+        window.speechSynthesis.cancel = function () {};
+      }
+    });
+    await pg.clock.install();
+    await pg.goto(`http://localhost:${port}/?demo=1${extra}`, { waitUntil: 'load' });
+    await pg.waitForFunction(() => document.getElementById('lang-select').options.length > 1);
+    return { pg, c, out };
+  }
+  const demoState = (pg) => pg.evaluate(() => ({
+    inChat: document.documentElement.classList.contains('in-chat'),
+    tag: [...document.querySelectorAll('.demo-tag')].filter(e => e.getBoundingClientRect().width > 0).length,  // 실제로 보이는 DEMO 표시 수
+    uiLang: document.documentElement.lang,
+    tagHit: (() => { const g = document.getElementById('demo-tag').getBoundingClientRect(), a = document.querySelector('.header-title').getBoundingClientRect(), z = document.getElementById('status-badge').getBoundingClientRect(); return g.width > 0 && (g.left < a.right || g.right > z.left); })(),
+    opts: [...document.getElementById('lang-select').options].map(o => o.value), sel: document.getElementById('lang-select').value,
+    room: document.getElementById('room-input').value,
+    n: document.querySelectorAll('#chat-list > .msg-line:not(#msg-pending)').length,
+    trs: [...document.querySelectorAll('#chat-list > .msg-line:not(#msg-pending) .msg-tr')].map(e => e.innerText.trim()),
+    end: getComputedStyle(document.getElementById('end-modal')).display, sumLines: document.getElementById('sum-lines').textContent,
+    spoken: window.__spoken, ws: window.__ws, pendingNow: (document.querySelector('#msg-pending .msg-text') || {}).textContent || '', saved: localStorage.getItem('raytok_lang'),
+  }));
+
+  // 8-1. 한국어 폰으로 열어도 번역문이 있는 언어가 골라진다 · 누르기 전에는 시작하지 않는다
+  let d = await openDemo('', { width: 390, height: 844 }, 'ko-KR');
+  let ds = await demoState(d.pg);
+  assert.strictEqual(ds.tag, 1, 'DEMO 표시가 하나 보인다'); assert.strictEqual(ds.tagHit, false, 'DEMO 표시가 제목·상태와 겹치지 않는다');
+  assert.deepStrictEqual([...ds.opts].sort(), ['en', 'id', 'ja', 'vi', 'zh-CN'], '고를 수 있는 언어는 예시 번역문이 있는 다섯');
+  assert.strictEqual(ds.sel, 'en', '폰 언어에 번역문이 없으면 영어'); assert.strictEqual(ds.room, '000000');
+  await d.pg.clock.runFor(5000);
+  ds = await demoState(d.pg);
+  assert(!ds.inChat && ds.n === 0, '참여를 누르기 전에는 시작하지 않는다');
+  // 8-2. 언어를 바꾸고 참여 → 여덟 줄 → 종료 화면
+  await d.pg.selectOption('#lang-select', 'vi');
+  await d.pg.click('#btn-join');
+  await d.pg.clock.runFor(1500);
+  ds = await demoState(d.pg);
+  assert(ds.inChat && ds.n === 0 && ds.pendingNow.length > 3 && '안녕하세요. 오늘 작업 전 안전교육을 시작하겠습니다.'.startsWith(ds.pendingNow), '먼저 말하는 중(임시) 글자가 보인다');
+  assert.deepStrictEqual(ds.spoken, [], '임시 글자는 읽지 않는다');
+  await d.pg.clock.runFor(4 * 60 * 1000);
+  ds = await demoState(d.pg);
+  console.log('[시연 vi]', JSON.stringify({ n: ds.n, spoken: ds.spoken.length, end: ds.end, sumLines: ds.sumLines, ws: ds.ws, first: ds.trs[0] }));
+  assert.strictEqual(ds.n, 8, '여덟 줄이 다 나온다');
+  assert(ds.trs.every(x => x.length > 0) && /Xin chào/.test(ds.trs[0]), '줄마다 고른 언어의 번역문이 있다');
+  assert.deepStrictEqual(ds.spoken, ds.trs, '확정된 번역문만, 줄마다 한 번씩 읽는다');
+  assert.strictEqual(ds.end, 'flex', '끝나면 종료 화면'); assert.strictEqual(ds.sumLines, '8');
+  assert.strictEqual(ds.ws, 0, '서버에 연결하지 않는다'); assert.deepStrictEqual(d.out, [], '바깥으로 나가는 요청 0건');
+  assert.strictEqual(ds.saved, null, '시연에서 고른 언어는 저장하지 않는다');
+  await d.c.close();
+  // 8-3. 언어마다 — 한 언어로만 확인하지 않는다
+  for (const lang of ['en', 'ja', 'zh-CN', 'id']) {
+    d = await openDemo(`&lang=${lang}`, { width: 390, height: 844 }, 'en-US');
+    await d.pg.click('#btn-join'); await d.pg.clock.runFor(4 * 60 * 1000);
+    ds = await demoState(d.pg);
+    assert(ds.sel === lang && ds.n === 8 && ds.trs.every(x => x.length > 0) && ds.spoken.length === 8 && ds.end === 'flex', `시연 ${lang}`);
+    await d.c.close();
+  }
+  // 8-3b. 좁은 폰(320)에서도 표시가 겹치지 않는다 · ?lang=ko 면 화면 글자는 한국어, 자막은 번역문이 있는 언어
+  d = await openDemo('&lang=ko', { width: 320, height: 568 }, 'ko-KR');
+  ds = await demoState(d.pg);
+  assert.strictEqual(ds.tag, 1); assert.strictEqual(ds.tagHit, false, '320px 에서도 DEMO 표시가 겹치지 않는다');
+  assert.strictEqual(ds.uiLang, 'ko', '화면 글자는 한국어'); assert.strictEqual(ds.sel, 'en', '자막은 영어');
+  await d.c.close();
+  // 8-4. 큰 화면 시연은 저절로 시작하고 소리는 끔
+  d = await openDemo('&view=screen&auto=1&lang=en', { width: 1920, height: 1080 }, 'en-US');
+  await d.pg.clock.runFor(20000);
+  ds = await demoState(d.pg);
+  assert(ds.inChat && ds.n >= 2, '큰 화면 시연은 저절로 시작한다'); assert.deepStrictEqual(ds.spoken, [], '큰 화면은 소리 끔');
+  assert.strictEqual(ds.tag, 1, '큰 화면에도 DEMO 표시가 하나 보인다'); assert.strictEqual(ds.ws, 0);
+  await d.c.close();
+  // 8-5. demo 가 없으면 아무것도 달라지지 않는다
+  ({ p, ctx } = await open('&lang=en', { width: 390, height: 844 }));
+  assert.strictEqual(await p.evaluate(() => [...document.querySelectorAll('.demo-tag')].filter(e => e.getBoundingClientRect().width > 0).length), 0, '보통 때는 DEMO 표시가 없다');
+  assert.strictEqual(await p.evaluate(() => document.getElementById('lang-select').options.length), 82, '보통 때는 언어 전부');
+  await ctx.close();
+  console.log('  [PASS] 시연: 서버 연결 0 · 임시는 안 읽음 · 8줄 · 언어 5개 · 종료 화면 · 큰 화면 자동 시작');
+
   await b.close(); wss.close(); srv.close();
   console.log('[PASS] 큰 화면 보기 시험 전부 통과');
 })().catch((e) => { console.error('[FAIL]', e.message); process.exit(1); });

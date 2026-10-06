@@ -110,8 +110,9 @@
       border-top-left-radius: 2px;
       border: 1px solid var(--border);
       font-size: 15px;
-      word-break: break-all;
+      overflow-wrap: anywhere;   /* 낱말 중간에서 끊지 않는다. 한 줄에 안 들어가는 긴 낱말만 끊는다 */
     }
+    .msg-text:lang(ko), .msg-tr:lang(ko) { word-break: keep-all; }   /* 한국어는 띄어쓰기에서만 줄을 바꾼다 */
     .msg-tr { color: var(--primary); font-weight: 500; margin-top: 4px; }
     .msg-src { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
     .badge {
@@ -123,6 +124,7 @@
       margin-left: 4px;
       vertical-align: middle;
     }
+    .badge[hidden] { display: none; }
     .badge-pending { background-color: var(--warning); color: #000; }
     .badge-via { background-color: #475569; color: #fff; }
     .badge-meeting { background-color: #0369a1; color: #e0f2fe; }
@@ -195,13 +197,12 @@
     .view-screen #chat-screen { height: 100vh; overflow: hidden; }
     .view-screen #chat-list { overflow: hidden; justify-content: flex-end; padding: 4vh 4vw; gap: 3vh; }
     .view-screen #chat-list > .msg-line { max-width: 100%; align-self: stretch; opacity: 0.5; }
-    .view-screen #chat-list > .msg-line:last-child { opacity: 1; }
+    .view-screen #chat-list > .msg-line.is-latest { opacity: 1; }   /* 방금 확정된 줄. 말하는 중인 줄(임시)은 흐리게 둔다 */
     .view-screen #chat-list > .msg-line:nth-last-child(n+5) { display: none; }  /* 최근 4줄만 */
     .view-screen .msg-bubble {
       display: grid; grid-template-columns: 1fr 1fr; column-gap: 4vw; align-items: start;
       background: none; border: 0 !important; border-radius: 0; padding: 0; opacity: 1 !important;
       font-size: clamp(22px, 5.4vh, 68px); line-height: 1.3;
-      word-break: keep-all; overflow-wrap: anywhere;
     }
     .view-screen .msg-text { color: var(--text-muted); font-style: normal !important; }
     .view-screen .msg-tr { margin-top: 0; font-size: inherit !important; color: var(--primary) !important; font-weight: 600; }
@@ -209,18 +210,27 @@
     .view-screen .tool-bar { position: fixed; left: 0; right: 0; bottom: 0; transform: translateY(100%); transition: transform .2s; }
     .view-screen.show-tools .tool-bar { transform: none; }
     .view-screen .tool-btn-screen { display: inline-block; margin-left: auto; }
+    /* ── 시연 (?demo=1) — 실제 세션이 아님을 늘 보이게 ── */
+    .demo-tag { display: none; flex: none; margin: 0 8px; padding: 2px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; letter-spacing: .12em; background: var(--warning); color: #000; pointer-events: none; }
+    .is-demo .demo-tag { display: block; }                       /* 보통 보기: 머리줄 안, 제목과 상태 사이 */
+    .demo-tag-screen { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); margin: 0; z-index: 200; }
+    .is-demo .demo-tag-screen { display: none; }
+    .is-demo.view-screen .demo-tag-screen { display: block; }    /* 큰 화면: 머리줄이 없으니 위 가운데 */
     @media (max-aspect-ratio: 1/1) {   /* 세로 화면: 위아래로 */
       .view-screen .msg-bubble { grid-template-columns: 1fr; row-gap: 0.6vh; }
     }
   </style>
 </head>
 <body>
+  <div class="demo-tag demo-tag-screen">DEMO</div>
 
   <div class="header">
     <div class="header-title">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       <span data-i18n="header_title">RayTok 청취자</span>
     </div>
+    <div class="demo-tag" id="demo-tag">DEMO</div>
     <div class="status-badge" id="status-badge">
       <div class="status-dot" id="status-dot"></div>
       <span id="status-text" data-i18n="status_ready">준비</span>
@@ -250,7 +260,7 @@
       <button class="btn" id="btn-join" data-i18n="join_button">참여하기</button>
     </div>
     <div style="text-align: center; color: var(--text-muted); font-size: 12px;">
-      v<span id="ver-text">1.1.1</span> &copy; RayTok <!-- v1.1.1 -->
+      v<span id="ver-text">1.1.2</span> &copy; RayTok <!-- v1.1.2 -->
     </div>
   </div>
 
@@ -300,10 +310,72 @@
   </div>
 
   <script>
-    const LISTENER_VER = '1.1.1'; // v1.1.1
+    const LISTENER_VER = '1.1.2'; // v1.1.2
     document.getElementById('ver-text').textContent = LISTENER_VER;
 
     const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"de","name_ko":"독일어","name_en":"German","offline":true,"fallback":null},{"code":"it","name_ko":"이탈리아어","name_en":"Italian","offline":true,"fallback":null},{"code":"pt","name_ko":"포르투갈어","name_en":"Portuguese","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"hi","name_ko":"힌디어","name_en":"Hindi","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"tr","name_ko":"튀르키예어","name_en":"Turkish","offline":true,"fallback":null},{"code":"nl","name_ko":"네덜란드어","name_en":"Dutch","offline":true,"fallback":null},{"code":"pl","name_ko":"폴란드어","name_en":"Polish","offline":true,"fallback":null},{"code":"sv","name_ko":"스웨덴어","name_en":"Swedish","offline":true,"fallback":null},{"code":"da","name_ko":"덴마크어","name_en":"Danish","offline":true,"fallback":null},{"code":"nb","name_ko":"노르웨이어","name_en":"Norwegian","offline":true,"fallback":null},{"code":"fi","name_ko":"핀란드어","name_en":"Finnish","offline":true,"fallback":null},{"code":"cs","name_ko":"체코어","name_en":"Czech","offline":true,"fallback":null},{"code":"el","name_ko":"그리스어","name_en":"Greek","offline":true,"fallback":null},{"code":"he","name_ko":"히브리어","name_en":"Hebrew","offline":true,"fallback":null},{"code":"hu","name_ko":"헝가리어","name_en":"Hungarian","offline":true,"fallback":null},{"code":"ro","name_ko":"루마니아어","name_en":"Romanian","offline":true,"fallback":null},{"code":"uk","name_ko":"우크라이나어","name_en":"Ukrainian","offline":true,"fallback":null},{"code":"ms","name_ko":"말레이어","name_en":"Malay","offline":true,"fallback":null},{"code":"fil","name_ko":"필리핀어","name_en":"Filipino","offline":true,"fallback":null},{"code":"bn","name_ko":"벵골어","name_en":"Bengali","offline":true,"fallback":null},{"code":"ta","name_ko":"타밀어","name_en":"Tamil","offline":true,"fallback":null},{"code":"te","name_ko":"텔루구어","name_en":"Telugu","offline":true,"fallback":null},{"code":"ur","name_ko":"우르두어","name_en":"Urdu","offline":true,"fallback":null},{"code":"fa","name_ko":"페르시아어","name_en":"Persian","offline":true,"fallback":null},{"code":"sw","name_ko":"스와힐리어","name_en":"Swahili","offline":true,"fallback":null},{"code":"sk","name_ko":"슬로바키아어","name_en":"Slovak","offline":true,"fallback":null},{"code":"bg","name_ko":"불가리아어","name_en":"Bulgarian","offline":true,"fallback":null},{"code":"ca","name_ko":"카탈루냐어","name_en":"Catalan","offline":true,"fallback":null},{"code":"hr","name_ko":"크로아티아어","name_en":"Croatian","offline":true,"fallback":null},{"code":"sr","name_ko":"세르비아어","name_en":"Serbian","offline":false,"fallback":null},{"code":"sl","name_ko":"슬로베니아어","name_en":"Slovenian","offline":true,"fallback":null},{"code":"lt","name_ko":"리투아니아어","name_en":"Lithuanian","offline":true,"fallback":null},{"code":"lv","name_ko":"라트비아어","name_en":"Latvian","offline":true,"fallback":null},{"code":"et","name_ko":"에스토니아어","name_en":"Estonian","offline":true,"fallback":null},{"code":"is","name_ko":"아이슬란드어","name_en":"Icelandic","offline":true,"fallback":null},{"code":"ga","name_ko":"아일랜드어","name_en":"Irish","offline":true,"fallback":null},{"code":"cy","name_ko":"웨일스어","name_en":"Welsh","offline":true,"fallback":null},{"code":"eu","name_ko":"바스크어","name_en":"Basque","offline":false,"fallback":null},{"code":"gl","name_ko":"갈리시아어","name_en":"Galician","offline":true,"fallback":null},{"code":"af","name_ko":"아프리칸스어","name_en":"Afrikaans","offline":true,"fallback":null},{"code":"zu","name_ko":"줄루어","name_en":"Zulu","offline":false,"fallback":null},{"code":"xh","name_ko":"코사어","name_en":"Xhosa","offline":false,"fallback":null},{"code":"hy","name_ko":"아르메니아어","name_en":"Armenian","offline":false,"fallback":null},{"code":"az","name_ko":"아제르바이잔어","name_en":"Azerbaijani","offline":false,"fallback":null},{"code":"ka","name_ko":"조지아어","name_en":"Georgian","offline":true,"fallback":null},{"code":"kk","name_ko":"카자흐어","name_en":"Kazakh","offline":false,"fallback":null},{"code":"uz","name_ko":"우즈베크어","name_en":"Uzbek","offline":false,"fallback":"ru"},{"code":"ky","name_ko":"키르기스어","name_en":"Kyrgyz","offline":false,"fallback":"ru"},{"code":"tg","name_ko":"타지크어","name_en":"Tajik","offline":false,"fallback":"ru"},{"code":"tet","name_ko":"테툼어","name_en":"Tetum","offline":false,"fallback":"id"},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"},{"code":"ne","name_ko":"네팔어","name_en":"Nepali","offline":false,"fallback":"hi"},{"code":"si","name_ko":"싱할라어","name_en":"Sinhala","offline":false,"fallback":"ta"},{"code":"kn","name_ko":"칸나다어","name_en":"Kannada","offline":true,"fallback":null},{"code":"ml","name_ko":"말라얄람어","name_en":"Malayalam","offline":false,"fallback":null},{"code":"mr","name_ko":"마라티어","name_en":"Marathi","offline":true,"fallback":null},{"code":"gu","name_ko":"구자라트어","name_en":"Gujarati","offline":true,"fallback":null},{"code":"pa","name_ko":"펀자브어","name_en":"Punjabi","offline":false,"fallback":null},{"code":"km","name_ko":"크메르어","name_en":"Khmer","offline":false,"fallback":null},{"code":"lo","name_ko":"라오어","name_en":"Lao","offline":false,"fallback":"th"},{"code":"my","name_ko":"미얀마어","name_en":"Burmese","offline":false,"fallback":null},{"code":"am","name_ko":"암하라어","name_en":"Amharic","offline":false,"fallback":null},{"code":"so","name_ko":"소말리어","name_en":"Somali","offline":false,"fallback":null},{"code":"mk","name_ko":"마케도니아어","name_en":"Macedonian","offline":true,"fallback":null},{"code":"sq","name_ko":"알바니아어","name_en":"Albanian","offline":true,"fallback":null},{"code":"bs","name_ko":"보스니아어","name_en":"Bosnian","offline":false,"fallback":null},{"code":"mt","name_ko":"몰타어","name_en":"Maltese","offline":true,"fallback":null},{"code":"yo","name_ko":"요루바어","name_en":"Yoruba","offline":false,"fallback":null},{"code":"ig","name_ko":"이그보어","name_en":"Igbo","offline":false,"fallback":null},{"code":"ha","name_ko":"하우사어","name_en":"Hausa","offline":false,"fallback":null}];
+
+    // ── 시연 (?demo=1): 서버 없이, 미리 적어 둔 줄을 실제와 같은 처리 길(handleMessage)로 흘린다.
+    //    번역문은 사람이 적어 둔 예시다 — 번역 엔진 결과가 아니다. 이 페이지는 번역을 요청하지 않는다.
+    const isDemo = new URLSearchParams(location.search).has('demo');
+    const DEMO_SRC = 'ko';
+    const DEMO_LINES = [
+      { text: '안녕하세요. 오늘 작업 전 안전교육을 시작하겠습니다.', tr: {
+        'en': 'Hello. Let\u2019s begin today\u2019s pre-work safety briefing.',
+        'vi': 'Xin chào. Chúng ta bắt đầu buổi huấn luyện an toàn trước khi làm việc hôm nay.',
+        'zh-CN': '大家好。现在开始今天的班前安全教育。',
+        'ja': 'こんにちは。これから本日の作業前安全教育を始めます。',
+        'id': 'Halo. Kita mulai pengarahan keselamatan sebelum bekerja hari ini.' } },
+      { text: '안전모와 안전화는 현장 안에서 항상 착용해 주세요.', tr: {
+        'en': 'Please wear your hard hat and safety shoes at all times on site.',
+        'vi': 'Hãy luôn đội mũ bảo hộ và mang giày bảo hộ khi ở trong công trường.',
+        'zh-CN': '在现场内请始终佩戴安全帽、穿好安全鞋。',
+        'ja': '現場内では、ヘルメットと安全靴を必ず着用してください。',
+        'id': 'Selalu pakai helm dan sepatu keselamatan selama berada di area kerja.' } },
+      { text: '2미터 이상 높은 곳에서 작업할 때는 반드시 안전대를 걸어야 합니다.', tr: {
+        'en': 'When working at a height of two meters or more, you must hook on your safety harness.',
+        'vi': 'Khi làm việc ở độ cao từ 2 mét trở lên, bắt buộc phải móc dây an toàn.',
+        'zh-CN': '在两米以上的高处作业时，必须系好安全带。',
+        'ja': '高さ2メートル以上の場所で作業するときは、必ず安全帯を掛けてください。',
+        'id': 'Saat bekerja di ketinggian 2 meter atau lebih, wajib memasang sabuk pengaman.' } },
+      { text: '지게차가 움직일 때는 뒤쪽으로 지나가지 마세요.', tr: {
+        'en': 'Do not walk behind a forklift while it is moving.',
+        'vi': 'Không đi qua phía sau xe nâng khi xe đang di chuyển.',
+        'zh-CN': '叉车行驶时，请不要从车后方经过。',
+        'ja': 'フォークリフトが動いているときは、後ろを通らないでください。',
+        'id': 'Jangan lewat di belakang forklift saat forklift sedang bergerak.' } },
+      { text: '기계를 청소하거나 고칠 때는 전원을 먼저 끄세요.', tr: {
+        'en': 'Turn off the power first before cleaning or repairing a machine.',
+        'vi': 'Trước khi vệ sinh hoặc sửa máy, hãy tắt nguồn điện trước.',
+        'zh-CN': '清理或维修机器之前，请先关闭电源。',
+        'ja': '機械を清掃・修理するときは、先に電源を切ってください。',
+        'id': 'Sebelum membersihkan atau memperbaiki mesin, matikan dulu listriknya.' } },
+      { text: '몸이 아프거나 위험한 것을 보면 바로 반장에게 말해 주세요.', tr: {
+        'en': 'If you feel unwell or see anything dangerous, tell your foreman right away.',
+        'vi': 'Nếu thấy mệt hoặc thấy điều gì nguy hiểm, hãy báo ngay cho tổ trưởng.',
+        'zh-CN': '如果身体不舒服或发现危险情况，请立即告诉班长。',
+        'ja': '体調が悪いときや危険なものを見つけたときは、すぐに班長に伝えてください。',
+        'id': 'Jika merasa tidak enak badan atau melihat sesuatu yang berbahaya, segera beri tahu mandor.' } },
+      { text: '비상시에는 초록색 표지를 따라 정문 앞으로 모입니다.', tr: {
+        'en': 'In an emergency, follow the green signs and gather in front of the main gate.',
+        'vi': 'Khi có sự cố khẩn cấp, hãy đi theo biển báo màu xanh lá và tập trung trước cổng chính.',
+        'zh-CN': '发生紧急情况时，请沿绿色标志到正门前集合。',
+        'ja': '非常時は緑色の標識に従って、正門前に集まってください。',
+        'id': 'Dalam keadaan darurat, ikuti tanda berwarna hijau dan berkumpul di depan gerbang utama.' } },
+      { text: '질문 있으면 손을 들어 주세요. 오늘도 안전하게 일합시다.', tr: {
+        'en': 'Raise your hand if you have any questions. Let\u2019s work safely today.',
+        'vi': 'Ai có câu hỏi xin giơ tay. Hôm nay chúng ta cũng làm việc an toàn nhé.',
+        'zh-CN': '有问题请举手。今天也请大家安全作业。',
+        'ja': '質問がある方は手を挙げてください。今日も安全に作業しましょう。',
+        'id': 'Yang punya pertanyaan, silakan angkat tangan. Hari ini pun mari bekerja dengan selamat.' } }
+    ];
+    const DEMO_LANGS = Object.keys(DEMO_LINES[0].tr);
+    const DEMO_PENDING_MS = 600;     // 말하는 중(임시) 글자가 늘어나는 간격
+    const DEMO_GAP_MS = 2200;        // 확정 뒤 다음 말까지 최소 쉼
+    const DEMO_PER_CHAR_MS = 40;     // 줄 길이만큼 더 쉰다(읽을 시간)
+    const DEMO_SPEAK_MAX_MS = 15000; // 음성이 이보다 길어지면 기다리지 않는다
+    const DEMO_END_MS = 5000;        // 마지막 줄 뒤 종료 화면까지
+    if (isDemo) document.documentElement.classList.add('is-demo');
 
     let langs = FALLBACK_LANGS;
     let uiStrings = null;
@@ -399,7 +471,7 @@
             playNoSleepVideo();
           }
         }
-        if (isSessionActive && (!ws || ws.readyState !== WebSocket.OPEN)) {
+        if (!isDemo && isSessionActive && (!ws || ws.readyState !== WebSocket.OPEN)) {
           if (currentStatusKey !== 'status_ended' && currentStatusKey !== 'status_rejected') {
             connect();
           }
@@ -578,6 +650,7 @@
       } catch (e) {}
 
       const availableLangs = (uiStrings && uiStrings.langs) || ['ko', 'en'];
+      if (isDemo) langs = langs.filter(l => DEMO_LANGS.includes(l.code));   // 시연: 예시 번역문이 있는 언어만 고를 수 있다
 
       const params = new URLSearchParams(location.search);
       const qLang = params.get('lang');
@@ -604,6 +677,13 @@
       applyStrings(initialUiLang);
       updateSubtitleDir();
 
+      if (isDemo) {
+        roomInput.value = '000000';
+        roomInput.readOnly = true;
+        if (params.get('auto') === '1') setTimeout(() => btnJoin.click(), 500);
+        return;
+      }
+
       const qRoom = params.get('room');
       if (qRoom) {
         roomInput.value = qRoom.toUpperCase();
@@ -616,7 +696,7 @@
 
     langSelect.addEventListener('change', () => {
       selectedLang = langSelect.value;
-      localStorage.setItem('raytok_lang', selectedLang);
+      if (!isDemo) localStorage.setItem('raytok_lang', selectedLang);   // 시연에서 고른 언어는 저장하지 않는다
 
       const newUiLang = determineLanguage();
       applyStrings(newUiLang);
@@ -753,14 +833,14 @@
       if ('bye' in msg) {
         releaseWake();
         setStatus('status_rejected', 'status-dot offline');
-        ws.close();
+        if (ws) ws.close();
         alert(t('alert_rejected', currentUiLang) + (msg.why || t('unknown_reason', currentUiLang)));
         return;
       }
 
       if ('end' in msg) {
         setStatus('status_ended', 'status-dot offline');
-        ws.close();
+        if (ws) ws.close();
         showEnd(msg.summary);
         return;
       }
@@ -776,8 +856,9 @@
               <div class="msg-text" style="color: var(--text-muted); font-style: italic;"></div>
               <div class="msg-tr" style="font-size: 12px; color: var(--warning);"><span class="badge badge-pending">${t('badge_pending', currentUiLang)}</span></div>
             </div>
-            <div class="msg-src" style="color: var(--warning);">[실시간 임시] ${srcLang.toUpperCase()}</div>
+            <div class="msg-src" style="color: var(--warning);">${srcLang.toUpperCase()}</div>
           `;
+          pendingDiv.querySelector('.msg-text').setAttribute('lang', srcLang);
           chatList.appendChild(pendingDiv);
         }
         pendingDiv.querySelector('.msg-text').textContent = msg.text;
@@ -792,6 +873,7 @@
           const badge = document.getElementById(`spk-badge-${msg.seq}`);
           if (badge) {
             badge.className = `badge ${msg.spk === 'meeting' ? 'badge-meeting' : 'badge-me'}`;
+            badge.hidden = false;
             badge.textContent = msg.spk === 'meeting' ? '회의 (meeting)' : '나 (me)';
           }
         }
@@ -805,7 +887,7 @@
         const line = {
           seq: msg.seq,
           text: msg.text,
-          spk: msg.spk || 'meeting',
+          spk: msg.spk || null,   // 화자 표시는 진행자가 보낸 때만(Desk). 강의·가이드는 보내지 않는다
           tr: msg.tr || {},
           pending: !!msg.pending,
           via: msg.via
@@ -844,11 +926,15 @@
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src" dir="ltr">#${line.seq} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}">${spkLabel}</span></div>
+        <div class="msg-src" dir="ltr">#${line.seq} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
       `;
       const textDiv = div.querySelector('.msg-text');
       textDiv.textContent = line.text;
       textDiv.setAttribute('dir', RTL.has(normalizeLangCode(srcLang)) ? 'rtl' : 'ltr');
+      textDiv.setAttribute('lang', srcLang);
+      const prevLatest = chatList.querySelector('.msg-line.is-latest');
+      if (prevLatest) prevLatest.classList.remove('is-latest');
+      div.classList.add('is-latest');   // 방금 확정된 줄 (큰 화면에서 가장 밝게)
       chatList.appendChild(div);
       updateLineUI(line);
       chatList.scrollTop = chatList.scrollHeight;
@@ -860,6 +946,7 @@
       const trDiv = div.querySelector('.msg-tr');
 
       trDiv.setAttribute('dir', RTL.has(normalizeLangCode(selectedLang)) ? 'rtl' : 'ltr');
+      trDiv.setAttribute('lang', selectedLang);
       const trText = line.tr[selectedLang] || '';
       trDiv.textContent = trText;
 
@@ -927,8 +1014,43 @@
       endModal.style.display = 'flex';
     }
 
+    // 시연: 한 줄씩 — 말하는 중(임시) 글자가 늘어나고 → 확정(원문+번역) → 읽기가 끝나면 다음 줄 → 끝나면 종료 화면.
+    function startDemo() {
+      handleMessage({ welcome: 1, src_lang: DEMO_SRC });
+      let i = 0;
+      const next = () => {
+        if (i >= DEMO_LINES.length) {
+          setTimeout(() => handleMessage({ end: 1, summary: { lines: DEMO_LINES.length, minutes: 1 } }), DEMO_END_MS);
+          return;
+        }
+        const L = DEMO_LINES[i];
+        const seq = ++i;
+        const steps = [0.35, 0.7, 1].map(r => L.text.slice(0, Math.max(1, Math.round(L.text.length * r))));
+        steps.forEach((part, k) => setTimeout(() => handleMessage({ pending: true, text: part }), k * DEMO_PENDING_MS));
+        setTimeout(() => {
+          handleMessage({ seq, text: L.text, tr: L.tr });
+          const t0 = Date.now();
+          const minMs = DEMO_GAP_MS + L.text.length * DEMO_PER_CHAR_MS;
+          const wait = () => {
+            const el = Date.now() - t0;
+            const speaking = isTtsEnabled && speechSynthesis.speaking && el < DEMO_SPEAK_MAX_MS;
+            if (el < minMs || speaking) { setTimeout(wait, 300); return; }
+            next();
+          };
+          wait();
+        }, steps.length * DEMO_PENDING_MS);
+      };
+      next();
+    }
+
     btnJoin.addEventListener('click', () => {
       try { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch(e){}
+      if (isDemo) {
+        roomCode = '000000';
+        keepAwake();
+        startDemo();
+        return;
+      }
       roomCode = roomInput.value.trim();
       myName = nameInput.value.trim();
       if (roomCode.length !== 6) {
