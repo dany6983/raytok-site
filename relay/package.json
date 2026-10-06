@@ -4,7 +4,8 @@
     "test:translate": "node test/translate.mjs",
     "test:license": "node test/license.mjs",
     "test:cache": "node test/cache.mjs",
-    "test:limits": "node test/limits.mjs"
+    "test:limits": "node test/limits.mjs",
+    "test:nostore": "node test/no-store.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.143.0",

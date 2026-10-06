@@ -26,7 +26,8 @@ async function run() {
   console.log('=== Relay Engine Isolation & Windowed Usage Metric Tests ===');
   console.log('Target URL:', BASE_URL);
 
-  const token = mintLicenseToken({ sub: 'engine-test-user', days: 1, flags: 0x04, secret });
+  // 캐시 격리를 보는 시험이라 캐시를 쓰는 토큰(0x02)으로 돈다. Desk 토큰(0x04·0x08)은 캐시를 건너뛴다 — test/no-store.mjs
+  const token = mintLicenseToken({ sub: 'engine-test-user', days: 1, flags: 0x02, secret });
   const testText = '동일 문장 엔진 격리 검증 ' + Date.now();
 
   // ─────────────────────────────────────────────────────────────

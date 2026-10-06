@@ -39,6 +39,23 @@ export class Room {
     });
   }
 
+  // 세션이 끝나면 보관하던 줄(원문·번역)을 지운다.
+  // 끝났다는 표시 한 줄만 남긴다 — 뒤늦게 들어온 청취자가 "끝났다"를 알 수 있게.
+  // 표시에는 숫자만 싣는다(글은 싣지 않는다).
+  dropLines(why, summary) {
+    const mark = { end: 1 };
+    if (why) mark.why = why;
+    if (summary && typeof summary === 'object') {
+      const kept = {};
+      for (const k of ['lines', 'minutes', 'joined_max']) {
+        if (Number.isFinite(summary[k])) kept[k] = summary[k];
+      }
+      if (Object.keys(kept).length > 0) mark.summary = kept;
+    }
+    this.ringBuffer = [JSON.stringify(mark)];
+    return this.ctx.storage.put('ringBuffer', this.ringBuffer);
+  }
+
   async recordDeskSessionMinutes() {
     if (this.kind === 'desk' && this.sub && this.startedAt && !this.deskMinutesRecorded) {
       this.deskMinutesRecorded = true;
@@ -458,9 +475,10 @@ export class Room {
       // 무음(새 자막 줄 없음) 판정 기준: 호스트가 보낸 메시지에 text가 있고 end가 아닌 경우 새 자막으로 판정
       let isSubtitleLine = false;
       let isEnd = false;
+      let endSummary = null;
       try {
         const parsed = JSON.parse(msgStr);
-        if (parsed.end) isEnd = true;
+        if (parsed.end) { isEnd = true; endSummary = parsed.summary; }
         if (!isEnd && parsed.text && (parsed.seq !== undefined || !parsed.hello)) {
           isSubtitleLine = true;
         }
@@ -484,6 +502,7 @@ export class Room {
       }
 
       if (isEnd) {
+        await this.dropLines(null, endSummary);
         await this.recordDeskSessionMinutes();
         this.ctx.waitUntil(
           new Promise((resolve) => {
@@ -533,6 +552,7 @@ export class Room {
 
     // 1. 호스트 끊김 10분 대기 후 자동 end
     if (this.ctx.getWebSockets('host').length === 0) {
+      await this.dropLines('host_timeout');
       await this.recordDeskSessionMinutes();
       const endMsg = JSON.stringify({ end: 1, why: 'host_timeout' });
       for (const listenerWs of this.ctx.getWebSockets('listener')) {
@@ -560,6 +580,7 @@ export class Room {
     const silenceElapsed = now - lastTime;
 
     if (silenceElapsed >= timeoutMs) {
+      await this.dropLines('silence_timeout');
       await this.recordDeskSessionMinutes();
       const endMsg = JSON.stringify({ end: 1, why: 'silence_timeout' });
       for (const hostWs of this.ctx.getWebSockets('host')) {

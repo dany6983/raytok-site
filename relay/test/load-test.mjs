@@ -148,7 +148,7 @@ async function executeIteration(listenerCount, mode, iterIdx, token) {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ q: [runSentence], source: 'ko', target: lang }) // 동일 문장 -> 캐시 적중(HIT)
+            body: JSON.stringify({ q: [runSentence], source: 'ko', target: lang }) // Desk 토큰은 캐시를 건너뛴다 -> 매번 번역 엔진까지 간다 (test/no-store.mjs)
           });
           const d = await res.json();
           trWarm[lang] = d.t && d.t[0];

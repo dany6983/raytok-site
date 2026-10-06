@@ -63,6 +63,9 @@ function checkIssueLimit(sub) {
   return true;
 }
 
+// 이 플래그가 있는 토큰의 번역은 캐시에 두지 않는다 (0x04 meet · 0x08 desktop)
+const NO_STORE_FLAGS = 0x04 | 0x08;
+
 // In-memory fallback cache if Cache API is unavailable
 const memoryCache = new Map();
 const memoryEngineStats = new Map();
@@ -525,9 +528,11 @@ export default {
       }
 
       // 6) 캐시 조회 (Workers Cache API + Memory Fallback)
+      // Desk 토큰(0x04·0x08)의 번역은 캐시를 읽지도 쓰지도 않는다 — 회의 내용을 남기지 않는다.
+      const useCache = (Number(licenseRes.payload.flags) & NO_STORE_FLAGS) === 0;
       let cache = null;
       try {
-        if (typeof caches !== 'undefined' && caches.default) {
+        if (useCache && typeof caches !== 'undefined' && caches.default) {
           cache = caches.default;
         }
       } catch (_) {}
@@ -583,7 +588,7 @@ export default {
               }
             }
           } catch (_) {}
-        } else {
+        } else if (useCache) {
           const rawMem = memoryCache.get(cacheUrl);
           if (rawMem) {
             try {
@@ -654,7 +659,7 @@ export default {
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(putPromise);
             }
-          } else {
+          } else if (useCache) {
             memoryCache.set(cacheUrl, cacheValStr);
           }
         }
@@ -663,7 +668,9 @@ export default {
       // 8) 캐시 판정 헤더 계산
       const hits = q.length - uncachedTexts.length;
       let xCache = 'MISS';
-      if (hits === q.length) {
+      if (!useCache) {
+        xCache = 'BYPASS';
+      } else if (hits === q.length) {
         xCache = 'HIT';
       } else if (hits > 0) {
         xCache = 'PARTIAL';
