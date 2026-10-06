@@ -143,8 +143,9 @@ section[id]{scroll-margin-top:96px}
 @media(max-width:700px){.vduo{grid-template-columns:1fr}.vduo>div:last-child{max-width:340px}}
 
 /* 홈 쓰임 카드 4장 */
-.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.cards4 .card h3{font-size:18.5px}
+.cards4{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.cards4 .card h3{font-size:17.5px}
+.cards4 .card p{font-size:14px}
 @media(max-width:1020px){.cards4{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.cards4{grid-template-columns:1fr}}
 /* Meet 페이지 */
@@ -164,7 +165,7 @@ section[id]{scroll-margin-top:96px}
 .langbar button:focus-visible{outline:2px solid #fff;outline-offset:1px}
 .i18n-wait body{visibility:hidden}
 html[data-lang] .ko-only{display:none!important}
-@media(min-width:1021px){html[data-lang] .cards4{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1021px){html[data-lang] .cards4{grid-template-columns:repeat(4,1fr)}}
 html[data-lang] body{word-break:normal;overflow-wrap:anywhere}
 html[data-lang] th{white-space:normal}
 
@@ -184,14 +185,3 @@ html[data-lang] th{white-space:normal}
 .news .soro-blog-article .soro-blog-header{display:block}
 @media(max-width:600px){.news .soro-blog-card{flex-direction:column;gap:2px}.news .soro-blog-card-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}}
 
-/* 추가 구성 띠 (유학생 패키지) */
-.band{margin-top:16px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:22px 24px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);text-decoration:none;color:var(--ink)}
-.band .st{font-size:12.5px;font-weight:700;color:var(--ac)}
-.band h3{margin:4px 0 6px;font-size:20px}
-.band p{margin:0;color:var(--ink2);font-size:15px;max-width:44em}
-.band .bp{display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:2px;min-width:200px}
-.band .bp b{font-size:24px;letter-spacing:-.02em}
-.band .bp span{font-size:13px;color:var(--mut)}
-.band .bp .more{font-weight:700;color:var(--ink);margin-top:6px}
-.band:hover .more{color:var(--ac2)}
-@media(max-width:700px){.band{grid-template-columns:1fr}.band .bp{align-items:flex-start;text-align:left}}
