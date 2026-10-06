@@ -313,6 +313,38 @@ function mockHost(wss) {
   await ctx.close();
   console.log('  [PASS] 시연: 서버 연결 0 · 임시는 안 읽음 · 8줄 · 언어 5개 · 종료 화면 · 큰 화면 자동 시작');
 
+  // ── 9. 기록 저장(TXT): 받은 글만 · 고른 언어의 번역문 · 바깥 요청 0건 ──
+  async function grab(pg, sel) {
+    const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click(sel)]);
+    const fs = require('fs'); const f = await dl.path();
+    return { name: dl.suggestedFilename(), txt: fs.readFileSync(f, 'utf8') };
+  }
+  d = await openDemo('&lang=en', { width: 390, height: 844 }, 'en-US');
+  await d.pg.click('#btn-join'); await d.pg.clock.runFor(4 * 60 * 1000);
+  let g = await grab(d.pg, '#btn-save-end');  // 시연이 끝나 종료 화면이 덮고 있다 — 종료 화면 버튼
+  assert(/^raytok_\d{8}_\d{4}_en\.txt$/.test(g.name), '파일 이름 형식: ' + g.name);
+  assert(g.txt.charCodeAt(0) === 0xFEFF, 'BOM 으로 시작'); assert(g.txt.includes('\r\n'), '줄바꿈 CRLF');
+  assert(/Lines: 8/.test(g.txt), '줄 수 8'); assert((g.txt.match(/^\[\d\d:\d\d:\d\d\]/gm) || []).length === 8, '시각 줄 8개');
+  const trsNow = (await demoState(d.pg)).trs;
+  assert(trsNow.length === 8 && trsNow.every(t => g.txt.includes(t)), '화면의 번역문이 전부 들어 있다');
+  assert(!/\\r|\\n|\\u/.test(g.txt.replace(/\r\n/g, '')), '이스케이프가 글자로 새지 않는다');
+  await d.pg.evaluate(() => { document.getElementById('end-modal').style.display = 'none'; });
+  const g2 = await grab(d.pg, '#btn-save');  // 도구 막대 버튼도 같은 줄들
+  assert.strictEqual(g2.txt.split('\r\n').filter(l => /^\[\d\d:/.test(l)).length, 8, '도구 막대 저장도 8줄');
+  assert.deepStrictEqual(d.out, [], '저장 중 바깥 요청 0건'); assert.strictEqual((await demoState(d.pg)).ws, 0);
+  await d.c.close();
+  // 다른 언어: 그 언어 번역문
+  d = await openDemo('&lang=ja', { width: 390, height: 844 }, 'en-US');
+  await d.pg.click('#btn-join'); await d.pg.clock.runFor(4 * 60 * 1000);
+  g = await grab(d.pg, '#btn-save-end'); const jt = (await demoState(d.pg)).trs;
+  assert(/_ja\.txt$/.test(g.name) && jt.every(t => g.txt.includes(t)), 'ja 번역문 저장');
+  await d.c.close();
+  // 큰 화면에도 버튼이 있다 (숨었다가 조작하면 보임)
+  ({ p, ctx } = await open('&view=screen&lang=en', { width: 1920, height: 1080 }));
+  assert.strictEqual(await p.evaluate(() => !!document.getElementById('btn-save')), true, '큰 화면에도 저장 버튼');
+  await ctx.close();
+  console.log('  [PASS] 기록 저장: 파일명·BOM·줄 수·번역문·바깥 요청 0');
+
   await b.close(); wss.close(); srv.close();
   console.log('[PASS] 큰 화면 보기 시험 전부 통과');
 })().catch((e) => { console.error('[FAIL]', e.message); process.exit(1); });
