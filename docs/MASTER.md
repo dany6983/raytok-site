@@ -63,3 +63,7 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
    `no-store` · `smoke` · `silence` · `room-auth` · `engine-test` · `cache` · `license` · `usage-accounting` · `hard-cap`. 각 시험의 마지막 줄과 실패 줄을 그대로 붙여라.
 3. Desk — `npm run test:unit` (13건), 그리고 `npm test` 한 번. **볼 것 하나:** 인식 연결이 전처럼 열리고 자막이 나오는가(`[STT] Deepgram WS connected` 줄). 안 열리면 그 오류 줄을 그대로.
 4. **배포하지 않는다.** `wrangler deploy` 는 대표님이 한다. 처리방침·홈페이지 문구도 아직 고치지 않는다 — 배포 뒤 마스터가 쓴다.
+
+## 2026-10-06 13:00
+- 청취 페이지 **v1.1.2** — 마스터가 고쳤다(7ba1baf). B는 `git pull` 만. 시연 주소 `?demo=1`(서버 연결 없음, 화면에 DEMO 표시) · 낱말 중간 줄바꿈 고침 · 큰 화면 최신 줄 또렷 · 화자 꼬리표는 보낸 때만.
+- 청취 페이지를 고칠 때 돌릴 것: `node samples/screen_view_test.js` 와 `node samples/rtl_test.js`.
