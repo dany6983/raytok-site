@@ -23,9 +23,10 @@ export class Room {
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
-      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'silenceWarnMs', 'silenceTimeoutMs']);
+      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'silenceWarnMs', 'silenceTimeoutMs', 'att']);
       if (stored.get('initialized')) {
         this.initialized = true;
+        this.att = stored.get('att') || null;
         this.hostToken = stored.get('hostToken') || null;
         this.startedAt = stored.get('startedAt') || null;
         this.code = stored.get('code') || null;
@@ -37,6 +38,116 @@ export class Room {
         this.silenceTimeoutMs = stored.get('silenceTimeoutMs') || 10 * 60 * 1000;
       }
     });
+  }
+
+  // 참석 집계 — 숫자만(지금 몇 명·최대 몇 명·언어별 몇 명·언어별 들은 분). 이름·글은 없다.
+  // 호스트에게만 보낸다. 세션이 끝나면 지운다.
+  attInit() {
+    if (!this.att) this.att = { joined: 0, max: 0, langs: {} };
+    return this.att;
+  }
+  attLang(code) {
+    const a = this.attInit();
+    const k = String(code || '').trim() || '?';
+    if (!a.langs[k]) a.langs[k] = { max: 0, sec: 0 };
+    return a.langs[k];
+  }
+  attSave() {
+    return this.ctx.storage.put('att', this.att);
+  }
+  attMark(ws) {
+    try { return ws.deserializeAttachment() || null; } catch (_) { return null; }
+  }
+  // 지금 붙어 있는 청취자 수와 언어별 수 — 실제 소켓에서 센다(동면 뒤에도 맞다)
+  attLive() {
+    const byLang = {};
+    let n = 0;
+    for (const w of this.ctx.getWebSockets('listener')) {
+      const m = this.attMark(w);
+      if (!m || m.left) continue;   // 닫히는 중인 소켓은 목록에 아직 남아 있다
+      const k = m.lang || '?';
+      byLang[k] = (byLang[k] || 0) + 1;
+      n++;
+    }
+    return { n, byLang };
+  }
+  attSnapshot(now = Date.now()) {
+    const a = this.attInit();
+    const live = this.attLive();
+    if (live.n > a.max) a.max = live.n;
+    for (const k of Object.keys(live.byLang)) {
+      const L = this.attLang(k);
+      if (live.byLang[k] > L.max) L.max = live.byLang[k];
+    }
+    const langs = {};
+    const liveSec = {};
+    for (const w of this.ctx.getWebSockets('listener')) {
+      const m = this.attMark(w);
+      if (!m || m.left) continue;
+      const k = m.lang || '?';
+      liveSec[k] = (liveSec[k] || 0) + Math.max(0, Math.floor((now - (m.at || now)) / 1000));
+    }
+    for (const k of Object.keys(a.langs)) {
+      const sec = a.langs[k].sec + (liveSec[k] || 0);
+      langs[k] = { now: live.byLang[k] || 0, max: a.langs[k].max, min: Math.floor(sec / 60) };
+    }
+    return { att: 1, now: live.n, max: a.max, joined: a.joined, langs };
+  }
+  attEnded() {
+    return this.ringBuffer.some((m) => /"end"\s*:\s*1/.test(m));
+  }
+  attSend(ws) {
+    if (!this.initialized || this.attEnded()) return;
+    const msg = JSON.stringify(this.attSnapshot());
+    const targets = ws ? [ws] : this.ctx.getWebSockets('host');
+    for (const h of targets) {
+      try { h.send(msg); } catch (_) {}
+    }
+  }
+  // 청취자가 붙음 — 언어는 hello 가 오면 채운다
+  attJoin(ws) {
+    const a = this.attInit();
+    a.joined++;
+    try { ws.serializeAttachment({ lang: null, at: Date.now() }); } catch (_) {}
+    this.attLang('?');
+    this.attSnapshot();
+    this.attSend();
+    return this.attSave();
+  }
+  // 청취자가 언어를 알림(처음 또는 바꿈) — 지난 언어로 들은 초를 닫는다
+  attSetLang(ws, lang) {
+    const now = Date.now();
+    const m = this.attMark(ws) || { lang: null, at: now };
+    const code = String(lang || '').trim() || '?';
+    if (m.lang === code) return;
+    const prev = this.attLang(m.lang || '?');
+    prev.sec += Math.max(0, Math.floor((now - (m.at || now)) / 1000));
+    this.attLang(code);
+    try { ws.serializeAttachment({ lang: code, at: now }); } catch (_) {}
+    this.attSnapshot();
+    this.attSend();
+    return this.attSave();
+  }
+  attLeave(ws) {
+    const now = Date.now();
+    const m = this.attMark(ws);
+    if (m && !m.left) {
+      const L = this.attLang(m.lang || '?');
+      L.sec += Math.max(0, Math.floor((now - (m.at || now)) / 1000));
+      try { ws.serializeAttachment({ left: true }); } catch (_) {}
+    }
+    this.attSend();
+    return this.attSave();
+  }
+  // 끝: 마지막 집계를 호스트에게 주고 지운다
+  async attEnd() {
+    if (!this.att) return;
+    this.attSend();
+    this.att = null;
+    for (const w of this.ctx.getWebSockets('listener')) {
+      try { w.serializeAttachment(null); } catch (_) {}
+    }
+    await this.ctx.storage.delete('att');
   }
 
   // 세션이 끝나면 보관하던 줄(원문·번역)을 지운다.
@@ -414,6 +525,9 @@ export class Room {
             server.send(msg);
           } catch (e) {}
         }
+        if (!this.attEnded()) await this.attJoin(server);
+      } else {
+        this.attSend(server);
       }
 
       return new Response(null, { status: 101, webSocket: client });
@@ -502,6 +616,7 @@ export class Room {
       }
 
       if (isEnd) {
+        await this.attEnd();
         await this.dropLines(null, endSummary);
         await this.recordDeskSessionMinutes();
         this.ctx.waitUntil(
@@ -518,6 +633,11 @@ export class Room {
         );
       }
     } else if (isListener) {
+      // hello 의 lang 만 집계에 쓴다(이름·글은 읽지 않는다)
+      try {
+        const p = JSON.parse(msgStr);
+        if (p && p.hello && p.lang) await this.attSetLang(ws, p.lang);
+      } catch (_) {}
       // 청취자 → 호스트에게만 전달
       for (const hostWs of this.ctx.getWebSockets('host')) {
         try {
@@ -532,6 +652,7 @@ export class Room {
       ws.close(code, reason || 'closed');
     } catch (e) {}
     const tags = this.ctx.getTags(ws);
+    if (tags.includes('listener') && this.att) await this.attLeave(ws);
     if (tags.includes('host')) {
       const remainingHosts = this.ctx.getWebSockets('host').filter(w => w !== ws);
       if (remainingHosts.length === 0) {
@@ -552,6 +673,7 @@ export class Room {
 
     // 1. 호스트 끊김 10분 대기 후 자동 end
     if (this.ctx.getWebSockets('host').length === 0) {
+      await this.attEnd();
       await this.dropLines('host_timeout');
       await this.recordDeskSessionMinutes();
       const endMsg = JSON.stringify({ end: 1, why: 'host_timeout' });
@@ -580,6 +702,7 @@ export class Room {
     const silenceElapsed = now - lastTime;
 
     if (silenceElapsed >= timeoutMs) {
+      await this.attEnd();
       await this.dropLines('silence_timeout');
       await this.recordDeskSessionMinutes();
       const endMsg = JSON.stringify({ end: 1, why: 'silence_timeout' });
