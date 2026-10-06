@@ -3,7 +3,8 @@
   "version": "1.0.5",
   "description": "RayTok static website and local server mockup",
   "scripts": {
-    "test:relay": "npm --prefix relay run test:limits"
+    "test:relay": "npm --prefix relay run test:limits",
+    "mail": "node scripts/mailcheck.js --force"
   },
   "dependencies": {
     "ws": "^8.18.0"
