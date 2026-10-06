@@ -325,5 +325,19 @@
  "말이 통해야 하는 다섯 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.": "Dành cho năm nơi cần hiểu nhau. Hãy chọn mục bạn cần.",
  "설명을 듣는 여러 나라의 유학생들": "Sinh viên quốc tế nhiều nước đang nghe giảng",
  "대학 · 한국어교육원 · 유학원 · 추가 구성": "Đại học · Viện tiếng Hàn · Trung tâm du học · Gói bổ sung",
- "교수는 한국어로, 유학생은 자기 폰으로 각자의 말로. 앱 설치 없이 QR 접속, 강의실에 장비가 없습니다.": "Giảng viên nói tiếng Hàn, sinh viên nghe bằng ngôn ngữ của mình trên điện thoại. Quét QR không cần cài, phòng học không cần thiết bị."
+ "교수는 한국어로, 유학생은 자기 폰으로 각자의 말로. 앱 설치 없이 QR 접속, 강의실에 장비가 없습니다.": "Giảng viên nói tiếng Hàn, sinh viên nghe bằng ngôn ngữ của mình trên điện thoại. Quét QR không cần cài, phòng học không cần thiết bị.",
+ "교수는 마이크만 달고 한국어로, 유학생은 자기 폰으로 각자의 말로. 어려운 강의도 놓치지 않고, 강의 노트와 리포트로 남깁니다.": "Giảng viên chỉ cần đeo mic và nói tiếng Hàn, sinh viên nghe bằng ngôn ngữ của mình. Không bỏ lỡ bài khó, còn lại ghi chú và báo cáo.",
+ "강의를 놓치지 않습니다": "Không bỏ lỡ bài giảng",
+ "대학·한국어교육원·유학원용. 교수는 가슴에 단 마이크로 평소처럼 한국어로 강의하고, 유학생은 자기 폰으로 각자의 말로 듣습니다. 강의실에 장비가 없고, 학생은 앱 설치 없이 QR로 들어옵니다.": "Dành cho đại học, viện tiếng Hàn, trung tâm du học. Giảng viên đeo mic ngực giảng tiếng Hàn như thường, sinh viên nghe bằng ngôn ngữ của mình. Phòng học không cần thiết bị, sinh viên vào bằng QR không cần ứng dụng.",
+ "강의 통역": "Phiên dịch bài giảng",
+ "어려운 전공 강의도 자기 말로 듣고 화면 자막으로 확인합니다. 교수는 마이크만 달면 되고, 말하는 속도를 바꾸지 않아도 됩니다.": "Bài chuyên ngành khó cũng nghe bằng tiếng mình và xem phụ đề. Giảng viên chỉ đeo mic, không cần nói chậm lại.",
+ "강의 기록 · 강의 노트": "Bản ghi · ghi chú bài giảng",
+ "강의 원문과 번역문이 남아 수업 뒤에 다시 읽습니다. 놓친 부분은 노트로 출력해 복습합니다. <1>2026년 11월 출시에 포함 예정</1>": "Nguyên văn và bản dịch được lưu để đọc lại sau giờ học. In phần bỏ lỡ thành ghi chú để ôn. <1>Dự kiến có trong bản phát hành 11/2026</1>",
+ "리포트 출력": "Xuất báo cáo",
+ "수업이 끝나면 참석 인원, 언어별 인원, 청취 시간이 담긴 리포트가 나옵니다. 학과·국제처 보고용. <1>2026년 11월 출시에 포함 예정</1>": "Sau giờ học có báo cáo gồm số người dự, số theo ngôn ngữ, thời gian nghe — để báo cáo khoa và phòng quốc tế. <1>Dự kiến có trong bản phát hành 11/2026</1>",
+ "마이크": "Micro",
+ "교수가 가슴에 다는 소형 무선 마이크 하나. 폰은 주머니에 두고 강의실을 걸어 다녀도 됩니다. 마이크는 별도 구매 또는 대여.": "Một mic không dây nhỏ trên ngực giảng viên. Để điện thoại trong túi và đi lại trong lớp. Mic mua hoặc thuê riêng.",
+ "이어폰 — 수업 밖에서도": "Tai nghe — ngoài giờ học",
+ "유학생이 <1>OWS 통역 이어폰</1>을 사면 같은 앱으로 동아리·아르바이트·친구와의 대화에도 씁니다. 한쪽을 건네고 마주 보며 이야기합니다. <2>이어폰 출시 준비 중 · 279,000원</2>": "Mua <1>tai nghe phiên dịch OWS</1>, sinh viên dùng cùng ứng dụng cho câu lạc bộ, làm thêm, bạn bè. Đưa một bên và trò chuyện trực tiếp. <2>Tai nghe sắp ra mắt · 279.000₩</2>",
+ "한 학기 1~2강좌 무료 시범 · 요금은 아래 표의 유학생 패키지 행 · 기록과 리포트는 교수 폰에만 저장되고 음성은 저장하지 않습니다.": "Thử nghiệm miễn phí 1–2 lớp/học kỳ · giá ở bảng dưới · bản ghi và báo cáo chỉ lưu trên điện thoại giảng viên, không lưu âm thanh."
 }

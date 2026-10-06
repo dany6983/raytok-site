@@ -325,5 +325,19 @@
  "말이 통해야 하는 다섯 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.": "Built for five places where people need to understand each other. Tap the one you need.",
  "설명을 듣는 여러 나라의 유학생들": "International students from many countries listening to an explanation",
  "대학 · 한국어교육원 · 유학원 · 추가 구성": "Universities · Korean language institutes · Agencies · Add-on",
- "교수는 한국어로, 유학생은 자기 폰으로 각자의 말로. 앱 설치 없이 QR 접속, 강의실에 장비가 없습니다.": "The professor speaks Korean; students listen in their own language on their phones. QR access with no app, no classroom equipment."
+ "교수는 한국어로, 유학생은 자기 폰으로 각자의 말로. 앱 설치 없이 QR 접속, 강의실에 장비가 없습니다.": "The professor speaks Korean; students listen in their own language on their phones. QR access with no app, no classroom equipment.",
+ "교수는 마이크만 달고 한국어로, 유학생은 자기 폰으로 각자의 말로. 어려운 강의도 놓치지 않고, 강의 노트와 리포트로 남깁니다.": "The professor just wears a mic and speaks Korean; students listen in their own language on their phones. Hard lectures are not missed, and lecture notes and reports remain.",
+ "강의를 놓치지 않습니다": "Never miss a lecture",
+ "대학·한국어교육원·유학원용. 교수는 가슴에 단 마이크로 평소처럼 한국어로 강의하고, 유학생은 자기 폰으로 각자의 말로 듣습니다. 강의실에 장비가 없고, 학생은 앱 설치 없이 QR로 들어옵니다.": "For universities, Korean language institutes and agencies. The professor lectures in Korean as usual with a chest mic; students listen in their own language on their phones. No classroom equipment; students join by QR without an app.",
+ "강의 통역": "Lecture interpretation",
+ "어려운 전공 강의도 자기 말로 듣고 화면 자막으로 확인합니다. 교수는 마이크만 달면 되고, 말하는 속도를 바꾸지 않아도 됩니다.": "Even difficult major courses are heard in your own language and checked with on-screen subtitles. The professor only wears a mic and need not slow down.",
+ "강의 기록 · 강의 노트": "Lecture record · lecture notes",
+ "강의 원문과 번역문이 남아 수업 뒤에 다시 읽습니다. 놓친 부분은 노트로 출력해 복습합니다. <1>2026년 11월 출시에 포함 예정</1>": "The original and translated text remain to reread after class. Print missed parts as notes to review. <1>Included in the November 2026 release</1>",
+ "리포트 출력": "Report output",
+ "수업이 끝나면 참석 인원, 언어별 인원, 청취 시간이 담긴 리포트가 나옵니다. 학과·국제처 보고용. <1>2026년 11월 출시에 포함 예정</1>": "After class, a report with attendance, headcount by language and listening time is produced — for department and international office reporting. <1>Included in the November 2026 release</1>",
+ "마이크": "Microphone",
+ "교수가 가슴에 다는 소형 무선 마이크 하나. 폰은 주머니에 두고 강의실을 걸어 다녀도 됩니다. 마이크는 별도 구매 또는 대여.": "One small wireless mic on the professor's chest. Keep the phone in a pocket and walk around the room. Mic sold or rented separately.",
+ "이어폰 — 수업 밖에서도": "Earbuds — outside class too",
+ "유학생이 <1>OWS 통역 이어폰</1>을 사면 같은 앱으로 동아리·아르바이트·친구와의 대화에도 씁니다. 한쪽을 건네고 마주 보며 이야기합니다. <2>이어폰 출시 준비 중 · 279,000원</2>": "With <1>OWS interpreter earbuds</1>, students use the same app for clubs, part-time jobs and friends. Hand over one side and talk face to face. <2>Earbuds coming soon · ₩279,000</2>",
+ "한 학기 1~2강좌 무료 시범 · 요금은 아래 표의 유학생 패키지 행 · 기록과 리포트는 교수 폰에만 저장되고 음성은 저장하지 않습니다.": "Free pilot for 1–2 courses per semester · pricing in the table below · records and reports are stored only on the professor's phone; audio is not stored."
 }
