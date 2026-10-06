@@ -16,9 +16,9 @@
 <meta name="theme-color" content="#0A0F1F">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/raytok-icon.png">
-<link rel="stylesheet" href="/assets/site.css?v=9d77cd05">
+<link rel="stylesheet" href="/assets/site.css?v=5ddf84ec">
 <script>try{var l=(location.search.match(/[?&]lang=([a-z]{2})/)||[])[1]||localStorage.getItem("raytok-lang");if(/^(en|zh|ja|vi)$/.test(l))document.documentElement.className="i18n-wait"}catch(e){}</script>
-<script defer src="/assets/i18n.js?v=3e9d11a1"></script>
+<script defer src="/assets/i18n.js?v=9e49b6e1"></script>
 </head>
 <body>
 <div class="langbar" data-noi18n><div class="wrap" role="group" aria-label="Language"><button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button><button type="button" data-lang="ja" lang="ja">日本語</button><button type="button" data-lang="vi" lang="vi">Tiếng Việt</button></div></div>
@@ -42,6 +42,29 @@
 <a class="hpat" href="#tech" aria-label="특허 출원 6건 자세히 보기"><span class="hl">특허 출원 중</span><ul><li>근거리 통역 연결 <b>10-2026-0166695</b></li><li>위변조 검출 교육 기록 <b>10-2026-0179094</b></li><li>통역음 재인식 억제 <b>10-2026-0185125</b></li><li>다국어 방송·자막 병용 <b>10-2026-0188144</b></li><li>자막·음성 단위 분리 <b>10-2026-0189505</b></li><li>원고·실시간 혼합 기록 <b>10-2026-0189470</b></li></ul></a>
 </div></div>
 
+<section class="news" id="news"><div class="wrap">
+<p class="eyebrow">홍보자료</p>
+<h2>새 소식 · 자료</h2>
+<div id="soro-blog" data-noi18n></div>
+<button type="button" class="news-more" id="news-more" hidden aria-expanded="false" aria-controls="soro-blog">더 보기</button>
+<script src="https://app.trysoro.com/api/embed/0bfb60ae-7824-434e-a670-f203cd45da53" defer></script>
+<script>
+/* 홍보자료: 최신 4개만 보이고, '더 보기'를 누르면 전부 펼친다. 글을 누르면 그 자리에서 열린다. */
+(function(){
+  var SHOW=4, box=document.getElementById("soro-blog"), btn=document.getElementById("news-more"), open=false;
+  function apply(){
+    var cards=box.querySelectorAll(".soro-blog-list .soro-blog-card"), n=cards.length;
+    for(var i=0;i<n;i++) cards[i].classList.toggle("news-hid", !open && i>=SHOW);
+    btn.hidden = n<=SHOW;
+    btn.textContent = open ? "접기" : "더 보기 ("+(n-SHOW)+")";
+    btn.setAttribute("aria-expanded", open?"true":"false");
+  }
+  btn.addEventListener("click", function(){ open=!open; apply(); });
+  new MutationObserver(apply).observe(box,{childList:true,subtree:true});
+})();
+</script>
+</div></section>
+
 <section><div class="wrap">
 <p class="eyebrow">어디에 쓰나요</p>
 <h2>네 가지 쓰임</h2>
@@ -55,7 +78,9 @@
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card ko-only" href="/desk/"><img loading="lazy" src="/img/mroom.webp" alt="해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들" onerror="this.style.display='none'">
 <div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Desk 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
-</div></div></section>
+</div>
+<a class="band" href="/field/#price"><div><span class="st">추가 구성 · 대학 · 한국어교육원 · 유학원</span><h3>유학생 패키지</h3><p>교수는 한국어로 강의하고, 유학생은 자기 폰으로 각자의 말로 듣습니다. 학생은 앱 설치 없이 QR 접속, 강의실에 장비가 없습니다. 언어 수와 학생 수에 따른 추가 요금이 없습니다.</p></div><div class="bp"><b>월 21만원</b><span>강사 코드 1개 · 부가세 포함 · 한 학기 1~2강좌 무료 시범</span><span class="more">요금 보기 →</span></div></a>
+</div></section>
 
 <section class="alt"><div class="wrap">
 <p class="eyebrow">어떻게 되나요</p>

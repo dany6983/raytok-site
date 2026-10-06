@@ -167,3 +167,31 @@ html[data-lang] .ko-only{display:none!important}
 @media(min-width:1021px){html[data-lang] .cards4{grid-template-columns:repeat(3,1fr)}}
 html[data-lang] body{word-break:normal;overflow-wrap:anywhere}
 html[data-lang] th{white-space:normal}
+
+/* 홍보자료 (Soro 임베드) — 헤드라인 한 줄 링크, 최신 4개 + 더 보기 */
+.news{padding:clamp(28px,4vw,44px) 0;border-bottom:1px solid var(--line);background:var(--card)}
+.news h2{font-size:clamp(20px,2.6vw,26px);margin:0 0 14px}
+.news .soro-blog-header,.news .soro-blog-card-image,.news .soro-blog-card-excerpt{display:none}
+.news .soro-blog-list{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+.news .soro-blog-card{display:flex;align-items:baseline;gap:14px;padding:12px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);background:none;box-shadow:none;border-radius:0}
+.news .soro-blog-card:hover .soro-blog-card-title{color:var(--ac2);text-decoration:underline}
+.news .soro-blog-card-title{font-size:16.5px;font-weight:700;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.news .soro-blog-card-date{font-size:13px;color:var(--mut);white-space:nowrap;flex:none}
+.news .soro-blog-card.news-hid{display:none}
+.news-more{display:inline-block;margin-top:14px;padding:9px 16px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font:inherit;font-weight:700;font-size:14px;color:var(--ink);cursor:pointer}
+.news-more:hover{border-color:var(--ac2);color:var(--ac2)}
+.news .soro-blog-article{margin-top:8px}
+.news .soro-blog-article .soro-blog-header{display:block}
+@media(max-width:600px){.news .soro-blog-card{flex-direction:column;gap:2px}.news .soro-blog-card-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}}
+
+/* 추가 구성 띠 (유학생 패키지) */
+.band{margin-top:16px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:22px 24px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);text-decoration:none;color:var(--ink)}
+.band .st{font-size:12.5px;font-weight:700;color:var(--ac)}
+.band h3{margin:4px 0 6px;font-size:20px}
+.band p{margin:0;color:var(--ink2);font-size:15px;max-width:44em}
+.band .bp{display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:2px;min-width:200px}
+.band .bp b{font-size:24px;letter-spacing:-.02em}
+.band .bp span{font-size:13px;color:var(--mut)}
+.band .bp .more{font-weight:700;color:var(--ink);margin-top:6px}
+.band:hover .more{color:var(--ac2)}
+@media(max-width:700px){.band{grid-template-columns:1fr}.band .bp{align-items:flex-start;text-align:left}}
