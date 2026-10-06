@@ -138,6 +138,36 @@ function mockHost(wss) {
   console.log('  [PASS] 보통 보기: 전 줄 · 15px · 머리줄 보임 · 확정 줄만 음성(pending 0)');
   await ctx.close();
 
+  // ── 5. 보통 보기, 줄이 많을 때: 새 줄이 화면 안에 있고 도구 막대가 제자리 ──
+  //   (v1.1.0 까지는 문서 전체가 길어져 최신 줄이 화면 아래로 밀렸다 — 30줄에서 y=3130)
+  const many = new WebSocketServer({ port: 0 });
+  await new Promise(ok => many.on('listening', ok));
+  many.on('connection', (sock) => sock.on('message', (raw) => {
+    if (!JSON.parse(raw).hello) return;
+    sock.send(JSON.stringify({ welcome: 1, src_lang: 'ko' }));
+    for (let i = 1; i <= 30; i++) sock.send(JSON.stringify({ seq: i, text: `원문 문장 ${i} 입니다`, spk: 'meeting', tr: { en: `translated line ${i}` } }));
+  }));
+  for (const vp of [{ width: 390, height: 844 }, { width: 360, height: 640 }]) {
+    ctx = await b.newContext({ viewport: vp }); p = await ctx.newPage();
+    await p.goto(`http://localhost:${port}/?room=123456&auto=1&ws=${many.address().port}&lang=en`, { waitUntil: 'load' });
+    await p.waitForSelector('#msg-30', { timeout: 10000 }); await p.waitForTimeout(300);
+    const m = await p.evaluate(() => {
+      const last = document.getElementById('msg-30').getBoundingClientRect(), bar = document.querySelector('.tool-bar').getBoundingClientRect();
+      const list = document.getElementById('chat-list');
+      return { docH: document.documentElement.scrollHeight, vh: innerHeight, lastTop: Math.round(last.top), lastBottom: Math.round(last.bottom),
+               barTop: Math.round(bar.top), barBottom: Math.round(bar.bottom), listScrolls: list.scrollHeight > list.clientHeight,
+               atBottom: Math.abs(list.scrollHeight - list.clientHeight - list.scrollTop) < 2 };
+    });
+    console.log(`[normal ${vp.width}x${vp.height} · 30줄]`, JSON.stringify(m));
+    assert(m.docH <= m.vh + 1, '문서가 화면보다 길어지지 않는다');
+    assert(m.listScrolls && m.atBottom, '목록이 안에서 구르고 맨 아래에 있다');
+    assert(m.lastTop >= 0 && m.lastBottom <= m.barTop + 1, '최신 줄이 화면 안, 도구 막대 위');
+    assert(m.barBottom <= m.vh + 1 && m.barTop < m.vh, '도구 막대가 화면 안');
+    await ctx.close();
+  }
+  many.close();
+  console.log('  [PASS] 보통 보기 30줄: 최신 줄 보임 · 목록만 구름 · 도구 막대 제자리 (390×844, 360×640)');
+
   await b.close(); wss.close(); srv.close();
   console.log('[PASS] 큰 화면 보기 시험 전부 통과');
 })().catch((e) => { console.error('[FAIL]', e.message); process.exit(1); });
