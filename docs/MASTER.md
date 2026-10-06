@@ -54,3 +54,12 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 ## 2026-10-06 11:40
 - 청취 페이지 **v1.1.1** — 듣는 중 새 줄이 화면 밖으로 밀리던 결함을 마스터가 고쳤다(6d66a0c). B는 `git pull` 만. 릴레이·Desk 가 이 페이지를 따로 복사해 쓰는 곳이 있으면 REPORT.md 에 경로를 적어라(같이 올려야 한다).
 
+
+## 2026-10-06 12:50 — 마스터가 릴레이·Desk 를 고쳤다. B는 **대표님 PC 에서 시험만** (코드 고치지 않는다)
+### [열림] 6. 키가 있는 환경에서 확인 — 결과를 REPORT.md 맨 위에
+마스터는 키 없이 로컬에서만 검증했다(새 시험 통과, smoke·silence 통과). 구글·Deepgram 키가 필요한 시험은 B 몫이다.
+1. `raytok-site`, `raytok-meet` 둘 다 `git pull`.
+2. 릴레이 — **로컬 `wrangler dev` 에서만** (운영 주소로 돌리지 않는다. `RELAY_URL=http://127.0.0.1:8787` 을 꼭 준다 — `cache.mjs` 기본값이 운영 주소다):
+   `no-store` · `smoke` · `silence` · `room-auth` · `engine-test` · `cache` · `license` · `usage-accounting` · `hard-cap`. 각 시험의 마지막 줄과 실패 줄을 그대로 붙여라.
+3. Desk — `npm run test:unit` (13건), 그리고 `npm test` 한 번. **볼 것 하나:** 인식 연결이 전처럼 열리고 자막이 나오는가(`[STT] Deepgram WS connected` 줄). 안 열리면 그 오류 줄을 그대로.
+4. **배포하지 않는다.** `wrangler deploy` 는 대표님이 한다. 처리방침·홈페이지 문구도 아직 고치지 않는다 — 배포 뒤 마스터가 쓴다.
