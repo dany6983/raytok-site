@@ -17,6 +17,7 @@ function ok(cond, desc) {
 
 const DIR = path.join(__dirname, '../web/host');
 const ASSETS_DIR = path.join(__dirname, '../assets');
+const VENDOR_DIR = path.join(__dirname, '../web/vendor');
 
 // 목업 릴레이 및 정적 파일 서빙 HTTP 서버
 const srv = http.createServer(async (req, res) => {
@@ -62,6 +63,16 @@ const srv = http.createServer(async (req, res) => {
     if (fs.existsSync(f)) {
       res.writeHead(200, { 'Content-Type': 'image/png' });
       fs.createReadStream(f).pipe(res);
+      return;
+    }
+  }
+
+  // Vendor 서빙
+  if (url.pathname.startsWith('/web/vendor/') || url.pathname.startsWith('/vendor/')) {
+    const vf = path.join(VENDOR_DIR, url.pathname.replace(/^\/(web\/)?vendor\//, ''));
+    if (fs.existsSync(vf)) {
+      res.writeHead(200, { 'Content-Type': 'application/javascript' });
+      fs.createReadStream(vf).pipe(res);
       return;
     }
   }
@@ -150,6 +161,35 @@ const srv = http.createServer(async (req, res) => {
 
   // 8. 바깥 요청 0건 검증
   ok(outsideRequests.length === 0, 'relay 외 외부 요청 0건 검증');
+
+  // 9. L3 옛 .doc 업로드 시 경고 안내 검증
+  let alertMsg = '';
+  page.on('dialog', async dialog => {
+    alertMsg = dialog.message();
+    await dialog.accept();
+  });
+
+  await page.evaluate(() => {
+    const dt = new DataTransfer();
+    const file = new File(['binary_content'], 'legacy_sample.doc', { type: 'application/msword' });
+    dt.items.add(file);
+    const input = document.getElementById('fileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+  await page.waitForTimeout(300);
+  ok(alertMsg.includes('Word 에서 .docx 로 저장해 다시 올려 주세요'), '.doc 업로드 시 .docx 안내 대화상자 노출 확인');
+
+  // 10. L3 vendor 모듈(pdfjsLib, mammoth) 브라우저 로드 확인
+  const vendorLoaded = await page.evaluate(() => {
+    return {
+      pdfjs: typeof window.pdfjsLib !== 'undefined',
+      mammoth: typeof window.mammoth !== 'undefined'
+    };
+  });
+  ok(vendorLoaded.pdfjs && vendorLoaded.mammoth, 'web/vendor 내 pdf.js 및 mammoth 브라우저 정상 로드 확인');
+
 
   await browser.close();
   srv.close();

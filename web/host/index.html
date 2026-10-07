@@ -240,6 +240,9 @@
     .notice.info { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; color: #bae6fd; }
     .notice.warn { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; color: #fde68a; }
   </style>
+
+  <script src="../vendor/pdf.min.js"></script>
+  <script src="../vendor/mammoth.browser.min.js"></script>
 </head>
 <body>
   <header>
@@ -277,12 +280,12 @@
       
       <!-- ① 파일 올리기 -->
       <div class="form-group">
-        <label>① 원고 파일 올리기 (TXT)</label>
+        <label>① 원고 파일 올리기 (TXT · PDF · DOCX)</label>
         <div class="drop-zone" id="dropZone">
           <div class="drop-icon">📄</div>
-          <div style="font-weight: 600; margin-bottom: 4px;">강의 원고 파일(TXT)을 마우스로 끌어다 놓으세요</div>
+          <div style="font-weight: 600; margin-bottom: 4px;">강의 원고 파일(TXT · PDF · DOCX)을 마우스로 끌어다 놓으세요</div>
           <div style="font-size: 0.8rem; color: var(--text-muted);">또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)</div>
-          <input type="file" id="fileInput" accept=".txt" style="display: none;">
+          <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.doc" style="display: none;">
         </div>
       </div>
 
@@ -573,16 +576,86 @@
       paragraphs.forEach((p, idx) => p.id = idx + 1);
     }
 
-    function handleFile(file) {
+    // PDF worker 설정
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '../vendor/pdf.worker.min.js';
+    }
+
+    async function extractTextFromPdf(arrayBuffer) {
+      if (!window.pdfjsLib) throw new Error('PDF 변환 모듈이 로드되지 않았습니다.');
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n\n';
+      }
+      return fullText;
+    }
+
+    async function extractTextFromDocx(arrayBuffer) {
+      if (!window.mammoth) throw new Error('DOCX 변환 모듈이 로드되지 않았습니다.');
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value || '';
+    }
+
+    async function handleFile(file) {
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target.result;
-        paragraphs = splitTextIntoParagraphs(text);
-        renderParagraphs();
-        saveParagraphsToDB(paragraphs);
-      };
-      reader.readAsText(file, 'utf-8');
+      const name = file.name || '';
+      const ext = name.split('.').pop().toLowerCase();
+
+      // 옛 .doc 바이너리 차단 안내 (L3 규칙)
+      if (ext === 'doc') {
+        alert('Word 에서 .docx 로 저장해 다시 올려 주세요');
+        return;
+      }
+
+      if (ext === 'pdf') {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const rawText = await extractTextFromPdf(e.target.result);
+            paragraphs = splitTextIntoParagraphs(rawText);
+            renderParagraphs();
+            saveParagraphsToDB(paragraphs);
+          } catch (err) {
+            alert('PDF 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+        return;
+      }
+
+      if (ext === 'docx') {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const rawText = await extractTextFromDocx(e.target.result);
+            paragraphs = splitTextIntoParagraphs(rawText);
+            renderParagraphs();
+            saveParagraphsToDB(paragraphs);
+          } catch (err) {
+            alert('DOCX 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+        return;
+      }
+
+      if (ext === 'txt') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          paragraphs = splitTextIntoParagraphs(text);
+          renderParagraphs();
+          saveParagraphsToDB(paragraphs);
+        };
+        reader.readAsText(file, 'utf-8');
+        return;
+      }
+
+      alert('지원되지 않는 파일 형식입니다. (TXT, PDF, DOCX 만 가능)');
     }
 
     dropZone.addEventListener('click', () => fileInput.click());
