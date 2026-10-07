@@ -124,3 +124,9 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 - **정본 `raytok-native1/docs/samples/license-code.md`** 의 벡터 넷을 그대로 통과해야 한다(A1 이 먼저 쓴다 — 그 전엔 시작하지 않는다). 키 번호 0 = 시험 키(정본에 있음). 운영 개인키는 `.dev.vars`/wrangler secret 만, 저장소·REPORT 어디에도 안 적는다.
 - `mint-license.mjs`(HMAC 중계 토큰)는 그대로 둔다 — 다른 물건이다.
 - `/lic/<code>` 페이지는 앱 딥링크로 넘기는 한 장(앱 없으면 다운로드 안내) — 같은 항목.
+
+## 2026-10-08 08:45 — B 줄 5(mint-code)는 마스터가 직접 했다(B 세션이 어제 23:05 이후 멈춤). 가지 `feat/mint-code` c5163e2 + 보고 8d55caf, main 미합침. [B]
+- `relay/tools/mint-code.mjs`(node:crypto 만, 의존성 0) · `relay/test/mint-code.mjs`(정본 벡터 넷 글자 단위 일치, 되돌리기 확인) · `lic/index.html` + `404.html`(`/lic/<code>` → `/lic/?c=`) · `samples/lic_page_test.js` 17건 · README §6.
+- 판정: **승인, 합치기는 마스터가** 11 3단계와 맞물려. 딥링크는 `raytok://lic/<code>`(앱에 `/lic` 수신 없음 — A1 11 3단계 때 join 과 같은 모양으로 받는다). QR png 는 `qrcode` 패키지 결정 뒤 — 지금은 링크·4×32 로 충분.
+- 운영 키 1 은 **대표님이** `node relay/tools/mint-code.mjs --keygen` 으로 만들어 비밀 저장소에만 둔다(저장소·채팅 금지). 공개키 hex 만 A1 에 넘겨 `PUBLIC_KEYS[1]` 에.
+- B 는 켜지면 줄 1(L4-2)부터 그대로. 줄 5 는 건너뛴다.
