@@ -287,7 +287,7 @@
           <input type="radio" name="save-content-mode" value="src"> ② 원문만
         </label>
         <label style="display:block; margin-bottom:6px; font-size:13px; cursor:pointer; color:var(--text, #1e293b);">
-          <input type="radio" name="save-content-mode" value="tr"> ③ 번역문만
+          <input type="radio" name="save-content-mode" value="trans"> ③ 번역문만
         </label>
       </div>
       <div style="margin-bottom:18px;">
@@ -1096,7 +1096,7 @@
         const tr = l.tr && l.tr[selectedLang];
         if (contentMode === 'src') {
           out.push(`${timeStr} ${l.text}`);
-        } else if (contentMode === 'tr') {
+        } else if (contentMode === 'trans' || contentMode === 'tr') {
           out.push(`${timeStr} ${tr || l.text}`);
         } else {
           // both
@@ -1123,7 +1123,7 @@
         let contentHtml = '';
         if (contentMode === 'src') {
           contentHtml = `<div class="line-src">${escapeHtml(l.text)}</div>`;
-        } else if (contentMode === 'tr') {
+        } else if (contentMode === 'trans' || contentMode === 'tr') {
           contentHtml = `<div class="line-tr" ${isRtl ? 'dir="rtl"' : ''}>${escapeHtml(tr || l.text)}</div>`;
         } else {
           contentHtml = `<div class="line-src">${escapeHtml(l.text)}</div>`;
@@ -1141,8 +1141,8 @@
       const hm = `${pad2(d.getHours())}${pad2(d.getMinutes())}`;
       if (contentMode === 'src') {
         return `raytok_${ymd}_${hm}_src_${selectedLang}.${ext}`;
-      } else if (contentMode === 'tr') {
-        return `raytok_${ymd}_${hm}_tr_${selectedLang}.${ext}`;
+      } else if (contentMode === 'trans' || contentMode === 'tr') {
+        return `raytok_${ymd}_${hm}_trans_${selectedLang}.${ext}`;
       } else {
         return `raytok_${ymd}_${hm}_${selectedLang}.${ext}`;
       }

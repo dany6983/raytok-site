@@ -31,8 +31,8 @@ const mockLines = [
   const fnSrcTxt = generateReportFilename({ date: d, contentMode: 'src', langCode: 'en', ext: 'txt' });
   ok(/^raytok_\d{8}_\d{4}_src_en\.txt$/.test(fnSrcTxt), 'src TXT: raytok_YYYYMMDD_HHMM_src_en.txt 일치');
 
-  const fnTrDoc = generateReportFilename({ date: d, contentMode: 'tr', langCode: 'en', ext: 'doc' });
-  ok(/^raytok_\d{8}_\d{4}_tr_en\.doc$/.test(fnTrDoc), 'tr DOC: raytok_YYYYMMDD_HHMM_tr_en.doc 일치');
+  const fnTransDoc = generateReportFilename({ date: d, contentMode: 'trans', langCode: 'en', ext: 'doc' });
+  ok(/^raytok_\d{8}_\d{4}_trans_en\.doc$/.test(fnTransDoc), 'trans DOC: raytok_YYYYMMDD_HHMM_trans_en.doc 일치 (tr은 터키어 코드와 겹치므로 trans 사용)');
 
   const fnBothPdf = generateReportFilename({ date: d, contentMode: 'both', langCode: 'ja', ext: 'pdf' });
   ok(/^raytok_\d{8}_\d{4}_ja\.pdf$/.test(fnBothPdf), 'both PDF: raytok_YYYYMMDD_HHMM_ja.pdf 일치');
@@ -52,10 +52,10 @@ const mockLines = [
   ok(!txtSrc.includes('Hello. We start the meeting.'), 'src: 번역문 제외');
 
   // tr
-  const txtTr = buildReportText({ lines: mockLines, srcLang: 'ko', targetLang: 'en', langName: 'English', contentMode: 'tr' });
-  ok(txtTr.includes('Hello. We start the meeting.'), 'tr: 번역문 포함');
-  ok(!txtTr.includes('안녕하세요. 회의를 시작합니다.'), 'tr: 번역이 있는 줄은 원문 제외');
-  ok(txtTr.includes('번역이 아직 없는 줄입니다.'), 'tr: 번역이 없는 줄은 원문 보존(누락 없음)');
+  const txtTr = buildReportText({ lines: mockLines, srcLang: 'ko', targetLang: 'en', langName: 'English', contentMode: 'trans' });
+  ok(txtTr.includes('Hello. We start the meeting.'), 'trans: 번역문 포함');
+  ok(!txtTr.includes('안녕하세요. 회의를 시작합니다.'), 'trans: 번역이 있는 줄은 원문 제외');
+  ok(txtTr.includes('번역이 아직 없는 줄입니다.'), 'trans: 번역이 없는 줄은 원문 보존(누락 없음)');
 }
 
 // --- 3. HTML/DOC 문서 검증 및 보안(XSS) 이스케이프 ---

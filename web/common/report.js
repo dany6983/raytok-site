@@ -34,7 +34,7 @@ function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
 
     if (contentMode === 'src') {
       out.push(`${timeStr} ${l.text}`);
-    } else if (contentMode === 'tr') {
+    } else if (contentMode === 'trans' || contentMode === 'tr') {
       out.push(`${timeStr} ${tr || l.text}`);
     } else {
       // both (기본)
@@ -63,7 +63,7 @@ function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
     let contentHtml = '';
     if (contentMode === 'src') {
       contentHtml = `<div class="line-src">${escapeHtml(l.text)}</div>`;
-    } else if (contentMode === 'tr') {
+    } else if (contentMode === 'trans' || contentMode === 'tr') {
       contentHtml = `<div class="line-tr" ${isRtl ? 'dir="rtl"' : ''}>${escapeHtml(tr || l.text)}</div>`;
     } else {
       contentHtml = `<div class="line-src">${escapeHtml(l.text)}</div>`;
@@ -145,8 +145,8 @@ function generateReportFilename({ date, contentMode = 'both', langCode = 'en', e
   
   if (contentMode === 'src') {
     return `raytok_${ymd}_${hm}_src_${langCode}.${ext}`;
-  } else if (contentMode === 'tr') {
-    return `raytok_${ymd}_${hm}_tr_${langCode}.${ext}`;
+  } else if (contentMode === 'trans' || contentMode === 'tr') {
+    return `raytok_${ymd}_${hm}_trans_${langCode}.${ext}`;
   } else {
     // both
     return `raytok_${ymd}_${hm}_${langCode}.${ext}`;
