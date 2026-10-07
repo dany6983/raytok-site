@@ -118,3 +118,9 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
    - 이용권 **동시 기기 수** `LICENSE_MAX_DEVICES`(기본 3) — `/license/verify` 에 deviceId 등록, 넘치면 401 `too_many_devices`. 기기 목록은 D1 에 토큰 해시 + deviceId 해시만(원문 저장 X).
    - 쿠폰 1회 사용은 결제(P1)와 같이 — 지금 안 한다.
    - 시험: 상한·80%·동시 기기 각 1 + 되돌림. REPORT 에 B 확인 한 줄(Desk 가 429 를 어떻게 보여 주는지)도 이때.
+
+## 2026-10-08 01:12 — B 줄에 5 추가(4 뒤): **이용권 코드 발급 도구 `relay/tools/mint-code.mjs`** (Ed25519)
+- 앱 설계(A1 01:30 보고, raytok-native1 MASTER 01:10)와 맞춘다: payload 16바이트 `[0]` 키 번호 · `[5..8]` 만료 uint32 초 BE · `[9]` 플래그(0x01 호스트·0x02 카메라/앱·0x04 Meet·0x08 Desk) · `[10..15]` 고객 6바이트 + Ed25519 서명 64 = 80바이트 → **Crockford base32, 패딩 없음, 4자마다 하이픈**(128자). 출력은 코드 문자열 + QR(png) + 딥링크 `raytok.kr/lic/<code>`.
+- **정본 `raytok-native1/docs/samples/license-code.md`** 의 벡터 넷을 그대로 통과해야 한다(A1 이 먼저 쓴다 — 그 전엔 시작하지 않는다). 키 번호 0 = 시험 키(정본에 있음). 운영 개인키는 `.dev.vars`/wrangler secret 만, 저장소·REPORT 어디에도 안 적는다.
+- `mint-license.mjs`(HMAC 중계 토큰)는 그대로 둔다 — 다른 물건이다.
+- `/lic/<code>` 페이지는 앱 딥링크로 넘기는 한 장(앱 없으면 다운로드 안내) — 같은 항목.
