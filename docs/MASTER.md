@@ -79,3 +79,11 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 ## 2026-10-06 16:40 — 마스터가 릴레이에 참석 집계를 넣었다. 배포는 대표님 PC(`wrangler deploy`), B 는 `git pull` 만.
 - 호스트 소켓으로 `{"att":1, now, max, joined, langs:{en:{now,max,min}}}` 가 온다 — 접속·언어 바꿈·이탈 때, 호스트 재접속 때, 끝날 때 마지막 한 번. 청취자에게는 가지 않는다. 끝나면 지운다. 시험 `relay/test/attendance.mjs`(`npm run test:att`, 로컬 전용, 되돌림 2건 확인).
 - [열림] 6 에 `test:att` 를 더해서 돌린다.
+
+## 2026-10-07 11:10 — [열림] L2. 청취 페이지 저장 = 내용 3 × 형식 3 (대표님 지시, 앱과 같다) — D6·D4 뒤, B
+- 지금 TXT 저장(v1.1.3)은 "원문/번역문" 하나다. 저장 단추를 누르면 작은 선택판: **내용** ① 원문/번역문 ② 원문만 ③ 번역문만 · **형식** TXT · PDF · DOC. 기본 ①·TXT.
+- **PDF** = 인쇄용 화면(`@media print`, 글꼴은 브라우저) + `window.print()` → 브라우저 "PDF로 저장". 라이브러리 0, 모든 언어 글꼴 문제 없음.
+- **DOC** = HTML 을 `application/msword` 로 `.doc` 저장(Word·한글 열림). 라이브러리 0.
+- 줄 형식·머리말은 **A 가 정본** `raytok-native1/docs/samples/report-format.md` — 그 파일이 올라오면 그대로. 그 전엔 지금 TXT 형식 유지.
+- 파일 이름 `raytok_yyyymmdd_hhmm_<내용>_<lang>.ext`. 외부 요청 0(기존 시험 9절 그대로 통과해야 한다). 되돌림 확인 각 1.
+- 웹 강사 화면(설계 중, 마스터)도 같은 저장판을 쓴다 — 함수는 `web/common/report.js` 하나로 빼서 둘이 나눠 쓴다.
