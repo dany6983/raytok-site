@@ -6,6 +6,70 @@
 ---
 
 [B 보고]
+2026-10-07 [열림] L2-fix · L4-1 · L3 1차 완료
+커밋: 3f44b51
+
+만든·바꾼 파일
+- web/common/report.js (L2-fix: 내용 토큰 tr -> trans 변경)
+- web/listener/index.html (L2-fix: 라디오 버튼 및 저장 파일명 trans 토큰 적용)
+- web/host/index.html (신규: L4-1 들어가기·이용권 검증·원고 준비 및 L3 PDF·DOCX 읽기 연동)
+- web/vendor/pdf.min.js (신규: L3 pdf.js 브라우저 로컬 라이브러리, CDN 0건)
+- web/vendor/pdf.worker.min.js (신규: L3 pdf.js 워커 모듈)
+- web/vendor/mammoth.browser.min.js (신규: L3 DOCX 브라우저 로컬 라이브러리, CDN 0건)
+- samples/report_common_test.js (L2-fix: trans 토큰 검증 18건)
+- samples/host_view_test.js (신규: L4-1/L3 웹 강사 화면 검증 13건)
+- package.json
+- docs/REPORT.md
+
+실행 출력 발췌
+1. L2-fix 및 청취 페이지 저장 단위 시험 (node samples/report_common_test.js, 18건 전원 통과):
+=== L2 청취 페이지 공통 기록 저장 (web/common/report.js) 단위 시험 ===
+  [PASS] trans DOC: raytok_YYYYMMDD_HHMM_trans_en.doc 일치 (tr은 터키어 코드와 겹치므로 trans 사용)
+  [PASS] trans: 번역문 포함
+  [PASS] trans: 번역이 있는 줄은 원문 제외
+  [PASS] trans: 번역이 없는 줄은 원문 보존(누락 없음)
+전부 통과 (18건)
+
+2. L4-1 및 L3 웹 강사 화면 검증 시험 (node samples/host_view_test.js, 13건 전원 통과):
+=== L4-1 웹 강사 화면 (web/host/index.html) 검증 시험 ===
+  [PASS] 초기 화면: 이용권 인증 화면 표시
+  [PASS] 초기 화면: 원고 준비 화면 숨김
+  [PASS] 잘못된 토큰 입력 시 에러 메시지 표시
+  [PASS] 올바른 토큰 인증 성공 ➔ 준비 화면 활성화
+  [PASS] 준비 화면 진입 후 인증 화면 숨김
+  [PASS] TXT 원고: 3개 문단 자동 분리 확인
+  [PASS] 문단 합치기 후 2개 문단으로 축소 확인
+  [PASS] 미리 번역 완료 후 준비 완료 영역 표시
+  [PASS] IndexedDB: 2개 문단 저장 확인
+  [PASS] IndexedDB: 사전 번역문 저장 확인
+  [PASS] relay 외 외부 요청 0건 검증
+  [PASS] .doc 업로드 시 .docx 안내 대화상자 노출 확인
+  [PASS] web/vendor 내 pdf.js 및 mammoth 브라우저 정상 로드 확인
+전부 통과 (13건)
+
+3. 기존 청취 페이지 회귀 시험 (screen_view_test.js 9절 포함 전원 통과 & rtl_test.js 5건 통과):
+  [PASS] 기록 저장: 파일명·BOM·줄 수·번역문·바깥 요청 0
+  [PASS] 큰 화면 보기 시험 전부 통과
+=== All 5 Real Lifecycle Tests Passed! ===
+
+4. 되돌림 실패 검증 실증 2건:
+- L4-1: 문단 분리 로직 제거 시:
+  [FAIL] page.waitForFunction: Timeout 30000ms exceeded.
+- L3: .doc 차단 안내 로직 제거 시:
+  [FAIL] AssertionError [ERR_ASSERTION]: .doc 업로드 시 .docx 안내 대화상자 노출 확인
+
+5. Desk 429 quota_exceeded 노출 확인:
+Desk(main.js)는 /room 또는 /stt/token 에서 429 수신 시 서버 응답 메시지("Monthly hard cap exceeded ...")를 파싱하여 Error 객체로 throw하며, renderer는 이를 catch하여 alert("방 생성 실패: " + err.message) 대화상자 및 상태 배지에 그대로 노출합니다.
+
+한 줄 판정
+L2-fix(trans 토큰 통일), L4-1(들어가기·준비·IndexedDB·사전번역), L3(PDF·DOCX 로컬 읽기·web/vendor) 구현 및 외부 요청 0건 검증 완료.
+
+막힌 것
+없음.
+
+---
+
+[B 보고]
 2026-10-07 [열림] L2. 청취 페이지 저장 = 내용 3 × 형식 3 1차 완료
 커밋: 9230b33
 
