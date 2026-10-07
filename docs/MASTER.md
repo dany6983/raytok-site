@@ -93,3 +93,12 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 - 읽기는 **브라우저 안에서만**(파일은 서버로 안 간다 — 번역은 relay `/translate` 로 글자만): TXT 그대로 · PDF = `pdf.js`(저장소에 넣어 둔다, CDN 런타임 호출 0) · DOCX = `mammoth.js`(같은 방식). 옛 `.doc`(이진)은 브라우저가 못 읽는다 → "Word 에서 .docx 로 저장해 다시 올려 주세요" 한 줄. HWPX 는 2차(zip+xml, 가능).
 - 문단 나누기 규칙·미리 번역 캐시·송출 형식은 **A 정본**(`raytok-native1/docs/samples/script-format.md`, A2 가 9번 원고 모드 때 적는다). 그 전엔 손대지 않는다.
 - ⚠ 특허 P-17: 올린 자료로 **번역 모델·용어를 고르거나 맞춤하지 않는다** — 자료는 미리 번역 대상일 뿐. 자료 → 용어집 자동 추출 금지. 광고 문구는 "원고를 올려 두면 미리 번역해 둡니다"까지.
+
+## 2026-10-07 16:10 — L2 접수 · L2-fix · 웹 강사 화면 설계 v0 → L4 열림 (B)
+- L2(9230b33) 접수. 시험 18건·9절 통과.
+### [열림] L2-fix — 내용 토큰 `tr` 을 **`trans`** 로. 파일 이름 `raytok_..._tr_en.doc` 의 `tr` 은 터키어 언어 코드와 겹친다(A 자물쇠 D-70 이 잡은 것). A 정본 `raytok-native1/docs/samples/report-format.md`(feat/report 가지, 곧 master) 와 같게: `both`·`src`·`trans`. 시험 이름도.
+### 웹 강사 화면 설계 v0 — `docs/RayTok-설계_웹강사화면_v0.md` (이 저장소, 공개 가능한 범위만). 특허 조건 넷은 설계 §0.
+### [열림] L4-1 들어가기 + 준비(TXT 만) — 설계 §1-1·§1-2 (①②③④, 명단 ⑤는 8번 와이어 뒤). `web/host/index.html` 새 파일. 이용권 검증은 relay 기존 `/license/verify`. 미리 번역은 `/translate` 묶음 호출, IndexedDB 저장, 진행 막대, 실패 문단은 원문 표시(R-15). 외부 요청 0(relay 제외) 시험 + 되돌림 1.
+### [열림] L3 (11:15) — L4-1 뒤. PDF·DOCX 는 pdf.js·mammoth 를 `web/vendor/` 에.
+### [대기] L4-2 진행(ws `script`) · L4-3 끝 — 와이어 `script`·`skip`·`break`·`hello.name` 이 A 정본에 들어오면 연다(마스터가 A2 에 요청).
+- B 확인 한 줄(전에 적은 것): Desk 가 429 `quota_exceeded` 를 어떻게 보여 주는지 — REPORT 에.
