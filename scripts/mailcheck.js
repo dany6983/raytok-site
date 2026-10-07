@@ -29,15 +29,24 @@ try {
   try { git(`fetch -q origin ${main}`); } catch (_) { process.exit(0); } // 오프라인이면 조용히
   const ref = `origin/${main}`;
 
+  // 원격 파일의 blob 해시가 "마지막으로 본 것"과 다를 때만 알린다 (작업 가지가 master 와 달라도 조용하다).
+  const seenPath = stamp + '-seen.json';
+  let seen = {};
+  try { seen = JSON.parse(fs.readFileSync(seenPath, 'utf8')) || {}; } catch (_) {}
+  const now = {};
   const changed = WATCH.filter((f) => {
-    try { git(`cat-file -e ${ref}:${f}`); } catch (_) { return false; }
-    try { git(`diff --quiet ${ref} -- ${f}`); return false; } catch (_) { return true; }
+    let h = '';
+    try { h = git(`rev-parse ${ref}:${f}`); } catch (_) { return false; }
+    now[f] = h;
+    if (!(f in seen)) return force; // 처음 본 파일: --force(세션 시작) 때만 알린다
+    return seen[f] !== h;
   });
+  fs.writeFileSync(seenPath, JSON.stringify(Object.assign({}, seen, now)));
   if (changed.length === 0) process.exit(0);
 
   process.stderr.write(
-    `📬 메일박스 변경: ${changed.join(', ')} 가 ${ref} 와 다르다. ` +
-    `지금 하던 도구 호출은 끝났다. 다음 행동 전에 \`git pull\`(A2는 \`git rebase origin/master\`) 하고 ` +
+    `📬 메일박스 변경: ${changed.join(', ')} 가 ${ref} 에서 바뀌었다. ` +
+    `지금 하던 도구 호출은 끝났다. 다음 행동 전에 \`git pull\`(작업 가지면 \`git fetch && git rebase ${ref}\`) 하고 ` +
     `바뀐 파일을 읽어라. [열림]이 바뀌었으면 그것부터.\n`
   );
   process.exit(2);
