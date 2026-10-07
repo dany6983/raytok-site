@@ -4,6 +4,8 @@
   "description": "RayTok static website and local server mockup",
   "scripts": {
     "test:relay": "npm --prefix relay run test:limits",
+    "test:mint": "npm --prefix relay run test:mint",
+    "test:lic": "node samples/lic_page_test.js",
     "mail": "node scripts/mailcheck.js --force"
   },
   "dependencies": {

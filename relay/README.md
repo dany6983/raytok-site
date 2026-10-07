@@ -44,3 +44,24 @@ node test/smoke.mjs
 - **동일 커밋 잠금 원칙**: 시험용 기능을 만드는 바로 그 커밋에서 자물쇠를 함께 구현합니다.
 - **참고 사항 (Desk 동시 방 관리)**: 현재 `desk_minutes`는 방 종료 시점에 누적되므로, 향후 `/stt/token` 발급 시 라이선스별 활성(열린) 방 개수를 교차 검증하는 방어 조치를 추가할 예정입니다.
 - **참고 사항 (Desk 30명 초과 팬아웃)**: Cloudflare Durable Object는 세션(방)당 단일 스레드로 동작하므로, 단일 Desk 방에 동시 청취자가 30명을 초과할 경우 브로드캐스트 팬아웃 루프 지연 분산을 재검토해야 합니다.
+
+## 6. 도구 (`relay/tools/`)
+| 파일 | 무엇 | 비밀 |
+|---|---|---|
+| `mint-license.mjs` | 중계 서버 토큰 (HMAC, `/translate` 등 Bearer) | `LICENSE_SECRET` (env / `.dev.vars`) |
+| `mint-code.mjs` | **앱 이용권 코드** (Ed25519, MASTER 01:12 B 줄 5) — 다른 물건이다 | 개인키: `--key-file` / env `LIC_PRIVATE_KEY_<n>` / `.dev.vars` |
+
+### 이용권 코드 `mint-code.mjs`
+- 모양의 **정본은 앱 저장소 `raytok-native1/docs/samples/license-code.md`** 다. 80바이트(payload 16 + Ed25519 서명 64) → Crockford base32 128자, 보여 줄 때 4자 × 32칸. 벡터 넷을 `npm run test:mint` 가 그대로 돌린다(정본 파일이 `../raytok-native1/…` 에 있거나 `LICENSE_CODE_DOC` 로 가리키면 넷 다, 없으면 벡터 ① 내장본).
+- 의존성 없음 — `node:crypto` 의 Ed25519 를 쓴다 (Node 18+).
+- **키 0 = 시험 키**(`--test`, 씨앗이 정본 글에서 나온다 — 앱은 개발자 모드에서만 받는다). **운영 키는 1부터**, 개인키는 저장소·REPORT 어디에도 적지 않는다: `wrangler secret` / `relay/.dev.vars`(`LIC_PRIVATE_KEY_1=<hex64>`, gitignore) / `--key-file`(`relay/keys/` 는 gitignore).
+```bash
+node tools/mint-code.mjs --test --exp 2030-01-01 --flags host,private --cust RT0001   # = 정본 벡터 ①
+node tools/mint-code.mjs --key 1 --days 365 --flags host --cust ACME01                # 운영 (LIC_PRIVATE_KEY_1)
+node tools/mint-code.mjs --verify <code>                 # 검사 (키 0 내장, 운영 키는 --pub <hex> 또는 LIC_PUBLIC_KEY_<n>)
+node tools/mint-code.mjs --pubkey --key 1                # 그 개인키의 공개키 — 앱 src/license.js PUBLIC_KEYS 에 넣을 값
+node tools/mint-code.mjs --keygen                        # 새 씨앗 — 화면에만. 저장은 사람이 비밀 저장소에
+```
+- 플래그: `host` 0x01(가이드·현장교육·관광 1:N 호스트) · `private|camera|app` 0x02 · `meet` 0x04 · `desk` 0x08. 숫자(`0x03`, `3`)도 된다. 만료: `--exp YYYY-MM-DD`(UTC 자정) · unix 초 · `--days n`. 고객: ASCII 6자 이내.
+- 출력: 128자 코드 · 4자 × 32칸 · 링크 `https://raytok.kr/lic/<code>`. `--json` 이면 한 줄. QR(png)은 아직 없다 — 의존성 없이는 못 만든다(REPORT 막힌 것).
+- `/lic/<code>` 페이지(`lic/index.html` + `404.html`): GitHub Pages 에는 그 파일이 없으므로 `404.html` 이 `/lic/?c=<code>` 로 보낸다. 안드로이드는 `intent://lic/<code>#Intent;scheme=raytok;package=com.raytok.ear;…` 로 앱에 넘기고 없으면 `/download/`. 코드는 어디에도 보내지 않는다. 시험: 루트에서 `npm run test:lic`.

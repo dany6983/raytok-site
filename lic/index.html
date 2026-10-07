@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>RayTok 이용권</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif; margin: 0; padding: 32px 20px; color: #0A0F1F; background: #f3f2f2; }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  p { font-size: 15px; line-height: 1.5; color: #444; }
+  a.btn, button.btn { display: block; width: 100%; box-sizing: border-box; text-align: center; padding: 14px; border-radius: 12px; background: #0A0F1F; color: #fff; text-decoration: none; font-weight: 600; margin-top: 16px; border: 0; font-size: 15px; cursor: pointer; }
+  .btn.secondary { background: #fff; color: #0A0F1F; border: 1px solid #ccc; }
+  .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 15px; letter-spacing: 1px; line-height: 1.7; word-break: break-all; background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 14px; margin-top: 16px; user-select: all; }
+  .hint { font-size: 13px; color: #777; margin-top: 24px; line-height: 1.5; }
+  .lang { float: right; font-size: 13px; color: #777; }
+  .lang a { color: #0A0F1F; text-decoration: none; margin-left: 8px; }
+  .lang a.on { font-weight: 700; text-decoration: underline; }
+  .bad { color: #b00020; }
+</style>
+</head>
+<body>
+<div class="lang"><a href="#" data-lang="ko">한국어</a><a href="#" data-lang="en">English</a></div>
+<h1 data-t="title">RayTok 이용권</h1>
+<p id="msg">앱을 여는 중입니다…</p>
+<a class="btn" id="open" href="#" data-t="open">앱에서 열기</a>
+<button class="btn secondary" id="copy" type="button" data-t="copy">코드 복사</button>
+<a class="btn secondary" id="store" href="/download/" data-t="store">앱이 없으면 설치하기</a>
+<div class="code" id="code"></div>
+<p class="hint" id="hint"></p>
+<script>
+(function () {
+  var T = {
+    ko: {
+      title: 'RayTok 이용권', open: '앱에서 열기', copy: '코드 복사', copied: '복사했습니다', store: '앱이 없으면 설치하기',
+      android: '앱이 있으면 바로 열립니다. 열리지 않으면 아래 단추를 누르세요.',
+      other: '이 링크는 안드로이드 RayTok 앱용입니다. 앱이 깔린 폰에서 이 링크를 열거나, 아래 코드를 앱의 설정 → 이용권에 손으로 넣으세요.',
+      bad: '이용권 코드가 없거나 모양이 맞지 않는 링크입니다. 코드를 받은 곳에 다시 문의하세요.',
+      hint: '손으로 넣을 때: 앱의 <b>설정 → 이용권</b>에서 위 코드를 4자씩 32칸에 넣습니다. 하이픈과 대소문자는 가리지 않습니다. 숫자 0과 1만 있고 글자 O·I·L은 없습니다. "복사"를 누른 뒤 앱에 붙여 넣어도 됩니다.<br>이 코드는 받은 분만 쓰는 것입니다 — 남에게 보내지 마세요. 이 페이지는 코드를 어디에도 보내지 않습니다.',
+    },
+    en: {
+      title: 'RayTok licence', open: 'Open in app', copy: 'Copy code', copied: 'Copied', store: 'No app yet? Install',
+      android: 'If the app is installed it opens right away. If not, use the buttons below.',
+      other: 'This link is for the Android RayTok app. Open it on the phone that has the app, or type the code below into the app under Settings → Licence.',
+      bad: 'This link carries no licence code, or the code is malformed. Ask where you got it from.',
+      hint: 'Manual entry: in the app go to <b>Settings → Licence</b> and type the code above, 4 characters × 32 boxes. Hyphens and letter case do not matter. Only the digits 0 and 1 exist — there is no O, I or L. You can also press "Copy" and paste it in the app.<br>The code is for you only — do not forward it. This page sends the code nowhere.',
+    }
+  };
+  var lang = /^en/i.test(navigator.language || '') ? 'en' : 'ko';
+  try { var saved = localStorage.getItem('raytok.lic.lang'); if (saved === 'ko' || saved === 'en') lang = saved; } catch (e) {}
+
+  // 코드는 /lic/<code>(404.html 이 ?c= 로 보낸다) · /lic/?c=<code> · /lic/#<code> 셋 중 하나로 온다
+  var raw = '';
+  var m = (location.pathname || '').match(/^\/lic\/([^\/]+)\/?$/);
+  if (m) raw = m[1];
+  if (!raw) { var q = (location.search || '').match(/[?&]c=([^&]+)/); if (q) raw = q[1]; }
+  if (!raw) raw = (location.hash || '').replace(/^#/, '');
+  try { raw = decodeURIComponent(raw); } catch (e) {}
+  // 앱과 같은 규칙: 하이픈·빈칸 버림, 대소문자 무시, I·L→1 · O→0. U 는 없는 글자
+  var code = raw.replace(/[-\s]/g, '').toUpperCase().replace(/[IL]/g, '1').replace(/O/g, '0');
+  var ok = /^[0-9A-HJKMNP-TV-Z]{128}$/.test(code);
+  var grouped = code.replace(/(.{4})/g, '$1-').replace(/-$/, '');
+
+  var pkg = 'com.raytok.ear';
+  var store = 'https://raytok.kr/download/';
+  var deep = 'raytok://lic/' + code;
+  var intent = 'intent://lic/' + code + '#Intent;scheme=raytok;package=' + pkg
+             + ';S.browser_fallback_url=' + encodeURIComponent(store) + ';end';
+  var android = /Android/i.test(navigator.userAgent);
+
+  function render() {
+    var t = T[lang];
+    document.documentElement.lang = lang;
+    document.title = t.title;
+    var els = document.querySelectorAll('[data-t]');
+    for (var i = 0; i < els.length; i++) els[i].textContent = t[els[i].getAttribute('data-t')];
+    var ls = document.querySelectorAll('.lang a');
+    for (var j = 0; j < ls.length; j++) ls[j].className = ls[j].getAttribute('data-lang') === lang ? 'on' : '';
+    var msg = document.getElementById('msg');
+    if (!ok) {
+      msg.textContent = t.bad; msg.className = 'bad';
+      document.getElementById('open').style.display = 'none';
+      document.getElementById('copy').style.display = 'none';
+      document.getElementById('code').style.display = 'none';
+      document.getElementById('hint').innerHTML = '';
+      return;
+    }
+    msg.textContent = android ? t.android : t.other;
+    document.getElementById('code').textContent = grouped;
+    document.getElementById('hint').innerHTML = t.hint;
+  }
+
+  var ls = document.querySelectorAll('.lang a');
+  for (var k = 0; k < ls.length; k++) ls[k].onclick = function (ev) {
+    ev.preventDefault(); lang = this.getAttribute('data-lang');
+    try { localStorage.setItem('raytok.lic.lang', lang); } catch (e) {}
+    render();
+  };
+  document.getElementById('store').href = store;
+  document.getElementById('open').href = android ? intent : deep;
+  document.getElementById('copy').onclick = function () {
+    var btn = this, done = function () { btn.textContent = T[lang].copied; setTimeout(function () { btn.textContent = T[lang].copy; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, fallback); else fallback();
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents(document.getElementById('code'));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { document.execCommand('copy'); done(); } catch (e) {}
+    }
+  };
+  render();
+  if (ok && android) { setTimeout(function () { location.href = intent; }, 300); }
+})();
+</script>
+</body>
+</html>
