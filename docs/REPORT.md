@@ -6,6 +6,76 @@
 ---
 
 [B 보고]
+2026-10-07 [열림] L2. 청취 페이지 저장 = 내용 3 × 형식 3 1차 완료
+커밋: 9230b33
+
+만든·바꾼 파일
+- web/common/report.js (신규: 청취 페이지 및 웹 강사 화면 공통 기록 저장 모듈)
+- web/listener/index.html (내용 3종 × 형식 3종 작은 선택판 및 브라우저 다운로드 연동)
+- samples/report_common_test.js (신규: L2 공통 기록 저장 단위 시험 18건)
+- package.json (playwright 개발 의존성 추가)
+- docs/REPORT.md
+
+실행 출력 발췌
+1. 공통 기록 저장 단위 시험 (node samples/report_common_test.js, 18건 전원 통과):
+=== L2 청취 페이지 공통 기록 저장 (web/common/report.js) 단위 시험 ===
+  [PASS] 기본 both TXT: 기존 정규식 raytok_YYYYMMDD_HHMM_en.txt 일치
+  [PASS] src TXT: raytok_YYYYMMDD_HHMM_src_en.txt 일치
+  [PASS] tr DOC: raytok_YYYYMMDD_HHMM_tr_en.doc 일치
+  [PASS] both PDF: raytok_YYYYMMDD_HHMM_ja.pdf 일치
+  [PASS] Lines 수 일치
+  [PASS] both: 원문과 번역문 둘 다 포함
+  [PASS] both: 번역 없는 줄도 원문 보존
+  [PASS] src: 원문 포함
+  [PASS] src: 번역문 제외
+  [PASS] tr: 번역문 포함
+  [PASS] tr: 번역이 있는 줄은 원문 제외
+  [PASS] tr: 번역이 없는 줄은 원문 보존(누락 없음)
+  [PASS] HTML 이스케이프: script 태그 실행 방지
+  [PASS] HTML 이스케이프: 엔티티 변환 확인
+  [PASS] 인쇄 스타일 @media print 포함
+  [PASS] 페이지 넘김 줄바꿈 방지 스타일 포함
+  [PASS] RTL 언어: html/태그에 dir="rtl" 속성 적용
+  [PASS] 아랍어 번역문 포함
+전부 통과 (18건)
+
+2. 청취 페이지 화면 및 회귀 시험 9절 (node samples/screen_view_test.js):
+  [PASS] 최근 4줄 · 두 칸 · 큰 글씨 · 머리줄/꼬리표 숨김 · 도구 막대 숨김→보임 · 음성 0 · 외부 요청 0
+  [PASS] 세로 화면: 한 칸, 위아래
+  [PASS] RTL: 번역 칸 dir=rtl, 칸 순서 뒤집힘
+  [PASS] 보통 보기: 전 줄 · 15px · 머리줄 보임 · 확정 줄만 음성(pending 0)
+  [PASS] 보통 보기 30줄: 최신 줄 보임 · 목록만 구름 · 도구 막대 제자리 (390×844, 360×640)
+  [PASS] 큰 화면: 최신 확정 줄만 또렷
+  [PASS] 낱말 안 끊김 · 긴 낱말 안 넘침 · 화자 꼬리표는 보낸 때만 (390, 360, 320)
+  [PASS] 시연: 서버 연결 0 · 임시는 안 읽음 · 8줄 · 언어 5개 · 종료 화면 · 큰 화면 자동 시작
+  [PASS] 기록 저장: 파일명·BOM·줄 수·번역문·바깥 요청 0
+[PASS] 큰 화면 보기 시험 전부 통과
+
+3. RTL 및 언어 변경 라이프사이클 시험 (node samples/rtl_test.js):
+=== All 5 Real Lifecycle Tests Passed! ===
+
+4. 되돌림 실패 검증 실증 1건:
+web/common/report.js 에서 escapeHtml 미적용 시:
+AssertionError [ERR_ASSERTION]: HTML 이스케이프: script 태그 실행 방지
+    at ok (C:\GitHub\raytok-site\samples\report_common_test.js:14:3)
+    at Object.<anonymous> (C:\GitHub\raytok-site\samples\report_common_test.js:64:3)
+
+한 줄 판정
+외부 요청 0건 및 라이브러리 0건으로 내용 3종(원문/번역문, 원문만, 번역문만) × 형식 3종(TXT, PDF, DOC) 작은 선택판 저장 및 web/common/report.js 모듈 분리 완료 (기존 회귀 시험 9절 전원 통과).
+
+막힌 것
+없음.
+
+---
+
+# REPORT.md — B → 마스터 보고 (원본은 이 파일)
+
+새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
+공개 저장소 — 키·토큰·내부 규칙 금지.
+
+---
+
+[B 보고]
 2026-10-06 [열림] 7. Desk 작업 (D1 → D2 → D3) 1차 완료 결과 (raytok-meet)
 
 만든·바꾼 파일
