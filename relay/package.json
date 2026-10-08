@@ -9,7 +9,8 @@
     "test:att": "node test/attendance.mjs",
     "test:limits-bundle": "node test/limits-bundle.mjs",
     "test:script": "node test/script-forward.mjs",
-    "test:mint": "node --test test/mint-code.mjs"
+    "test:mint": "node --test test/mint-code.mjs",
+    "test:desk-session": "node test/desk-session.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.143.0",

@@ -369,6 +369,45 @@ export class Room {
 
     // 0-5. 내부 월별·코드별 사용량 조회 (/usage/summary)
     // 0-6. 내부 동시 기기 등록 및 한도 검사 (/devices/register)
+    // 0-7. Desk 세션 멱등 저장 (/desk/session)
+    if (url.pathname === '/desk/session' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const { last, session, items } = body;
+      if (!last || !session) {
+        return new Response(JSON.stringify({ error: 'bad_params' }), { status: 400 });
+      }
+
+      const key = `desk:${last}`;
+      const existing = await this.ctx.storage.get(key);
+      if (existing) {
+        return new Response(JSON.stringify({
+          id: existing.id,
+          last: existing.last
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const id = 'ds_' + (last ? last.slice(0, 8) : 'session');
+      const record = {
+        id,
+        last,
+        code: session.code,
+        host: session.host,
+        started: session.started,
+        items,
+        received_at: new Date().toISOString()
+      };
+      await this.ctx.storage.put(key, record);
+
+      return new Response(JSON.stringify({
+        id,
+        last
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     if (url.pathname === '/devices/register' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const { tokenHash, deviceHash, maxDevices = 3 } = body;

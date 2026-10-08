@@ -1,3 +1,85 @@
+
+const ALLOWED_BODY_KEYS = new Set(['ver', 'session', 'items', 'last']);
+const ALLOWED_SESSION_KEYS = new Set(['code', 'host', 'lang', 'started']);
+const ALLOWED_ITEM_KEYS = {
+  common: new Set(['n', 'ts', 'kind', 'prev', 'hash']),
+  begin: new Set(['session', 'host', 'lang']),
+  line: new Set(['seq', 'src', 'text', 'tr', 'via']),
+  tr: new Set(['seq', 'tr']),
+  replace: new Set(['seq', 'text', 'tr', 'via']),
+  join: new Set(['dev', 'name', 'lang']),
+  leave: new Set(['dev', 'why']),
+  gap: new Set(['dev', 'from', 'to']),
+  gap_fill: new Set(['dev', 'from', 'to']),
+  note: new Set(['text']),
+  end: new Set(['lines', 'minutes', 'joined_max'])
+};
+
+function sortKeysDeep(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sortKeysDeep);
+  const sorted = {};
+  for (const k of Object.keys(obj).sort()) {
+    sorted[k] = sortKeysDeep(obj[k]);
+  }
+  return sorted;
+}
+
+function normalizeDeskItem(item) {
+  const copy = { ...item };
+  delete copy.hash;
+  return JSON.stringify(sortKeysDeep(copy));
+}
+
+function validateDeskSessionKeys(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
+  for (const k of Object.keys(body)) {
+    if (!ALLOWED_BODY_KEYS.has(k)) return false;
+  }
+  if (!body.session || typeof body.session !== 'object') return false;
+  for (const k of Object.keys(body.session)) {
+    if (!ALLOWED_SESSION_KEYS.has(k)) return false;
+  }
+  if (!Array.isArray(body.items)) return false;
+  for (const it of body.items) {
+    if (!it || typeof it !== 'object' || Array.isArray(it)) return false;
+    const kind = it.kind;
+    const kindKeys = ALLOWED_ITEM_KEYS[kind];
+    if (!kindKeys) return false;
+    for (const k of Object.keys(it)) {
+      if (!ALLOWED_ITEM_KEYS.common.has(k) && !kindKeys.has(k)) return false;
+    }
+  }
+  return true;
+}
+
+async function verifyDeskHashChain(data) {
+  if (data.ver !== 1) return { ok: false, why: 'chain', at: 0 };
+  const items = data.items;
+  if (!Array.isArray(items) || items.length === 0) return { ok: false, why: 'chain', at: 0 };
+
+  const zero64 = '0'.repeat(64);
+  let prevHash = zero64;
+
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const expectedN = i + 1;
+    if (it.n !== expectedN) return { ok: false, why: 'chain', at: expectedN };
+    if (it.prev !== prevHash) return { ok: false, why: 'chain', at: it.n };
+
+    const normStr = normalizeDeskItem(it);
+    const inputStr = it.prev + '\n' + normStr;
+    const computedHash = await sha256Hex(inputStr);
+    if (it.hash !== computedHash) return { ok: false, why: 'chain', at: it.n };
+
+    prevHash = it.hash;
+  }
+
+  if (data.last !== prevHash) {
+    return { ok: false, why: 'chain', at: items.length };
+  }
+  return { ok: true, last: prevHash };
+}
 async function sha256Hex(str) {
   const enc = new TextEncoder().encode(str || '');
   const buf = await crypto.subtle.digest('SHA-256', enc);
@@ -422,6 +504,92 @@ export default {
 
     // 0-1. 번역 엔드포인트: POST /translate
         // 0-0. 라이선스 검증 및 기기 등록 엔드포인트: POST /license/verify
+    // 0-0-1. Desk 세션 저장 엔드포인트: POST /desk/session
+    if (url.pathname === '/desk/session' && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') || '';
+      const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
+      const licenseRes = await verifyLicense(request, secret);
+
+      if (!licenseRes.valid) {
+        return new Response(JSON.stringify({ why: 'token' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      // 플래그 검사: 0x08 (Desk) 필수
+      const flags = Number(licenseRes.payload.flags || 0);
+      if ((flags & 0x08) === 0) {
+        return new Response(JSON.stringify({ why: 'forbidden', message: 'Desk flag 0x08 required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      // 몸통 파싱 및 키 검사
+      let body;
+      try {
+        body = await request.json();
+      } catch (_) {
+        return new Response(JSON.stringify({ why: 'bad_key' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      if (!validateDeskSessionKeys(body)) {
+        return new Response(JSON.stringify({ why: 'bad_key' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      // 해시 체인 다시 세기 검증
+      const chainRes = await verifyDeskHashChain(body);
+      if (!chainRes.ok) {
+        return new Response(JSON.stringify({ why: chainRes.why, at: chainRes.at }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      // 멱등 저장 및 ID 발급 (GLOBAL_RATE_LIMITER DO 경유)
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const storeRes = await limiter.fetch(new Request('http://internal/desk/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            last: chainRes.last,
+            session: body.session,
+            items: body.items
+          })
+        }));
+
+        if (storeRes.ok) {
+          const storeData = await storeRes.json();
+          return new Response(JSON.stringify({
+            id: storeData.id,
+            last: chainRes.last
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+          });
+        }
+      } catch (e) {
+        console.warn('[Desk Session Store Error]:', e.message);
+      }
+
+      return new Response(JSON.stringify({
+        id: 'ds_' + chainRes.last.slice(0, 8),
+        last: chainRes.last
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    }
+
     if (url.pathname === '/license/verify' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const authHeader = request.headers.get('Authorization') || '';
