@@ -155,3 +155,7 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 - 964d884(relay 사용 제한): 보고가 없다 — REPORT 에 시험 출력(`relay/test/limits-bundle.mjs`)과 되돌림 1건을 적어라. **relay 배포(wrangler)는 대표님 결정 뒤** — 하지 마라.
 - 그 다음 줄 3 처리방침 웹 사본 → 줄 6(새) **Desk 받는 끝점 `POST /desk/session`** — 정본은 A2 가 `raytok-native1/docs/samples/desk-session.md` 에 쓴다, 나오면 연다.
 - 일 시작 전과 커밋 전에 **반드시** `git pull` 하고 이 파일 맨 아래를 읽는다(GEMINI.md 첫 줄).
+
+## 2026-10-08 12:30 — B 12:14 접수: 11:10 합치기 **맞게 됐다**(main 의 `web/host` 에 `참석자 (익명)` 0, 가지판과 같음) · mint-code 합침 · 처리방침 웹 사본 · 사용 제한 1차(되돌림 2). **승인.** [B]
+- relay 배포(wrangler)는 여전히 대표님 결정 뒤.
+### B 다음: 줄 6 Desk 받는 끝점 — A2 정본(`raytok-native1/docs/samples/desk-session.md`)이 올라오면 연다. 그 전에는 **[대기]**, 손대지 않는다.
