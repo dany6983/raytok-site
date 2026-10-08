@@ -6,6 +6,71 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 7: L3-2 HWPX 원고 읽기 1차 완료 (가지 feat/hwpx)
+커밋: 304dc1c
+
+만든·바꾼 파일과 이유
+- web/vendor/fflate.min.js — HWPX(zip) 로컬 압축 해제용 fflate(MIT, v0.8.2) 번들 복사 (CDN 호출 0, 자립형).
+- web/vendor/README.md — pdf.js, mammoth, fflate 라이선스 및 버전 명시.
+- web/host/index.html — 원고 파일 올리기 accept 에 .hwpx, .hwp 추가. extractTextFromHwpx() 로 브라우저 내에서 Contents/content.hpf 의 spine 순서대로 section*.xml 을 읽고 hp:p 하나 = 문단 하나, 그 안 hp:t 글자 이어 붙임(lineBreak·tab 은 공백 치환). 표(hp:tbl->hp:tc->hp:p) 안 글자도 문단으로 처리. 머리말(hp:header)·꼬리말(hp:footer)·각주(hp:footNote) 제외. 옛 .hwp 는 alert("한글에서 '다른 이름으로 저장 → HWPX' 로 다시 올려 주세요") 안내. P-17 맞춤 금지 준수.
+- samples/hwpx_fixture/test.hwpx — 직접 생성한 초소형 HWPX 픽스처(문단 3 + 표 1칸 + 머리말 1 + 꼬리말/각주 각 1).
+- samples/hwpx_test.js — L3-2 HWPX 브라우저 자동 시험(문단 4개 추출, 머리말 0, 꼬리말/각주 0, .hwp 안내 대화상자 노출, 외부 요청 0건 확인).
+- package.json — test:hwpx 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:hwpx (12건 전원 통과):
+=== L3-2 HWPX 원고 읽기 (web/host/index.html) 브라우저 시험 ===
+REQ: GET /?relay=http://localhost:58626
+REQ: GET /vendor/pdf.min.js
+REQ: GET /vendor/mammoth.browser.min.js
+REQ: GET /vendor/fflate.min.js
+REQ: GET /vendor/qrcode.js
+REQ: GET /common/report.js
+REQ: GET /assets/favicon.png
+REQ: POST /license/verify
+  [PASS] 강사 화면 준비 뷰 진입
+  [PASS] test.hwpx 픽스처 파일 존재
+  [PASS] 추출된 문단 수 4개 (실제: 4)
+  [PASS] 문단 1 텍스트 일치
+  [PASS] 문단 2 텍스트 일치
+  [PASS] 문단 3 텍스트 일치
+  [PASS] 표 안 문단 4 텍스트 일치
+  [PASS] 머리말 텍스트 제외 확인 (머리말 0)
+  [PASS] 꼬리말 텍스트 제외 확인 (꼬리말 0)
+  [PASS] 각주 텍스트 제외 확인 (각주 0)
+  [PASS] .hwp 안내 대화상자 노출 확인: 한글에서 '다른 이름으로 저장 → HWPX' 로 다시 올려 주세요
+  [PASS] 외부 네트워크 요청 0건 확인 (실제: 0)
+전부 통과 (12건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+web/host/index.html 에서 머리말 제외 로직 제거 시:
+[FAIL] AssertionError [ERR_ASSERTION]: 추출된 문단 수 4개 (실제: 5)
+    at ok (C:\GitHub\raytok-site\samples\hwpx_test.js:13:3)
+    at C:\GitHub\raytok-site\samples\hwpx_test.js:135:5
+
+3. 회귀 시험 전체:
+test:end(80건), test:live(43건), test:host(13건), test:report(27건), screen_view(9절 포함), rtl(5건), test:desk-session(15건) 전원 초록 통과.
+
+4. 합치기 및 배포:
+지침대로 feat/hwpx 가지에 푸시 완료, main 합치기는 마스터 승인 대기. wrangler 배포 일절 없음.
+
+한 줄 판정
+fflate 로컬 연동을 통한 브라우저 내 HWPX(문단 3 + 표 1 = 4, 머리말/꼬리말/각주 제외) 파싱, .hwp 변환 안내, 외부 요청 0건 및 되돌림 실증 완료.
+
+막힌 것
+없음.
+
+---
+
+# REPORT.md — B → 마스터 보고 (원본은 이 파일)
+
+새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
+공개 저장소 — 키·토큰·내부 규칙 금지.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 6: Desk 받는 끝점 POST /desk/session 1차 완료
 커밋: e16a763
 
