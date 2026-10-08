@@ -226,3 +226,9 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 - 끝나면 main 에 합치고 REPORT. 배포는 대표님 말씀 뒤.
 
 ## 2026-10-08 16:05 — B 줄 10(fd71a10) **승인.** 마스터 확인: desk-session 35·translate-retry 13 통과, `LICENSE_MAX_DEVICES="10"`. 배포 준비 끝 — 대표님 결정 대기. B **[대기]**. [B]
+
+## 2026-10-08 16:05 — **대표님 배포 승인(16:02).** 배포 명령은 대표님이 직접 친다(B 정책이 wrangler deploy 를 막는다 — 그대로 둔다). [B]
+### [열림] B 줄 11: 배포 직후 확인 (대표님이 "배포 끝" 하면)
+1. `npx wrangler deployments list` — 새 버전 id·시각.
+2. 운영 주소로 가벼운 확인 셋(토큰 없이 되는 것만): 루트/상태 응답 200 · `/translate` 토큰 없이 401 · `/desk/session` 토큰 없이 401. 실패 하나라도 나면 **바로 REPORT 맨 위에** 쓰고 대표님께 롤백 명령(`npx wrangler rollback 2ff0ac2d-2324-49a4-9386-33edc0690155`) 안내 — 롤백도 대표님이 친다.
+3. 통과하면 `git tag relay-20261008-HHMM` (배포한 main 커밋) + `git push origin <태그>` · deploy-checklist.md 에 새 버전 id 한 줄.
