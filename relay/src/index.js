@@ -800,7 +800,8 @@ export default {
       }
 
       const kind = (body && body.kind) ? String(body.kind).toLowerCase().trim() : 'guide';
-      const requiredFlags = kind === 'desk' ? (0x04 | 0x08) : 0x01;
+      // script = 웹 강사 화면(L4-2, 원고 미리 번역 배포). Desk 와 같은 이용권(0x04|0x08)이지만 Desk 분 집계는 하지 않는다.
+      const requiredFlags = (kind === 'desk' || kind === 'script') ? (0x04 | 0x08) : 0x01;
 
       const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
       const licenseRes = await verifyLicense(request, secret, requiredFlags);

@@ -239,10 +239,60 @@
     }
     .notice.info { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; color: #bae6fd; }
     .notice.warn { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; color: #fde68a; }
+
+    /* ── L4-2 진행 화면 ── */
+    .live-grid { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+    @media (max-width: 760px) { .live-grid { grid-template-columns: 1fr; } }
+    .live-list { max-height: 60vh; overflow-y: auto; padding-right: 4px; }
+    .live-para {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      opacity: 0.45;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+    .live-para .live-no { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+    .live-para.is-done { opacity: 0.7; }
+    .live-para.is-next { opacity: 0.6; border-style: dashed; }          /* 다음 문단은 흐리게 */
+    .live-para.is-current {                                               /* 현재 문단 강조 */
+      opacity: 1;
+      border-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.18);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+    }
+    .live-para.is-skipped { text-decoration: line-through; color: var(--text-muted); }
+    .live-side { display: flex; flex-direction: column; gap: 14px; }
+    .qr-box { background: #fff; border-radius: 8px; padding: 10px; display: flex; justify-content: center; }
+    .qr-box svg, .qr-box img { width: 220px; height: 220px; display: block; }
+    .room-code { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.15em; color: #38bdf8; text-align: center; }
+    .att-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; }
+    .att-now { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    .att-langs { margin-top: 6px; color: var(--text-muted); }
+    .att-langs span { display: inline-block; margin-right: 10px; }
+    .live-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; align-items: center; }
+    .live-controls .btn.warn { background: var(--warning); color: #000; }
+    .live-controls .btn.warn.on { background: var(--danger); color: #fff; }
+    .live-status { font-size: 0.8rem; color: var(--text-muted); margin-left: auto; }
+    .break-band {
+      display: none;
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid var(--warning);
+      color: #fde68a;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .break-band.on { display: block; }
   </style>
 
   <script src="../vendor/pdf.min.js"></script>
   <script src="../vendor/mammoth.browser.min.js"></script>
+  <script src="../vendor/qrcode.js"></script>
 </head>
 <body>
   <header>
@@ -339,7 +389,39 @@
         <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
           원고 및 번역문이 로컬 IndexedDB에 저장되었습니다. 이제 강의를 개설하고 문단을 송출할 수 있습니다.
         </div>
-        <button id="btnStartLecture" class="btn success">강의 시작하기 (L4-2 연동)</button>
+        <button id="btnStartLecture" class="btn success">강의 시작하기</button>
+        <div id="liveError" style="margin-top: 10px; color: var(--danger); font-size: 0.85rem; display: none;"></div>
+      </div>
+    </section>
+
+    <!-- 3단계: 진행 (L4-2) — 문단 넘기기 · QR · 참석 수 -->
+    <section id="step-live" class="card" style="display: none;">
+      <div class="card-title">강의 진행 <span id="liveProgress" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></span></div>
+      <div id="breakBand" class="break-band">⏸ 쉬는 시간</div>
+      <div class="live-grid">
+        <div>
+          <div id="liveParaList" class="live-list"></div>
+          <div class="live-controls">
+            <button id="btnPrev" class="btn secondary" title="← 키">◀ 이전</button>
+            <button id="btnNext" class="btn" title="→ 또는 스페이스 키">다음 ▶</button>
+            <button id="btnSkip" class="btn secondary">건너뜀</button>
+            <button id="btnBreak" class="btn warn">쉬는 시간</button>
+            <span id="liveStatus" class="live-status">연결 중…</span>
+          </div>
+          <div class="notice info" style="margin-top: 14px; margin-bottom: 0;">
+            키보드: → 또는 스페이스 = 다음, ← = 이전. 넘길 때 미리 번역해 둔 문단만 보냅니다 — 번역이 없는 언어의 청취자는 원문을 봅니다.
+          </div>
+        </div>
+        <div class="live-side">
+          <div class="qr-box" id="qrBox"></div>
+          <div class="room-code" id="roomCode">------</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; overflow-wrap: anywhere;" id="joinUrl"></div>
+          <div class="att-box">
+            <div style="color: var(--text-muted);">참석</div>
+            <div><span class="att-now" id="attNow">0</span> <span style="color: var(--text-muted);">명 (최대 <span id="attMax">0</span>)</span></div>
+            <div class="att-langs" id="attLangs">—</div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -360,6 +442,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const RELAY_BASE = (urlParams.get('relay') || 'https://raytok-relay.raytok.workers.dev').replace(/\/+$/, '');
+    const SRC_LANG = 'ko';   // 원고 언어 — /translate 의 source 와 script.srcLang 이 같은 값을 쓴다
 
     // ── IndexedDB 관리 ──
     const DB_NAME = 'RayTokHostDB';
@@ -718,7 +801,7 @@
           },
           body: JSON.stringify({
             q,
-            source: 'ko',
+            source: SRC_LANG,
             target: targetLang
           })
         });
@@ -772,9 +855,250 @@
       readyArea.style.display = 'block';
     });
 
-    document.getElementById('btnStartLecture').addEventListener('click', () => {
-      alert('강의 개설 및 실시간 송출 기능(L4-2)으로 이어집니다.');
+    // ── 5. 진행 (L4-2): 방 만들기 → QR·참석 → 문단 넘기기 → /ws 로 script·skip·break ──
+    // 규칙: 넘길 때 번역을 새로 청하지 않는다. IndexedDB 에 미리 번역된 것만 싣고,
+    //       없는 언어는 trans 에서 빠진다(청취자가 원문을 본다, R-15). P-16 ①: 청취자는 받기만.
+    const stepLive = document.getElementById('step-live');
+    const liveParaList = document.getElementById('liveParaList');
+    const liveProgress = document.getElementById('liveProgress');
+    const liveStatus = document.getElementById('liveStatus');
+    const liveError = document.getElementById('liveError');
+    const breakBand = document.getElementById('breakBand');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnSkip = document.getElementById('btnSkip');
+    const btnBreak = document.getElementById('btnBreak');
+
+    const live = {
+      on: false,          // 진행 화면이 켜졌나
+      code: null,         // 방 코드(6자)
+      token: null,        // 호스트 토큰(/ws 용) — 화면·기록에 안 적는다
+      ws: null,
+      cur: 0,             // 지금 읽는 문단(1부터). 0 = 아직 시작 전
+      state: {},          // para -> 'read' | 'skip'
+      breakOn: false,
+      roster: [],         // hello 의 name·lang·at — 진행자 화면에만, 서버 저장 없음(L4-3 CSV 용)
+      pingTimer: null,
+      closing: false
+    };
+
+    function listenerJoinUrl(code) {
+      // 청취 페이지 주소. 시험(relay 인자)이면 그 relay 를 같이 넘긴다.
+      const u = new URL('../listener/', window.location.href);
+      u.searchParams.set('room', code);
+      if (urlParams.get('relay')) u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));
+      return u.toString();
+    }
+
+    function renderQr(text) {
+      const box = document.getElementById('qrBox');
+      box.innerHTML = '';
+      if (typeof qrcode !== 'function') { box.textContent = text; return; }
+      const q = qrcode(0, 'M');
+      q.addData(text);
+      q.make();
+      box.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    }
+
+    async function createRoom() {
+      const res = await fetch(`${RELAY_BASE}/room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${hostToken}` },
+        body: JSON.stringify({ kind: 'script' })
+      });
+      if (!res.ok) {
+        let msg = '';
+        try { msg = (await res.json()).message || ''; } catch (_) {}
+        throw new Error(`방을 만들지 못했습니다 (${res.status}) ${msg}`.trim());
+      }
+      const data = await res.json();
+      if (!data.code || !data.host_token) throw new Error('방 응답이 비었습니다.');
+      return data;
+    }
+
+    function wsSend(obj) {
+      if (!live.ws || live.ws.readyState !== WebSocket.OPEN) return false;
+      live.ws.send(JSON.stringify(obj));
+      return true;
+    }
+
+    function sendWelcome() {
+      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG });
+    }
+
+    // 넘길 때 보내는 문단 — 와이어 정본 script 모양 그대로. trans 는 미리 번역된 것만.
+    function buildScriptMsg(para) {
+      const p = paragraphs[para - 1];
+      const trans = {};
+      for (const [lang, text] of Object.entries(p.trans || {})) {
+        if (typeof text === 'string' && text.trim() && text !== p.src) trans[lang] = text;   // 실패해 원문이 들어간 칸은 뺀다
+      }
+      return { kind: 'script', para, total: paragraphs.length, src: p.src, srcLang: SRC_LANG, trans, at: Date.now() };
+    }
+
+    function sendScript(para) {
+      return wsSend(buildScriptMsg(para));
+    }
+
+    function setBreak(on) {
+      if (live.breakOn === on) return;
+      live.breakOn = on;
+      wsSend({ kind: 'break', on });
+      breakBand.classList.toggle('on', on);
+      btnBreak.classList.toggle('on', on);
+      btnBreak.textContent = on ? '쉬는 시간 끝' : '쉬는 시간';
+    }
+
+    function renderLive() {
+      const total = paragraphs.length;
+      liveProgress.textContent = live.cur > 0 ? `${live.cur} / ${total}` : `0 / ${total}`;
+      liveParaList.innerHTML = '';
+      paragraphs.forEach((p, i) => {
+        const n = i + 1;
+        const el = document.createElement('div');
+        el.className = 'live-para';
+        el.id = `live-para-${n}`;
+        if (n === live.cur) el.classList.add('is-current');
+        else if (n === live.cur + 1) el.classList.add('is-next');
+        if (live.state[n] === 'read') el.classList.add('is-done');
+        if (live.state[n] === 'skip') el.classList.add('is-skipped');
+        const no = document.createElement('div');
+        no.className = 'live-no';
+        no.textContent = `${n} / ${total}` + (live.state[n] === 'skip' ? ' · 건너뜀' : '') + (Object.keys(p.trans || {}).length ? '' : ' · 번역 없음(원문만)');
+        const body = document.createElement('div');
+        body.textContent = p.src;
+        el.appendChild(no);
+        el.appendChild(body);
+        liveParaList.appendChild(el);
+      });
+      btnPrev.disabled = live.cur <= 1;
+      btnNext.disabled = live.cur >= total;
+      btnSkip.disabled = live.cur >= total;
+      const curEl = document.getElementById(`live-para-${live.cur}`);
+      if (curEl && curEl.scrollIntoView) curEl.scrollIntoView({ block: 'nearest' });
+    }
+
+    // 단추 넷. 쉬는 시간 중에 넘기면 먼저 쉬는 시간을 끝낸다(받는 쪽이 멈춘 채로 남지 않게).
+    function goTo(para) {
+      if (para < 1 || para > paragraphs.length) return;
+      setBreak(false);
+      live.cur = para;
+      live.state[para] = 'read';
+      sendScript(para);
+      renderLive();
+    }
+    function doNext() { goTo(live.cur + 1); }
+    function doPrev() { goTo(live.cur - 1); }
+    function doSkip() {
+      const para = live.cur + 1;
+      if (para > paragraphs.length) return;
+      setBreak(false);
+      live.cur = para;
+      live.state[para] = 'skip';
+      wsSend({ kind: 'skip', para });
+      renderLive();
+    }
+    function doBreak() { setBreak(!live.breakOn); }
+
+    // 단추를 누른 뒤 초점을 빼 둔다 — 스페이스가 초점 잡힌 단추를 다시 누르지 않게(키는 늘 문서에서 받는다)
+    btnNext.addEventListener('click', () => { btnNext.blur(); doNext(); });
+    btnPrev.addEventListener('click', () => { btnPrev.blur(); doPrev(); });
+    btnSkip.addEventListener('click', () => { btnSkip.blur(); doSkip(); });
+    btnBreak.addEventListener('click', () => { btnBreak.blur(); doBreak(); });
+    document.addEventListener('keydown', (e) => {
+      if (!live.on) return;
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (tag === 'BUTTON' && (e.key === ' ' || e.key === 'Spacebar')) return;   // 초점 잡힌 단추는 제 일을 한다
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); doNext(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); doPrev(); }
     });
+
+    function renderAtt(a) {
+      document.getElementById('attNow').textContent = a.now || 0;
+      document.getElementById('attMax').textContent = a.max || 0;
+      const parts = Object.entries(a.langs || {})
+        .filter(([, v]) => v && (v.now > 0 || v.max > 0))
+        .map(([k, v]) => `<span>${escapeHtml(k)} <strong>${v.now || 0}</strong></span>`);
+      document.getElementById('attLangs').innerHTML = parts.length ? parts.join('') : '—';
+    }
+
+    function onHostMessage(raw) {
+      let msg;
+      try { msg = JSON.parse(raw); } catch (_) { return; }
+      if (msg.__ping) return;
+      if (msg.att) { renderAtt(msg); return; }
+      if (msg.hello) {
+        // 청취자 hello: 이름·언어는 이 화면에만 둔다(서버 저장 없음). welcome 으로 답한다.
+        live.roster.push({ name: msg.name || '', lang: msg.lang || '', at: Date.now() });
+        sendWelcome();
+        return;
+      }
+      if (msg.end) {
+        liveStatus.textContent = '세션이 끝났습니다' + (msg.why ? ` (${msg.why})` : '');
+        live.closing = true;
+        return;
+      }
+      if (msg.warning === 'silence_warning') {
+        liveStatus.textContent = '오래 넘기지 않아 곧 끊깁니다 — 문단을 넘기세요';
+      }
+    }
+
+    function connectHostWs() {
+      const base = RELAY_BASE.replace(/^http/, 'ws');
+      const ws = new WebSocket(`${base}/ws?room=${encodeURIComponent(live.code)}&role=host&token=${encodeURIComponent(live.token)}`);
+      live.ws = ws;
+      ws.onopen = () => {
+        liveStatus.textContent = '연결됨';
+        sendWelcome();   // 링버퍼에 남아 뒤에 오는 청취자도 받는다
+        clearInterval(live.pingTimer);
+        live.pingTimer = setInterval(() => wsSend({ __ping: true }), 25000);
+      };
+      ws.onmessage = (e) => onHostMessage(e.data);
+      ws.onclose = () => {
+        clearInterval(live.pingTimer);
+        if (live.closing || !live.on) return;
+        liveStatus.textContent = '다시 연결 중…';
+        setTimeout(() => { if (live.on && !live.closing) connectHostWs(); }, 3000);
+      };
+    }
+
+    async function startLecture() {
+      liveError.style.display = 'none';
+      if (!paragraphs.length) {
+        liveError.textContent = '원고가 없습니다.';
+        liveError.style.display = 'block';
+        return;
+      }
+      const btn = document.getElementById('btnStartLecture');
+      btn.disabled = true;
+      try {
+        const room = await createRoom();
+        live.code = room.code;
+        live.token = room.host_token;
+        live.on = true;
+        live.cur = 0;
+        live.state = {};
+        live.breakOn = false;
+        live.roster = [];
+        live.closing = false;
+        stepPrepare.style.display = 'none';
+        stepLive.style.display = 'block';
+        document.getElementById('roomCode').textContent = live.code;
+        const joinUrl = listenerJoinUrl(live.code);
+        document.getElementById('joinUrl').textContent = joinUrl;
+        renderQr(joinUrl);
+        renderAtt({ now: 0, max: 0, langs: {} });
+        renderLive();
+        connectHostWs();
+      } catch (err) {
+        liveError.textContent = err.message;
+        liveError.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    document.getElementById('btnStartLecture').addEventListener('click', startLecture);
 
     async function restoreSavedData() {
       try {

@@ -129,6 +129,11 @@
     .badge-via { background-color: #475569; color: #fff; }
     .badge-meeting { background-color: #0369a1; color: #e0f2fe; }
     .badge-me { background-color: #047857; color: #d1fae5; }
+    /* L4-2 원고 문단(script)·건너뜀·쉬는 시간 */
+    .badge-script { background-color: #334155; color: #e2e8f0; }
+    .msg-line.msg-skip .msg-bubble { opacity: 0.6; font-size: 13px; color: var(--text-muted); border-style: dashed; }
+    #break-band { display: none; margin: 0 16px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: #b45309; font-weight: 700; text-align: center; }
+    #break-band.on { display: block; }
     [dir="rtl"] .msg-bubble {
       border-top-left-radius: 12px;
       border-top-right-radius: 2px;
@@ -265,6 +270,7 @@
   </div>
 
   <div class="screen" id="chat-screen">
+    <div id="break-band" data-i18n="break_band">쉬는 시간</div>
     <div id="chat-list"></div>
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
@@ -899,6 +905,38 @@
         return;
       }
 
+      // ── L4-2 원고 모드(웹 강사 화면): script / skip / break ──
+      // script 는 미리 번역된 문단 — 받기만 한다(P-16 ①). trans[내 언어] 없으면 원문(R-15).
+      if (msg.kind === 'script' && typeof msg.src === 'string') {
+        const pendingDiv = document.getElementById('msg-pending');
+        if (pendingDiv) pendingDiv.remove();
+        setBreakBand(false);
+        const line = {
+          seq: null,
+          script: 1,
+          para: Number(msg.para) || 0,
+          total: Number(msg.total) || 0,
+          text: msg.src,
+          spk: null,
+          at: Date.now(),
+          tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
+          pending: false,
+          via: undefined
+        };
+        lines.push(line);
+        addLine(line);
+        if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
+        return;
+      }
+      if (msg.kind === 'skip') {
+        addSkipLine(Number(msg.para) || 0);
+        return;
+      }
+      if (msg.kind === 'break') {
+        setBreakBand(!!msg.on);
+        return;
+      }
+
       if (msg.fix && msg.seq && msg.spk) {
         const line = lines.find(l => l.seq === msg.seq);
         if (line) {
@@ -949,18 +987,46 @@
       }
     }
 
+    // 줄 → 화면 요소 id. 원고 줄(script)은 seq 가 없으니 자기 번호(uid)로.
+    let scriptUid = 0;
+    function lineElId(line) {
+      if (line.script) {
+        if (!line.uid) line.uid = ++scriptUid;
+        return `msg-s${line.uid}`;
+      }
+      return `msg-${line.seq}`;
+    }
+
+    // L4-2: 쉬는 시간 띠(break on/off) · 건너뜀 줄(skip)
+    function setBreakBand(on) {
+      const band = document.getElementById('break-band');
+      if (band) band.classList.toggle('on', !!on);
+    }
+    function addSkipLine(para) {
+      const div = document.createElement('div');
+      div.className = 'msg-line msg-skip';
+      div.innerHTML = '<div class="msg-bubble"><div class="msg-text"></div></div>';
+      div.querySelector('.msg-text').textContent = `${t('skip_line', currentUiLang)} ${para}`;
+      chatList.appendChild(div);
+      chatList.scrollTop = chatList.scrollHeight;
+    }
+
     function addLine(line) {
       const div = document.createElement('div');
-      div.className = 'msg-line';
-      div.id = `msg-${line.seq}`;
+      div.className = 'msg-line' + (line.script ? ' msg-script' : '');
+      div.id = lineElId(line);
       const spkClass = line.spk === 'meeting' ? 'badge-meeting' : 'badge-me';
       const spkLabel = line.spk === 'meeting' ? '회의 (meeting)' : '나 (me)';
+      // 원고 줄 머리: "원고 n/total" (L4-2). 들은 줄 머리: "#seq".
+      const head = line.script
+        ? `<span class="badge badge-script">${t('script_prefix', currentUiLang)} ${line.para}/${line.total}</span>`
+        : `#${line.seq}`;
       div.innerHTML = `
         <div class="msg-bubble">
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src" dir="ltr">#${line.seq} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
+        <div class="msg-src" dir="ltr">${head} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
       `;
       const textDiv = div.querySelector('.msg-text');
       textDiv.textContent = line.text;
@@ -975,7 +1041,7 @@
     }
 
     function updateLineUI(line) {
-      const div = document.getElementById(`msg-${line.seq}`);
+      const div = document.getElementById(lineElId(line));
       if (!div) return;
       const trDiv = div.querySelector('.msg-tr');
 

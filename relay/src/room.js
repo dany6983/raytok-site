@@ -580,13 +580,15 @@ export class Room {
       this.ctx.storage.put('ringBuffer', this.ringBuffer);
 
       // 호스트 → 청취자 전원에 그대로 전달 (내용 해석 안 함)
+      // L4-2 의 script·skip·break 도 여기로 그대로 간다 — 따로 저장하지 않는다(줄 보관은 위 링버퍼 규칙 그대로).
       for (const listenerWs of this.ctx.getWebSockets('listener')) {
         try {
           listenerWs.send(message);
         } catch (e) {}
       }
 
-      // 무음(새 자막 줄 없음) 판정 기준: 호스트가 보낸 메시지에 text가 있고 end가 아닌 경우 새 자막으로 판정
+      // 무음(새 자막 줄 없음) 판정 기준: 호스트가 보낸 메시지에 text가 있고 end가 아닌 경우 새 자막으로 판정.
+      // 원고 문단(kind:"script")도 새 줄이다 — 웹 강사 화면은 text 를 보내지 않으므로 여기서 세지 않으면 10분 뒤 끊긴다.
       let isSubtitleLine = false;
       let isEnd = false;
       let endSummary = null;
@@ -596,9 +598,12 @@ export class Room {
         if (!isEnd && parsed.text && (parsed.seq !== undefined || !parsed.hello)) {
           isSubtitleLine = true;
         }
+        if (!isEnd && parsed.kind === 'script' && typeof parsed.src === 'string') {
+          isSubtitleLine = true;
+        }
       } catch (e) {
         if (/"end"\s*:\s*1/.test(msgStr)) isEnd = true;
-        else if (/"text"\s*:/.test(msgStr)) isSubtitleLine = true;
+        else if (/"text"\s*:/.test(msgStr) || /"kind"\s*:\s*"script"/.test(msgStr)) isSubtitleLine = true;
       }
 
       if (isSubtitleLine) {

@@ -777,6 +777,18 @@
       "zh": "请保持屏幕常亮",
       "bn": "স্ক্রিন চালু রাখুন",
       "ur": "اسکرین آن رکھیں"
+    },
+    "script_prefix": {
+      "ko": "원고",
+      "en": "Script"
+    },
+    "skip_line": {
+      "ko": "건너뜀",
+      "en": "Skipped"
+    },
+    "break_band": {
+      "ko": "쉬는 시간",
+      "en": "Break"
     }
   }
 }
