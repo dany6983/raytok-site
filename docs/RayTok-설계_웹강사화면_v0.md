@@ -17,7 +17,10 @@
 3. **진행**: 왼쪽 원고 문단 목록(현재 강조), 오른쪽 QR·참석 수(`att`)·언어별 인원. 단추: **다음 / 이전 / 건너뜀 / 쉬는 시간**. 키보드 → ← 스페이스. 넘기면 `/ws` 로 `{kind:"script", para, src, trans:{lang:text}}` — **원문 + 미리 번역한 번역문**을 청취자 언어로 보낸다(청취자는 번역 안 함 ✔ P-16 ①; 기기 간이 아니라 서버 경유라 P-14 밖).
 4. **끝**: 종료 요약(참석·시간·읽은 문단/건너뜀) → 리포트 저장 3×3(`web/common/report.js` 그대로) + 참석 CSV. 방 닫기 → relay 가 줄·참석 삭제(기존).
 
-## 2. 와이어 (A 정본 `docs/samples/wire-messages.json` 에 마스터가 추가 요청)
+## 2. 와이어 — **옮겨 놓았다** (10-09 마스터)
+정본은 `raytok-native1/docs/samples/wire-messages.json` 이고, 거기 있던 `script`·`skip`·`break`
+셋을 이 저장소의 `docs/samples/wire-messages.json` 에 **그대로** 옮겼다. 여기 것을 고치지 않는다 —
+와이어는 한 곳에서만 바뀐다. `npm run test:wire` 가 셋이 사라지면 붉어진다.
 - `script` 메시지: `{kind:"script", para:int, total:int, src:string, srcLang, trans:{[lang]:string}, at}` — 청취자 페이지는 `trans[myLang]` 없으면 `src` 표시(R-15).
 - `skip`: `{kind:"skip", para}` · `break`: `{kind:"break", on:bool}`.
 - 청취자 `hello` 에 `name`(선택) — 8번 명단 대조용. 서버는 저장 안 함(진행자 화면으로만).
