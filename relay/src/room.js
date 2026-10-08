@@ -593,7 +593,7 @@ export class Room {
       try {
         const parsed = JSON.parse(msgStr);
         if (parsed.end) { isEnd = true; endSummary = parsed.summary; }
-        if (!isEnd && parsed.text && (parsed.seq !== undefined || !parsed.hello)) {
+        if (!isEnd && (parsed.text || parsed.kind === 'script') && (parsed.seq !== undefined || parsed.para !== undefined || !parsed.hello)) {
           isSubtitleLine = true;
         }
       } catch (e) {

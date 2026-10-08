@@ -243,6 +243,7 @@
 
   <script src="../vendor/pdf.min.js"></script>
   <script src="../vendor/mammoth.browser.min.js"></script>
+  <script src="../common/report.js"></script>
 </head>
 <body>
   <header>
@@ -342,6 +343,114 @@
         <button id="btnStartLecture" class="btn success">강의 시작하기 (L4-2 연동)</button>
       </div>
     </section>
+  
+    <!-- 3단계: 강의 진행 (L4-2) -->
+    <section id="step-live" class="card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div class="card-title" style="margin: 0;">강의 실시간 진행 및 원고 송출</div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btnBreakToggle" class="btn" style="background: #f59e0b; padding: 6px 14px; font-size: 0.85rem;">☕ 쉬는 시간</button>
+          <button id="btnEndLecture" class="btn" style="background: var(--danger); padding: 6px 14px; font-size: 0.85rem;">강의 종료</button>
+        </div>
+      </div>
+
+      <!-- 쉬는 시간 배너 -->
+      <div id="liveBreakBanner" style="display: none; background: #f59e0b; color: #0f172a; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 16px;">
+        ☕ 현재 쉬는 시간 중입니다 (청취자 화면에 안내 띠가 표시 중입니다)
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 20px;">
+        <!-- 좌측: 원고 문단 목록 -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>원고 문단 목록 (총 <span id="liveTotalCount">0</span>개)</span>
+            <span>단축키: <kbd style="background:#334155;padding:2px 6px;border-radius:4px;">→</kbd> 또는 <kbd style="background:#334155;padding:2px 6px;border-radius:4px;">Space</kbd> 다음</span>
+          </div>
+          <div id="liveParaList" style="max-height: 480px; overflow-y: auto; padding-right: 6px;">
+            <!-- 문단 카드 목록 동적 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 우측: 방 접속 정보 및 진행 컨트롤 -->
+        <div>
+          <!-- 접속 QR 및 코드 -->
+          <div style="background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">청취자 참여 코드</div>
+            <div id="liveRoomCode" style="font-size: 1.8rem; font-weight: 800; letter-spacing: 4px; color: #38bdf8; margin-bottom: 10px;">------</div>
+            <div id="liveQrBox" style="width: 140px; height: 140px; margin: 0 auto 10px; background: white; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: black; font-size: 0.8rem;">
+              QR 코드
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;" id="liveListenerUrl">-</div>
+          </div>
+
+          <!-- 참석 현황 (att) -->
+          <div style="background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #38bdf8;">실시간 청취 현황</div>
+            <div id="liveAttSummary" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 4px;">듣는 중 0명 (누적 0명)</div>
+            <div id="liveAttLangs" style="font-size: 0.8rem; color: var(--text-muted);">언어별: -</div>
+          </div>
+
+          <!-- 컨트롤러 버튼 묶음 -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button id="btnNextPara" class="btn success" style="padding: 14px; font-size: 1.05rem;">▶ 다음 문단 송출 (→)</button>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnPrevPara" class="btn secondary" style="flex: 1;">◀ 이전 (←)</button>
+              <button id="btnSkipPara" class="btn secondary" style="flex: 1;">⏭ 건너뜀</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4단계: 강의 종료 요약 및 리포트 3x3 (L4-3) -->
+    <section id="step-finish" class="card" style="display: none;">
+      <div class="card-title">강의 종료 요약 및 기록 저장</div>
+      
+      <div style="background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; text-align: center;">
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">진행 시간</div>
+            <div id="sumDuration" style="font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-top: 4px;">0분</div>
+          </div>
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">총 참석자</div>
+            <div id="sumAttendance" style="font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-top: 4px;">0명</div>
+          </div>
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">문단 (송출 / 건너뜀)</div>
+            <div id="sumParas" style="font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-top: 4px;">0 / 0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 리포트 3x3 저장 패널 -->
+      <div style="border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 20px; background: rgba(15, 23, 42, 0.4);">
+        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 12px; color: #f8fafc;">기록 저장 (내용 3종 × 형식 3종)</div>
+        <div style="display: flex; gap: 24px; margin-bottom: 16px; font-size: 0.9rem;">
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">내용 선택</div>
+            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-content-mode" value="both" checked> ① 원문/번역문</label>
+            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-content-mode" value="src"> ② 원문만</label>
+            <label style="cursor: pointer;"><input type="radio" name="finish-content-mode" value="trans"> ③ 번역문만</label>
+          </div>
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">형식 선택</div>
+            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-format" value="txt" checked> TXT</label>
+            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-format" value="pdf"> PDF</label>
+            <label style="cursor: pointer;"><input type="radio" name="finish-format" value="doc"> DOC</label>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button id="btnDownloadReport" class="btn">📥 리포트 파일 저장</button>
+          <button id="btnDownloadCsv" class="btn secondary">📊 참석 명단 CSV 저장</button>
+        </div>
+      </div>
+
+      <div style="text-align: right;">
+        <button id="btnRestartLecture" class="btn secondary">새 강의 준비하기</button>
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -796,6 +905,327 @@
     }
 
     // 초기 실행
+    
+    // ── L4-2 강의 실시간 진행 및 송출 ──
+    let currentRoomCode = '';
+    let currentHostToken = '';
+    let hostWs = null;
+    let currentParaIndex = 0;
+    let lectureStartTime = null;
+    let isBreakActive = false;
+    const sentParaSet = new Set();
+    const skippedParaSet = new Set();
+    const hostParticipants = []; // { name, lang, at }
+    let latestAttendance = { now: 0, max: 0, joined: 0, langs: {} };
+
+    const stepLive = document.getElementById('step-live');
+    const stepFinish = document.getElementById('step-finish');
+    const liveTotalCount = document.getElementById('liveTotalCount');
+    const liveParaList = document.getElementById('liveParaList');
+    const liveRoomCode = document.getElementById('liveRoomCode');
+    const liveQrBox = document.getElementById('liveQrBox');
+    const liveListenerUrl = document.getElementById('liveListenerUrl');
+    const liveAttSummary = document.getElementById('liveAttSummary');
+    const liveAttLangs = document.getElementById('liveAttLangs');
+    const liveBreakBanner = document.getElementById('liveBreakBanner');
+    const btnBreakToggle = document.getElementById('btnBreakToggle');
+    const btnEndLecture = document.getElementById('btnEndLecture');
+    const btnNextPara = document.getElementById('btnNextPara');
+    const btnPrevPara = document.getElementById('btnPrevPara');
+    const btnSkipPara = document.getElementById('btnSkipPara');
+
+    // 4단계 요약 엘리먼트
+    const sumDuration = document.getElementById('sumDuration');
+    const sumAttendance = document.getElementById('sumAttendance');
+    const sumParas = document.getElementById('sumParas');
+    const btnDownloadReport = document.getElementById('btnDownloadReport');
+    const btnDownloadCsv = document.getElementById('btnDownloadCsv');
+    const btnRestartLecture = document.getElementById('btnRestartLecture');
+
+    async function createRelayRoom() {
+      const res = await fetch(`${RELAY_BASE}/room`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${hostToken}`
+        },
+        body: JSON.stringify({ kind: 'edu' })
+      });
+      if (!res.ok) {
+        throw new Error('강의 방 개설 실패: status ' + res.status);
+      }
+      return await res.json();
+    }
+
+    function connectHostWebSocket() {
+      const wsProto = RELAY_BASE.startsWith('https') ? 'wss:' : 'ws:';
+      const wsHost = new URL(RELAY_BASE).host;
+      hostWs = new WebSocket(`${wsProto}//${wsHost}/ws?room=${currentRoomCode}&role=host&token=${currentHostToken}`);
+
+      hostWs.onopen = () => {
+        console.log('[Host WS] Connected');
+        hostWs.send(JSON.stringify({ hello: 1, host_kind: 'edu' }));
+      };
+
+      hostWs.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.att === 1) {
+            latestAttendance = msg;
+            updateAttendanceUI();
+          }
+          if (msg.hello && msg.name) {
+            const exists = hostParticipants.some(p => p.name === msg.name);
+            if (!exists) {
+              hostParticipants.push({
+                name: msg.name,
+                lang: msg.lang || 'ko',
+                time: new Date().toTimeString().split(' ')[0]
+              });
+            }
+          }
+        } catch (_) {}
+      };
+
+      hostWs.onerror = (e) => console.error('[Host WS Error]', e);
+    }
+
+    function updateAttendanceUI() {
+      liveAttSummary.textContent = `듣는 중 ${latestAttendance.now || 0}명 (최대 ${latestAttendance.max || 0}명, 누적 ${latestAttendance.joined || 0}명)`;
+      if (latestAttendance.langs) {
+        const parts = Object.entries(latestAttendance.langs)
+          .filter(([c]) => c !== '?')
+          .map(([c, info]) => `${c.toUpperCase()} ${info.now || 0}명`);
+        liveAttLangs.textContent = '언어별: ' + (parts.length ? parts.join(', ') : '대기 중');
+      }
+    }
+
+    function renderLiveParas() {
+      liveTotalCount.textContent = paragraphs.length;
+      liveParaList.innerHTML = '';
+
+      paragraphs.forEach((p, idx) => {
+        const isCurrent = idx === currentParaIndex;
+        const isSent = sentParaSet.has(p.id);
+        const isSkipped = skippedParaSet.has(p.id);
+
+        const card = document.createElement('div');
+        card.className = 'para-item';
+        card.id = `live-para-${p.id}`;
+        if (isCurrent) {
+          card.style.border = '2px solid #38bdf8';
+          card.style.background = 'rgba(2, 132, 199, 0.15)';
+        }
+
+        let statusBadge = '<span style="color:#64748b;">대기</span>';
+        if (isSent) statusBadge = '<span style="color:#10b981;font-weight:600;">송출됨</span>';
+        if (isSkipped) statusBadge = '<span style="color:#f59e0b;font-weight:600;">건너뜀</span>';
+        if (isCurrent) statusBadge = '<span style="color:#38bdf8;font-weight:bold;">현재 순서</span>';
+
+        card.innerHTML = `
+          <div class="para-header">
+            <span style="font-weight:600;">문단 #${p.id} / ${paragraphs.length}</span>
+            <span>${statusBadge}</span>
+          </div>
+          <div style="font-size:0.95rem;line-height:1.5;margin-bottom:6px;">${escapeHtml(p.src)}</div>
+          ${Object.keys(p.trans).length > 0 ? `
+            <div style="font-size:0.8rem;color:#94a3b8;border-top:1px dashed var(--border);padding-top:4px;">
+              ${Object.entries(p.trans).map(([code, t]) => `<div><strong>${code.toUpperCase()}:</strong> ${escapeHtml(t)}</div>`).join('')}
+            </div>
+          ` : ''}
+        `;
+        liveParaList.appendChild(card);
+      });
+
+      const currentEl = document.getElementById(`live-para-${currentParaIndex + 1}`);
+      if (currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function sendCurrentPara() {
+      if (currentParaIndex >= paragraphs.length) {
+        alert('모든 문단이 완료되었습니다. 강의를 종료하세요.');
+        return;
+      }
+      const p = paragraphs[currentParaIndex];
+      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
+        hostWs.send(JSON.stringify({
+          kind: 'script',
+          para: p.id,
+          total: paragraphs.length,
+          src: p.src,
+          srcLang: 'ko',
+          trans: p.trans,
+          at: Date.now()
+        }));
+      }
+      sentParaSet.add(p.id);
+      currentParaIndex++;
+      renderLiveParas();
+    }
+
+    function prevPara() {
+      if (currentParaIndex > 0) {
+        currentParaIndex--;
+        renderLiveParas();
+      }
+    }
+
+    function skipCurrentPara() {
+      if (currentParaIndex >= paragraphs.length) return;
+      const p = paragraphs[currentParaIndex];
+      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
+        hostWs.send(JSON.stringify({
+          kind: 'skip',
+          para: p.id
+        }));
+      }
+      skippedParaSet.add(p.id);
+      currentParaIndex++;
+      renderLiveParas();
+    }
+
+    function toggleBreak() {
+      isBreakActive = !isBreakActive;
+      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
+        hostWs.send(JSON.stringify({
+          kind: 'break',
+          on: isBreakActive
+        }));
+      }
+      liveBreakBanner.style.display = isBreakActive ? 'block' : 'none';
+      btnBreakToggle.textContent = isBreakActive ? '▶ 강의 재개' : '☕ 쉬는 시간';
+      btnBreakToggle.style.background = isBreakActive ? '#10b981' : '#f59e0b';
+    }
+
+    btnStartLecture.addEventListener('click', async () => {
+      btnStartLecture.disabled = true;
+      btnStartLecture.textContent = '방 개설 중...';
+      try {
+        const roomData = await createRelayRoom();
+        currentRoomCode = roomData.code;
+        currentHostToken = roomData.host_token;
+        lectureStartTime = Date.now();
+        currentParaIndex = 0;
+        sentParaSet.clear();
+        skippedParaSet.clear();
+
+        liveRoomCode.textContent = currentRoomCode;
+        const listenerUrl = `https://raytok.kr/web/listener/?room=${currentRoomCode}&relay=${encodeURIComponent(new URL(RELAY_BASE).host)}`;
+        liveListenerUrl.textContent = listenerUrl;
+        liveQrBox.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;"><div style="font-size:12px;color:#64748b;font-weight:600;">청취 코드</div><div style="font-size:24px;font-weight:800;color:#0284c7;letter-spacing:2px;">${currentRoomCode}</div></div>`;
+
+        connectHostWebSocket();
+
+        stepPrepare.style.display = 'none';
+        stepLive.style.display = 'block';
+        renderLiveParas();
+      } catch (err) {
+        alert('강의 시작 실패: ' + err.message);
+      } finally {
+        btnStartLecture.disabled = false;
+        btnStartLecture.textContent = '강의 시작하기 (L4-2 연동)';
+      }
+    });
+
+    btnNextPara.addEventListener('click', sendCurrentPara);
+    btnPrevPara.addEventListener('click', prevPara);
+    btnSkipPara.addEventListener('click', skipCurrentPara);
+    btnBreakToggle.addEventListener('click', toggleBreak);
+
+    // 키보드 단축키 지원 (ArrowRight, ArrowLeft, Space)
+    window.addEventListener('keydown', (e) => {
+      if (stepLive.style.display !== 'block') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.code === 'ArrowRight' || e.code === 'Space') {
+        e.preventDefault();
+        sendCurrentPara();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        prevPara();
+      }
+    });
+
+    // ── L4-3 강의 종료 및 요약 리포트 저장 ──
+    btnEndLecture.addEventListener('click', () => {
+      if (!confirm('강의를 종료하시겠습니까?')) return;
+
+      const elapsedMs = Date.now() - (lectureStartTime || Date.now());
+      const elapsedMin = Math.max(1, Math.round(elapsedMs / 60000));
+      const readCount = sentParaSet.size;
+      const skipCount = skippedParaSet.size;
+
+      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
+        hostWs.send(JSON.stringify({
+          end: 1,
+          summary: {
+            lines: readCount,
+            minutes: elapsedMin
+          }
+        }));
+        hostWs.close();
+      }
+
+      stepLive.style.display = 'none';
+      stepFinish.style.display = 'block';
+
+      sumDuration.textContent = `${elapsedMin}분`;
+      sumAttendance.textContent = `${latestAttendance.max || latestAttendance.joined || 0}명`;
+      sumParas.textContent = `${readCount} / ${skipCount} (총 ${paragraphs.length})`;
+    });
+
+    btnDownloadReport.addEventListener('click', () => {
+      const contentMode = document.querySelector('input[name="finish-content-mode"]:checked')?.value || 'both';
+      const format = document.querySelector('input[name="finish-format"]:checked')?.value || 'txt';
+      const targetLang = selectedLangs[0] || 'en';
+      const curLang = SUPPORTED_TARGET_LANGS.find(l => l.code === targetLang);
+
+      // 송출된 문단 데이터 리스트화
+      const lines = paragraphs.filter(p => sentParaSet.has(p.id)).map(p => ({
+        at: Date.now(),
+        text: p.src,
+        tr: p.trans
+      }));
+
+      if (window.RayTokReport) {
+        window.RayTokReport.downloadReport({
+          lines: lines.length ? lines : paragraphs.map(p => ({ at: Date.now(), text: p.src, tr: p.trans })),
+          srcLang: 'ko',
+          targetLang,
+          langName: curLang ? curLang.name : targetLang,
+          contentMode,
+          format
+        });
+      }
+    });
+
+    btnDownloadCsv.addEventListener('click', () => {
+      const rows = [
+        ['이름', '언어', '접속일시']
+      ];
+      if (hostParticipants.length) {
+        hostParticipants.forEach(p => rows.push([p.name, p.lang, p.time]));
+      } else {
+        rows.push(['참석자 (익명)', selectedLangs[0] || 'en', new Date().toTimeString().split(' ')[0]]);
+      }
+
+      const csvContent = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `raytok_edu_attendance_${currentRoomCode || 'room'}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    });
+
+    btnRestartLecture.addEventListener('click', () => {
+      stepFinish.style.display = 'none';
+      stepPrepare.style.display = 'block';
+    });
+
     openDatabase().then(() => autoLogin());
   </script>
 </body>

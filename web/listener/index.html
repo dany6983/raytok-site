@@ -878,6 +878,48 @@
         return;
       }
 
+      // ── L4-2 강의 스크립트(script, break, skip) 처리 ──
+      if (msg.kind === 'break') {
+        let banner = document.getElementById('break-banner');
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'break-banner';
+          banner.style.cssText = 'position:sticky; top:0; z-index:40; background:#f59e0b; color:#0f172a; text-align:center; padding:10px; font-weight:bold; font-size:14px; box-shadow:0 2px 6px rgba(0,0,0,0.2);';
+          banner.innerHTML = '☕ 쉬는 시간입니다.';
+          chatScreen.insertBefore(banner, chatScreen.firstChild);
+        }
+        banner.style.display = msg.on ? 'block' : 'none';
+        return;
+      }
+
+      if (msg.kind === 'skip') {
+        return; // 건너뜀 알림
+      }
+
+      if (msg.kind === 'script') {
+        const pendingDiv = document.getElementById('msg-pending');
+        if (pendingDiv) pendingDiv.remove();
+
+        const translated = (msg.trans && msg.trans[selectedLang]) ? msg.trans[selectedLang] : msg.src;
+        const trMap = {};
+        if (msg.trans) Object.assign(trMap, msg.trans);
+        trMap[selectedLang] = translated;
+
+        const line = {
+          seq: msg.para,
+          text: msg.src,
+          scriptTag: `원고 ${msg.para}/${msg.total}`,
+          at: msg.at || Date.now(),
+          tr: trMap,
+          pending: false
+        };
+        lines.push(line);
+        lastSeq = msg.para;
+        addLine(line);
+        chatList.scrollTop = chatList.scrollHeight;
+        return;
+      }
+
       if (msg.pending && !msg.seq && 'text' in msg) {
         let pendingDiv = document.getElementById('msg-pending');
         if (!pendingDiv) {
@@ -960,7 +1002,7 @@
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src" dir="ltr">#${line.seq} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
+        <div class="msg-src" dir="ltr">#${line.seq} ${srcLang.toUpperCase()} ${line.scriptTag ? `<span class="badge" style="background:#0284c7;color:#fff;">${line.scriptTag}</span>` : ''} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
       `;
       const textDiv = div.querySelector('.msg-text');
       textDiv.textContent = line.text;
