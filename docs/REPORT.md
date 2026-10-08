@@ -6,6 +6,45 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 11: 릴레이 배포 직후 확인 및 태그 완료
+커밋: 6ace356 (태그: relay-20261008-1609)
+
+만든·바꾼 파일과 이유
+- docs/deploy-checklist.md — 대표님 직접 배포 완료에 따른 최신 배포 버전 ID(4673fbdc-91a7-4d84-bb2c-63a0aaef17e8) 및 시각(2026-10-08T07:09:40Z / 16:09 KST) 반영.
+- git tag relay-20261008-1609 — 배포 시점 main 커밋에 배포 추적 태그 생성 및 원격 push 완료.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npx wrangler deployments list (배포 완료 버전):
+Created:     2026-10-08T07:09:40.285Z
+Author:      gpncdany@gmail.com
+Source:      Unknown (deployment)
+Version(s):  (100%) 4673fbdc-91a7-4d84-bb2c-63a0aaef17e8
+
+2. 운영 주소(https://raytok-relay.raytok.workers.dev) 라이브 확인 셋 전원 정상:
+=== 운영 릴레이 배포 후 라이브 가벼운 확인 셋 ===
+Target: https://raytok-relay.raytok.workers.dev
+1. OPTIONS / status: 200
+2. POST /translate (no token) status: 401 body: {"error":"no_token","message":"Missing or invalid Authorization header"}
+3. POST /desk/session (no token) status: 401 body: {"why":"token"}
+[ALL PASS] 라이브 확인 셋 모두 완벽 정상 통과!
+
+3. 태그 생성 및 푸시:
+git tag relay-20261008-1609
+git push origin relay-20261008-1609 -> * [new tag] relay-20261008-1609
+
+4. 롤백 대비책 유지:
+이상 발생 시 롤백 대상 버전: 2ff0ac2d-2324-49a4-9386-33edc0690155
+
+한 줄 판정
+운영 배포 버전 4673fbdc 확인, 운영 3대 엔드포인트 무인증 접근 차단 라이브 검증 100% 정상 및 relay-20261008-1609 태그 푸시 완료.
+
+막힌 것
+없음.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 10: 바이트 단위 분할 저장 및 상한 413 고침 완료 (main)
 커밋: fd71a10
 
