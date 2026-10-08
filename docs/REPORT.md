@@ -6,6 +6,77 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] L4-2 진행 화면 — 완료 (가지 `feat/l4-2`, main 미합침)
+상태: 구현·시험 통과·되돌림 확인 2건. 합치기는 마스터.
+커밋: 6e33708 (작업) · 보고 커밋은 이 줄 뒤.
+
+만든·바꾼 파일과 이유
+- web/host/index.html — 3단계 "강의 진행" 추가: 강의 시작 → `POST /room`(이용권 토큰 Bearer, `kind:"script"`) → 방 코드·QR·참여 주소·참석 수(`att`)·언어별 인원. 단추 다음/이전/건너뜀/쉬는 시간, 키 →·←·스페이스. 넘길 때 `/ws`(role=host)로 정본 모양 `{kind:"script", para, total, src, srcLang, trans, at}` — `trans` 는 IndexedDB 미리 번역만(실패해 원문이 들어간 칸·빈 칸은 뺀다 → 그 언어 청취자는 원문, R-15). 진행 중 `/translate` 호출 없음. `skip {kind,para}` · `break {kind,on}`. 청취자 `hello` 에는 `welcome` 으로 답하고, 시작 때도 `welcome` 을 한 번 보내 링버퍼로 늦게 온 청취자도 받는다. `hello.name`·lang 은 진행자 화면 메모리에만(L4-3 CSV 용, 서버 저장 없음). `SRC_LANG` 상수 하나로 `/translate` source 와 `script.srcLang` 을 맞췄다.
+- web/vendor/qrcode.js — 신규. qrcode-generator 2.0.4(MIT, Kazuhiko Arase) 그대로 복사. pdf.js·mammoth 와 같은 규칙(CDN 0, 바깥 요청 0). svg 로 그린다.
+- web/listener/index.html — `kind:"script"` 수신 → 줄 머리 "원고 n/total"(꼬리표) + 원문 + `trans[내 언어]`(없으면 번역 칸 비움, 원문은 그대로). 기록 저장(TXT·DOC·PDF)에 원고 줄도 들어간다(`lines` 에 `script:1, seq:null` 로). `kind:"skip"` → "건너뜀 n" 줄, `kind:"break"` → 자막 목록 위 "쉬는 시간" 띠(on/off). 원고 줄 요소 id 는 seq 가 없어 `lineElId()` 로 갈랐다. 기존 line·tr·no_tr·pending·fix 흐름은 손대지 않았다.
+- web/listener/ui-strings.json — `script_prefix`·`skip_line`·`break_band` ko·en (다른 언어는 en 으로 대체되는 기존 t() 규칙).
+- relay/src/room.js — 주석 한 줄 + 무음 판정에 `kind:"script"` 를 새 줄로 추가(웹 강사 화면은 `text` 를 안 보내므로 이것이 없으면 10분 뒤 silence_timeout 으로 끊긴다). script·skip·break 는 다른 호스트 메시지와 같이 **그대로** 중계, 저장은 기존 링버퍼 500 규칙뿐.
+- relay/src/index.js — `POST /room` 의 `kind` 에 `script` 한 줄: 이용권 플래그는 desk 와 같은 0x04|0x08, Desk 분 집계는 안 한다(room.js 가 `kind==='desk'` 일 때만 집계). 설계 §0 "교육 패키지는 0x04" 에 맞추려면 `guide`(0x01)로는 못 들어가서.
+- relay/README.md — `/room` 의 `kind` 셋 설명 두 줄.
+- relay/test/script-forward.mjs — 신규. wrangler 없이 가짜 ctx 로 Room 을 바로 돌린다(10건): 세 메시지 글자 그대로 중계·호스트 되돌림 없음·링버퍼 규칙·script 는 새 줄(알람 재설정)·break 는 새 줄 아님·hello 는 lang 만 집계(이름 저장 없음).
+- samples/live_test.js — 신규. Playwright 호스트+청취자 두 탭(목업 릴레이는 이 파일 안, room.js 규칙대로). 40건.
+- package.json / relay/package.json — `npm run test:live` · `test:host` · `test:script`.
+
+실행 출력 발췌
+1. npm run test:live (CHROME=<로컬 크롬>, 40건 전원 통과):
+=== L4-2 진행 화면 (web/host + web/listener) 시험 ===
+  [PASS] 미리 번역: /translate 12회 (문단 4 × 언어 3)
+  [PASS] /room 을 이용권 토큰으로 불렀다 (kind=script)
+  [PASS] QR(svg) 그림 — 바깥 요청 없이 로컬 생성
+  [PASS] 호스트: 참석 수 1
+  [PASS] 호스트: 언어별 인원 en 1
+  [PASS] 청취자: 문단 3개 → 원고 줄 3개
+  [PASS] 넘길 때 /translate 0회 — 번역을 새로 청하지 않는다
+  [PASS] script 모양 = {kind,para,total,src,srcLang,trans,at} (정본)
+  [PASS] 미리 번역 실패한 언어(vi)는 trans 에서 빠진다(R-15)
+  [PASS] 단추·→·스페이스 = 1,2,3 순서
+  [PASS] 청취자 줄 머리 "원고 n/total"(en UI: Script n/4)
+  [PASS] ← = 이전 문단(2) script 다시 송출
+  [PASS] skip {kind,para:3} 송출
+  [PASS] 청취자: "건너뜀 3" 줄(en UI: Skipped 3)
+  [PASS] 청취자: 쉬는 시간 띠 표시
+  [PASS] 청취자: 쉬는 시간 끝 → 띠 사라짐
+  [PASS] 청취자(vi, 번역 없음): 원문만 — 줄을 빼지 않는다
+  [PASS] 청취자 기록: 원고 줄 원문+번역 포함
+  [PASS] 바깥 요청 0건 (0)
+전부 통과 (40건)
+
+2. npm run test:script (relay Room 단위, 10건 전원 통과):
+  [PASS] 청취자 1: script·skip·break 세 줄을 글자 그대로(해석·변형 없음)
+  [PASS] 링버퍼 = 기존 줄 규칙 그대로(세 줄, 따로 저장 없음)
+  [PASS] script 는 새 줄 — 무음 판정 시각이 당겨진다
+  [PASS] 이름은 서버에 남지 않는다
+전부 통과 (10건)
+
+3. 기존 회귀: host_view_test.js 13건 통과 · screen_view_test.js 9절 전부 통과("[PASS] 큰 화면 보기 시험 전부 통과") · rtl_test.js 5건 통과 · report_common_test.js 18건 통과.
+
+4. 되돌림 확인(D-09) 2건:
+- 호스트 `goTo()` 의 `sendScript(para)` 한 줄 주석 → live_test: `[FAIL] page.waitForFunction: Timeout 5000ms exceeded.`(청취자 3줄 안 옴). 복구 후 40건 통과.
+- room.js 의 script 새 줄 판정 분기를 `if (false)` 로 → script-forward: `[FAIL] script 는 새 줄 — 무음 판정 시각이 당겨진다`. 복구 후 10건 통과.
+
+5. 미실행: `npm run test:relay`(wrangler dev + powershell 전용 helper, 이 환경은 리눅스). relay 변경은 2의 단위 시험으로 대신 확인.
+
+한 줄 판정
+L4-2 완료 — 방·QR·참석·문단 넘기기·script/skip/break 송출·청취 페이지 수신·릴레이 그대로 중계, 바깥 요청 0, 진행 중 번역 요청 0.
+
+막힌 것·기본안 (50초 규칙 — 기본안으로 진행했다)
+- 스페이스 키 = "다음"(→ 와 같음). 프레젠터 리모컨 관례. 쉬는 시간 토글로 바꾸려면 keydown 한 줄.
+- 건너뜀 = **다음** 문단(현재+1)을 건너뛴다: `skip {para}` 보내고 커서를 그 문단에 두어 취소선. 다시 "다음"을 누르면 그 다음 문단을 읽는다. 현재 문단을 건너뛰는 뜻이면 `doSkip()` 한 곳.
+- 쉬는 시간 중에 다음/이전/건너뜀을 누르면 먼저 `break off` 를 보내고 넘긴다(청취자가 띠에 갇히지 않게).
+- `/room` 에 `kind:"script"` 를 새로 두었다(index.js 한 줄). `desk` 로 들어가면 웹 강의가 Desk 분 사용량에 섞여서. 마스터가 `desk` 로 통일하라면 host 한 줄·index.js 한 줄.
+- QR 은 qrcode-generator(MIT) 를 web/vendor 에 복사(pdf.js 와 같은 규칙). 다른 패키지로 정해지면 `renderQr()` 한 함수.
+- 원고 줄 번역문 TTS: 청취자는 기존 line 과 같이 `trans[내 언어]` 를 읽는다(소리 켜짐일 때). 원고는 읽지 않게 하려면 handleMessage 의 script 분기 한 줄.
+- 끝내기 단추는 L4-3 에서(호스트 탭을 닫으면 relay 가 10분 뒤 host_timeout 으로 닫는다 — 기존 규칙).
+- 실기 없음(웹). 실 relay(wrangler)로는 안 돌렸다 — 위 5.
+
+---
+
+[B 보고]
 2026-10-07 [열림] L2-fix · L4-1 · L3 1차 완료
 커밋: 3f44b51
 
