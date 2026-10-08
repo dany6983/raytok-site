@@ -327,13 +327,26 @@ async function callEngineOnce(engine, texts, sourceLang, targetLang, env) {
   };
 }
 
-// 릴레이 1회 재시도 (1차 실패 시 250ms 대기 후 1회 재시도)
+function isRetryableEngineError(err) {
+  if (!err) return false;
+  // 설정 오류는 즉시 던짐
+  if (err.why === 'google_key_missing' || err.why === 'self_not_configured') return false;
+  // 위쪽 4xx (429 포함)는 바로 던짐 (429에 재시도하면 더 막힌다)
+  const status = Number(err.upstreamStatus || err.status || 0);
+  if (status >= 400 && status < 500) return false;
+  if (err.code === 'bad_lang') return false;
+  // 재시도 대상: 5xx, 네트워크 연결 실패, length_mismatch, invalid_json
+  if (status >= 500 && status < 600) return true;
+  if (err.why && (err.why.includes('fetch_error') || err.why === 'google_length_mismatch' || err.why === 'google_invalid_json')) return true;
+  return false;
+}
+
+// 릴레이 1회 재시도 (일시 장애만: 5xx·연결 실패·length_mismatch)
 async function callEngine(engine, texts, sourceLang, targetLang, env) {
   try {
     return await callEngineOnce(engine, texts, sourceLang, targetLang, env);
   } catch (firstErr) {
-    // 400 bad_lang 등 재시도가 무의미한 에러는 바로 던짐
-    if (firstErr.status === 400 || firstErr.code === 'bad_lang') {
+    if (!isRetryableEngineError(firstErr)) {
       throw firstErr;
     }
     // 짧은 대기 (250ms) 후 1회 재시도

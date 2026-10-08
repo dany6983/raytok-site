@@ -42,6 +42,8 @@ node test/smoke.mjs
 
 ## 5. 시험 전용 경로·헤더·엔진 운영 격리 철칙
 - **시험 전용 요소 운영 노출 금지**: 시험을 위해 도입된 경로(예: `/room/:code/test/alarm`), 헤더(예: `X-Translate-Engine`), 엔진(예: `mock`)은 운영 코드에 열어 두지 않습니다.
+- **시험용 환경 변수 운영 금지**: `GOOGLE_TRANSLATE_URL` 은 단위 시험(`translate-retry.mjs`)에서 가짜 상류 서버를 가리키기 위한 시험 전용 주입 변수이며, 운영 배포 환경(wrangler secret / env)에는 절대 넣지 않습니다(기본값인 Google 공식 v2 URL 사용).
+- **배포 추적 태그 규칙**: 운영 릴레이를 배포(`wrangler deploy`)한 직후에는 반드시 배포 시점의 커밋에 `git tag relay-YYYYMMDD-HHMM` 을 남겨 배포 이력을 명확히 기록합니다.
 - **자물쇠 규격**: 반드시 `ADMIN_SECRET` 검증을 거치며, 권한이 없을 경우 403이 아닌 **404 Not Found**를 반환하여 존재 자체를 은닉합니다.
 - **동일 커밋 잠금 원칙**: 시험용 기능을 만드는 바로 그 커밋에서 자물쇠를 함께 구현합니다.
 - **참고 사항 (Desk 동시 방 관리)**: 현재 `desk_minutes`는 방 종료 시점에 누적되므로, 향후 `/stt/token` 발급 시 라이선스별 활성(열린) 방 개수를 교차 검증하는 방어 조치를 추가할 예정입니다.

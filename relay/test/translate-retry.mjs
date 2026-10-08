@@ -38,7 +38,7 @@ const mockCtxObj = {
 const mockRoomInstance = new Room(mockCtxObj, {});
 
 let mockUpstreamCount = 0;
-let mockUpstreamMode = 'retry_ok'; // 'retry_ok' | 'always_500'
+let mockUpstreamMode = 'retry_ok'; // 'retry_ok' | 'always_500' | 'forbidden_403'
 
 // 가짜 번역 업스트림 서버
 const mockUpstreamServer = http.createServer((req, res) => {
@@ -66,6 +66,9 @@ const mockUpstreamServer = http.createServer((req, res) => {
   } else if (mockUpstreamMode === 'always_500') {
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: { code: 500, message: 'Persistent Engine Error' } }));
+  } else if (mockUpstreamMode === 'forbidden_403') {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: { code: 403, message: 'The request is missing a valid API key.' } }));
   }
 });
 
@@ -153,6 +156,30 @@ async function run() {
     console.log('\n[Test 3] 보안 검증: 502 에러 응답에 글자 원문 미포함 확인');
     const resBodyStr = JSON.stringify(data2);
     ok(!resBodyStr.includes('기밀 원문 텍스트입니다'), '에러 본문에 원문 글자 일절 미포함 확인');
+
+    // ── Test 4: 상류 4xx(403)는 재시도 없이 0회(호출 총 1회), 바로 502 + why: google_403 반환 ──
+    console.log('\n[Test 4] 상류 4xx(403) 발생 시 재시도 0회(즉시 던짐) 검증');
+    mockUpstreamCount = 0;
+    mockUpstreamMode = 'forbidden_403';
+
+    const req4 = new Request('http://localhost/translate', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        q: ['권한 오류 테스트'],
+        source: 'ko',
+        target: 'en'
+      })
+    });
+
+    const res4 = await relayApp.fetch(req4, mockEnv, mockCtx);
+    ok(res4.status === 502, '403 수신 시 502 반환');
+    const data4 = await res4.json();
+    ok(data4.why === 'google_403', `why: "google_403" 확인 (실제: ${data4.why})`);
+    ok(mockUpstreamCount === 1, `4xx는 재시도하지 않고 1회만 호출 (실제: ${mockUpstreamCount})`);
 
     console.log(`\n전부 통과 (${passCount}건)`);
     process.exit(0);
