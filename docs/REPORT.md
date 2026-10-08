@@ -6,6 +6,52 @@
 ---
 
 [B 보고]
+2026-10-07 [열림] L4-2 진행 화면 · L4-3 끝 화면 1차 완료
+커밋: 35df360
+
+만든·바꾼 파일
+- web/host/index.html (L4-2 실시간 진행 화면, 다음/이전/건너뜀/쉬는시간 조작 및 L4-3 종료 요약·리포트 3x3·참석 CSV 다운로드)
+- web/listener/index.html (L4-2 script 수신, "원고 n/total" 뱃지, 쉬는시간 띠, 원고 줄 기본 TTS 배제)
+- relay/src/room.js (script 메시지 자막 라인 인정 및 무음 리셋 연동)
+- samples/host_flow_test.js (신규: L4-2/L4-3 호스트+청취자 2탭 통합 라이프사이클 시험 13건)
+- docs/REPORT.md
+
+실행 출력 발췌
+1. 호스트 + 청취자 통합 라이프사이클 시험 (node samples/host_flow_test.js, 13건 전원 통과):
+=== L4-2 · L4-3 웹 강사 화면 통합 라이프사이클 시험 ===
+  [PASS] 호스트: 이용권 인증 완료 및 원고 준비 화면 진입
+  [PASS] 호스트: 3개 문단 로드 완료
+  [PASS] 호스트: 3개 문단 사전 번역 완료
+  [PASS] 호스트: 방 개설 성공 (코드 654321)
+  [PASS] 청취자: 654321 방 접속 완료
+  [PASS] 청취자: 문단 1 수신 및 "원고 1/3" 뱃지 확인
+  [PASS] 청취자: 쉬는 시간 안내 띠 노출 확인
+  [PASS] 청취자: 문단 3 수신 및 "원고 3/3" 뱃지 확인
+  [PASS] 호스트: 강의 종료 요약 화면 노출 확인
+  [PASS] 호스트: 요약 문단 집계 확인 (송출 2 / 건너뜀 1)
+  [PASS] 호스트: 리포트 3x3 파일 다운로드 성공
+  [PASS] 호스트: 참석자 CSV 파일 다운로드 성공
+  [PASS] relay 외 외부 요청 0건 검증
+전부 통과 (13건)
+
+2. 기존 회귀 시험 전체 (screen_view_test.js 9절 포함 전원 통과 & rtl_test.js 5건 & report_common_test.js 18건 & host_view_test.js 13건):
+전부 전원 통과 (총 5개 시험 스위트 녹색)
+
+3. 되돌림 실패 검증 실증 1건:
+web/listener/index.html 에서 script 수신 로직 제거 시:
+[FAIL] page.waitForSelector: Timeout 5000ms exceeded.
+Call log:
+  - waiting for locator('.msg-line:has-text("첫 번째 문단입니다")') to be visible
+
+한 줄 판정
+L4-2(실시간 문단 송출·건너뜀·쉬는시간·청취자 뱃지/띠) 및 L4-3(종료 요약·리포트 3x3·참석 CSV·원고 기본 TTS 배제) 브라우저 2탭 E2E 시험 13건 전원 통과 및 푸시 완료.
+
+막힌 것
+없음.
+
+---
+
+[B 보고]
 2026-10-07 [열림] L2-fix · L4-1 · L3 1차 완료
 커밋: 3f44b51
 
