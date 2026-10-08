@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>RayTok</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif; margin: 0; padding: 32px 20px; color: #0A0F1F; background: #f3f2f2; }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  p { font-size: 15px; line-height: 1.5; color: #444; }
+  a.btn { display: block; text-align: center; padding: 14px; border-radius: 12px; background: #0A0F1F; color: #fff; text-decoration: none; font-weight: 600; margin-top: 16px; }
+</style>
+</head>
+<body>
+<h1>없는 페이지입니다</h1>
+<p>주소를 다시 확인해 주세요. / Page not found.</p>
+<a class="btn" href="/">raytok.kr 처음으로</a>
+<script>
+(function () {
+  // GitHub Pages 는 정적 파일만 낸다. `/lic/<code>` 는 파일이 아니므로 여기로 떨어진다 —
+  // 코드를 질의로 옮겨 `/lic/?c=<code>` 로 보낸다 (MASTER 01:12 딥링크 raytok.kr/lic/<code>).
+  // 그 밖의 없는 주소는 그냥 이 안내를 보여 준다.
+  var m = (location.pathname || '').match(/^\/lic\/([^\/]+)\/?$/);
+  if (m) location.replace('/lic/?c=' + encodeURIComponent(m[1]) + (location.hash || ''));
+})();
+</script>
+</body>
+</html>

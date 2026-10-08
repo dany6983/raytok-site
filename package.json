@@ -9,6 +9,8 @@
     "test:end": "node samples/end_test.js",
     "test:report": "node samples/report_common_test.js",
     "test:script": "npm --prefix relay run test:script",
+    "test:mint": "npm --prefix relay run test:mint",
+    "test:lic": "node samples/lic_page_test.js",
     "mail": "node scripts/mailcheck.js --force"
   },
   "dependencies": {

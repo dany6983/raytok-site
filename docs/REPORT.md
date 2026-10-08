@@ -7,6 +7,7 @@
 
 [B 보고]
 <<<<<<< HEAD
+<<<<<<< HEAD
 2026-10-07 [열림] L4-2 진행 화면 · L4-3 끝 화면 1차 완료
 커밋: 35df360
 
@@ -197,6 +198,38 @@ L4-2 완료 — 방·QR·참석·문단 넘기기·script/skip/break 송출·청
 - 끝내기 단추는 L4-3 에서(호스트 탭을 닫으면 relay 가 10분 뒤 host_timeout 으로 닫는다 — 기존 규칙).
 - 실기 없음(웹). 실 relay(wrangler)로는 안 돌렸다 — 위 5.
 >>>>>>> origin/feat/l4-2
+=======
+2026-10-08 [열림] B 줄 5 — 이용권 코드 발급 도구 mint-code.mjs + /lic/<code> 페이지 (MASTER 01:12)
+커밋: c5163e2 (가지 feat/mint-code — main 에 합치지 않았다)
+
+만든·바꾼 파일
+- relay/tools/mint-code.mjs (신규: Ed25519 발급·검사, node:crypto 만 — 의존성 0. --test 키 0 / --key n / --key-file / --verify / --pubkey / --keygen / --json)
+- relay/test/mint-code.mjs (신규: node --test 8건. 정본 벡터 ① 글자까지 일치 · ② expired · ③ needs_update · ④ sig · 운영 키 저장소 밖 · 입력 풀기)
+- lic/index.html (신규: /lic/<code> 한 장 — 앱에서 열기 intent://lic/<code>(scheme=raytok, package=com.raytok.ear, 없으면 /download/), 복사, 4자×32칸 손입력 안내, ko·en)
+- 404.html (신규: GitHub Pages 에 /lic/<code> 파일이 없으므로 /lic/?c=<code> 로 보낸다. 그 밖 주소는 404 안내만)
+- samples/lic_page_test.js (신규: 브라우저 17건)
+- relay/README.md (§6 도구), relay/package.json (test:mint), package.json (test:mint·test:lic), .gitignore (relay/keys/)
+- mint-license.mjs(HMAC 중계 토큰)는 손대지 않았다.
+
+실행 출력 발췌
+1. npm run test:mint (정본 raytok-native1/docs/samples/license-code.md 를 LICENSE_CODE_DOC 로 가리켜 넷 다 대조):
+# tests 8 / # pass 8 / # fail 0
+   — 정본 없이: # pass 7 / # skipped 1 (벡터 ① 내장본만)
+   — 되돌려 실패 확인: payload 만료 BE→LE 로 바꾸면 # fail 2, 복구하면 # fail 0
+2. node tools/mint-code.mjs --test --exp 2030-01-01 --flags host,private --cust RT0001
+   → 00000000E3DXH003A9A3…801EGYGA (정본 ① 과 128자 전부 같다) · 0000-0000-E3DX-H003-… · https://raytok.kr/lic/<code>
+   node tools/mint-code.mjs --verify <정본 ②> → ok=false why=expired keyId=0 exp=1767225600 flags=0x01 (host) cust=RT0002
+3. npm run test:lic: === 17건 전원 통과 === (404→?c= 이동, 4×32 표시, intent/딥링크, 하이픈·소문자·I/L/O 교정, 깨진 링크 3종, en/ko 전환, 바깥 요청 0건)
+
+한 줄 판정: 정본 벡터 넷을 글자까지 재현한다. 발급 도구·페이지 완료, 운영 키는 아직 없다(키 1 생성은 사람이 --keygen 으로, 비밀 저장소에만).
+
+막힌 것 (50초 규칙 — 기본안으로 진행)
+- QR(png) 출력은 안 넣었다. 의존성 없이 PNG QR 을 만들 수 없다 — 기본안: 코드·링크만 내고, QR 은 앱 QR 화면/별도 결정 뒤. (npm 에 qrcode 를 넣으면 한 줄이다 — 마스터 결정)
+- 앱 딥링크 모양: 앱(app.config.js)은 scheme `raytok` 과 App Links `/join` 만 등록돼 있고 `/lic` 은 아직 없다 — 기본안: `raytok://lic/<code>`(안드로이드는 intent:// + package com.raytok.ear). A 가 앱에 `/lic` 받는 길을 넣을 때 이 모양으로 맞추면 된다. App Links(https://raytok.kr/lic) 도 추가하면 페이지를 거치지 않고 바로 열린다.
+- `/lic/<code>` 는 GitHub Pages 에 파일이 없어 404.html 로 받는다 (상태 404 → 즉시 /lic/?c= 로 이동). 발급 도구가 내는 링크는 MASTER 그대로 `raytok.kr/lic/<code>` 다. 싫으면 `?c=` 형으로 바꾸면 된다.
+- 운영 개인키 자리: env `LIC_PRIVATE_KEY_<n>` / `relay/.dev.vars` / `--key-file`(relay/keys/ gitignore). wrangler secret 으로 올릴 일은 릴레이가 코드를 검사하게 될 때 — 지금 릴레이는 검사하지 않는다(페이지도 서버 검증 없음).
+- 시험 키 0 의 씨앗 hex 가 relay/test 에 적혀 있다 — 정본 §2 에 이미 공개된 시험 전용 값이다(가치 없음).
+>>>>>>> origin/feat/mint-code
 
 ---
 
