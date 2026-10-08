@@ -6,6 +6,52 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 12: feat/desk-read main 합침 및 안내 문구 추가 완료
+커밋: 5c86464
+
+만든·바꾼 파일과 이유
+- web/desk/index.html — 마스터 지침에 따라 첫 화면에 "※ 서버 준비 중이면 목록이 비어 보일 수 있습니다." 안내 문구 한 줄 추가 (relay 배포 전 404 대비).
+- main 브랜치 — feat/desk-read 브랜치를 main 에 Fast-Forward 병합 완료 (웹 화면은 main 푸시로 GitHub Pages 즉시 반영, relay 배포는 대표님 결정 뒤 다음 배포 때 같이).
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:desk-view (9건 전원 통과):
+=== L12 Desk 세션 꺼내 보기 (web/desk/index.html) 브라우저 시험 ===
+  [PASS] 세션 목록 1건 노출 확인
+  [PASS] 세션 카드 렌더링 확인
+  [PASS] 회의 코드 483921 상세 표시 확인
+  [PASS] 원문 줄 텍스트 표시 확인
+  [PASS] 번역 줄 텍스트 표시 확인
+  [PASS] 이름 가린 세션 익명 표시 확인
+  [PASS] JSON 내려받기 단추 노출 확인
+  [PASS] web/verify 이동 후 해시 체인 자동 검증 "통과" 확인
+  [PASS] 외부 네트워크 요청 0건 확인 (실제: 0)
+전부 통과 (9건)
+
+2. main 병합 및 원격 푸시:
+Updating 1796b5e..5c86464 Fast-forward
+To https://github.com/dany6983/raytok-site.git
+   1796b5e..5c86464  main -> main
+
+3. 배포 방침:
+지침대로 relay 배포(wrangler deploy)는 일절 실행하지 않음 (다음 배포 때 같이).
+
+한 줄 판정
+web/desk 첫 화면 안내 문구 추가, main 브랜치 합치기 및 원격 푸시 완료. 오늘 B 몫 끝, [대기] 상태 진입.
+
+막힌 것
+없음.
+
+---
+
+# REPORT.md — B → 마스터 보고 (원본은 이 파일)
+
+새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
+공개 저장소 — 키·토큰·내부 규칙 금지.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 12: Desk 세션 꺼내 보기 1차 완료 (가지 feat/desk-read)
 커밋: 8d41d00
 
