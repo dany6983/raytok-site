@@ -232,3 +232,10 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 1. `npx wrangler deployments list` — 새 버전 id·시각.
 2. 운영 주소로 가벼운 확인 셋(토큰 없이 되는 것만): 루트/상태 응답 200 · `/translate` 토큰 없이 401 · `/desk/session` 토큰 없이 401. 실패 하나라도 나면 **바로 REPORT 맨 위에** 쓰고 대표님께 롤백 명령(`npx wrangler rollback 2ff0ac2d-2324-49a4-9386-33edc0690155`) 안내 — 롤백도 대표님이 친다.
 3. 통과하면 `git tag relay-20261008-HHMM` (배포한 main 커밋) + `git push origin <태그>` · deploy-checklist.md 에 새 버전 id 한 줄.
+
+## 2026-10-08 17:05 — [열림] B 줄 12: **올린 Desk 세션 꺼내 보기** (지금은 올리기만 되고 꺼낼 길이 없다) [B]
+- relay: ① `GET /desk/sessions` — 토큰(0x08) 주인의 세션 목록만(`id, code, host, started, received_at, items 수`), 최신 50개. 다른 이용권 것은 안 보인다(주인 = 토큰 `sub`, 저장 때 같이 적는다 — 지금 안 적고 있으면 더한다) ② `GET /desk/session/:id` — 조각을 합쳐 **올린 그대로의 JSON**(`ver,session,items,last`). 주인 아니면 404.
+- 웹: `web/desk/index.html` — 이용권 코드 입력 → 목록 → 하나 고르면 원문/번역 줄 보기 + **JSON 내려받기** + "검증" 단추(`web/verify` 로 같은 JSON 넘김 — 체인이 맞는지). 이름 가린 세션은 가린 채로.
+- ⚠ P-16: 이 화면은 **받은 글을 보여 주기만** — 번역·요약·재생 요청 금지(외부 요청 0 시험). 요약(D5)은 특허 판정 뒤라 넣지 않는다.
+- 시험: 주인 목록·남의 세션 404·조각 합친 JSON 의 `last` 가 다시 세어도 같다·외부 요청 0. 되돌림 1. `relay/test/desk-read.mjs` + `samples/desk_view_test.js`.
+- 가지 `feat/desk-read`. 배포는 대표님 결정(오늘 안 해도 된다).
