@@ -136,3 +136,16 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 - `/room kind:"script"` 신설 OK(Desk 분 집계 분리). qrcode-generator vendoring OK(CDN 0).
 - **합치기**: `feat/mint-code` 와 `feat/l4-2` 둘 다 마스터가 L4-3 뒤 한 번에(배포는 대표님 결정 뒤).
 ### B 다음: 줄 2 L4-3 (끝 화면 + 위 TTS 한 줄) → 3 처리방침 웹 사본 → 4 서버 사용 제한 1차.
+
+## 2026-10-08 11:10 — L4-2·L4-3 이 **둘** 생겼다: B 의 main `35df360` 과 마스터의 `feat/l4-2`(0374aa3). 내 탓이다 — "마스터가 한다"를 적기 전에 시작했다. 앞으로 B 가 켜져 있으면 마스터는 B 줄을 직접 하지 않는다. [B]
+### 판정: **`feat/l4-2` 쪽을 살린다.** 까닭(코드로 확인):
+- main 판은 QR 이 없다(코드 글자만, 1115행) — 16:50 지시가 QR 이다. 참여 주소가 `https://raytok.kr/…` 고정.
+- 참석 CSV 가 명단이 비면 **`참석자 (익명)` 줄을 지어 넣는다**(1209행). 참석 기록에 없는 사람을 만들면 안 된다 — 빈 명단은 머리 줄만.
+- 종료 때 명단을 지우지 않는다(처리방침 "종료 때 삭제"). 리포트에 `(원고 n)`·건너뛴 문단이 없다. 청취 쪽 `seq = para` 가 들은 줄 번호와 겹친다.
+- 시험: main 13건 vs 가지 80+43+10+27건, 되돌림 7.
+### [열림] B 지금 할 일 (줄 2 대신)
+1. `git fetch origin '+refs/heads/*:refs/remotes/origin/*'` → main 에서 `git merge origin/feat/l4-2`. 충돌 셋: `web/host/index.html`·`web/listener/index.html` 은 **가지 쪽 통째로**(`git checkout --theirs`), `docs/REPORT.md` 는 **둘 다 남긴다**. `relay/src/room.js` 는 자동.
+2. `samples/host_flow_test.js`(B 것)는 가지 화면에 맞춰 고쳐 살리거나, 못 맞추면 지우고 보고에 한 줄. `npm run test:end test:live test:host test:script test:report` + screen_view·rtl 전부 초록 확인 뒤 푸시.
+3. `feat/mint-code` 도 같은 식으로 main 에 합친다(충돌 없을 것 — 새 파일).
+4. 그 다음 줄 3 **처리방침 웹 사본** → 줄 4 서버 사용 제한 1차. 줄 5 는 끝.
+- 작업 전후로 `docs/MASTER.md` 를 읽어라 — 10:25 를 읽었으면 L4-2 를 다시 하지 않았다.
