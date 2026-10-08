@@ -6,6 +6,65 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 8: 릴레이 /translate 묶음 502 1차 완료 (가지 feat/relay-502)
+커밋: 56fa0fc
+
+만든·바꾼 파일과 이유
+- relay/src/index.js — 번역 상류(구글·자체 엔진) 일시 장애(500, 502, 503, 504, 429, 네트워크 끊김 등) 시 릴레이에서 250ms 대기 후 1회 즉시 재시도하는 기본안 구현 (앱의 50문단 개별 1줄 되돌림 지연 23초 -> 2~3초 단축). 2회 연속 실패 시 502 응답 몸에 why(어느 위쪽·위쪽 상태 번호: google_500 등), upstream, upstream_status 탑재. 보안·개인정보 원칙에 따라 글자 원문은 에러 응답 몸에 일절 싣지 않음. (※ 릴레이 배포는 대표님 결정 전까지 일절 하지 않음).
+- relay/package.json — test:retry 스크립트 추가.
+- relay/test/translate-retry.mjs — 신규 단위 시험 10건: 가짜 상류 1차 500 -> 2차 200 재시도 성공 확인(상류 2회 호출), 2회 연속 500 실패 시 502 Bad Gateway + why: "google_500" 확인, 에러 본문에 원문 미노출 검증.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. node relay/test/translate-retry.mjs (10건 전원 통과):
+=== Relay /translate 상류 502 재시도 및 why 필드 단위 시험 ===
+
+[Test 1] 상류 일시 500 발생 시 1회 재시도하여 200 성공 검증
+  [PASS] 1차 500 후 2차 재시도로 200 OK 반환
+  [PASS] 번역 배열 2건 반환
+  [PASS] 번역 결과 일치
+  [PASS] 상류 호출 횟수 정확히 2회 (실제: 2)
+
+[Test 2] 두 번 다 500 실패 시 502 및 why 필드 검증 (원문 미노출)
+  [PASS] 상류 2회 연속 실패 시 502 Bad Gateway 반환
+  [PASS] error: "upstream" 일치
+  [PASS] why: "google_500" 확인 (실제: google_500)
+  [PASS] upstream: "google" 확인
+  [PASS] upstream_status: 500 확인
+
+[Test 3] 보안 검증: 502 에러 응답에 글자 원문 미포함 확인
+  [PASS] 에러 본문에 원문 글자 일절 미포함 확인
+
+전부 통과 (10건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+relay/src/index.js 에서 callEngine 1회 재시도 로직 제거 시:
+[FAIL] AssertionError [ERR_ASSERTION]: 1차 500 후 2차 재시도로 200 OK 반환
+    at ok (file:///C:/GitHub/raytok-site/relay/test/translate-retry.mjs:11:3)
+    at run (file:///C:/GitHub/raytok-site/relay/test/translate-retry.mjs:120:5)
+
+3. 회귀 시험 전체:
+test:desk-session(15건), limits-bundle(13건), test:script(10건), test:mint(8건), test:hwpx(13건), test:end(80건), test:live(43건), test:host(13건), test:report(27건), screen_view, rtl 전원 초록 통과.
+
+4. 배포 방침 준수:
+지침대로 feat/relay-502 가지에 푸시 완료, wrangler 배포는 대표님 결정 뒤로 일절 미실행.
+
+한 줄 판정
+상류 일시 장애 시 릴레이 1회 재시도(250ms)로 200 복구, 2회 실패 시 원문 없는 502 + why(상류 상태) 반환 및 되돌림 실증 완료.
+
+막힌 것
+없음.
+
+---
+
+# REPORT.md — B → 마스터 보고 (원본은 이 파일)
+
+새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
+공개 저장소 — 키·토큰·내부 규칙 금지.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 7: L3-2 HWPX 원고 읽기 1차 완료 (가지 feat/hwpx)
 커밋: 304dc1c
 
