@@ -200,13 +200,14 @@ async function recordUsage(env, { sub, target, chars = 0, sttKey = false, deskMi
 }
 
 // Translation Engine Adapter
-async function callEngine(engine, texts, sourceLang, targetLang, env) {
+async function callEngineOnce(engine, texts, sourceLang, targetLang, env) {
   if (engine === 'self') {
     const selfUrl = (env.SELF_TRANSLATE_URL || '').trim();
     if (!selfUrl) {
       const err = new Error('SELF_TRANSLATE_URL is not configured');
       err.code = 'upstream';
       err.status = 503;
+      err.why = 'self_not_configured';
       throw err;
     }
     let res;
@@ -220,12 +221,15 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
       const err = new Error('Failed to connect to self translate upstream: ' + e.message);
       err.code = 'upstream';
       err.status = 502;
+      err.why = 'self_fetch_error';
       throw err;
     }
     if (!res.ok) {
       const err = new Error(`Self translate upstream error: ${res.status}`);
       err.code = 'upstream';
       err.status = 502;
+      err.upstreamStatus = res.status;
+      err.why = `self_${res.status}`;
       throw err;
     }
     const data = await res.json();
@@ -249,10 +253,11 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
     const err = new Error('GOOGLE_TRANSLATE_KEY is not configured');
     err.code = 'upstream';
     err.status = 500;
+    err.why = 'google_key_missing';
     throw err;
   }
 
-  const apiUrl = 'https://translation.googleapis.com/language/translate/v2?key=' + apiKey;
+  const apiUrl = (env.GOOGLE_TRANSLATE_URL || 'https://translation.googleapis.com/language/translate/v2') + '?key=' + apiKey;
   const requestPayload = {
     q: texts,
     target: targetLang,
@@ -273,6 +278,7 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
     const err = new Error('Failed to connect to translation upstream: ' + fetchErr.message);
     err.code = 'upstream';
     err.status = 502;
+    err.why = 'google_fetch_error';
     throw err;
   }
 
@@ -284,9 +290,12 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
     if (apiRes.status === 400 && errMsg.toLowerCase().includes('language')) {
       err.code = 'bad_lang';
       err.status = 400;
+      err.why = 'google_bad_lang';
     } else {
       err.code = 'upstream';
       err.status = 502;
+      err.upstreamStatus = apiRes.status;
+      err.why = `google_${apiRes.status}`;
     }
     throw err;
   }
@@ -298,6 +307,7 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
     const err = new Error('Invalid JSON from upstream');
     err.code = 'upstream';
     err.status = 502;
+    err.why = 'google_invalid_json';
     throw err;
   }
 
@@ -306,6 +316,7 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
     const err = new Error('Upstream response length mismatch');
     err.code = 'upstream';
     err.status = 502;
+    err.why = 'google_length_mismatch';
     throw err;
   }
 
@@ -314,6 +325,38 @@ async function callEngine(engine, texts, sourceLang, targetLang, env) {
     translations,
     detectedSrc
   };
+}
+
+function isRetryableEngineError(err) {
+  if (!err) return false;
+  // 설정 오류는 즉시 던짐
+  if (err.why === 'google_key_missing' || err.why === 'self_not_configured') return false;
+  // 위쪽 4xx (429 포함)는 바로 던짐 (429에 재시도하면 더 막힌다)
+  const status = Number(err.upstreamStatus || err.status || 0);
+  if (status >= 400 && status < 500) return false;
+  if (err.code === 'bad_lang') return false;
+  // 재시도 대상: 5xx, 네트워크 연결 실패, length_mismatch, invalid_json
+  if (status >= 500 && status < 600) return true;
+  if (err.why && (err.why.includes('fetch_error') || err.why === 'google_length_mismatch' || err.why === 'google_invalid_json')) return true;
+  return false;
+}
+
+// 릴레이 1회 재시도 (일시 장애만: 5xx·연결 실패·length_mismatch)
+async function callEngine(engine, texts, sourceLang, targetLang, env) {
+  try {
+    return await callEngineOnce(engine, texts, sourceLang, targetLang, env);
+  } catch (firstErr) {
+    if (!isRetryableEngineError(firstErr)) {
+      throw firstErr;
+    }
+    // 짧은 대기 (250ms) 후 1회 재시도
+    await new Promise(resolve => setTimeout(resolve, 250));
+    try {
+      return await callEngineOnce(engine, texts, sourceLang, targetLang, env);
+    } catch (secondErr) {
+      throw secondErr;
+    }
+  }
 }
 
 const LANG_CODE_REGEX = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4})?$/;
@@ -892,7 +935,16 @@ export default {
           }
         } catch (engineErr) {
           await recordEngineCall(env, engine, false);
-          return jsonError(engineErr.code || 'upstream', engineErr.message || 'Translation engine error', engineErr.status || 502);
+          return jsonError(
+            engineErr.code || 'upstream',
+            engineErr.message || 'Translation engine error',
+            engineErr.status || 502,
+            {
+              why: engineErr.why || 'upstream_error',
+              upstream: engine,
+              upstream_status: engineErr.upstreamStatus || null
+            }
+          );
         }
 
         const translations = engineRes.translations;
