@@ -6,6 +6,55 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 10: 바이트 단위 분할 저장 및 상한 413 고침 완료 (main)
+커밋: fd71a10
+
+만든·바꾼 파일과 이유
+- relay/src/room.js — 한국어 3바이트 인코딩 대응을 위해 JSON.stringify(item).length(UTF-16 글자수) 대신 new TextEncoder().encode(itemJson).length(UTF-8 바이트 크기)로 측정. 단일 항목 120 KiB 초과 시 413 {why:"item_too_large"}, 64~120 KiB 단일 항목 단독 청크 분리, DO put 키 상한(128개) 대비 조각 127개 초과 시 413 {why:"too_large"} 처리.
+- relay/src/index.js — DO 스토리지 413 상태 및 why 필드 전파 연동.
+- relay/test/desk-session.mjs — 신규 검증: 한국어만 321 KiB 세션(800문단) 저장 시 생성된 모든 조각(6개)의 실제 바이트 크기가 각각 <= 64 KiB (최대 65,381 바이트)임을 단언. 130 KiB 단일 항목 413 검증. (총 35건 통과).
+- docs/REPORT.md
+
+실행 출력 발췌
+1. node relay/test/desk-session.mjs (35건 전원 통과):
+=== Relay Desk 세션 업로드 (POST /desk/session) 단위 시험 ===
+...
+[Test 8] 한국어만 300 KiB 세션 분할 저장 및 조각별 바이트 크기(<=64 KiB) 검증
+  [PASS] 한국어 세션 바이트 크기 300 KiB 이상 확인 (실제: 321 KiB, 328420 바이트)
+  [PASS] 한국어 300 KiB 세션 저장 성공 200 OK
+  [PASS] 한국어 세션 last 일치
+  [PASS] 청크 5개 이상 분할 저장 확인 (chunks: 6)
+  [PASS] 조각 0 크기 <= 64 KiB (실제: 65381 바이트, 64 KiB)
+  [PASS] 조각 1 크기 <= 64 KiB (실제: 65350 바이트, 64 KiB)
+  [PASS] 조각 2 크기 <= 64 KiB (실제: 65350 바이트, 64 KiB)
+  [PASS] 조각 3 크기 <= 64 KiB (실제: 65350 바이트, 64 KiB)
+  [PASS] 조각 4 크기 <= 64 KiB (실제: 65350 바이트, 64 KiB)
+  [PASS] 조각 5 크기 <= 64 KiB (실제: 1464 바이트, 1 KiB)
+  -> 한국어 분할 조각 중 최대 크기: 65381 바이트 (<= 65,536 바이트 완벽 충족)
+
+[Test 9] 130 KiB 초과 단일 항목 차단 검증 (413)
+  [PASS] 130 KiB 초과 단일 항목 413 Payload Too Large 반환
+  [PASS] why: "item_too_large" 일치
+전부 통과 (35건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+relay/src/room.js 에서 바이트 측정을 .length(글자 수)로 되돌릴 때:
+[FAIL] AssertionError [ERR_ASSERTION]: 청크 5개 이상 분할 저장 확인 (chunks: 4)
+    at ok (file:///C:/GitHub/raytok-site/relay/test/desk-session.mjs:11:3)
+    at run (file:///C:/GitHub/raytok-site/relay/test/desk-session.mjs:370:3)
+
+3. 배포 방침 준수:
+지침대로 wrangler deploy 는 일절 실행하지 않음 (대표님 결정 대기).
+
+한 줄 판정
+TextEncoder 바이트 단위 64 KiB 분할 저장으로 한국어 321 KiB 세션 조각별 상한(<=65,381 바이트) 완벽 충족 및 120 KiB 초과 413 차단, 되돌림 실증 완료.
+
+막힌 것
+없음.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 10: Desk 저장 실패 503·128KiB 분할저장·기기 10대 완화 1차 완료
 커밋: e9db66a
 
