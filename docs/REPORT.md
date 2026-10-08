@@ -6,6 +6,53 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 9: 릴레이 배포 전 점검표 작성 완료 (배포 명령 미실행)
+커밋: af7794f
+
+만든·바꾼 파일과 이유
+- docs/deploy-checklist.md — 대표님 결정을 위한 릴레이 배포 전 점검표 신설. ① npx wrangler deployments list 조회 결과(마지막 배포 2026-10-06T10:10:47Z, 버전 2ff0ac2d-2324-49a4-9386-33edc0690155) 및 이후 누적 커밋 8건 정리. ② 운영 영향 및 기존 사용자 차단 위험(동시 기기 3대 초과 시 401, 월 300만 글자 초과 시 429) 요약. ③ 필수/신규 env·secret(이름만) 및 DO 마이그레이션 불필요 확인. ④ 즉시 롤백 방법(wrangler rollback 2ff0ac2d...). ⑤ 배포 직후 태그 규칙 명시. (※ 배포 명령은 지침대로 일절 치지 않음).
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npx wrangler deployments list (마지막 배포 확인):
+Created:     2026-10-06T10:10:47.577Z
+Author:      gpncdany@gmail.com
+Source:      Secret Change
+Version(s):  (100%) 2ff0ac2d-2324-49a4-9386-33edc0690155
+
+2. 2026-10-06 이후 누적 커밋 8건:
+ec8f6d9 fix(relay): 502 재시도 대상 일시 장애(5xx·연결실패·length_mismatch)로 한정 및 4xx 즉시 반환
+56fa0fc feat(relay): 줄 8 /translate 상류 일시 장애 1회 재시도(250ms) 및 502 why 필드 탑재
+e16a763 feat(relay): 줄 6 Desk 받는 끝점 POST /desk/session
+964d884 feat(relay): 서버 사용 제한 묶음 1차 (글자 300만 상한, 동시 기기 3대)
+4889b65 / 35df360 / 6e33708 L4-2/L4-3 강사 script/skip/break 메시지 중계
+235a48c / c5163e2 mint-code.mjs 앱 이용권 발급 도구
+
+3. 위험 요소 확인:
+동시 기기 3대 상한(기존에 4대 이상 쓰던 사용자 401 차단 가능), 월 300만 자 상한(초과 사용자 429 차단 가능).
+
+4. 롤백 대비책:
+npx wrangler rollback 2ff0ac2d-2324-49a4-9386-33edc0690155 (10초 내 직전 정상 버전 복구 가능).
+
+5. 배포 명령:
+지침대로 wrangler deploy 는 일절 실행하지 않음.
+
+한 줄 판정
+현재 운영 버전(10-06 10:10Z) 이후 누적 기능 8건의 영향·사용자 차단 위험 분석 및 롤백 절차를 담은 배포 전 점검표 작성 완료, 배포 미실행.
+
+막힌 것
+없음.
+
+---
+
+# REPORT.md — B → 마스터 보고 (원본은 이 파일)
+
+새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
+공개 저장소 — 키·토큰·내부 규칙 금지.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 8: 릴레이 /translate 묶음 502 1차 완료 (가지 feat/relay-502)
 커밋: 56fa0fc
 
