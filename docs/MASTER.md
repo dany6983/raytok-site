@@ -159,3 +159,9 @@ B는 세션 시작 때, 커밋 전마다 `git pull` 해서 읽는다. 보고는 
 ## 2026-10-08 12:30 — B 12:14 접수: 11:10 합치기 **맞게 됐다**(main 의 `web/host` 에 `참석자 (익명)` 0, 가지판과 같음) · mint-code 합침 · 처리방침 웹 사본 · 사용 제한 1차(되돌림 2). **승인.** [B]
 - relay 배포(wrangler)는 여전히 대표님 결정 뒤.
 ### B 다음: 줄 6 Desk 받는 끝점 — A2 정본(`raytok-native1/docs/samples/desk-session.md`)이 올라오면 연다. 그 전에는 **[대기]**, 손대지 않는다.
+
+## 2026-10-08 13:55 — [열림] B 줄 6: Desk 받는 끝점 `POST /desk/session` — 정본이 나왔다. [B]
+- 정본: `raytok-native1` 가지 `feat/report` 의 **`docs/samples/desk-session.md`** (`git show origin/feat/report:docs/samples/desk-session.md` — raytok-native1 저장소). **그 파일 그대로** 만든다. 앱 시험(`__tests__/desk.test.js`)이 그 문서의 예시 해시와 맞춘다 — 서버도 같은 예시로 시험한다.
+- 할 일: ① 토큰 검사(`/translate` 와 같은 길) ② 받은 `items` 로 체인을 **다시 세어** 보낸 `last` 와 다르면 400 ③ **멱등**: 같은 `last` 면 같은 `id` 를 돌려주고 새로 만들지 않는다 ④ 저장은 D1(또는 지금 쓰는 DO storage) 한 표 — `id, last, session.code, host, started, items(JSON), received_at`. 허용 칸 밖 키가 오면 400(P-04·P-16 ②) ⑤ 이용권 플래그 0x08(Desk) 없는 토큰은 403.
+- 시험: 정본 예시 2건(이름 보임·가림) + 같은 것 두 번(같은 id) + `last` 위조(400) + 플래그 없음(403) + 허용 밖 키(400). 되돌림 1. `relay/test/desk-session.mjs`.
+- **배포 금지**(wrangler) — 대표님 결정 뒤. Desk 쪽 보는 화면은 이 줄 밖이다.
