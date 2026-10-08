@@ -305,6 +305,7 @@
 
   <script src="../vendor/pdf.min.js"></script>
   <script src="../vendor/mammoth.browser.min.js"></script>
+  <script src="../vendor/fflate.min.js"></script>
   <script src="../vendor/qrcode.js"></script>
   <script src="../common/report.js"></script>
 </head>
@@ -344,12 +345,12 @@
       
       <!-- ① 파일 올리기 -->
       <div class="form-group">
-        <label>① 원고 파일 올리기 (TXT · PDF · DOCX)</label>
+        <label>① 원고 파일 올리기 (TXT · PDF · DOCX · HWPX)</label>
         <div class="drop-zone" id="dropZone">
           <div class="drop-icon">📄</div>
           <div style="font-weight: 600; margin-bottom: 4px;">강의 원고 파일(TXT · PDF · DOCX)을 마우스로 끌어다 놓으세요</div>
           <div style="font-size: 0.8rem; color: var(--text-muted);">또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)</div>
-          <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.doc" style="display: none;">
+          <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.doc,.hwpx,.hwp" style="display: none;">
         </div>
       </div>
 
@@ -736,6 +737,96 @@
       return fullText;
     }
 
+    async function extractTextFromHwpx(arrayBuffer) {
+      if (!window.fflate) throw new Error('HWPX 압축 해제 모듈(fflate)이 로드되지 않았습니다.');
+      const u8 = new Uint8Array(arrayBuffer);
+      const unzipped = fflate.unzipSync(u8);
+
+      // 1. spine 읽기 (Contents/content.hpf)
+      const hpfBytes = unzipped['Contents/content.hpf'] || unzipped['content.hpf'];
+      let sectionHrefs = [];
+
+      if (hpfBytes) {
+        const hpfXml = fflate.strFromU8(hpfBytes);
+        const parser = new DOMParser();
+        const hpfDoc = parser.parseFromString(hpfXml, 'application/xml');
+
+        const itemRefs = Array.from(hpfDoc.querySelectorAll('itemref'));
+        const manifestItems = new Map();
+        Array.from(hpfDoc.querySelectorAll('item')).forEach(it => {
+          manifestItems.set(it.getAttribute('id'), it.getAttribute('href'));
+        });
+
+        itemRefs.forEach(ref => {
+          const id = ref.getAttribute('idref');
+          const href = manifestItems.get(id);
+          if (href) sectionHrefs.push(href.startsWith('Contents/') ? href : 'Contents/' + href);
+        });
+      }
+
+      // spine 없으면 section*.xml 파일 직접 탐색
+      if (sectionHrefs.length === 0) {
+        sectionHrefs = Object.keys(unzipped).filter(k => /^Contents\/section\d+\.xml$/i.test(k)).sort();
+      }
+
+      const parser = new DOMParser();
+      const paras = [];
+
+      for (const href of sectionHrefs) {
+        const secBytes = unzipped[href];
+        if (!secBytes) continue;
+        const secXml = fflate.strFromU8(secBytes);
+        const doc = parser.parseFromString(secXml, 'application/xml');
+
+        // 머리말(header), 꼬리말(footer), 각주(footNote) 태그 내부 요소는 배제
+        const docClone = doc.cloneNode(true);
+        const excludedSelectors = [
+          'header', 'footer', 'footNote', 'footnote',
+          'hp\\:header', 'hp\\:footer', 'hp\\:footNote', 'hp\\:footnote'
+        ];
+        excludedSelectors.forEach(sel => {
+          try {
+            docClone.querySelectorAll(sel).forEach(el => el.remove());
+          } catch (_) {}
+        });
+
+        // 모든 문단 (hp:p 또는 p) - 표(hp:tbl -> hp:tc -> hp:p) 안 글자도 포함됨
+        const pNodes = Array.from(docClone.querySelectorAll('p, hp\\:p'));
+        for (const pNode of pNodes) {
+          // 머리말/꼬리말/각주 내부 요소 이중 방어
+          let parent = pNode.parentElement;
+          let isExcluded = false;
+          while (parent) {
+            const pName = (parent.localName || parent.tagName || '').toLowerCase();
+            if (pName.includes('header') || pName.includes('footer') || pName.includes('footnote')) {
+              isExcluded = true;
+              break;
+            }
+            parent = parent.parentElement;
+          }
+          if (isExcluded) continue;
+
+          let pText = '';
+          const textNodes = Array.from(pNode.querySelectorAll('t, hp\\:t, lineBreak, hp\\:lineBreak, tab, hp\\:tab'));
+          for (const tn of textNodes) {
+            const tagName = (tn.localName || tn.tagName || '').toLowerCase();
+            if (tagName.includes('linebreak') || tagName.includes('tab')) {
+              pText += ' ';
+            } else {
+              pText += tn.textContent;
+            }
+          }
+
+          const cleanText = pText.trim();
+          if (cleanText.length > 0) {
+            paras.push(cleanText);
+          }
+        }
+      }
+
+      return paras.join('\n\n');
+    }
+
     async function extractTextFromDocx(arrayBuffer) {
       if (!window.mammoth) throw new Error('DOCX 변환 모듈이 로드되지 않았습니다.');
       const result = await mammoth.extractRawText({ arrayBuffer });
@@ -747,9 +838,30 @@
       const name = file.name || '';
       const ext = name.split('.').pop().toLowerCase();
 
-      // 옛 .doc 바이너리 차단 안내 (L3 규칙)
+      // 옛 .doc 및 .hwp 바이너리 차단 안내 (L3, L3-2 규칙)
       if (ext === 'doc') {
         alert('Word 에서 .docx 로 저장해 다시 올려 주세요');
+        return;
+      }
+      if (ext === 'hwp') {
+        const isEn = (urlParams.get('lang') === 'en');
+        alert(isEn ? "Please save as HWPX in Hancom Office and upload again." : "한글에서 '다른 이름으로 저장 → HWPX' 로 다시 올려 주세요");
+        return;
+      }
+
+      if (ext === 'hwpx') {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const rawText = await extractTextFromHwpx(e.target.result);
+            paragraphs = splitTextIntoParagraphs(rawText);
+            renderParagraphs();
+            saveParagraphsToDB(paragraphs);
+          } catch (err) {
+            alert('HWPX 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+          }
+        };
+        reader.readAsArrayBuffer(file);
         return;
       }
 

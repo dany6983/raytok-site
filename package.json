@@ -11,12 +11,14 @@
     "test:script": "npm --prefix relay run test:script",
     "test:mint": "npm --prefix relay run test:mint",
     "test:lic": "node samples/lic_page_test.js",
-    "mail": "node scripts/mailcheck.js --force"
+    "mail": "node scripts/mailcheck.js --force",
+    "test:hwpx": "node samples/hwpx_test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "fflate": "^0.8.3",
     "mammoth": "^1.13.0",
     "pdfjs-dist": "^3.11.174",
     "playwright": "^1.63.0"
