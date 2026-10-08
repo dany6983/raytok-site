@@ -6,6 +6,53 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 10: Desk 저장 실패 503·128KiB 분할저장·기기 10대 완화 1차 완료
+커밋: e9db66a
+
+만든·바꾼 파일과 이유
+- relay/src/index.js — POST /desk/session 에서 DO 스토리지 저장 실패 시 가짜 200 반환 길 삭제하고 503 {why:"store"} 반환 (R-15 유실 방지: 앱 대기열이 재전송할 수 있도록).
+- relay/src/room.js — DO storage 단일 put 128 KiB 상한을 극복하기 위해 세션 items 를 64 KiB 단위로 청크 분할하여 desk:<last>:<n> 으로 다중 키 분할 저장(chunks 필드 기록), 멱등 조회 연동.
+- relay/wrangler.toml — [vars] LICENSE_MAX_DEVICES = "10" 설정 (시험 기간 대표님 폰 둘·PC·회사폰 넷 등 다중 기기 차단 위험 해소).
+- docs/deploy-checklist.md — 동시 기기 10대 완화 및 Desk 503/분할저장 보호 내용 갱신.
+- relay/test/desk-session.mjs — 신규 시험: ① DO 저장 오류 시 503 {why:"store"} 반환 검증(200 아님). ② 298 KiB 대형 세션 64 KiB 단위(chunks: 5) 분할 저장 및 동일 last 재전송 시 동일 id 멱등 반환 검증.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. node relay/test/desk-session.mjs (25건 전원 통과):
+=== Relay Desk 세션 업로드 (POST /desk/session) 단위 시험 ===
+[Test 7] DO 스토리지 저장 실패 시 503 {why:"store"} 반환 검증
+  [PASS] 저장 실패 시 503 Service Unavailable 반환 (200 아님)
+  [PASS] why: "store" 일치 (앱 대기열 재전송 대상)
+
+[Test 8] 200KB 대형 세션 분할 저장 및 멱등성 검증
+  [PASS] 대형 세션 본문 크기 200 KiB 이상 확인 (실제: 298 KiB)
+  [PASS] 200KB 세션 분할 저장 성공 200 OK
+  [PASS] 대형 세션 id 발급 확인
+  [PASS] 대형 세션 last 일치 확인
+  [PASS] 128 KiB 초과로 2개 이상의 청크로 분할 저장됨 (chunks: 5)
+  [PASS] 청크 0에 항목 배열 저장 확인
+  [PASS] 200KB 세션 재전송 200 OK
+  [PASS] 대형 세션도 같은 id 반환 확인 (멱등)
+전부 통과 (25건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+relay/src/index.js 에서 catch(e) 시 503 대신 200 을 반환하도록 변경 시:
+[FAIL] AssertionError [ERR_ASSERTION]: 저장 실패 시 503 Service Unavailable 반환 (200 아님)
+    at ok (file:///C:/GitHub/raytok-site/relay/test/desk-session.mjs:11:3)
+    at run (file:///C:/GitHub/raytok-site/relay/test/desk-session.mjs:331:5)
+
+3. 배포 방침 준수:
+지침대로 wrangler deploy 는 일절 실행하지 않음 (대표님 결정 대기).
+
+한 줄 판정
+Desk 세션 저장 실패 시 503 {why:"store"} 반환으로 유실 방지, 298 KiB 대형 세션 64 KiB 분할 저장 및 LICENSE_MAX_DEVICES=10 설정 완료, 배포 미실행.
+
+막힌 것
+없음.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 9: 릴레이 배포 전 점검표 작성 완료 (배포 명령 미실행)
 커밋: af7794f
 
