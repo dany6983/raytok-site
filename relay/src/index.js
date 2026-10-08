@@ -1,3 +1,9 @@
+async function sha256Hex(str) {
+  const enc = new TextEncoder().encode(str || '');
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export { Room } from './room.js';
 import { verifyLicense, mintLicense, computeSub } from './license.js';
 
@@ -415,7 +421,72 @@ export default {
     }
 
     // 0-1. 번역 엔드포인트: POST /translate
+        // 0-0. 라이선스 검증 및 기기 등록 엔드포인트: POST /license/verify
+    if (url.pathname === '/license/verify' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = (body.token || authHeader.replace(/^Bearer\s+/i, '') || '').trim();
+
+      if (!token) {
+        return jsonError('bad_token', 'License token is required', 400);
+      }
+
+      const fakeReq = new Request(request.url, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
+      const licenseRes = await verifyLicense(fakeReq, secret);
+
+      if (!licenseRes.valid) {
+        return jsonError(licenseRes.error || 'bad_token', licenseRes.message || 'Invalid signature', licenseRes.status || 401);
+      }
+
+      if (body.deviceId && String(body.deviceId).trim()) {
+        const rawDevice = String(body.deviceId).trim();
+        const maxDevices = parseInt(env.LICENSE_MAX_DEVICES || '3', 10);
+        const tokenHash = await sha256Hex(token);
+        const deviceHash = await sha256Hex(rawDevice);
+
+        try {
+          const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+          const limiter = env.ROOM.get(limiterId);
+          const devRes = await limiter.fetch(new Request('http://internal/devices/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tokenHash, deviceHash, maxDevices })
+          }));
+
+          if (devRes.ok) {
+            const devData = await devRes.json();
+            if (!devData.allowed) {
+              return new Response(JSON.stringify({
+                error: 'too_many_devices',
+                message: `Maximum device limit reached for this license (limit: ${maxDevices}).`,
+                limit: maxDevices,
+                count: devData.count
+              }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('[Device Register Warning]:', e.message);
+        }
+      }
+
+      return new Response(JSON.stringify({
+        valid: true,
+        payload: licenseRes.payload
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    }
+
     if (url.pathname === '/translate' && request.method === 'POST') {
+      const capChars = parseInt(env.TRANSLATE_CAP_CHARS || '3000000', 10);
+      let currentUsedChars = 0;
       // 1) 라이선스 토큰 검증: 0x02 (camera) 또는 0x04 (meet) 필요
       const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x02 | 0x04);
       if (!licenseRes.valid) {
@@ -503,6 +574,31 @@ export default {
 
       if (totalChars > 5000) {
         return jsonError('too_long', 'Total characters in q cannot exceed 5000', 400, { why: 'chars_exceed_5000', totalChars });
+      }
+
+      // 4-2) 월 번역 글자 상한 검사 (TRANSLATE_CAP_CHARS, 기본 3,000,000자)
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const uRes = await limiter.fetch(new Request(`http://internal/usage/summary?month=${currentMonth}&sub=${encodeURIComponent(sub)}`));
+        if (uRes.ok) {
+          const uData = await uRes.json();
+          currentUsedChars = (uData.subs && uData.subs[sub]) ? (uData.subs[sub].total_chars || 0) : (uData.total_chars || 0);
+        }
+      } catch (_) {}
+
+      if (currentUsedChars >= capChars) {
+        return new Response(JSON.stringify({
+          error: 'quota_exceeded',
+          message: `Monthly translation character limit exceeded (used ${currentUsedChars} chars, limit ${capChars}). Contact support to increase.`,
+          scope: 'translate_chars',
+          used: currentUsedChars,
+          limit: capChars
+        }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
       }
 
       // 5) 언어 코드 검사 및 호환성 처리 (언더스코어 및 auto 처리)
@@ -685,6 +781,10 @@ export default {
         ...CORS_HEADERS
       };
 
+      
+      if ((currentUsedChars + totalChars) / capChars >= 0.8) {
+        responseHeaders['X-RayTok-Warn'] = '80';
+      }
       const finalSrc = detectedSrc || sourceLang || 'unknown';
 
       if (ctx && ctx.waitUntil) {

@@ -368,6 +368,42 @@ export class Room {
     }
 
     // 0-5. 내부 월별·코드별 사용량 조회 (/usage/summary)
+    // 0-6. 내부 동시 기기 등록 및 한도 검사 (/devices/register)
+    if (url.pathname === '/devices/register' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const { tokenHash, deviceHash, maxDevices = 3 } = body;
+      if (!tokenHash || !deviceHash) {
+        return new Response(JSON.stringify({ allowed: false, error: 'bad_params' }), { status: 400 });
+      }
+
+      const key = `devices:${tokenHash}`;
+      let devices = (await this.ctx.storage.get(key)) || [];
+      if (!Array.isArray(devices)) devices = [];
+
+      // 이미 등록된 기기인지 확인
+      const isExisting = devices.includes(deviceHash);
+      if (isExisting) {
+        return new Response(JSON.stringify({ allowed: true, count: devices.length, max: maxDevices }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // 신규 기기인데 한도 초과인지 확인
+      if (devices.length >= maxDevices) {
+        return new Response(JSON.stringify({ allowed: false, count: devices.length, max: maxDevices }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // 신규 등록
+      devices.push(deviceHash);
+      await this.ctx.storage.put(key, devices);
+
+      return new Response(JSON.stringify({ allowed: true, count: devices.length, max: maxDevices }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     if (url.pathname === '/usage/summary' && request.method === 'GET') {
       const now = new Date();
       const currentMonth = now.toISOString().slice(0, 7);
