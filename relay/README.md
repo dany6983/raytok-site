@@ -12,6 +12,8 @@ Cloudflare Workers와 Durable Objects (WebSocket Hibernation API) 기반의 경�
 - `POST /room`
   - 응답: `{ "code": "6자리 Crockford Base32", "host_token": "32자리 hex" }`
   - I, L, O, U를 제외한 32자 문자로 방 코드를 생성하고, 세션 DO를 초기화합니다.
+  - 몸체 `kind`: `guide`(기본, 이용권 0x01) · `desk`(0x04|0x08, Desk 분 집계) · `script`(0x04|0x08, 웹 강사 화면 L4-2 — 분 집계 없음).
+  - 웹 강사 화면의 `script`·`skip`·`break` 메시지는 다른 호스트 메시지와 같이 그대로 중계되며(저장은 링버퍼 규칙뿐), `script` 는 무음 판정의 새 줄로 셉니다.
 - `GET /room/:code`
   - 응답: `{ "exists": boolean, "listeners": number, "started_at": string | null }`
 - `GET /ws?room=CODE&role=host&token=HOST_TOKEN`

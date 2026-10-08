@@ -1,5 +1,19 @@
 // web/common/report.js — RayTok 청취 페이지 및 웹 강사 화면 공통 기록 저장 모듈
-// 외부 의존성 0건. 내용 3종(both, src, tr) × 형식 3종(TXT, DOC, PDF)
+// 외부 의존성 0건. 내용 3종(both, src, trans) × 형식 3종(TXT, DOC, PDF)
+// L4-3: 줄에 label(출처 표시, 예 "(원고 3)")이 있으면 내용 앞에 붙이고, footer(글 줄 배열)가 있으면 본문 뒤에 적는다
+//       (원고 모드 리포트 — 건너뛴 문단). 둘 다 없으면 출력은 전과 글자 하나 다르지 않다.
+// 브라우저에서는 window.RayTokReport 하나만 내놓는다 — pad2·escapeHtml 같은 이름이 불러 쓰는 페이지의
+// 같은 이름 함수와 부딪히지 않게 함수로 감쌌다(안쪽 들여쓰기는 차이를 줄이려고 그대로 둔다).
+(function () {
+
+function labelOf(l) {
+  return (l && typeof l.label === 'string' && l.label) ? l.label + ' ' : '';
+}
+
+function footerLines(footer) {
+  if (!footer) return [];
+  return (Array.isArray(footer) ? footer : [footer]).filter(f => typeof f === 'string' && f);
+}
 
 function pad2(n) {
   return String(n).padStart(2, '0');
@@ -18,7 +32,7 @@ function escapeHtml(str) {
 /**
  * TXT 보고서 문자열 생성
  */
-function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both' }) {
+function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', footer = null }) {
   const first = lines.length ? new Date(lines[0].at) : new Date();
   const out = [];
   out.push('RayTok');
@@ -31,16 +45,22 @@ function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
     const d = new Date(l.at);
     const timeStr = `[${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}]`;
     const tr = (l.tr && l.tr[targetLang]) ? l.tr[targetLang] : '';
+    const label = labelOf(l);
 
     if (contentMode === 'src') {
-      out.push(`${timeStr} ${l.text}`);
+      out.push(`${timeStr} ${label}${l.text}`);
     } else if (contentMode === 'trans' || contentMode === 'tr') {
-      out.push(`${timeStr} ${tr || l.text}`);
+      out.push(`${timeStr} ${label}${tr || l.text}`);
     } else {
       // both (기본)
-      out.push(`${timeStr} ${l.text}`);
+      out.push(`${timeStr} ${label}${l.text}`);
       if (tr) out.push(tr);
     }
+    out.push('');
+  }
+
+  for (const f of footerLines(footer)) {
+    out.push(f);
     out.push('');
   }
 
@@ -50,7 +70,7 @@ function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
 /**
  * HTML/DOC/PDF 인쇄용 HTML 문서 문자열 생성
  */
-function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', isRtl = false }) {
+function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', isRtl = false, footer = null }) {
   const first = lines.length ? new Date(lines[0].at) : new Date();
   const dateStr = `${first.getFullYear()}-${pad2(first.getMonth() + 1)}-${pad2(first.getDate())} ${pad2(first.getHours())}:${pad2(first.getMinutes())}`;
   const langPairStr = `${(srcLang || 'ko').toUpperCase()} → ${langName || targetLang} (${targetLang})`;
@@ -59,14 +79,15 @@ function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
     const d = new Date(l.at);
     const timeStr = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
     const tr = (l.tr && l.tr[targetLang]) ? l.tr[targetLang] : '';
+    const label = escapeHtml(labelOf(l));
 
     let contentHtml = '';
     if (contentMode === 'src') {
-      contentHtml = `<div class="line-src">${escapeHtml(l.text)}</div>`;
+      contentHtml = `<div class="line-src">${label}${escapeHtml(l.text)}</div>`;
     } else if (contentMode === 'trans' || contentMode === 'tr') {
-      contentHtml = `<div class="line-tr" ${isRtl ? 'dir="rtl"' : ''}>${escapeHtml(tr || l.text)}</div>`;
+      contentHtml = `<div class="line-tr" ${isRtl ? 'dir="rtl"' : ''}>${label}${escapeHtml(tr || l.text)}</div>`;
     } else {
-      contentHtml = `<div class="line-src">${escapeHtml(l.text)}</div>`;
+      contentHtml = `<div class="line-src">${label}${escapeHtml(l.text)}</div>`;
       if (tr) {
         contentHtml += `<div class="line-tr" ${isRtl ? 'dir="rtl"' : ''}>${escapeHtml(tr)}</div>`;
       }
@@ -79,6 +100,8 @@ function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
       <td class="col-content">${contentHtml}</td>
     </tr>`;
   }).join('');
+
+  const footerHtml = footerLines(footer).map(f => `\n  <p class="report-footer" style="margin-top:14px;font-size:13px;color:#475569;">${escapeHtml(f)}</p>`).join('');
 
   return `<!DOCTYPE html>
 <html lang="${targetLang}" ${isRtl ? 'dir="rtl"' : 'dir="ltr"'}>
@@ -129,7 +152,7 @@ function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
     <tbody>
       ${rows}
     </tbody>
-  </table>
+  </table>${footerHtml}
 </body>
 </html>`;
 }
@@ -156,13 +179,13 @@ function generateReportFilename({ date, contentMode = 'both', langCode = 'en', e
 /**
  * 브라우저 다운로드 트리거
  */
-function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', format = 'txt', isRtl = false }) {
+function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', format = 'txt', isRtl = false, footer = null }) {
   if (!lines || !lines.length) return false;
   const first = lines.length ? new Date(lines[0].at) : new Date();
 
   if (format === 'pdf') {
     // PDF: 인쇄용 iframe 생성 후 window.print()
-    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl });
+    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl, footer });
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -191,7 +214,7 @@ function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langNam
 
   if (format === 'doc') {
     // DOC: application/msword
-    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl });
+    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl, footer });
     const blob = new Blob(['\uFEFF' + html], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const filename = generateReportFilename({ date: first, contentMode, langCode: targetLang, ext: 'doc' });
@@ -206,7 +229,7 @@ function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langNam
   }
 
   // TXT (기본)
-  const text = buildReportText({ lines, srcLang, targetLang, langName, contentMode });
+  const text = buildReportText({ lines, srcLang, targetLang, langName, contentMode, footer });
   const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const filename = generateReportFilename({ date: first, contentMode, langCode: targetLang, ext: 'txt' });
@@ -239,3 +262,5 @@ if (typeof module !== 'undefined' && module.exports) {
     downloadReport
   };
 }
+
+})();

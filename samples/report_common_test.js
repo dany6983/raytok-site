@@ -74,5 +74,32 @@ const mockLines = [
   ok(htmlAr.includes('مرحبا. نبدأ الاجتماع.'), '아랍어 번역문 포함');
 }
 
+// --- 5. L4-3 원고 모드: 줄의 출처 표시(label) · 본문 뒤 꼬리 줄(footer) ---
+{
+  const scriptLines = [
+    { at: 1759800000000, text: '안전모를 착용하십시오.', tr: { en: 'Wear a hard hat.' }, label: '(원고 1)' },
+    { at: 1759800005000, text: '비상구를 확인하세요.', tr: {}, label: '(원고 <3>)' }
+  ];
+  const footer = ['건너뛴 문단: 2, 4 <끝>'];
+  const args = { lines: scriptLines, srcLang: 'ko', targetLang: 'en', langName: 'English', footer };
+
+  const both = buildReportText({ ...args, contentMode: 'both' });
+  ok(/\] \(원고 1\) 안전모를 착용하십시오\.\r\nWear a hard hat\.\r\n/.test(both), 'label both: 시각 뒤·원문 앞에 출처, 번역은 다음 줄');
+  ok(/\] \(원고 1\) 안전모를 착용하십시오\./.test(buildReportText({ ...args, contentMode: 'src' })), 'label src: 원문 앞에 출처');
+  const trans = buildReportText({ ...args, contentMode: 'trans' });
+  ok(/\] \(원고 1\) Wear a hard hat\./.test(trans) && /\] \(원고 <3>\) 비상구를 확인하세요\./.test(trans), 'label trans: 번역 앞에 출처 · 번역 없는 줄은 원문 앞에');
+  ok(both.endsWith('비상구를 확인하세요.\r\n\r\n건너뛴 문단: 2, 4 <끝>\r\n'), 'footer TXT: 본문 뒤 한 줄');
+
+  const html = buildReportHtml({ ...args, contentMode: 'both' });
+  ok(html.includes('<div class="line-src">(원고 1) 안전모를 착용하십시오.</div>') && html.includes('(원고 &lt;3&gt;) 비상구를 확인하세요.'), 'label HTML: 출처 포함 · 이스케이프');
+  ok(html.includes('건너뛴 문단: 2, 4 &lt;끝&gt;</p>') && html.indexOf('report-footer') > html.indexOf('</table>'), 'footer HTML: 표 뒤 한 줄 · 이스케이프');
+
+  // label·footer 가 없으면 전과 같다(들은 줄 리포트는 바뀌지 않는다)
+  const plain = buildReportText({ lines: mockLines, srcLang: 'ko', targetLang: 'en', langName: 'English', contentMode: 'both' });
+  ok(/\] 안녕하세요\. 회의를 시작합니다\.\r\nHello\. We start the meeting\./.test(plain) && plain.endsWith('test <script>alert(1)</script>\r\n'), 'label·footer 없음 TXT: 줄 모양·끝이 전과 같다');
+  ok(!buildReportHtml({ lines: mockLines, srcLang: 'ko', targetLang: 'en', langName: 'English' }).includes('report-footer'), 'label·footer 없음 HTML: 꼬리 줄 없음');
+  ok(buildReportText({ ...args, footer: [] }) === buildReportText({ ...args, footer: null }), '빈 footer = footer 없음');
+}
+
 console.log(`\n전부 통과 (${passCount}건)`);
 process.exit(0);

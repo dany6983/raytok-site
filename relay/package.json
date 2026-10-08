@@ -7,7 +7,8 @@
     "test:limits": "node test/limits.mjs",
     "test:nostore": "node test/no-store.mjs",
     "test:att": "node test/attendance.mjs",
-    "test:limits-bundle": "node test/limits-bundle.mjs"
+    "test:limits-bundle": "node test/limits-bundle.mjs",
+    "test:script": "node test/script-forward.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.143.0",

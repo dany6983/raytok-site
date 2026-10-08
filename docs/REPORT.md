@@ -6,6 +6,7 @@
 ---
 
 [B 보고]
+<<<<<<< HEAD
 2026-10-07 [열림] L4-2 진행 화면 · L4-3 끝 화면 1차 완료
 커밋: 35df360
 
@@ -48,6 +49,154 @@ L4-2(실시간 문단 송출·건너뜀·쉬는시간·청취자 뱃지/띠) 및
 
 막힌 것
 없음.
+=======
+2026-10-08 [열림] L4-3 끝 화면 + 원고 줄 TTS(MASTER 10:25) — 완료 (가지 `feat/l4-2` 위에, main 미합침)
+상태: 구현·시험 통과·되돌림 확인 7건·전체 3회 반복 통과. 합치기는 마스터. 릴레이(relay/)는 손대지 않았다 — 배포할 것 없음.
+커밋: 0374aa3 (작업) · 보고 커밋은 이 줄 뒤.
+
+만든·바꾼 파일과 이유
+- web/host/index.html — 진행 화면에 "끝내기" 단추 → 4단계 "강의 끝" 화면. ① 요약: 참석(명단 인원)·최대 동시(릴레이 att.max)·진행 시간(h:mm:ss)·읽은 문단 n/전체·건너뛴 문단 수와 번호. ② 리포트 내용 3 × 형식 3 + 번역 언어 고르기 — `web/common/report.js` 를 그대로 부른다. 줄은 **실제로 나간 script 메시지**의 `src`/`trans` 그대로, 앞에 "(원고 n)", 본문 뒤에 "건너뛴 문단: …" 한 줄. ③ 참석 CSV(이름·언어·연결 분): 브라우저 메모리의 명단으로 그 자리에서 만든다 — 서버 저장·전송 없음, localStorage·IndexedDB 에도 안 쓴다. BOM·CRLF·RFC 4180. ④ 방 닫기: 릴레이의 기존 끝 메시지 `{end:1, summary:{lines, minutes, joined_max}}` 그대로 보내고 소켓을 닫는다(room.js 가 줄·집계를 지우고 청취자에게 끝을 알린다). 닫으면 명단·호스트 토큰을 메모리에서 지우고 요약은 숫자만 남긴다. 리포트(원고 글)는 닫은 뒤에도 받을 수 있고 CSV 단추는 잠긴다. 명단은 `hello` 를 기기 번호로 묶어 한 사람 한 줄(`{name, lang, joinedAt[], leftAt[]}` — 앱과 같은 모양). `sendScript()` 가 나간 문단을 `live.sent` 에 적는 한 곳이고 요약·리포트는 그것만 읽는다. 새 글자는 `HOST_STR`(ko·en) 한 곳, `data-t` 로 채운다.
+- web/common/report.js — 줄의 `label`(출처 표시)과 `footer`(본문 뒤 줄) 선택 칸을 더했다. 둘 다 없으면 TXT·HTML 출력이 전과 같다(바꾸기 전 출력과 글자 대조함). 호스트 페이지의 `escapeHtml` 과 이름이 부딪혀서 파일을 함수로 감쌌다 — 브라우저에는 `window.RayTokReport` 만 나간다(node `require` 는 그대로).
+- web/listener/index.html — 원고 줄(`kind:"script"`)은 기본으로 읽지 않는다. 소리 단추를 건드린 적이 없으면 원고 줄이 올 때 소리를 끄고(단추가 "소리 끔"으로 보인다), 청취자가 단추를 직접 켜면 그 뒤 원고 줄을 읽는다. 들은 줄(line·tr)은 전과 같다 — 원고 줄 때문에 페이지가 끈 소리는 들은 줄이 오면 도로 켠다(청취자가 직접 끈 것은 안 켠다). 단추 켜고 끄기를 `setTtsEnabled()` 한 곳으로 모았다.
+- samples/end_test.js — 신규 80건. 호스트 + 청취자 둘(브라우저를 따로 — 기기 번호가 다르게) + 원고 아닌 방 하나.
+- samples/mock_relay.js — 신규. live_test.js 안에 있던 목업 릴레이를 꺼내 두 시험이 같이 쓴다. room.js 규칙대로 보탠 것: `end:1` → 링버퍼를 끝 표시 하나로·집계 삭제·5초 뒤 청취자 닫기, 한 번 본 언어는 `now:0` 으로 att 에 남음, 끝난 방은 att 를 보내지 않음.
+- samples/live_test.js — 목업을 mock_relay.js 로 바꿈(시험 흐름은 그대로). "번역문 읽기 3회" 단언을 새 규칙으로: 기본 0회 + 단추 "Sound off" → 단추를 켠 뒤 다시 보낸 문단은 읽음. 40 → 43건.
+- samples/report_common_test.js — label·footer 9건 추가(18 → 27건).
+- package.json — `npm run test:end` · `test:report`.
+
+실행 출력 발췌 (CHROME=<로컬 크롬>, 리눅스)
+1. npm run test:end (80건 전원 통과):
+  [PASS] TTS 기본(단추 안 건드림): 원고 줄 3개를 읽지 않는다 (읽기 0회)
+  [PASS] TTS 기본: 소리 단추가 "소리 끔"으로 바뀌어 보인다
+  [PASS] TTS 켬(청취자가 직접 켬): 원고 줄 3개를 읽는다 (읽기 3회)
+  [PASS] 들은 줄(line·tr): 단추를 안 건드려도 전과 같이 읽는다
+  [PASS] 섞인 방: 원고 줄 뒤에 온 들은 줄은 전과 같이 읽는다(단추 "소리 켜짐")
+  [PASS] 청취자가 직접 끈 뒤: 들은 줄도 원고 줄도 읽지 않는다(페이지가 도로 켜지 않는다)
+  [PASS] 요약: 참석 2 · 최대 동시 2 (2·2)
+  [PASS] 요약: 읽은 문단 3 / 4 (3 / 4)
+  [PASS] 요약: 건너뛴 문단 1 — 4번 (1 · 4)
+  [PASS] 끝내기만으로는 방을 닫지 않는다(end 미송출)
+  [PASS] 리포트 both·TXT 파일 이름 (raytok_20261008_1053_en.txt)
+  [PASS] 리포트: 원고 줄 3개에 출처 "(원고 n)"
+  [PASS] 리포트: 본문 뒤에 "건너뛴 문단: 4"
+  [PASS] 리포트 src·DOC: 출처 + 원문만(번역 없음)
+  [PASS] 리포트 trans: 출처 + 번역문만(trans.ja)
+  [PASS] 리포트 both·PDF: 인쇄 문서에 출처·번역·건너뛴 문단
+  [PASS] 참석 CSV 머리 = 이름,언어,연결 분 (이름,언어,연결 분)
+  [PASS] 참석 CSV: 머리 + 참석자 한 사람 한 줄 = 3줄 (3)
+  [PASS] 참석 CSV: 수식 같은 이름은 ' 를 붙인다 · 언어는 마지막 것(vi) ('=SUM(1),vi,0)
+  [PASS] 호스트가 /ws 로 보낸 글에 이름이 없다
+  [PASS] 강의 시작 뒤 릴레이 HTTP 요청 0건 (0)
+  [PASS] 명단은 localStorage·IndexedDB 에 없다(메모리만)
+  [PASS] 방 닫기 = 릴레이의 기존 끝 메시지 {end:1, summary}
+  [PASS] 청취자 A: 상태 "종료됨"(en UI: Ended)
+  [PASS] 릴레이: 줄을 지우고 끝 표시 한 줄만(글 없음)
+  [PASS] 방을 닫은 뒤 명단은 메모리에 없다(요약은 숫자만 남는다)
+  [PASS] 끊긴 채 방 닫기: 종료 신호를 못 보냈다고 알린다
+  [PASS] 릴레이가 먼저 끝낸 방: end 를 또 보내지 않는다
+  [PASS] 바깥 요청 0건 (0)
+전부 통과 (80건)
+2. 회귀: test:live 43건 · test:host 13건 · test:script 10건 · report_common 27건 · screen_view "[PASS] 큰 화면 보기 시험 전부 통과"(9절 포함) · rtl "All 5 Real Lifecycle Tests Passed" — 여덟 파일 전체를 3회 돌려 3회 다 통과.
+3. 되돌림 확인(D-09) 7건 — 한 조각씩 망가뜨리고 실패를 본 뒤 복구(복구 뒤 파일 대조 일치):
+- 방 닫기의 `clearRoster()` 빼기 → `[FAIL] 방을 닫은 뒤 명단은 메모리에 없다`
+- 청취 페이지 `scriptTtsDefault()` 빼기 → live `[FAIL] 청취자: 원고 줄은 기본으로 읽지 않는다 (읽기 3회)` · end 도 실패
+- 들은 줄의 `liveTtsDefault()` 빼기 → end `[FAIL] page.waitForFunction: Timeout`(섞인 방의 들은 줄을 안 읽음)
+- `sendScript` 의 나간 문단 기록 빼기 → `[FAIL] 요약: 읽은 문단 3 / 4 (0 / 4)`
+- report.js 출처 표시 빼기 → report_common `label both` 실패 · end `[FAIL] 리포트: 원고 줄 3개에 출처`
+- 방 닫기에서 end 안 보내기 → `[FAIL] 방 닫기 = 릴레이의 기존 끝 메시지`
+- CSV 수식 글자 막기 빼기 → `[FAIL] 참석 CSV: 수식 같은 이름은 ' 를 붙인다 (=SUM(1),vi,0)`
+4. 미실행: `npm run test:relay`(wrangler dev + powershell helper — 이 환경은 리눅스) · 실 릴레이 · 실기. PDF 는 인쇄에 넘긴 문서 내용까지만 봤다(인쇄 창은 안 띄움). package-lock 이 없어 `npm install --no-package-lock` 으로 깔았다(저장소에 남긴 것 없음).
+
+한 줄 판정
+L4-3 완료 — 끝내기·요약·리포트 3×3·참석 CSV·방 닫기, 명단은 화면 밖으로 안 나가고 닫으면 지워짐, 원고 줄은 기본 안 읽음, 바깥 요청 0.
+
+막힌 것·기본안 (50초 규칙 — 기본안으로 진행했다)
+- **★ main 에 같은 일의 다른 구현이 올라와 있다 — 마스터 결정 필요.** 내가 일하는 사이(10-08 10:50) `35df360`(L4-2 + L4-3, 작성자 dany6983) · 보고 `05c256e` 가 **main 에 직접** 들어왔다. feat/l4-2(마스터 L4-2 + 이 L4-3)와 같은 파일을 따로 고친 것이라 합치면 `web/host/index.html` · `web/listener/index.html` · `docs/REPORT.md` 가 충돌한다(`git merge-tree` 로 확인, room.js 는 자동으로 합쳐진다). 기본안: 나는 feat/l4-2 에만 밀었고 main 은 건드리지 않았다. 코드를 읽어 본 차이(main 쪽): QR 없음(코드 글자만)·참여 주소가 `https://raytok.kr/...` 고정 / "강의 종료"가 곧바로 end 를 보내고 닫는다(방 닫기 따로 없음, 닫은 뒤 명단을 지우지 않는다) / CSV 칸이 이름·언어·**접속일시**이고 명단이 비면 "참석자 (익명)" 한 줄을 지어 넣는다 / 리포트에 출처 "(원고 n)"·건너뛴 문단 없음, 시각은 전부 저장 시각, 나간 문단이 없으면 전체 문단을 넣는다, 언어는 첫 번째 고정 / 청취 페이지는 원고 줄을 `seq = para` 로 넣어 들은 줄 번호·`lastSeq` 와 겹치고, 건너뜀을 보이지 않고, 원고 줄은 단추와 상관없이 아예 읽지 않는다 / 시험 13건(`samples/host_flow_test.js`).
+- **"읽어 주기" 토글**: 청취 페이지에 있는 것은 "소리 켜짐/끔" 단추 하나이고 기본이 켜짐이다. 그대로 두면 "기본은 안 읽음"이 안 된다. 기본안 = 위에 적은 대로(안 건드렸으면 원고 줄에서 끔, 들은 줄에서 도로 켬, 직접 누른 뒤로는 단추대로). 원고 줄과 들은 줄이 섞이는 방에서는 단추 글이 줄 종류에 따라 바뀐다. 원고 줄만 따로 켜고 끄는 단추를 두려면 말해 달라(ui-strings 두 줄 + 단추 하나).
+- **건너뛴 문단 = 나가지 않은 문단 전부**(건너뜀 단추 + 끝까지 안 간 것). 앱 정본 `report-format.md`(feat/report)의 "안 읽은 문단은 본문 뒤 `건너뛴 문단: …`"을 따랐고 글자도 그 줄이다(지시의 "건너뜀" 대신). 그래서 읽은 + 건너뛴 = 전체. 건너뜀 단추를 누른 것만 세려면 `sessionSummary()` 한 곳.
+- 다시 보낸 문단(←)은 리포트에 시간 순으로 두 번 나오고(일어난 대로), 읽은 문단 수에는 한 번만 센다.
+- **연결 분의 한계**: 릴레이는 개인별 나감을 호스트에게 알리지 않는다(att 는 숫자뿐). 그래서 처음 `hello` 부터 끝내기까지를 재고, 나간 시각은 "그 언어에 지금 0명"일 때만 닫는다. 같은 언어 청취자가 여럿이면 일찍 나간 사람이 길게 적힌다 — 화면 안내문에 그렇게 적어 두었다. 정확히 하려면 릴레이가 나감을 호스트에게 알려야 하고 사람을 가리킬 칸이 필요하다(서버가 개인을 구분 — 설계·처리방침 결정이라 손대지 않음). 분은 반올림(앱 `minutesOf` 와 같음).
+- 참석 CSV 는 지시대로 머리 + 세 칸뿐. 앱 정본의 요약 머리 여섯 줄·"참석"·"접속 횟수" 칸은 없다(웹에는 명단 붙여넣기 §1-2 ⑤가 아직 없어 present/absent 를 가를 수 없다). 파일 이름 `raytok_<날짜_시각>_roster_<ko|en>.csv`.
+- 이름은 MASTER 16:50 대로 `hello.name`. 앱 feat/report 의 report-format.md 는 사람 이름을 `hello.person` 으로 적는다(이 저장소 wire 정본에는 아직 없다) — 정본에 들어오면 `rosterJoin()` 한 줄, 청취 페이지 `sendHello()` 한 줄.
+- 방어 셋(시키지 않았지만 이름이 청취자가 적는 글이라 넣었다): CSV 칸이 `= + - @` 로 시작하면 `'` 를 붙임(엑셀 수식) · 이름 60자 · 명단 500줄 상한.
+- 끝내기는 방을 닫지 않는다(요약만 연다) — 그래서 "진행으로 돌아가기" 단추를 두었다. 방 닫기는 확인 창을 한 번 띄우고, CSV 를 아직 안 받았으면 그 말을 덧붙인다.
+- 릴레이와 끊긴 순간에 방 닫기를 누르면 end 를 못 보낸다. 기본안: 그렇게 알리고 명단은 지우고 다시 붙지 않는다 — 방은 릴레이의 기존 10분 규칙(host_timeout)이 닫는다. 다시 붙어서 end 를 보내고 닫게 하려면 `closeRoom()` 한 곳.
+- 릴레이가 먼저 끝낸 방(무음 정지 등)은 끝 화면으로 자동으로 넘기지 않는다 — 진행 화면 상태 줄에 뜨고, 끝내기를 누르면 그 시각 기준 요약이 나온다.
+- 호스트 화면에는 글자 표가 없었다. `HOST_STR` 을 host 안에 두었고 en 은 `?lang=en` 일 때만(화면의 나머지 글이 아직 ko 뿐이라 브라우저 언어로 자동 전환하지 않았다).
+- 청취 페이지 버전 글자(1.1.3)는 올리지 않았다(L4-2 때도 그대로였다).
+- 본 것(고치지 않음, 범위 밖): ① 연결이 끊긴 사이 "다음"을 누르면 문단은 안 나가는데 진행 화면은 넘어간다(L4-2). 끝 화면은 실제 나간 것만 세므로 그 문단이 "건너뛴 문단"에 나온다 — 다시 붙으면 보낼지 결정 필요(R-15). ② 호스트가 끊긴 사이 들어온 청취자의 `hello` 는 호스트에 안 온다 → 명단에서 빠질 수 있다(참석 < 최대 동시로 드러난다). ③ room.js `attEnd()` 주석은 "마지막 집계를 호스트에게 준다"인데, end 가 먼저 링버퍼에 들어가 `attSend()` 가 건너뛴다(호스트는 직전 집계를 이미 갖고 있어 L4-3 에는 영향 없음).
+
+---
+
+[B 보고]
+2026-10-08 [열림] L4-2 진행 화면 — 완료 (가지 `feat/l4-2`, main 미합침)
+상태: 구현·시험 통과·되돌림 확인 2건. 합치기는 마스터.
+커밋: 6e33708 (작업) · 보고 커밋은 이 줄 뒤.
+
+만든·바꾼 파일과 이유
+- web/host/index.html — 3단계 "강의 진행" 추가: 강의 시작 → `POST /room`(이용권 토큰 Bearer, `kind:"script"`) → 방 코드·QR·참여 주소·참석 수(`att`)·언어별 인원. 단추 다음/이전/건너뜀/쉬는 시간, 키 →·←·스페이스. 넘길 때 `/ws`(role=host)로 정본 모양 `{kind:"script", para, total, src, srcLang, trans, at}` — `trans` 는 IndexedDB 미리 번역만(실패해 원문이 들어간 칸·빈 칸은 뺀다 → 그 언어 청취자는 원문, R-15). 진행 중 `/translate` 호출 없음. `skip {kind,para}` · `break {kind,on}`. 청취자 `hello` 에는 `welcome` 으로 답하고, 시작 때도 `welcome` 을 한 번 보내 링버퍼로 늦게 온 청취자도 받는다. `hello.name`·lang 은 진행자 화면 메모리에만(L4-3 CSV 용, 서버 저장 없음). `SRC_LANG` 상수 하나로 `/translate` source 와 `script.srcLang` 을 맞췄다.
+- web/vendor/qrcode.js — 신규. qrcode-generator 2.0.4(MIT, Kazuhiko Arase) 그대로 복사. pdf.js·mammoth 와 같은 규칙(CDN 0, 바깥 요청 0). svg 로 그린다.
+- web/listener/index.html — `kind:"script"` 수신 → 줄 머리 "원고 n/total"(꼬리표) + 원문 + `trans[내 언어]`(없으면 번역 칸 비움, 원문은 그대로). 기록 저장(TXT·DOC·PDF)에 원고 줄도 들어간다(`lines` 에 `script:1, seq:null` 로). `kind:"skip"` → "건너뜀 n" 줄, `kind:"break"` → 자막 목록 위 "쉬는 시간" 띠(on/off). 원고 줄 요소 id 는 seq 가 없어 `lineElId()` 로 갈랐다. 기존 line·tr·no_tr·pending·fix 흐름은 손대지 않았다.
+- web/listener/ui-strings.json — `script_prefix`·`skip_line`·`break_band` ko·en (다른 언어는 en 으로 대체되는 기존 t() 규칙).
+- relay/src/room.js — 주석 한 줄 + 무음 판정에 `kind:"script"` 를 새 줄로 추가(웹 강사 화면은 `text` 를 안 보내므로 이것이 없으면 10분 뒤 silence_timeout 으로 끊긴다). script·skip·break 는 다른 호스트 메시지와 같이 **그대로** 중계, 저장은 기존 링버퍼 500 규칙뿐.
+- relay/src/index.js — `POST /room` 의 `kind` 에 `script` 한 줄: 이용권 플래그는 desk 와 같은 0x04|0x08, Desk 분 집계는 안 한다(room.js 가 `kind==='desk'` 일 때만 집계). 설계 §0 "교육 패키지는 0x04" 에 맞추려면 `guide`(0x01)로는 못 들어가서.
+- relay/README.md — `/room` 의 `kind` 셋 설명 두 줄.
+- relay/test/script-forward.mjs — 신규. wrangler 없이 가짜 ctx 로 Room 을 바로 돌린다(10건): 세 메시지 글자 그대로 중계·호스트 되돌림 없음·링버퍼 규칙·script 는 새 줄(알람 재설정)·break 는 새 줄 아님·hello 는 lang 만 집계(이름 저장 없음).
+- samples/live_test.js — 신규. Playwright 호스트+청취자 두 탭(목업 릴레이는 이 파일 안, room.js 규칙대로). 40건.
+- package.json / relay/package.json — `npm run test:live` · `test:host` · `test:script`.
+
+실행 출력 발췌
+1. npm run test:live (CHROME=<로컬 크롬>, 40건 전원 통과):
+=== L4-2 진행 화면 (web/host + web/listener) 시험 ===
+  [PASS] 미리 번역: /translate 12회 (문단 4 × 언어 3)
+  [PASS] /room 을 이용권 토큰으로 불렀다 (kind=script)
+  [PASS] QR(svg) 그림 — 바깥 요청 없이 로컬 생성
+  [PASS] 호스트: 참석 수 1
+  [PASS] 호스트: 언어별 인원 en 1
+  [PASS] 청취자: 문단 3개 → 원고 줄 3개
+  [PASS] 넘길 때 /translate 0회 — 번역을 새로 청하지 않는다
+  [PASS] script 모양 = {kind,para,total,src,srcLang,trans,at} (정본)
+  [PASS] 미리 번역 실패한 언어(vi)는 trans 에서 빠진다(R-15)
+  [PASS] 단추·→·스페이스 = 1,2,3 순서
+  [PASS] 청취자 줄 머리 "원고 n/total"(en UI: Script n/4)
+  [PASS] ← = 이전 문단(2) script 다시 송출
+  [PASS] skip {kind,para:3} 송출
+  [PASS] 청취자: "건너뜀 3" 줄(en UI: Skipped 3)
+  [PASS] 청취자: 쉬는 시간 띠 표시
+  [PASS] 청취자: 쉬는 시간 끝 → 띠 사라짐
+  [PASS] 청취자(vi, 번역 없음): 원문만 — 줄을 빼지 않는다
+  [PASS] 청취자 기록: 원고 줄 원문+번역 포함
+  [PASS] 바깥 요청 0건 (0)
+전부 통과 (40건)
+
+2. npm run test:script (relay Room 단위, 10건 전원 통과):
+  [PASS] 청취자 1: script·skip·break 세 줄을 글자 그대로(해석·변형 없음)
+  [PASS] 링버퍼 = 기존 줄 규칙 그대로(세 줄, 따로 저장 없음)
+  [PASS] script 는 새 줄 — 무음 판정 시각이 당겨진다
+  [PASS] 이름은 서버에 남지 않는다
+전부 통과 (10건)
+
+3. 기존 회귀: host_view_test.js 13건 통과 · screen_view_test.js 9절 전부 통과("[PASS] 큰 화면 보기 시험 전부 통과") · rtl_test.js 5건 통과 · report_common_test.js 18건 통과.
+
+4. 되돌림 확인(D-09) 2건:
+- 호스트 `goTo()` 의 `sendScript(para)` 한 줄 주석 → live_test: `[FAIL] page.waitForFunction: Timeout 5000ms exceeded.`(청취자 3줄 안 옴). 복구 후 40건 통과.
+- room.js 의 script 새 줄 판정 분기를 `if (false)` 로 → script-forward: `[FAIL] script 는 새 줄 — 무음 판정 시각이 당겨진다`. 복구 후 10건 통과.
+
+5. 미실행: `npm run test:relay`(wrangler dev + powershell 전용 helper, 이 환경은 리눅스). relay 변경은 2의 단위 시험으로 대신 확인.
+
+한 줄 판정
+L4-2 완료 — 방·QR·참석·문단 넘기기·script/skip/break 송출·청취 페이지 수신·릴레이 그대로 중계, 바깥 요청 0, 진행 중 번역 요청 0.
+
+막힌 것·기본안 (50초 규칙 — 기본안으로 진행했다)
+- 스페이스 키 = "다음"(→ 와 같음). 프레젠터 리모컨 관례. 쉬는 시간 토글로 바꾸려면 keydown 한 줄.
+- 건너뜀 = **다음** 문단(현재+1)을 건너뛴다: `skip {para}` 보내고 커서를 그 문단에 두어 취소선. 다시 "다음"을 누르면 그 다음 문단을 읽는다. 현재 문단을 건너뛰는 뜻이면 `doSkip()` 한 곳.
+- 쉬는 시간 중에 다음/이전/건너뜀을 누르면 먼저 `break off` 를 보내고 넘긴다(청취자가 띠에 갇히지 않게).
+- `/room` 에 `kind:"script"` 를 새로 두었다(index.js 한 줄). `desk` 로 들어가면 웹 강의가 Desk 분 사용량에 섞여서. 마스터가 `desk` 로 통일하라면 host 한 줄·index.js 한 줄.
+- QR 은 qrcode-generator(MIT) 를 web/vendor 에 복사(pdf.js 와 같은 규칙). 다른 패키지로 정해지면 `renderQr()` 한 함수.
+- 원고 줄 번역문 TTS: 청취자는 기존 line 과 같이 `trans[내 언어]` 를 읽는다(소리 켜짐일 때). 원고는 읽지 않게 하려면 handleMessage 의 script 분기 한 줄.
+- 끝내기 단추는 L4-3 에서(호스트 탭을 닫으면 relay 가 10분 뒤 host_timeout 으로 닫는다 — 기존 규칙).
+- 실기 없음(웹). 실 relay(wrangler)로는 안 돌렸다 — 위 5.
+>>>>>>> origin/feat/l4-2
 
 ---
 

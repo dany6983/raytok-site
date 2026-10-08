@@ -4,6 +4,11 @@
   "description": "RayTok static website and local server mockup",
   "scripts": {
     "test:relay": "npm --prefix relay run test:limits",
+    "test:host": "node samples/host_view_test.js",
+    "test:live": "node samples/live_test.js",
+    "test:end": "node samples/end_test.js",
+    "test:report": "node samples/report_common_test.js",
+    "test:script": "npm --prefix relay run test:script",
     "mail": "node scripts/mailcheck.js --force"
   },
   "dependencies": {

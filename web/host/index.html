@@ -239,10 +239,73 @@
     }
     .notice.info { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; color: #bae6fd; }
     .notice.warn { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; color: #fde68a; }
+
+    /* ── L4-2 진행 화면 ── */
+    .live-grid { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+    @media (max-width: 760px) { .live-grid { grid-template-columns: 1fr; } }
+    .live-list { max-height: 60vh; overflow-y: auto; padding-right: 4px; }
+    .live-para {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      opacity: 0.45;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+    .live-para .live-no { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+    .live-para.is-done { opacity: 0.7; }
+    .live-para.is-next { opacity: 0.6; border-style: dashed; }          /* 다음 문단은 흐리게 */
+    .live-para.is-current {                                               /* 현재 문단 강조 */
+      opacity: 1;
+      border-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.18);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+    }
+    .live-para.is-skipped { text-decoration: line-through; color: var(--text-muted); }
+    .live-side { display: flex; flex-direction: column; gap: 14px; }
+    .qr-box { background: #fff; border-radius: 8px; padding: 10px; display: flex; justify-content: center; }
+    .qr-box svg, .qr-box img { width: 220px; height: 220px; display: block; }
+    .room-code { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.15em; color: #38bdf8; text-align: center; }
+    .att-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; }
+    .att-now { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    .att-langs { margin-top: 6px; color: var(--text-muted); }
+    .att-langs span { display: inline-block; margin-right: 10px; }
+    .live-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; align-items: center; }
+    .live-controls .btn.warn { background: var(--warning); color: #000; }
+    .live-controls .btn.warn.on { background: var(--danger); color: #fff; }
+    .live-status { font-size: 0.8rem; color: var(--text-muted); margin-left: auto; }
+    .break-band {
+      display: none;
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid var(--warning);
+      color: #fde68a;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .break-band.on { display: block; }
+
+    /* ── L4-3 끝 화면 ── */
+    .btn.danger { background: var(--danger); }
+    .btn.danger:hover { background: #dc2626; }
+    .end-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+    @media (max-width: 760px) { .end-summary { grid-template-columns: 1fr; } }
+    .end-summary > div { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; color: var(--text-muted); }
+    .end-summary strong { display: block; font-size: 1.4rem; color: var(--text); margin-top: 2px; }
+    .end-summary .sum-sub { font-size: 0.8rem; overflow-wrap: anywhere; }
+    .end-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
+    .end-row .end-key { color: var(--text-muted); min-width: 5.5em; }
+    .end-row label.end-opt { display: inline-flex; align-items: center; gap: 5px; margin: 0; color: var(--text); font-size: 0.9rem; cursor: pointer; }
+    .end-row select { width: auto; }
   </style>
 
   <script src="../vendor/pdf.min.js"></script>
   <script src="../vendor/mammoth.browser.min.js"></script>
+  <script src="../vendor/qrcode.js"></script>
   <script src="../common/report.js"></script>
 </head>
 <body>
@@ -340,117 +403,86 @@
         <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
           원고 및 번역문이 로컬 IndexedDB에 저장되었습니다. 이제 강의를 개설하고 문단을 송출할 수 있습니다.
         </div>
-        <button id="btnStartLecture" class="btn success">강의 시작하기 (L4-2 연동)</button>
+        <button id="btnStartLecture" class="btn success">강의 시작하기</button>
+        <div id="liveError" style="margin-top: 10px; color: var(--danger); font-size: 0.85rem; display: none;"></div>
       </div>
     </section>
-  
-    <!-- 3단계: 강의 진행 (L4-2) -->
+
+    <!-- 3단계: 진행 (L4-2) — 문단 넘기기 · QR · 참석 수 -->
     <section id="step-live" class="card" style="display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <div class="card-title" style="margin: 0;">강의 실시간 진행 및 원고 송출</div>
-        <div style="display: flex; gap: 8px;">
-          <button id="btnBreakToggle" class="btn" style="background: #f59e0b; padding: 6px 14px; font-size: 0.85rem;">☕ 쉬는 시간</button>
-          <button id="btnEndLecture" class="btn" style="background: var(--danger); padding: 6px 14px; font-size: 0.85rem;">강의 종료</button>
-        </div>
-      </div>
-
-      <!-- 쉬는 시간 배너 -->
-      <div id="liveBreakBanner" style="display: none; background: #f59e0b; color: #0f172a; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 16px;">
-        ☕ 현재 쉬는 시간 중입니다 (청취자 화면에 안내 띠가 표시 중입니다)
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 20px;">
-        <!-- 좌측: 원고 문단 목록 -->
+      <div class="card-title">강의 진행 <span id="liveProgress" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></span></div>
+      <div id="breakBand" class="break-band">⏸ 쉬는 시간</div>
+      <div class="live-grid">
         <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-muted);">
-            <span>원고 문단 목록 (총 <span id="liveTotalCount">0</span>개)</span>
-            <span>단축키: <kbd style="background:#334155;padding:2px 6px;border-radius:4px;">→</kbd> 또는 <kbd style="background:#334155;padding:2px 6px;border-radius:4px;">Space</kbd> 다음</span>
+          <div id="liveParaList" class="live-list"></div>
+          <div class="live-controls">
+            <button id="btnPrev" class="btn secondary" title="← 키">◀ 이전</button>
+            <button id="btnNext" class="btn" title="→ 또는 스페이스 키">다음 ▶</button>
+            <button id="btnSkip" class="btn secondary">건너뜀</button>
+            <button id="btnBreak" class="btn warn">쉬는 시간</button>
+            <button id="btnEnd" class="btn secondary" data-t="btn_end"></button>
+            <span id="liveStatus" class="live-status">연결 중…</span>
           </div>
-          <div id="liveParaList" style="max-height: 480px; overflow-y: auto; padding-right: 6px;">
-            <!-- 문단 카드 목록 동적 렌더링 -->
+          <div class="notice info" style="margin-top: 14px; margin-bottom: 0;">
+            키보드: → 또는 스페이스 = 다음, ← = 이전. 넘길 때 미리 번역해 둔 문단만 보냅니다 — 번역이 없는 언어의 청취자는 원문을 봅니다.
           </div>
         </div>
-
-        <!-- 우측: 방 접속 정보 및 진행 컨트롤 -->
-        <div>
-          <!-- 접속 QR 및 코드 -->
-          <div style="background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; text-align: center;">
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">청취자 참여 코드</div>
-            <div id="liveRoomCode" style="font-size: 1.8rem; font-weight: 800; letter-spacing: 4px; color: #38bdf8; margin-bottom: 10px;">------</div>
-            <div id="liveQrBox" style="width: 140px; height: 140px; margin: 0 auto 10px; background: white; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: black; font-size: 0.8rem;">
-              QR 코드
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;" id="liveListenerUrl">-</div>
-          </div>
-
-          <!-- 참석 현황 (att) -->
-          <div style="background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
-            <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #38bdf8;">실시간 청취 현황</div>
-            <div id="liveAttSummary" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 4px;">듣는 중 0명 (누적 0명)</div>
-            <div id="liveAttLangs" style="font-size: 0.8rem; color: var(--text-muted);">언어별: -</div>
-          </div>
-
-          <!-- 컨트롤러 버튼 묶음 -->
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button id="btnNextPara" class="btn success" style="padding: 14px; font-size: 1.05rem;">▶ 다음 문단 송출 (→)</button>
-            <div style="display: flex; gap: 8px;">
-              <button id="btnPrevPara" class="btn secondary" style="flex: 1;">◀ 이전 (←)</button>
-              <button id="btnSkipPara" class="btn secondary" style="flex: 1;">⏭ 건너뜀</button>
-            </div>
+        <div class="live-side">
+          <div class="qr-box" id="qrBox"></div>
+          <div class="room-code" id="roomCode">------</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; overflow-wrap: anywhere;" id="joinUrl"></div>
+          <div class="att-box">
+            <div style="color: var(--text-muted);">참석</div>
+            <div><span class="att-now" id="attNow">0</span> <span style="color: var(--text-muted);">명 (최대 <span id="attMax">0</span>)</span></div>
+            <div class="att-langs" id="attLangs">—</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 4단계: 강의 종료 요약 및 리포트 3x3 (L4-3) -->
-    <section id="step-finish" class="card" style="display: none;">
-      <div class="card-title">강의 종료 요약 및 기록 저장</div>
-      
-      <div style="background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 20px;">
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; text-align: center;">
-          <div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">진행 시간</div>
-            <div id="sumDuration" style="font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-top: 4px;">0분</div>
-          </div>
-          <div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">총 참석자</div>
-            <div id="sumAttendance" style="font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-top: 4px;">0명</div>
-          </div>
-          <div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">문단 (송출 / 건너뜀)</div>
-            <div id="sumParas" style="font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-top: 4px;">0 / 0</div>
-          </div>
-        </div>
+    <!-- 4단계: 끝 (L4-3) — 요약 · 리포트 3×3 · 참석 CSV · 방 닫기. 글자는 HOST_STR(ko·en) 한 곳에서 채운다(data-t) -->
+    <section id="step-end" class="card" style="display: none;">
+      <div class="card-title" data-t="end_title"></div>
+      <div class="end-summary">
+        <div><span data-t="sum_att"></span><strong id="sumAtt">0</strong><span class="sum-sub"><span data-t="sum_max"></span> <span id="sumMax">0</span></span></div>
+        <div><span data-t="sum_dur"></span><strong id="sumDur">0:00:00</strong></div>
+        <div><span data-t="sum_read"></span><strong><span id="sumRead">0</span> / <span id="sumTotal">0</span></strong></div>
+        <div><span data-t="sum_skip"></span><strong id="sumSkip">0</strong><span class="sum-sub" id="sumSkipList"></span></div>
       </div>
 
-      <!-- 리포트 3x3 저장 패널 -->
-      <div style="border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 20px; background: rgba(15, 23, 42, 0.4);">
-        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 12px; color: #f8fafc;">기록 저장 (내용 3종 × 형식 3종)</div>
-        <div style="display: flex; gap: 24px; margin-bottom: 16px; font-size: 0.9rem;">
-          <div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">내용 선택</div>
-            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-content-mode" value="both" checked> ① 원문/번역문</label>
-            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-content-mode" value="src"> ② 원문만</label>
-            <label style="cursor: pointer;"><input type="radio" name="finish-content-mode" value="trans"> ③ 번역문만</label>
-          </div>
-          <div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">형식 선택</div>
-            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-format" value="txt" checked> TXT</label>
-            <label style="margin-right: 10px; cursor: pointer;"><input type="radio" name="finish-format" value="pdf"> PDF</label>
-            <label style="cursor: pointer;"><input type="radio" name="finish-format" value="doc"> DOC</label>
-          </div>
+      <div class="form-group">
+        <label data-t="rep_title"></label>
+        <div class="end-row">
+          <span class="end-key" data-t="rep_lang"></span>
+          <select id="repLang"></select>
         </div>
-        <div style="display: flex; gap: 10px;">
-          <button id="btnDownloadReport" class="btn">📥 리포트 파일 저장</button>
-          <button id="btnDownloadCsv" class="btn secondary">📊 참석 명단 CSV 저장</button>
+        <div class="end-row">
+          <span class="end-key" data-t="rep_content"></span>
+          <label class="end-opt"><input type="radio" name="rep-content" value="both" checked> <span data-t="rep_both"></span></label>
+          <label class="end-opt"><input type="radio" name="rep-content" value="src"> <span data-t="rep_src"></span></label>
+          <label class="end-opt"><input type="radio" name="rep-content" value="trans"> <span data-t="rep_trans"></span></label>
         </div>
+        <div class="end-row">
+          <span class="end-key" data-t="rep_format"></span>
+          <label class="end-opt"><input type="radio" name="rep-format" value="txt" checked> TXT</label>
+          <label class="end-opt"><input type="radio" name="rep-format" value="pdf"> PDF</label>
+          <label class="end-opt"><input type="radio" name="rep-format" value="doc"> DOC</label>
+        </div>
+        <button id="btnReport" class="btn" data-t="rep_save"></button>
       </div>
 
-      <div style="text-align: right;">
-        <button id="btnRestartLecture" class="btn secondary">새 강의 준비하기</button>
+      <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 18px;">
+        <label data-t="csv_title"></label>
+        <div class="notice info" data-t="csv_note"></div>
+        <button id="btnCsv" class="btn secondary" data-t="csv_btn"></button>
+      </div>
+
+      <div class="live-controls" style="border-top: 1px solid var(--border); padding-top: 18px;">
+        <button id="btnBackLive" class="btn secondary" data-t="btn_back"></button>
+        <button id="btnCloseRoom" class="btn danger" data-t="btn_close"></button>
+        <span id="endStatus" class="live-status"></span>
       </div>
     </section>
-
   </main>
 
   <script>
@@ -464,11 +496,12 @@
       { code: 'id', name: '인도네시아어 (Bahasa Indonesia)' },
       { code: 'ru', name: '러시아어 (Русский)' },
       { code: 'mn', name: '몽골어 (Монгол)' },
-      { code: 'ar', name: '아랍어 (العربية)' }
+      { code: 'ar', name: '아랍어 (العربية)', rtl: true }   // rtl 은 리포트(PDF·DOC) 글 방향에 쓴다 — 표에서 읽는다
     ];
 
     const urlParams = new URLSearchParams(window.location.search);
     const RELAY_BASE = (urlParams.get('relay') || 'https://raytok-relay.raytok.workers.dev').replace(/\/+$/, '');
+    const SRC_LANG = 'ko';   // 원고 언어 — /translate 의 source 와 script.srcLang 이 같은 값을 쓴다
 
     // ── IndexedDB 관리 ──
     const DB_NAME = 'RayTokHostDB';
@@ -827,7 +860,7 @@
           },
           body: JSON.stringify({
             q,
-            source: 'ko',
+            source: SRC_LANG,
             target: targetLang
           })
         });
@@ -881,9 +914,593 @@
       readyArea.style.display = 'block';
     });
 
-    document.getElementById('btnStartLecture').addEventListener('click', () => {
-      alert('강의 개설 및 실시간 송출 기능(L4-2)으로 이어집니다.');
+    // ── 5. 진행 (L4-2): 방 만들기 → QR·참석 → 문단 넘기기 → /ws 로 script·skip·break ──
+    // 규칙: 넘길 때 번역을 새로 청하지 않는다. IndexedDB 에 미리 번역된 것만 싣고,
+    //       없는 언어는 trans 에서 빠진다(청취자가 원문을 본다, R-15). P-16 ①: 청취자는 받기만.
+    const stepLive = document.getElementById('step-live');
+    const liveParaList = document.getElementById('liveParaList');
+    const liveProgress = document.getElementById('liveProgress');
+    const liveStatus = document.getElementById('liveStatus');
+    const liveError = document.getElementById('liveError');
+    const breakBand = document.getElementById('breakBand');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnSkip = document.getElementById('btnSkip');
+    const btnBreak = document.getElementById('btnBreak');
+
+    const live = {
+      on: false,          // 진행 화면이 켜졌나
+      code: null,         // 방 코드(6자)
+      token: null,        // 호스트 토큰(/ws 용) — 화면·기록에 안 적는다
+      ws: null,
+      cur: 0,             // 지금 읽는 문단(1부터). 0 = 아직 시작 전
+      state: {},          // para -> 'read' | 'skip'
+      breakOn: false,
+      roster: {},         // 참석 명단(L4-3) — hello 의 이름·언어·붙은 시각. 이 화면 메모리에만(서버·저장소 X), 방을 닫으면 지운다
+      pingTimer: null,
+      closing: false,
+      // ── L4-3 끝 화면 ──
+      startedAt: 0,       // 강의 시작(방을 만든 때)
+      endedAt: null,      // 끝내기를 누른 때(진행으로 돌아가면 비운다)
+      sent: [],           // 실제로 나간 script 메시지(시간 순) — 요약·리포트는 이것 하나에서 나온다
+      att: null,          // 릴레이가 준 마지막 참석 집계(숫자뿐)
+      ended: false,       // 끝 화면을 보는 중
+      closed: false,      // 방을 닫았다
+      relayEnded: false,  // 릴레이가 먼저 끝냈다(무음 정지 등)
+      csvSaved: false,
+      finalSummary: null  // 방을 닫을 때의 요약(숫자뿐) — 명단을 지운 뒤에도 화면 숫자가 남게
+    };
+
+    function listenerJoinUrl(code) {
+      // 청취 페이지 주소. 시험(relay 인자)이면 그 relay 를 같이 넘긴다.
+      const u = new URL('../listener/', window.location.href);
+      u.searchParams.set('room', code);
+      if (urlParams.get('relay')) u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));
+      return u.toString();
+    }
+
+    function renderQr(text) {
+      const box = document.getElementById('qrBox');
+      box.innerHTML = '';
+      if (typeof qrcode !== 'function') { box.textContent = text; return; }
+      const q = qrcode(0, 'M');
+      q.addData(text);
+      q.make();
+      box.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    }
+
+    async function createRoom() {
+      const res = await fetch(`${RELAY_BASE}/room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${hostToken}` },
+        body: JSON.stringify({ kind: 'script' })
+      });
+      if (!res.ok) {
+        let msg = '';
+        try { msg = (await res.json()).message || ''; } catch (_) {}
+        throw new Error(`방을 만들지 못했습니다 (${res.status}) ${msg}`.trim());
+      }
+      const data = await res.json();
+      if (!data.code || !data.host_token) throw new Error('방 응답이 비었습니다.');
+      return data;
+    }
+
+    function wsSend(obj) {
+      if (!live.ws || live.ws.readyState !== WebSocket.OPEN) return false;
+      live.ws.send(JSON.stringify(obj));
+      return true;
+    }
+
+    function sendWelcome() {
+      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG });
+    }
+
+    // 넘길 때 보내는 문단 — 와이어 정본 script 모양 그대로. trans 는 미리 번역된 것만.
+    function buildScriptMsg(para) {
+      const p = paragraphs[para - 1];
+      const trans = {};
+      for (const [lang, text] of Object.entries(p.trans || {})) {
+        if (typeof text === 'string' && text.trim() && text !== p.src) trans[lang] = text;   // 실패해 원문이 들어간 칸은 뺀다
+      }
+      return { kind: 'script', para, total: paragraphs.length, src: p.src, srcLang: SRC_LANG, trans, at: Date.now() };
+    }
+
+    function sendScript(para) {
+      const msg = buildScriptMsg(para);
+      const sent = wsSend(msg);
+      if (sent) live.sent.push(msg);   // 실제로 나간 문단만 적는다(L4-3 요약·리포트가 읽는 곳)
+      return sent;
+    }
+
+    function setBreak(on) {
+      if (live.breakOn === on) return;
+      live.breakOn = on;
+      wsSend({ kind: 'break', on });
+      breakBand.classList.toggle('on', on);
+      btnBreak.classList.toggle('on', on);
+      btnBreak.textContent = on ? '쉬는 시간 끝' : '쉬는 시간';
+    }
+
+    function renderLive() {
+      const total = paragraphs.length;
+      liveProgress.textContent = live.cur > 0 ? `${live.cur} / ${total}` : `0 / ${total}`;
+      liveParaList.innerHTML = '';
+      paragraphs.forEach((p, i) => {
+        const n = i + 1;
+        const el = document.createElement('div');
+        el.className = 'live-para';
+        el.id = `live-para-${n}`;
+        if (n === live.cur) el.classList.add('is-current');
+        else if (n === live.cur + 1) el.classList.add('is-next');
+        if (live.state[n] === 'read') el.classList.add('is-done');
+        if (live.state[n] === 'skip') el.classList.add('is-skipped');
+        const no = document.createElement('div');
+        no.className = 'live-no';
+        no.textContent = `${n} / ${total}` + (live.state[n] === 'skip' ? ' · 건너뜀' : '') + (Object.keys(p.trans || {}).length ? '' : ' · 번역 없음(원문만)');
+        const body = document.createElement('div');
+        body.textContent = p.src;
+        el.appendChild(no);
+        el.appendChild(body);
+        liveParaList.appendChild(el);
+      });
+      btnPrev.disabled = live.cur <= 1;
+      btnNext.disabled = live.cur >= total;
+      btnSkip.disabled = live.cur >= total;
+      const curEl = document.getElementById(`live-para-${live.cur}`);
+      if (curEl && curEl.scrollIntoView) curEl.scrollIntoView({ block: 'nearest' });
+    }
+
+    // 단추 넷. 쉬는 시간 중에 넘기면 먼저 쉬는 시간을 끝낸다(받는 쪽이 멈춘 채로 남지 않게).
+    function goTo(para) {
+      if (para < 1 || para > paragraphs.length) return;
+      setBreak(false);
+      live.cur = para;
+      live.state[para] = 'read';
+      sendScript(para);
+      renderLive();
+    }
+    function doNext() { goTo(live.cur + 1); }
+    function doPrev() { goTo(live.cur - 1); }
+    function doSkip() {
+      const para = live.cur + 1;
+      if (para > paragraphs.length) return;
+      setBreak(false);
+      live.cur = para;
+      live.state[para] = 'skip';
+      wsSend({ kind: 'skip', para });
+      renderLive();
+    }
+    function doBreak() { setBreak(!live.breakOn); }
+
+    // 단추를 누른 뒤 초점을 빼 둔다 — 스페이스가 초점 잡힌 단추를 다시 누르지 않게(키는 늘 문서에서 받는다)
+    btnNext.addEventListener('click', () => { btnNext.blur(); doNext(); });
+    btnPrev.addEventListener('click', () => { btnPrev.blur(); doPrev(); });
+    btnSkip.addEventListener('click', () => { btnSkip.blur(); doSkip(); });
+    btnBreak.addEventListener('click', () => { btnBreak.blur(); doBreak(); });
+    document.addEventListener('keydown', (e) => {
+      if (!live.on || live.ended) return;   // 끝 화면에서는 문단을 넘기지 않는다
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (tag === 'BUTTON' && (e.key === ' ' || e.key === 'Spacebar')) return;   // 초점 잡힌 단추는 제 일을 한다
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); doNext(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); doPrev(); }
     });
+
+    function renderAtt(a) {
+      document.getElementById('attNow').textContent = a.now || 0;
+      document.getElementById('attMax').textContent = a.max || 0;
+      const parts = Object.entries(a.langs || {})
+        .filter(([, v]) => v && (v.now > 0 || v.max > 0))
+        .map(([k, v]) => `<span>${escapeHtml(k)} <strong>${v.now || 0}</strong></span>`);
+      document.getElementById('attLangs').innerHTML = parts.length ? parts.join('') : '—';
+    }
+
+    function onHostMessage(raw) {
+      let msg;
+      try { msg = JSON.parse(raw); } catch (_) { return; }
+      if (msg.__ping) return;
+      if (msg.att) {
+        live.att = msg;
+        rosterApplyAtt(msg, Date.now());
+        renderAtt(msg);
+        if (live.ended) renderEnd();
+        return;
+      }
+      if (msg.hello) {
+        // 청취자 hello: 이름·언어는 이 화면에만 둔다(서버 저장 없음). welcome 으로 답한다.
+        rosterJoin(msg, Date.now());
+        sendWelcome();
+        if (live.ended) renderEnd();
+        return;
+      }
+      if (msg.end) {
+        // 릴레이가 먼저 끝냈다(무음 정지 등) — 그때를 끝 시각으로 잡고 열린 참석을 닫는다. 끝 화면은 끝내기로 연다.
+        const now = Date.now();
+        liveStatus.textContent = '세션이 끝났습니다' + (msg.why ? ` (${msg.why})` : '');
+        live.closing = true;
+        live.relayEnded = true;
+        if (!live.endedAt) live.endedAt = now;
+        rosterCloseAll(now);
+        if (live.ended) renderEnd();
+        return;
+      }
+      if (msg.warning === 'silence_warning') {
+        liveStatus.textContent = '오래 넘기지 않아 곧 끊깁니다 — 문단을 넘기세요';
+      }
+    }
+
+    function connectHostWs() {
+      const base = RELAY_BASE.replace(/^http/, 'ws');
+      const ws = new WebSocket(`${base}/ws?room=${encodeURIComponent(live.code)}&role=host&token=${encodeURIComponent(live.token)}`);
+      live.ws = ws;
+      ws.onopen = () => {
+        liveStatus.textContent = '연결됨';
+        sendWelcome();   // 링버퍼에 남아 뒤에 오는 청취자도 받는다
+        clearInterval(live.pingTimer);
+        live.pingTimer = setInterval(() => wsSend({ __ping: true }), 25000);
+      };
+      ws.onmessage = (e) => onHostMessage(e.data);
+      ws.onclose = () => {
+        clearInterval(live.pingTimer);
+        if (live.closing || !live.on) return;
+        liveStatus.textContent = '다시 연결 중…';
+        setTimeout(() => { if (live.on && !live.closing) connectHostWs(); }, 3000);
+      };
+    }
+
+    async function startLecture() {
+      liveError.style.display = 'none';
+      if (!paragraphs.length) {
+        liveError.textContent = '원고가 없습니다.';
+        liveError.style.display = 'block';
+        return;
+      }
+      const btn = document.getElementById('btnStartLecture');
+      btn.disabled = true;
+      try {
+        const room = await createRoom();
+        live.code = room.code;
+        live.token = room.host_token;
+        live.on = true;
+        live.cur = 0;
+        live.state = {};
+        live.breakOn = false;
+        live.roster = {};
+        live.closing = false;
+        live.startedAt = Date.now();
+        live.endedAt = null;
+        live.sent = [];
+        live.att = null;
+        live.ended = false;
+        live.closed = false;
+        live.relayEnded = false;
+        live.csvSaved = false;
+        live.finalSummary = null;
+        stepPrepare.style.display = 'none';
+        stepLive.style.display = 'block';
+        document.getElementById('roomCode').textContent = live.code;
+        const joinUrl = listenerJoinUrl(live.code);
+        document.getElementById('joinUrl').textContent = joinUrl;
+        renderQr(joinUrl);
+        renderAtt({ now: 0, max: 0, langs: {} });
+        renderLive();
+        connectHostWs();
+      } catch (err) {
+        liveError.textContent = err.message;
+        liveError.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    document.getElementById('btnStartLecture').addEventListener('click', startLecture);
+
+    // ── 6. 끝 (L4-3): 끝내기 → 요약 → 리포트 3×3 → 참석 CSV → 방 닫기 ──
+    // 규칙: 참석 명단(이름·언어·붙은 시각)은 이 화면의 메모리에만 있다. 서버로 보내지 않고 localStorage·IndexedDB 에도
+    //       쓰지 않으며, 방을 닫으면 지운다. 리포트·CSV 는 브라우저 안에서 만들어 내려받는다(바깥 요청 0).
+    // 글자: 이 화면에서 새로 쓰는 글은 HOST_STR(ko·en) 한 곳. 기본 ko, `?lang=en` 이면 en(화면의 다른 글은 아직 ko 뿐이다).
+    const UI_LANG = urlParams.get('lang') === 'en' ? 'en' : 'ko';
+    const HOST_STR = {
+      ko: {
+        btn_end: '끝내기',
+        end_title: '강의 끝',
+        sum_att: '참석',
+        sum_max: '최대 동시',
+        sum_dur: '진행 시간',
+        sum_read: '읽은 문단',
+        sum_skip: '건너뛴 문단',
+        rep_title: '리포트 저장 (내용 3 × 형식 3)',
+        rep_lang: '번역 언어',
+        rep_content: '내용',
+        rep_both: '원문/번역문',
+        rep_src: '원문만',
+        rep_trans: '번역문만',
+        rep_format: '형식',
+        rep_save: '리포트 저장',
+        rep_none: '보낸 원고 문단이 없어 리포트를 만들지 않았습니다.',
+        src_script: '원고',
+        csv_title: '참석 명단',
+        csv_note: '명단(이름·언어·연결 분)은 이 브라우저 메모리에만 있습니다. 서버에 저장하지 않으며 방을 닫으면 지워집니다 — 필요하면 닫기 전에 받으세요. 연결 분은 처음 들어온 때부터 잽니다(중간에 나간 시각은 같은 언어 청취자가 모두 나갔을 때만 압니다).',
+        csv_btn: '참석 CSV 받기',
+        csv_name: '이름',
+        csv_lang: '언어',
+        csv_min: '연결 분',
+        btn_back: '◀ 진행으로 돌아가기',
+        btn_close: '방 닫기',
+        close_confirm: '방을 닫으면 청취자 화면이 종료되고 참석 명단이 지워집니다. 닫을까요?',
+        close_confirm_csv: '참석 CSV 를 아직 받지 않았습니다.',
+        closed: '방을 닫았습니다. 참석 명단은 지웠습니다.',
+        closed_nosend: '릴레이에 연결되어 있지 않아 종료 신호를 보내지 못했습니다 — 방은 10분 뒤 자동으로 닫힙니다. 참석 명단은 지웠습니다.'
+      },
+      en: {
+        btn_end: 'Finish',
+        end_title: 'Session finished',
+        sum_att: 'Attendees',
+        sum_max: 'Peak concurrent',
+        sum_dur: 'Duration',
+        sum_read: 'Paragraphs read',
+        sum_skip: 'Skipped paragraphs',
+        rep_title: 'Save report (3 contents × 3 formats)',
+        rep_lang: 'Translation language',
+        rep_content: 'Content',
+        rep_both: 'Source + translation',
+        rep_src: 'Source only',
+        rep_trans: 'Translation only',
+        rep_format: 'Format',
+        rep_save: 'Save report',
+        rep_none: 'No script paragraph was sent, so no report was made.',
+        src_script: 'Script',
+        csv_title: 'Attendance',
+        csv_note: 'The roster (name, language, minutes connected) exists only in this browser\'s memory. It is not stored on the server and is erased when you close the room — download it first if you need it. Minutes are counted from first join (a leave time is known only when every listener of that language has left).',
+        csv_btn: 'Download attendance CSV',
+        csv_name: 'Name',
+        csv_lang: 'Language',
+        csv_min: 'Minutes connected',
+        btn_back: '◀ Back to session',
+        btn_close: 'Close room',
+        close_confirm: 'Closing the room ends the listeners\' screens and erases the attendance roster. Close it?',
+        close_confirm_csv: 'You have not downloaded the attendance CSV yet.',
+        closed: 'Room closed. The attendance roster has been erased.',
+        closed_nosend: 'Not connected to the relay, so the end signal could not be sent — the room closes by itself in 10 minutes. The attendance roster has been erased.'
+      }
+    };
+    function T(key) {
+      return (HOST_STR[UI_LANG] && HOST_STR[UI_LANG][key]) || HOST_STR.ko[key] || '';
+    }
+    function applyHostStrings() {
+      document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.getAttribute('data-t')); });
+    }
+
+    // ── 참석 명단 (메모리만) ──
+    // 모양은 앱(A)과 같다: 기기마다 { name, lang, joinedAt[], leftAt[] } — joinedAt[i] 와 leftAt[i] 가 짝, 아직 붙어 있으면 joinedAt 이 하나 더 길다.
+    // 릴레이는 개인별 나감을 알리지 않는다(참석 집계는 숫자뿐). 그래서 나간 시각은 "그 언어에 지금 0명"일 때만 안다.
+    const ROSTER_MAX = 500;   // 방 상한(청취자 200)보다 넉넉히. 기기 번호를 바꿔 가며 보내는 hello 로 메모리가 불어나지 않게
+    const NAME_MAX = 60;
+    function rosterKey(msg) {
+      return msg.deviceId ? 'd:' + String(msg.deviceId).slice(0, 64) : 'n:' + String(msg.name || '').slice(0, NAME_MAX) + '|' + String(msg.lang || '');
+    }
+    function rosterIsOpen(p) { return p.joinedAt.length > p.leftAt.length; }
+    function rosterJoin(msg, at) {
+      const key = rosterKey(msg);
+      let p = live.roster[key];
+      if (!p) {
+        if (Object.keys(live.roster).length >= ROSTER_MAX) return;
+        p = live.roster[key] = { name: '', lang: '', joinedAt: [], leftAt: [] };
+      }
+      const name = String(msg.name || '').trim().slice(0, NAME_MAX);
+      if (name) p.name = name;                       // 빈 이름으로 덮지 않는다
+      if (msg.lang) p.lang = String(msg.lang).slice(0, 16);
+      if (!rosterIsOpen(p)) p.joinedAt.push(at);     // 닫혀 있었으면(다시 들어옴) 새 구간
+    }
+    function rosterApplyAtt(a, at) {
+      const langs = (a && a.langs) || {};
+      const nobody = !a || !(a.now > 0);
+      for (const p of Object.values(live.roster)) {
+        if (!rosterIsOpen(p)) continue;
+        const L = langs[p.lang];
+        if (nobody || (L && !(L.now > 0))) p.leftAt.push(at);
+      }
+    }
+    function rosterCloseAll(at) {
+      for (const p of Object.values(live.roster)) if (rosterIsOpen(p)) p.leftAt.push(at);
+    }
+    function connectedMs(p, now) {
+      let ms = 0;
+      for (let i = 0; i < p.joinedAt.length; i++) {
+        const end = Math.min(i < p.leftAt.length ? p.leftAt[i] : now, now);
+        ms += Math.max(0, end - p.joinedAt[i]);
+      }
+      return ms;
+    }
+    function rosterRows(now) {
+      return Object.values(live.roster)
+        .sort((a, b) => a.joinedAt[0] - b.joinedAt[0])
+        .map(p => ({ name: p.name, lang: p.lang, minutes: Math.round(connectedMs(p, now) / 60000) }));
+    }
+    function clearRoster() { live.roster = {}; }
+
+    // CSV: BOM(윈도우 엑셀 한글) · CRLF · RFC 4180. 이름은 청취자가 적은 글이라 = + - @ 로 시작하면 ' 를 붙여 수식으로 읽히지 않게 한다.
+    function csvCell(v) {
+      let c = String(v == null ? '' : v);
+      if (/^[=+\-@\t\r]/.test(c)) c = "'" + c;
+      return /[",\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+    }
+    function buildRosterCsv(rows) {
+      const out = [[T('csv_name'), T('csv_lang'), T('csv_min')].map(csvCell).join(',')];
+      for (const r of rows) out.push([r.name, r.lang, r.minutes].map(csvCell).join(','));
+      return '﻿' + out.join('\r\n') + '\r\n';
+    }
+
+    // ── 요약: 화면 숫자와 파일(리포트·CSV)이 같은 한 벌에서 나온다 ──
+    // 읽은 문단 = script 가 실제로 나간 문단(중복 없이). 건너뛴 문단 = 나가지 않은 문단 전부(건너뜀 단추 + 끝까지 안 간 것) — 앱 리포트와 같은 뜻.
+    function sessionSummary(now) {
+      const total = paragraphs.length;
+      const readSet = new Set(live.sent.map(m => m.para));
+      const skipped = [];
+      for (let n = 1; n <= total; n++) if (!readSet.has(n)) skipped.push(n);
+      const end = live.endedAt || now;
+      const rows = rosterRows(end);
+      return {
+        attendees: rows.length,
+        maxConcurrent: (live.att && live.att.max) || 0,
+        durationMs: Math.max(0, end - (live.startedAt || end)),
+        lines: live.sent.length,
+        read: readSet.size,
+        skipped,
+        total,
+        rows
+      };
+    }
+    function fmtDuration(ms) {
+      const sec = Math.floor(ms / 1000);
+      const p2 = (n) => String(n).padStart(2, '0');
+      return `${Math.floor(sec / 3600)}:${p2(Math.floor(sec / 60) % 60)}:${p2(sec % 60)}`;
+    }
+
+    // 리포트 줄: 나간 script 의 src·trans 그대로 + 출처 "(원고 n)". 건너뛴 문단은 본문 뒤 한 줄.
+    function reportLines() {
+      return live.sent.map(m => ({ at: m.at, text: m.src, tr: m.trans, label: `(${T('src_script')} ${m.para})` }));
+    }
+    function reportFooter(skipped) {
+      return skipped.length ? [`${T('sum_skip')}: ${skipped.join(', ')}`] : [];
+    }
+    function reportLangCodes() {
+      const set = new Set();
+      for (const m of live.sent) for (const k of Object.keys(m.trans || {})) set.add(k);
+      if (!set.size) for (const k of selectedLangs) set.add(k);
+      if (!set.size) set.add('en');
+      return [...set];
+    }
+
+    const stepEnd = document.getElementById('step-end');
+    const endStatus = document.getElementById('endStatus');
+    const repLang = document.getElementById('repLang');
+    const btnEnd = document.getElementById('btnEnd');
+    const btnReport = document.getElementById('btnReport');
+    const btnCsv = document.getElementById('btnCsv');
+    const btnBackLive = document.getElementById('btnBackLive');
+    const btnCloseRoom = document.getElementById('btnCloseRoom');
+
+    function checkedValue(name, fallback) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : fallback;
+    }
+
+    function fillReportLangs() {
+      const keep = repLang.value;
+      repLang.innerHTML = '';
+      for (const code of reportLangCodes()) {
+        const info = SUPPORTED_TARGET_LANGS.find(l => l.code === code);
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = info ? info.name : code;
+        repLang.appendChild(opt);
+      }
+      if (keep && [...repLang.options].some(o => o.value === keep)) repLang.value = keep;
+    }
+
+    function renderEnd() {
+      const s = live.finalSummary || sessionSummary(Date.now());
+      document.getElementById('sumAtt').textContent = s.attendees;
+      document.getElementById('sumMax').textContent = s.maxConcurrent;
+      document.getElementById('sumDur').textContent = fmtDuration(s.durationMs);
+      document.getElementById('sumRead').textContent = s.read;
+      document.getElementById('sumTotal').textContent = s.total;
+      document.getElementById('sumSkip').textContent = s.skipped.length;
+      document.getElementById('sumSkipList').textContent = s.skipped.length ? s.skipped.join(', ') : '';
+      btnReport.disabled = live.sent.length === 0;
+      btnCsv.disabled = live.closed;
+      btnCloseRoom.disabled = live.closed;
+      btnBackLive.style.display = (live.closed || live.relayEnded) ? 'none' : '';
+    }
+
+    function showEndScreen() {
+      if (!live.on) return;
+      live.ended = true;
+      if (!live.endedAt) live.endedAt = Date.now();
+      stepLive.style.display = 'none';
+      stepEnd.style.display = 'block';
+      endStatus.textContent = '';
+      fillReportLangs();
+      renderEnd();
+    }
+
+    function backToLive() {
+      if (live.closed || live.relayEnded) return;
+      live.ended = false;
+      live.endedAt = null;
+      stepEnd.style.display = 'none';
+      stepLive.style.display = 'block';
+      renderLive();
+    }
+
+    function saveReport() {
+      const lines = reportLines();
+      if (!lines.length) { endStatus.textContent = T('rep_none'); return false; }
+      const s = live.finalSummary || sessionSummary(Date.now());
+      const code = repLang.value || reportLangCodes()[0];
+      const info = SUPPORTED_TARGET_LANGS.find(l => l.code === code);
+      return window.RayTokReport.downloadReport({
+        lines,
+        srcLang: SRC_LANG,
+        targetLang: code,
+        langName: info ? info.name : code,
+        contentMode: checkedValue('rep-content', 'both'),
+        format: checkedValue('rep-format', 'txt'),
+        isRtl: !!(info && info.rtl),
+        footer: reportFooter(s.skipped)
+      });
+    }
+
+    function saveCsv() {
+      if (live.closed) return false;   // 닫은 뒤에는 명단이 없다
+      const s = sessionSummary(Date.now());
+      const d = new Date(live.startedAt || Date.now());
+      const p2 = window.RayTokReport.pad2;
+      const filename = `raytok_${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}_roster_${UI_LANG}.csv`;
+      const blob = new Blob([buildRosterCsv(s.rows)], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      live.csvSaved = true;
+      return true;
+    }
+
+    // 방 닫기 = 릴레이의 기존 끝 메시지(end:1, summary 숫자) 그대로. 릴레이가 줄·참석 집계를 지우고 청취자에게 끝을 알린다(room.js).
+    function closeRoom() {
+      if (live.closed) return;
+      const hasRoster = Object.keys(live.roster).length > 0;
+      const ask = (hasRoster && !live.csvSaved ? T('close_confirm_csv') + '\n' : '') + T('close_confirm');
+      if (!window.confirm(ask)) return;
+      const s = sessionSummary(Date.now());
+      let sent = false;
+      if (!live.relayEnded) {
+        sent = wsSend({ end: 1, summary: { lines: s.lines, minutes: Math.round(s.durationMs / 60000), joined_max: s.maxConcurrent } });
+      }
+      live.closing = true;   // 다시 붙지 않는다
+      live.closed = true;
+      live.on = false;
+      clearInterval(live.pingTimer);
+      try { if (live.ws) live.ws.close(1000, 'end'); } catch (_) {}
+      live.ws = null;
+      live.token = null;
+      delete s.rows;           // 요약은 숫자만 남긴다
+      live.finalSummary = s;
+      clearRoster();           // 처리방침: 종료 때 삭제
+      renderEnd();
+      endStatus.textContent = (sent || live.relayEnded) ? T('closed') : T('closed_nosend');
+    }
+
+    btnEnd.addEventListener('click', () => { btnEnd.blur(); showEndScreen(); });
+    btnBackLive.addEventListener('click', backToLive);
+    btnReport.addEventListener('click', saveReport);
+    btnCsv.addEventListener('click', saveCsv);
+    btnCloseRoom.addEventListener('click', closeRoom);
+    applyHostStrings();
 
     async function restoreSavedData() {
       try {
@@ -905,327 +1522,6 @@
     }
 
     // 초기 실행
-    
-    // ── L4-2 강의 실시간 진행 및 송출 ──
-    let currentRoomCode = '';
-    let currentHostToken = '';
-    let hostWs = null;
-    let currentParaIndex = 0;
-    let lectureStartTime = null;
-    let isBreakActive = false;
-    const sentParaSet = new Set();
-    const skippedParaSet = new Set();
-    const hostParticipants = []; // { name, lang, at }
-    let latestAttendance = { now: 0, max: 0, joined: 0, langs: {} };
-
-    const stepLive = document.getElementById('step-live');
-    const stepFinish = document.getElementById('step-finish');
-    const liveTotalCount = document.getElementById('liveTotalCount');
-    const liveParaList = document.getElementById('liveParaList');
-    const liveRoomCode = document.getElementById('liveRoomCode');
-    const liveQrBox = document.getElementById('liveQrBox');
-    const liveListenerUrl = document.getElementById('liveListenerUrl');
-    const liveAttSummary = document.getElementById('liveAttSummary');
-    const liveAttLangs = document.getElementById('liveAttLangs');
-    const liveBreakBanner = document.getElementById('liveBreakBanner');
-    const btnBreakToggle = document.getElementById('btnBreakToggle');
-    const btnEndLecture = document.getElementById('btnEndLecture');
-    const btnNextPara = document.getElementById('btnNextPara');
-    const btnPrevPara = document.getElementById('btnPrevPara');
-    const btnSkipPara = document.getElementById('btnSkipPara');
-
-    // 4단계 요약 엘리먼트
-    const sumDuration = document.getElementById('sumDuration');
-    const sumAttendance = document.getElementById('sumAttendance');
-    const sumParas = document.getElementById('sumParas');
-    const btnDownloadReport = document.getElementById('btnDownloadReport');
-    const btnDownloadCsv = document.getElementById('btnDownloadCsv');
-    const btnRestartLecture = document.getElementById('btnRestartLecture');
-
-    async function createRelayRoom() {
-      const res = await fetch(`${RELAY_BASE}/room`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${hostToken}`
-        },
-        body: JSON.stringify({ kind: 'edu' })
-      });
-      if (!res.ok) {
-        throw new Error('강의 방 개설 실패: status ' + res.status);
-      }
-      return await res.json();
-    }
-
-    function connectHostWebSocket() {
-      const wsProto = RELAY_BASE.startsWith('https') ? 'wss:' : 'ws:';
-      const wsHost = new URL(RELAY_BASE).host;
-      hostWs = new WebSocket(`${wsProto}//${wsHost}/ws?room=${currentRoomCode}&role=host&token=${currentHostToken}`);
-
-      hostWs.onopen = () => {
-        console.log('[Host WS] Connected');
-        hostWs.send(JSON.stringify({ hello: 1, host_kind: 'edu' }));
-      };
-
-      hostWs.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.att === 1) {
-            latestAttendance = msg;
-            updateAttendanceUI();
-          }
-          if (msg.hello && msg.name) {
-            const exists = hostParticipants.some(p => p.name === msg.name);
-            if (!exists) {
-              hostParticipants.push({
-                name: msg.name,
-                lang: msg.lang || 'ko',
-                time: new Date().toTimeString().split(' ')[0]
-              });
-            }
-          }
-        } catch (_) {}
-      };
-
-      hostWs.onerror = (e) => console.error('[Host WS Error]', e);
-    }
-
-    function updateAttendanceUI() {
-      liveAttSummary.textContent = `듣는 중 ${latestAttendance.now || 0}명 (최대 ${latestAttendance.max || 0}명, 누적 ${latestAttendance.joined || 0}명)`;
-      if (latestAttendance.langs) {
-        const parts = Object.entries(latestAttendance.langs)
-          .filter(([c]) => c !== '?')
-          .map(([c, info]) => `${c.toUpperCase()} ${info.now || 0}명`);
-        liveAttLangs.textContent = '언어별: ' + (parts.length ? parts.join(', ') : '대기 중');
-      }
-    }
-
-    function renderLiveParas() {
-      liveTotalCount.textContent = paragraphs.length;
-      liveParaList.innerHTML = '';
-
-      paragraphs.forEach((p, idx) => {
-        const isCurrent = idx === currentParaIndex;
-        const isSent = sentParaSet.has(p.id);
-        const isSkipped = skippedParaSet.has(p.id);
-
-        const card = document.createElement('div');
-        card.className = 'para-item';
-        card.id = `live-para-${p.id}`;
-        if (isCurrent) {
-          card.style.border = '2px solid #38bdf8';
-          card.style.background = 'rgba(2, 132, 199, 0.15)';
-        }
-
-        let statusBadge = '<span style="color:#64748b;">대기</span>';
-        if (isSent) statusBadge = '<span style="color:#10b981;font-weight:600;">송출됨</span>';
-        if (isSkipped) statusBadge = '<span style="color:#f59e0b;font-weight:600;">건너뜀</span>';
-        if (isCurrent) statusBadge = '<span style="color:#38bdf8;font-weight:bold;">현재 순서</span>';
-
-        card.innerHTML = `
-          <div class="para-header">
-            <span style="font-weight:600;">문단 #${p.id} / ${paragraphs.length}</span>
-            <span>${statusBadge}</span>
-          </div>
-          <div style="font-size:0.95rem;line-height:1.5;margin-bottom:6px;">${escapeHtml(p.src)}</div>
-          ${Object.keys(p.trans).length > 0 ? `
-            <div style="font-size:0.8rem;color:#94a3b8;border-top:1px dashed var(--border);padding-top:4px;">
-              ${Object.entries(p.trans).map(([code, t]) => `<div><strong>${code.toUpperCase()}:</strong> ${escapeHtml(t)}</div>`).join('')}
-            </div>
-          ` : ''}
-        `;
-        liveParaList.appendChild(card);
-      });
-
-      const currentEl = document.getElementById(`live-para-${currentParaIndex + 1}`);
-      if (currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function sendCurrentPara() {
-      if (currentParaIndex >= paragraphs.length) {
-        alert('모든 문단이 완료되었습니다. 강의를 종료하세요.');
-        return;
-      }
-      const p = paragraphs[currentParaIndex];
-      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
-        hostWs.send(JSON.stringify({
-          kind: 'script',
-          para: p.id,
-          total: paragraphs.length,
-          src: p.src,
-          srcLang: 'ko',
-          trans: p.trans,
-          at: Date.now()
-        }));
-      }
-      sentParaSet.add(p.id);
-      currentParaIndex++;
-      renderLiveParas();
-    }
-
-    function prevPara() {
-      if (currentParaIndex > 0) {
-        currentParaIndex--;
-        renderLiveParas();
-      }
-    }
-
-    function skipCurrentPara() {
-      if (currentParaIndex >= paragraphs.length) return;
-      const p = paragraphs[currentParaIndex];
-      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
-        hostWs.send(JSON.stringify({
-          kind: 'skip',
-          para: p.id
-        }));
-      }
-      skippedParaSet.add(p.id);
-      currentParaIndex++;
-      renderLiveParas();
-    }
-
-    function toggleBreak() {
-      isBreakActive = !isBreakActive;
-      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
-        hostWs.send(JSON.stringify({
-          kind: 'break',
-          on: isBreakActive
-        }));
-      }
-      liveBreakBanner.style.display = isBreakActive ? 'block' : 'none';
-      btnBreakToggle.textContent = isBreakActive ? '▶ 강의 재개' : '☕ 쉬는 시간';
-      btnBreakToggle.style.background = isBreakActive ? '#10b981' : '#f59e0b';
-    }
-
-    btnStartLecture.addEventListener('click', async () => {
-      btnStartLecture.disabled = true;
-      btnStartLecture.textContent = '방 개설 중...';
-      try {
-        const roomData = await createRelayRoom();
-        currentRoomCode = roomData.code;
-        currentHostToken = roomData.host_token;
-        lectureStartTime = Date.now();
-        currentParaIndex = 0;
-        sentParaSet.clear();
-        skippedParaSet.clear();
-
-        liveRoomCode.textContent = currentRoomCode;
-        const listenerUrl = `https://raytok.kr/web/listener/?room=${currentRoomCode}&relay=${encodeURIComponent(new URL(RELAY_BASE).host)}`;
-        liveListenerUrl.textContent = listenerUrl;
-        liveQrBox.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;"><div style="font-size:12px;color:#64748b;font-weight:600;">청취 코드</div><div style="font-size:24px;font-weight:800;color:#0284c7;letter-spacing:2px;">${currentRoomCode}</div></div>`;
-
-        connectHostWebSocket();
-
-        stepPrepare.style.display = 'none';
-        stepLive.style.display = 'block';
-        renderLiveParas();
-      } catch (err) {
-        alert('강의 시작 실패: ' + err.message);
-      } finally {
-        btnStartLecture.disabled = false;
-        btnStartLecture.textContent = '강의 시작하기 (L4-2 연동)';
-      }
-    });
-
-    btnNextPara.addEventListener('click', sendCurrentPara);
-    btnPrevPara.addEventListener('click', prevPara);
-    btnSkipPara.addEventListener('click', skipCurrentPara);
-    btnBreakToggle.addEventListener('click', toggleBreak);
-
-    // 키보드 단축키 지원 (ArrowRight, ArrowLeft, Space)
-    window.addEventListener('keydown', (e) => {
-      if (stepLive.style.display !== 'block') return;
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-      if (e.code === 'ArrowRight' || e.code === 'Space') {
-        e.preventDefault();
-        sendCurrentPara();
-      } else if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        prevPara();
-      }
-    });
-
-    // ── L4-3 강의 종료 및 요약 리포트 저장 ──
-    btnEndLecture.addEventListener('click', () => {
-      if (!confirm('강의를 종료하시겠습니까?')) return;
-
-      const elapsedMs = Date.now() - (lectureStartTime || Date.now());
-      const elapsedMin = Math.max(1, Math.round(elapsedMs / 60000));
-      const readCount = sentParaSet.size;
-      const skipCount = skippedParaSet.size;
-
-      if (hostWs && hostWs.readyState === WebSocket.OPEN) {
-        hostWs.send(JSON.stringify({
-          end: 1,
-          summary: {
-            lines: readCount,
-            minutes: elapsedMin
-          }
-        }));
-        hostWs.close();
-      }
-
-      stepLive.style.display = 'none';
-      stepFinish.style.display = 'block';
-
-      sumDuration.textContent = `${elapsedMin}분`;
-      sumAttendance.textContent = `${latestAttendance.max || latestAttendance.joined || 0}명`;
-      sumParas.textContent = `${readCount} / ${skipCount} (총 ${paragraphs.length})`;
-    });
-
-    btnDownloadReport.addEventListener('click', () => {
-      const contentMode = document.querySelector('input[name="finish-content-mode"]:checked')?.value || 'both';
-      const format = document.querySelector('input[name="finish-format"]:checked')?.value || 'txt';
-      const targetLang = selectedLangs[0] || 'en';
-      const curLang = SUPPORTED_TARGET_LANGS.find(l => l.code === targetLang);
-
-      // 송출된 문단 데이터 리스트화
-      const lines = paragraphs.filter(p => sentParaSet.has(p.id)).map(p => ({
-        at: Date.now(),
-        text: p.src,
-        tr: p.trans
-      }));
-
-      if (window.RayTokReport) {
-        window.RayTokReport.downloadReport({
-          lines: lines.length ? lines : paragraphs.map(p => ({ at: Date.now(), text: p.src, tr: p.trans })),
-          srcLang: 'ko',
-          targetLang,
-          langName: curLang ? curLang.name : targetLang,
-          contentMode,
-          format
-        });
-      }
-    });
-
-    btnDownloadCsv.addEventListener('click', () => {
-      const rows = [
-        ['이름', '언어', '접속일시']
-      ];
-      if (hostParticipants.length) {
-        hostParticipants.forEach(p => rows.push([p.name, p.lang, p.time]));
-      } else {
-        rows.push(['참석자 (익명)', selectedLangs[0] || 'en', new Date().toTimeString().split(' ')[0]]);
-      }
-
-      const csvContent = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `raytok_edu_attendance_${currentRoomCode || 'room'}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-    });
-
-    btnRestartLecture.addEventListener('click', () => {
-      stepFinish.style.display = 'none';
-      stepPrepare.style.display = 'block';
-    });
-
     openDatabase().then(() => autoLogin());
   </script>
 </body>
