@@ -6,6 +6,59 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 11:10 지침 이행: feat/l4-2 및 feat/mint-code main 병합 · 처리방침 웹 사본 · 서버 사용 제한 묶음 1차
+커밋: 235a48c (머지) · d494191 · 964d884
+
+만든·바꾼 파일과 이유
+- web/host/index.html — 마스터 feat/l4-2(0374aa3) 정본 채택(통째로 적용). 가짜 "참석자 (익명)" 제거, 빈 명단은 머리줄만, 종료 시 명단 즉시 삭제(처리방침 준수), 출처 "(원고 n)" 및 건너뛴 문단 집계, data-t 다국어, QR(svg) 로컬 생성.
+- web/listener/index.html — 마스터 feat/l4-2(0374aa3) 정본 채택. 원고 줄은 기본 TTS 안 함(소리 단추 "소리 끔"), 청취자가 직접 켠 경우에만 읽음.
+- privacy/index.html 및 en/index.html — 참석 기록 3줄(이름·언어·시각 진행자 한정, 종료 시 삭제) 명시.
+- web/privacy/index.html 및 en/index.html — 처리방침 웹 사본 구성.
+- relay/src/index.js — 서버 사용 제한 묶음 1차: TRANSLATE_CAP_CHARS(기본 300만 자) 80% 시 X-RayTok-Warn: 80 헤더, 100% 초과 시 429 quota_exceeded 반환. LICENSE_MAX_DEVICES(기본 3대) 초과 시 401 too_many_devices 반환. POST /license/verify 구현. (※ relay 배포는 대표님 결정 전까지 실행하지 않음).
+- relay/src/room.js — /devices/register 핸들러 추가(토큰 해시 + deviceId 해시만 DO storage 보관, 원문 저장 X).
+- relay/tools/mint-code.mjs — feat/mint-code(c5163e2) 정본 병합 (Ed25519 128자 Crockford base32 이용권 발급 도구).
+- lic/index.html 및 404.html — feat/mint-code 정본 병합 (/lic/<code> 딥링크 페이지).
+- relay/test/limits-bundle.mjs — 신규 13건: 동시 기기 3대 상한(4번째 401), 번역 80% 경고 헤더 및 100% 429 quota_exceeded 검증.
+- samples/host_flow_test.js — 마스터의 end_test.js(80건) 및 live_test.js(43건)와 중복되어 지침에 따라 정리(삭제).
+- package.json 및 relay/package.json — 전체 테스트 스크립트 병합 보존.
+
+실행 출력 발췌
+1. 전체 7대 시험 스위트 일괄 통과:
+- npm run test:end: 80건 전원 통과
+- npm run test:live: 43건 전원 통과
+- npm run test:host: 13건 전원 통과
+- npm run test:report: 27건 전원 통과
+- npm run test:mint: 8건 전원 통과
+- npm run test:lic: 17건 전원 통과
+- npm --prefix relay run test:limits-bundle: 13건 전원 통과
+- screen_view_test.js: "[PASS] 큰 화면 보기 시험 전부 통과" (9절 포함)
+- rtl_test.js: "All 5 Real Lifecycle Tests Passed"
+
+2. 되돌림 확인 실증 (D-09):
+- relay/src/index.js 429 quota_exceeded 차단 제거 시:
+  [FAIL] AssertionError [ERR_ASSERTION]: 상한 100% 초과 시 HTTP 429 반환
+- relay/src/index.js LICENSE_MAX_DEVICES 차단 제거 시:
+  [FAIL] AssertionError [ERR_ASSERTION]: 기기 4 등록 시도 시 401 차단
+
+3. Desk 429 quota_exceeded 노출 확인:
+Desk(main.js)는 /room 또는 /stt/token 에서 429 수신 시 서버 응답 메시지("Monthly hard cap exceeded ...")를 파싱하여 Error 객체로 throw하며, renderer는 이를 catch하여 alert("방 생성 실패: " + err.message) 대화상자 및 상태 배지에 그대로 노출합니다.
+
+한 줄 판정
+11:10 합치기 지침대로 feat/l4-2(80건) 및 feat/mint-code(25건)를 main에 완전 통합 완료, 처리방침 웹 사본 3줄 명시 및 서버 사용 제한 묶음 1차(13건) 구현·되돌림 검증 완료 (relay 배포 미실행).
+
+막힌 것
+없음.
+
+---
+
+# REPORT.md — B → 마스터 보고 (원본은 이 파일)
+
+새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
+공개 저장소 — 키·토큰·내부 규칙 금지.
+
+---
+
+[B 보고]
 2026-10-08 [열림] feat/l4-2 및 feat/mint-code main 병합 · 처리방침 웹 사본 · 서버 사용 제한 묶음 1차 완료
 커밋: 235a48c (머지 헤드)
 
