@@ -754,11 +754,30 @@
     }
     speechSynthesis.onvoiceschanged = updateVoice;
 
-    btnToggleTts.addEventListener('click', () => {
-      isTtsEnabled = !isTtsEnabled;
+    // 소리 단추 — 켜고 끄는 곳은 여기 하나(단추 글·모양이 늘 상태와 같게).
+    let ttsTouched = false;   // 청취자가 단추를 직접 눌렀나 (L4-3: 원고 줄 기본 끔을 가를 때 본다)
+    function setTtsEnabled(on) {
+      isTtsEnabled = !!on;
       btnToggleTts.textContent = isTtsEnabled ? t('tts_on', currentUiLang) : t('tts_off', currentUiLang);
       btnToggleTts.classList.toggle('active', !isTtsEnabled);
+    }
+    btnToggleTts.addEventListener('click', () => {
+      ttsTouched = true;
+      ttsAutoOff = false;
+      setTtsEnabled(!isTtsEnabled);
     });
+
+    // L4-3 (MASTER 10-08 10:25): 원고 줄(script)은 기본으로 읽지 않는다 — 강사가 그 자리에서 말하고 있어 소리가 겹친다.
+    // 청취자가 소리 단추를 직접 켰을 때만 읽는다. 단추를 건드린 적이 없으면 원고 줄이 올 때 소리를 끄고
+    // (단추가 "소리 끔"으로 바뀌어 보인다 — 한 번 누르면 켜진다), 들은 줄(line·tr)이 오면 우리가 끈 것만 도로 켠다.
+    // 그래서 들은 줄은 어느 방에서나 전과 같다: 안 건드렸으면 처음 값대로, 건드렸으면 단추대로.
+    let ttsAutoOff = false;   // 원고 줄 때문에 페이지가 끈 상태(청취자가 끈 것이 아니다)
+    function scriptTtsDefault() {
+      if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
+    }
+    function liveTtsDefault() {
+      if (ttsAutoOff) { ttsAutoOff = false; setTtsEnabled(true); }
+    }
 
     // RULE P-03: speak only confirmed `tr`, never `pending`
     function speak(text, via, audioUrl) {
@@ -925,6 +944,7 @@
         };
         lines.push(line);
         addLine(line);
+        scriptTtsDefault();   // 원고 줄은 기본 끔 — 청취자가 소리 단추를 켠 때만 아래 speak 가 소리를 낸다
         if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
         return;
       }
@@ -968,6 +988,7 @@
         lastSeq = msg.seq;
         localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
         addLine(line);
+        liveTtsDefault();   // 원고 줄 때문에 꺼 둔 소리는 들은 줄에서 도로 켠다(L4-3)
         if (line.tr[selectedLang]) speak(line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
       } else if ('tr' in msg && !('text' in msg)) {
         const line = lines.find(l => l.seq === msg.seq);
@@ -976,6 +997,7 @@
           line.pending = false;
           if (msg.via) line.via = msg.via;
           updateLineUI(line);
+          liveTtsDefault();
           if (msg.tr[selectedLang]) speak(msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
         }
       } else if ('no_tr' in msg) {

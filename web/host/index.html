@@ -288,11 +288,25 @@
       text-align: center;
     }
     .break-band.on { display: block; }
+
+    /* ── L4-3 끝 화면 ── */
+    .btn.danger { background: var(--danger); }
+    .btn.danger:hover { background: #dc2626; }
+    .end-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+    @media (max-width: 760px) { .end-summary { grid-template-columns: 1fr; } }
+    .end-summary > div { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; color: var(--text-muted); }
+    .end-summary strong { display: block; font-size: 1.4rem; color: var(--text); margin-top: 2px; }
+    .end-summary .sum-sub { font-size: 0.8rem; overflow-wrap: anywhere; }
+    .end-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
+    .end-row .end-key { color: var(--text-muted); min-width: 5.5em; }
+    .end-row label.end-opt { display: inline-flex; align-items: center; gap: 5px; margin: 0; color: var(--text); font-size: 0.9rem; cursor: pointer; }
+    .end-row select { width: auto; }
   </style>
 
   <script src="../vendor/pdf.min.js"></script>
   <script src="../vendor/mammoth.browser.min.js"></script>
   <script src="../vendor/qrcode.js"></script>
+  <script src="../common/report.js"></script>
 </head>
 <body>
   <header>
@@ -406,6 +420,7 @@
             <button id="btnNext" class="btn" title="→ 또는 스페이스 키">다음 ▶</button>
             <button id="btnSkip" class="btn secondary">건너뜀</button>
             <button id="btnBreak" class="btn warn">쉬는 시간</button>
+            <button id="btnEnd" class="btn secondary" data-t="btn_end"></button>
             <span id="liveStatus" class="live-status">연결 중…</span>
           </div>
           <div class="notice info" style="margin-top: 14px; margin-bottom: 0;">
@@ -424,6 +439,50 @@
         </div>
       </div>
     </section>
+
+    <!-- 4단계: 끝 (L4-3) — 요약 · 리포트 3×3 · 참석 CSV · 방 닫기. 글자는 HOST_STR(ko·en) 한 곳에서 채운다(data-t) -->
+    <section id="step-end" class="card" style="display: none;">
+      <div class="card-title" data-t="end_title"></div>
+      <div class="end-summary">
+        <div><span data-t="sum_att"></span><strong id="sumAtt">0</strong><span class="sum-sub"><span data-t="sum_max"></span> <span id="sumMax">0</span></span></div>
+        <div><span data-t="sum_dur"></span><strong id="sumDur">0:00:00</strong></div>
+        <div><span data-t="sum_read"></span><strong><span id="sumRead">0</span> / <span id="sumTotal">0</span></strong></div>
+        <div><span data-t="sum_skip"></span><strong id="sumSkip">0</strong><span class="sum-sub" id="sumSkipList"></span></div>
+      </div>
+
+      <div class="form-group">
+        <label data-t="rep_title"></label>
+        <div class="end-row">
+          <span class="end-key" data-t="rep_lang"></span>
+          <select id="repLang"></select>
+        </div>
+        <div class="end-row">
+          <span class="end-key" data-t="rep_content"></span>
+          <label class="end-opt"><input type="radio" name="rep-content" value="both" checked> <span data-t="rep_both"></span></label>
+          <label class="end-opt"><input type="radio" name="rep-content" value="src"> <span data-t="rep_src"></span></label>
+          <label class="end-opt"><input type="radio" name="rep-content" value="trans"> <span data-t="rep_trans"></span></label>
+        </div>
+        <div class="end-row">
+          <span class="end-key" data-t="rep_format"></span>
+          <label class="end-opt"><input type="radio" name="rep-format" value="txt" checked> TXT</label>
+          <label class="end-opt"><input type="radio" name="rep-format" value="pdf"> PDF</label>
+          <label class="end-opt"><input type="radio" name="rep-format" value="doc"> DOC</label>
+        </div>
+        <button id="btnReport" class="btn" data-t="rep_save"></button>
+      </div>
+
+      <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 18px;">
+        <label data-t="csv_title"></label>
+        <div class="notice info" data-t="csv_note"></div>
+        <button id="btnCsv" class="btn secondary" data-t="csv_btn"></button>
+      </div>
+
+      <div class="live-controls" style="border-top: 1px solid var(--border); padding-top: 18px;">
+        <button id="btnBackLive" class="btn secondary" data-t="btn_back"></button>
+        <button id="btnCloseRoom" class="btn danger" data-t="btn_close"></button>
+        <span id="endStatus" class="live-status"></span>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -437,7 +496,7 @@
       { code: 'id', name: '인도네시아어 (Bahasa Indonesia)' },
       { code: 'ru', name: '러시아어 (Русский)' },
       { code: 'mn', name: '몽골어 (Монгол)' },
-      { code: 'ar', name: '아랍어 (العربية)' }
+      { code: 'ar', name: '아랍어 (العربية)', rtl: true }   // rtl 은 리포트(PDF·DOC) 글 방향에 쓴다 — 표에서 읽는다
     ];
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -877,9 +936,19 @@
       cur: 0,             // 지금 읽는 문단(1부터). 0 = 아직 시작 전
       state: {},          // para -> 'read' | 'skip'
       breakOn: false,
-      roster: [],         // hello 의 name·lang·at — 진행자 화면에만, 서버 저장 없음(L4-3 CSV 용)
+      roster: {},         // 참석 명단(L4-3) — hello 의 이름·언어·붙은 시각. 이 화면 메모리에만(서버·저장소 X), 방을 닫으면 지운다
       pingTimer: null,
-      closing: false
+      closing: false,
+      // ── L4-3 끝 화면 ──
+      startedAt: 0,       // 강의 시작(방을 만든 때)
+      endedAt: null,      // 끝내기를 누른 때(진행으로 돌아가면 비운다)
+      sent: [],           // 실제로 나간 script 메시지(시간 순) — 요약·리포트는 이것 하나에서 나온다
+      att: null,          // 릴레이가 준 마지막 참석 집계(숫자뿐)
+      ended: false,       // 끝 화면을 보는 중
+      closed: false,      // 방을 닫았다
+      relayEnded: false,  // 릴레이가 먼저 끝냈다(무음 정지 등)
+      csvSaved: false,
+      finalSummary: null  // 방을 닫을 때의 요약(숫자뿐) — 명단을 지운 뒤에도 화면 숫자가 남게
     };
 
     function listenerJoinUrl(code) {
@@ -937,7 +1006,10 @@
     }
 
     function sendScript(para) {
-      return wsSend(buildScriptMsg(para));
+      const msg = buildScriptMsg(para);
+      const sent = wsSend(msg);
+      if (sent) live.sent.push(msg);   // 실제로 나간 문단만 적는다(L4-3 요약·리포트가 읽는 곳)
+      return sent;
     }
 
     function setBreak(on) {
@@ -1006,7 +1078,7 @@
     btnSkip.addEventListener('click', () => { btnSkip.blur(); doSkip(); });
     btnBreak.addEventListener('click', () => { btnBreak.blur(); doBreak(); });
     document.addEventListener('keydown', (e) => {
-      if (!live.on) return;
+      if (!live.on || live.ended) return;   // 끝 화면에서는 문단을 넘기지 않는다
       const tag = (e.target && e.target.tagName) || '';
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (tag === 'BUTTON' && (e.key === ' ' || e.key === 'Spacebar')) return;   // 초점 잡힌 단추는 제 일을 한다
@@ -1027,16 +1099,29 @@
       let msg;
       try { msg = JSON.parse(raw); } catch (_) { return; }
       if (msg.__ping) return;
-      if (msg.att) { renderAtt(msg); return; }
+      if (msg.att) {
+        live.att = msg;
+        rosterApplyAtt(msg, Date.now());
+        renderAtt(msg);
+        if (live.ended) renderEnd();
+        return;
+      }
       if (msg.hello) {
         // 청취자 hello: 이름·언어는 이 화면에만 둔다(서버 저장 없음). welcome 으로 답한다.
-        live.roster.push({ name: msg.name || '', lang: msg.lang || '', at: Date.now() });
+        rosterJoin(msg, Date.now());
         sendWelcome();
+        if (live.ended) renderEnd();
         return;
       }
       if (msg.end) {
+        // 릴레이가 먼저 끝냈다(무음 정지 등) — 그때를 끝 시각으로 잡고 열린 참석을 닫는다. 끝 화면은 끝내기로 연다.
+        const now = Date.now();
         liveStatus.textContent = '세션이 끝났습니다' + (msg.why ? ` (${msg.why})` : '');
         live.closing = true;
+        live.relayEnded = true;
+        if (!live.endedAt) live.endedAt = now;
+        rosterCloseAll(now);
+        if (live.ended) renderEnd();
         return;
       }
       if (msg.warning === 'silence_warning') {
@@ -1080,8 +1165,17 @@
         live.cur = 0;
         live.state = {};
         live.breakOn = false;
-        live.roster = [];
+        live.roster = {};
         live.closing = false;
+        live.startedAt = Date.now();
+        live.endedAt = null;
+        live.sent = [];
+        live.att = null;
+        live.ended = false;
+        live.closed = false;
+        live.relayEnded = false;
+        live.csvSaved = false;
+        live.finalSummary = null;
         stepPrepare.style.display = 'none';
         stepLive.style.display = 'block';
         document.getElementById('roomCode').textContent = live.code;
@@ -1099,6 +1193,314 @@
       }
     }
     document.getElementById('btnStartLecture').addEventListener('click', startLecture);
+
+    // ── 6. 끝 (L4-3): 끝내기 → 요약 → 리포트 3×3 → 참석 CSV → 방 닫기 ──
+    // 규칙: 참석 명단(이름·언어·붙은 시각)은 이 화면의 메모리에만 있다. 서버로 보내지 않고 localStorage·IndexedDB 에도
+    //       쓰지 않으며, 방을 닫으면 지운다. 리포트·CSV 는 브라우저 안에서 만들어 내려받는다(바깥 요청 0).
+    // 글자: 이 화면에서 새로 쓰는 글은 HOST_STR(ko·en) 한 곳. 기본 ko, `?lang=en` 이면 en(화면의 다른 글은 아직 ko 뿐이다).
+    const UI_LANG = urlParams.get('lang') === 'en' ? 'en' : 'ko';
+    const HOST_STR = {
+      ko: {
+        btn_end: '끝내기',
+        end_title: '강의 끝',
+        sum_att: '참석',
+        sum_max: '최대 동시',
+        sum_dur: '진행 시간',
+        sum_read: '읽은 문단',
+        sum_skip: '건너뛴 문단',
+        rep_title: '리포트 저장 (내용 3 × 형식 3)',
+        rep_lang: '번역 언어',
+        rep_content: '내용',
+        rep_both: '원문/번역문',
+        rep_src: '원문만',
+        rep_trans: '번역문만',
+        rep_format: '형식',
+        rep_save: '리포트 저장',
+        rep_none: '보낸 원고 문단이 없어 리포트를 만들지 않았습니다.',
+        src_script: '원고',
+        csv_title: '참석 명단',
+        csv_note: '명단(이름·언어·연결 분)은 이 브라우저 메모리에만 있습니다. 서버에 저장하지 않으며 방을 닫으면 지워집니다 — 필요하면 닫기 전에 받으세요. 연결 분은 처음 들어온 때부터 잽니다(중간에 나간 시각은 같은 언어 청취자가 모두 나갔을 때만 압니다).',
+        csv_btn: '참석 CSV 받기',
+        csv_name: '이름',
+        csv_lang: '언어',
+        csv_min: '연결 분',
+        btn_back: '◀ 진행으로 돌아가기',
+        btn_close: '방 닫기',
+        close_confirm: '방을 닫으면 청취자 화면이 종료되고 참석 명단이 지워집니다. 닫을까요?',
+        close_confirm_csv: '참석 CSV 를 아직 받지 않았습니다.',
+        closed: '방을 닫았습니다. 참석 명단은 지웠습니다.',
+        closed_nosend: '릴레이에 연결되어 있지 않아 종료 신호를 보내지 못했습니다 — 방은 10분 뒤 자동으로 닫힙니다. 참석 명단은 지웠습니다.'
+      },
+      en: {
+        btn_end: 'Finish',
+        end_title: 'Session finished',
+        sum_att: 'Attendees',
+        sum_max: 'Peak concurrent',
+        sum_dur: 'Duration',
+        sum_read: 'Paragraphs read',
+        sum_skip: 'Skipped paragraphs',
+        rep_title: 'Save report (3 contents × 3 formats)',
+        rep_lang: 'Translation language',
+        rep_content: 'Content',
+        rep_both: 'Source + translation',
+        rep_src: 'Source only',
+        rep_trans: 'Translation only',
+        rep_format: 'Format',
+        rep_save: 'Save report',
+        rep_none: 'No script paragraph was sent, so no report was made.',
+        src_script: 'Script',
+        csv_title: 'Attendance',
+        csv_note: 'The roster (name, language, minutes connected) exists only in this browser\'s memory. It is not stored on the server and is erased when you close the room — download it first if you need it. Minutes are counted from first join (a leave time is known only when every listener of that language has left).',
+        csv_btn: 'Download attendance CSV',
+        csv_name: 'Name',
+        csv_lang: 'Language',
+        csv_min: 'Minutes connected',
+        btn_back: '◀ Back to session',
+        btn_close: 'Close room',
+        close_confirm: 'Closing the room ends the listeners\' screens and erases the attendance roster. Close it?',
+        close_confirm_csv: 'You have not downloaded the attendance CSV yet.',
+        closed: 'Room closed. The attendance roster has been erased.',
+        closed_nosend: 'Not connected to the relay, so the end signal could not be sent — the room closes by itself in 10 minutes. The attendance roster has been erased.'
+      }
+    };
+    function T(key) {
+      return (HOST_STR[UI_LANG] && HOST_STR[UI_LANG][key]) || HOST_STR.ko[key] || '';
+    }
+    function applyHostStrings() {
+      document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.getAttribute('data-t')); });
+    }
+
+    // ── 참석 명단 (메모리만) ──
+    // 모양은 앱(A)과 같다: 기기마다 { name, lang, joinedAt[], leftAt[] } — joinedAt[i] 와 leftAt[i] 가 짝, 아직 붙어 있으면 joinedAt 이 하나 더 길다.
+    // 릴레이는 개인별 나감을 알리지 않는다(참석 집계는 숫자뿐). 그래서 나간 시각은 "그 언어에 지금 0명"일 때만 안다.
+    const ROSTER_MAX = 500;   // 방 상한(청취자 200)보다 넉넉히. 기기 번호를 바꿔 가며 보내는 hello 로 메모리가 불어나지 않게
+    const NAME_MAX = 60;
+    function rosterKey(msg) {
+      return msg.deviceId ? 'd:' + String(msg.deviceId).slice(0, 64) : 'n:' + String(msg.name || '').slice(0, NAME_MAX) + '|' + String(msg.lang || '');
+    }
+    function rosterIsOpen(p) { return p.joinedAt.length > p.leftAt.length; }
+    function rosterJoin(msg, at) {
+      const key = rosterKey(msg);
+      let p = live.roster[key];
+      if (!p) {
+        if (Object.keys(live.roster).length >= ROSTER_MAX) return;
+        p = live.roster[key] = { name: '', lang: '', joinedAt: [], leftAt: [] };
+      }
+      const name = String(msg.name || '').trim().slice(0, NAME_MAX);
+      if (name) p.name = name;                       // 빈 이름으로 덮지 않는다
+      if (msg.lang) p.lang = String(msg.lang).slice(0, 16);
+      if (!rosterIsOpen(p)) p.joinedAt.push(at);     // 닫혀 있었으면(다시 들어옴) 새 구간
+    }
+    function rosterApplyAtt(a, at) {
+      const langs = (a && a.langs) || {};
+      const nobody = !a || !(a.now > 0);
+      for (const p of Object.values(live.roster)) {
+        if (!rosterIsOpen(p)) continue;
+        const L = langs[p.lang];
+        if (nobody || (L && !(L.now > 0))) p.leftAt.push(at);
+      }
+    }
+    function rosterCloseAll(at) {
+      for (const p of Object.values(live.roster)) if (rosterIsOpen(p)) p.leftAt.push(at);
+    }
+    function connectedMs(p, now) {
+      let ms = 0;
+      for (let i = 0; i < p.joinedAt.length; i++) {
+        const end = Math.min(i < p.leftAt.length ? p.leftAt[i] : now, now);
+        ms += Math.max(0, end - p.joinedAt[i]);
+      }
+      return ms;
+    }
+    function rosterRows(now) {
+      return Object.values(live.roster)
+        .sort((a, b) => a.joinedAt[0] - b.joinedAt[0])
+        .map(p => ({ name: p.name, lang: p.lang, minutes: Math.round(connectedMs(p, now) / 60000) }));
+    }
+    function clearRoster() { live.roster = {}; }
+
+    // CSV: BOM(윈도우 엑셀 한글) · CRLF · RFC 4180. 이름은 청취자가 적은 글이라 = + - @ 로 시작하면 ' 를 붙여 수식으로 읽히지 않게 한다.
+    function csvCell(v) {
+      let c = String(v == null ? '' : v);
+      if (/^[=+\-@\t\r]/.test(c)) c = "'" + c;
+      return /[",\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+    }
+    function buildRosterCsv(rows) {
+      const out = [[T('csv_name'), T('csv_lang'), T('csv_min')].map(csvCell).join(',')];
+      for (const r of rows) out.push([r.name, r.lang, r.minutes].map(csvCell).join(','));
+      return '﻿' + out.join('\r\n') + '\r\n';
+    }
+
+    // ── 요약: 화면 숫자와 파일(리포트·CSV)이 같은 한 벌에서 나온다 ──
+    // 읽은 문단 = script 가 실제로 나간 문단(중복 없이). 건너뛴 문단 = 나가지 않은 문단 전부(건너뜀 단추 + 끝까지 안 간 것) — 앱 리포트와 같은 뜻.
+    function sessionSummary(now) {
+      const total = paragraphs.length;
+      const readSet = new Set(live.sent.map(m => m.para));
+      const skipped = [];
+      for (let n = 1; n <= total; n++) if (!readSet.has(n)) skipped.push(n);
+      const end = live.endedAt || now;
+      const rows = rosterRows(end);
+      return {
+        attendees: rows.length,
+        maxConcurrent: (live.att && live.att.max) || 0,
+        durationMs: Math.max(0, end - (live.startedAt || end)),
+        lines: live.sent.length,
+        read: readSet.size,
+        skipped,
+        total,
+        rows
+      };
+    }
+    function fmtDuration(ms) {
+      const sec = Math.floor(ms / 1000);
+      const p2 = (n) => String(n).padStart(2, '0');
+      return `${Math.floor(sec / 3600)}:${p2(Math.floor(sec / 60) % 60)}:${p2(sec % 60)}`;
+    }
+
+    // 리포트 줄: 나간 script 의 src·trans 그대로 + 출처 "(원고 n)". 건너뛴 문단은 본문 뒤 한 줄.
+    function reportLines() {
+      return live.sent.map(m => ({ at: m.at, text: m.src, tr: m.trans, label: `(${T('src_script')} ${m.para})` }));
+    }
+    function reportFooter(skipped) {
+      return skipped.length ? [`${T('sum_skip')}: ${skipped.join(', ')}`] : [];
+    }
+    function reportLangCodes() {
+      const set = new Set();
+      for (const m of live.sent) for (const k of Object.keys(m.trans || {})) set.add(k);
+      if (!set.size) for (const k of selectedLangs) set.add(k);
+      if (!set.size) set.add('en');
+      return [...set];
+    }
+
+    const stepEnd = document.getElementById('step-end');
+    const endStatus = document.getElementById('endStatus');
+    const repLang = document.getElementById('repLang');
+    const btnEnd = document.getElementById('btnEnd');
+    const btnReport = document.getElementById('btnReport');
+    const btnCsv = document.getElementById('btnCsv');
+    const btnBackLive = document.getElementById('btnBackLive');
+    const btnCloseRoom = document.getElementById('btnCloseRoom');
+
+    function checkedValue(name, fallback) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : fallback;
+    }
+
+    function fillReportLangs() {
+      const keep = repLang.value;
+      repLang.innerHTML = '';
+      for (const code of reportLangCodes()) {
+        const info = SUPPORTED_TARGET_LANGS.find(l => l.code === code);
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = info ? info.name : code;
+        repLang.appendChild(opt);
+      }
+      if (keep && [...repLang.options].some(o => o.value === keep)) repLang.value = keep;
+    }
+
+    function renderEnd() {
+      const s = live.finalSummary || sessionSummary(Date.now());
+      document.getElementById('sumAtt').textContent = s.attendees;
+      document.getElementById('sumMax').textContent = s.maxConcurrent;
+      document.getElementById('sumDur').textContent = fmtDuration(s.durationMs);
+      document.getElementById('sumRead').textContent = s.read;
+      document.getElementById('sumTotal').textContent = s.total;
+      document.getElementById('sumSkip').textContent = s.skipped.length;
+      document.getElementById('sumSkipList').textContent = s.skipped.length ? s.skipped.join(', ') : '';
+      btnReport.disabled = live.sent.length === 0;
+      btnCsv.disabled = live.closed;
+      btnCloseRoom.disabled = live.closed;
+      btnBackLive.style.display = (live.closed || live.relayEnded) ? 'none' : '';
+    }
+
+    function showEndScreen() {
+      if (!live.on) return;
+      live.ended = true;
+      if (!live.endedAt) live.endedAt = Date.now();
+      stepLive.style.display = 'none';
+      stepEnd.style.display = 'block';
+      endStatus.textContent = '';
+      fillReportLangs();
+      renderEnd();
+    }
+
+    function backToLive() {
+      if (live.closed || live.relayEnded) return;
+      live.ended = false;
+      live.endedAt = null;
+      stepEnd.style.display = 'none';
+      stepLive.style.display = 'block';
+      renderLive();
+    }
+
+    function saveReport() {
+      const lines = reportLines();
+      if (!lines.length) { endStatus.textContent = T('rep_none'); return false; }
+      const s = live.finalSummary || sessionSummary(Date.now());
+      const code = repLang.value || reportLangCodes()[0];
+      const info = SUPPORTED_TARGET_LANGS.find(l => l.code === code);
+      return window.RayTokReport.downloadReport({
+        lines,
+        srcLang: SRC_LANG,
+        targetLang: code,
+        langName: info ? info.name : code,
+        contentMode: checkedValue('rep-content', 'both'),
+        format: checkedValue('rep-format', 'txt'),
+        isRtl: !!(info && info.rtl),
+        footer: reportFooter(s.skipped)
+      });
+    }
+
+    function saveCsv() {
+      if (live.closed) return false;   // 닫은 뒤에는 명단이 없다
+      const s = sessionSummary(Date.now());
+      const d = new Date(live.startedAt || Date.now());
+      const p2 = window.RayTokReport.pad2;
+      const filename = `raytok_${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}_roster_${UI_LANG}.csv`;
+      const blob = new Blob([buildRosterCsv(s.rows)], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      live.csvSaved = true;
+      return true;
+    }
+
+    // 방 닫기 = 릴레이의 기존 끝 메시지(end:1, summary 숫자) 그대로. 릴레이가 줄·참석 집계를 지우고 청취자에게 끝을 알린다(room.js).
+    function closeRoom() {
+      if (live.closed) return;
+      const hasRoster = Object.keys(live.roster).length > 0;
+      const ask = (hasRoster && !live.csvSaved ? T('close_confirm_csv') + '\n' : '') + T('close_confirm');
+      if (!window.confirm(ask)) return;
+      const s = sessionSummary(Date.now());
+      let sent = false;
+      if (!live.relayEnded) {
+        sent = wsSend({ end: 1, summary: { lines: s.lines, minutes: Math.round(s.durationMs / 60000), joined_max: s.maxConcurrent } });
+      }
+      live.closing = true;   // 다시 붙지 않는다
+      live.closed = true;
+      live.on = false;
+      clearInterval(live.pingTimer);
+      try { if (live.ws) live.ws.close(1000, 'end'); } catch (_) {}
+      live.ws = null;
+      live.token = null;
+      delete s.rows;           // 요약은 숫자만 남긴다
+      live.finalSummary = s;
+      clearRoster();           // 처리방침: 종료 때 삭제
+      renderEnd();
+      endStatus.textContent = (sent || live.relayEnded) ? T('closed') : T('closed_nosend');
+    }
+
+    btnEnd.addEventListener('click', () => { btnEnd.blur(); showEndScreen(); });
+    btnBackLive.addEventListener('click', backToLive);
+    btnReport.addEventListener('click', saveReport);
+    btnCsv.addEventListener('click', saveCsv);
+    btnCloseRoom.addEventListener('click', closeRoom);
+    applyHostStrings();
 
     async function restoreSavedData() {
       try {

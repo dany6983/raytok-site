@@ -4,13 +4,12 @@
 // 보는 것: ① /room 으로 방 → 코드·QR·참석 수 ② 문단 3개 넘기기 → 청취자 화면 3줄("원고 n/total")
 //          ③ 건너뜀 → 청취자 "건너뜀 n" ④ 쉬는 시간 띠 on/off ⑤ 와이어 모양(script·skip·break) 정본 그대로
 //          ⑥ 넘길 때 /translate 0회(번역을 새로 청하지 않는다) ⑦ 바깥 요청 0건 ⑧ 키보드 →·←·스페이스
-// 목업 릴레이는 relay/src/room.js 와 같은 규칙(호스트→청취자 그대로, 청취자→호스트, 링버퍼 재전송, att 집계)로 여기서 돈다.
-const http = require('http');
-const fs = require('fs');
+//          ⑨ 원고 줄 TTS: 기본은 읽지 않음, 청취자가 소리 단추를 켠 뒤에만 읽음 (L4-3)
+// 목업 릴레이는 samples/mock_relay.js — relay/src/room.js 와 같은 규칙(호스트→청취자 그대로, 청취자→호스트, 링버퍼 재전송, att 집계).
 const path = require('path');
 const assert = require('assert');
-const { WebSocketServer } = require('ws');
 const { chromium } = require('playwright');
+const { createMockRelay } = require('./mock_relay');
 
 console.log('=== L4-2 진행 화면 (web/host + web/listener) 시험 ===');
 
@@ -21,134 +20,12 @@ function ok(cond, desc) {
   console.log('  [PASS] ' + desc);
 }
 
-const ROOT = path.join(__dirname, '..');
-const MIME = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.js': 'application/javascript', '.png': 'image/png' };
-
-// ── 목업 릴레이 상태 ──
-const rooms = new Map();           // code -> { token, ring: [], hosts: Set, listeners: Map(ws -> {lang}) , joined, max }
-let translateCalls = 0;            // /translate 호출 수 — 진행 중에는 0 이어야 한다
-const hostReceived = [];           // 호스트가 /ws 로 보낸 메시지(해석한 것)
-
-function attSnapshot(room) {
-  const langs = {};
-  let now = 0;
-  for (const m of room.listeners.values()) {
-    const k = m.lang || '?';
-    if (!langs[k]) langs[k] = { now: 0, max: 0, min: 0 };
-    langs[k].now++;
-    now++;
-  }
-  if (now > room.max) room.max = now;
-  for (const k of Object.keys(langs)) if (langs[k].now > langs[k].max) langs[k].max = langs[k].now;
-  return { att: 1, now, max: room.max, joined: room.joined, langs };
-}
-function sendAtt(room) {
-  const msg = JSON.stringify(attSnapshot(room));
-  for (const h of room.hosts) { try { h.send(msg); } catch (_) {} }
-}
-
-const srv = http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-
-  if (url.pathname === '/license/verify' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', () => {
-      const data = JSON.parse(body || '{}');
-      if (data.token === 'valid_test_token') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ valid: true, payload: { sub: 'instructor_1', flags: 12, exp: Math.floor(Date.now() / 1000) + 86400 } }));
-      } else {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ valid: false, message: 'Invalid signature' }));
-      }
-    });
-    return;
-  }
-
-  if (url.pathname === '/translate' && req.method === 'POST') {
-    translateCalls++;
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', () => {
-      const data = JSON.parse(body || '{}');
-      // vi 는 일부러 실패시킨다(503) — 그 언어는 trans 에서 빠져야 한다(R-15)
-      if (data.target === 'vi') { res.writeHead(503, { 'Content-Type': 'application/json' }); return res.end('{}'); }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ translatedText: `[${data.target}] ` + data.q }));
-    });
-    return;
-  }
-
-  if (url.pathname === '/room' && req.method === 'POST') {
-    if ((req.headers.authorization || '') !== 'Bearer valid_test_token') {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'unauthorized' }));
-    }
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', () => {
-      const data = JSON.parse(body || '{}');
-      const code = 'ABC123';
-      const token = 'host_tok_' + Math.random().toString(36).slice(2);
-      rooms.set(code, { token, kind: data.kind, ring: [], hosts: new Set(), listeners: new Map(), joined: 0, max: 0 });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ code, host_token: token }));
-    });
-    return;
-  }
-
-  // 정적 파일: /web/... , /assets/...
-  let p = decodeURIComponent(url.pathname);
-  if (p.endsWith('/')) p += 'index.html';
-  const f = path.join(ROOT, p);
-  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end('Not Found'); }
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' });
-  fs.createReadStream(f).pipe(res);
-});
-
-const wss = new WebSocketServer({ noServer: true });
-srv.on('upgrade', (req, socket, head) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  if (url.pathname !== '/ws') { socket.destroy(); return; }
-  const code = (url.searchParams.get('room') || '').toUpperCase();
-  const role = url.searchParams.get('role');
-  const room = rooms.get(code);
-  if (!room) { socket.destroy(); return; }
-  if (role === 'host' && url.searchParams.get('token') !== room.token) { socket.destroy(); return; }
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    if (role === 'host') {
-      room.hosts.add(ws);
-      try { ws.send(JSON.stringify(attSnapshot(room))); } catch (_) {}
-      ws.on('message', (raw) => {
-        const s = raw.toString();
-        if (s.includes('__ping')) { ws.send(s); return; }
-        room.ring.push(s);
-        for (const l of room.listeners.keys()) { try { l.send(s); } catch (_) {} }
-        try { hostReceived.push(JSON.parse(s)); } catch (_) {}
-      });
-      ws.on('close', () => room.hosts.delete(ws));
-    } else {
-      for (const m of room.ring) { try { ws.send(m); } catch (_) {} }
-      room.joined++;
-      room.listeners.set(ws, { lang: null });
-      sendAtt(room);
-      ws.on('message', (raw) => {
-        const s = raw.toString();
-        try {
-          const p = JSON.parse(s);
-          if (p.hello && p.lang) { room.listeners.get(ws).lang = p.lang; sendAtt(room); }
-        } catch (_) {}
-        for (const h of room.hosts) { try { h.send(s); } catch (_) {} }
-      });
-      ws.on('close', () => { room.listeners.delete(ws); sendAtt(room); });
-    }
-  });
-});
+// 목업 릴레이(+정적 파일) — samples/mock_relay.js (room.js 규칙). 끝 화면 시험(end_test.js)과 같이 쓴다.
+const relay = createMockRelay({ root: path.join(__dirname, '..') });
+const { rooms, hostReceived } = relay;
 
 (async () => {
-  await new Promise(r => srv.listen(0, r));
-  const port = srv.address().port;
+  const port = await relay.listen();
   const base = `http://localhost:${port}`;
 
   const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME, args: ['--no-sandbox'] } : {});
@@ -175,7 +52,7 @@ srv.on('upgrade', (req, socket, head) => {
   await host.waitForFunction(() => document.querySelectorAll('.para-item').length === 4);
   await host.click('#btnPreTranslate');
   await host.waitForSelector('#readyArea', { state: 'visible', timeout: 10000 });
-  const callsAfterPrep = translateCalls;
+  const callsAfterPrep = relay.counters.translate;
   ok(callsAfterPrep === 4 * 3, `미리 번역: /translate ${callsAfterPrep}회 (문단 4 × 언어 3)`);
 
   await host.click('#btnStartLecture');
@@ -218,13 +95,13 @@ srv.on('upgrade', (req, socket, head) => {
   ok(true, '호스트: 언어별 인원 en 1');
 
   // ── 문단 3개 넘기기: 단추 → 키보드 → 스페이스 ──
-  const before = translateCalls;
+  const before = relay.counters.translate;
   await host.click('#btnNext');
   await host.keyboard.press('ArrowRight');
   await host.keyboard.press('Space');
   await lis.waitForFunction(() => document.querySelectorAll('#chat-list .msg-line.msg-script').length === 3, null, { timeout: 5000 });
   ok(true, '청취자: 문단 3개 → 원고 줄 3개');
-  ok(translateCalls === before, '넘길 때 /translate 0회 — 번역을 새로 청하지 않는다');
+  ok(relay.counters.translate === before, '넘길 때 /translate 0회 — 번역을 새로 청하지 않는다');
 
   const scripts = hostReceived.filter(m => m.kind === 'script');
   ok(scripts.length === 3, '호스트 → /ws script 3건');
@@ -239,18 +116,24 @@ srv.on('upgrade', (req, socket, head) => {
   ok(heads.join('|') === 'Script 1/4|Script 2/4|Script 3/4', '청취자 줄 머리 "원고 n/total"(en UI: Script n/4)');
   const trs = await lis.$$eval('#chat-list .msg-line.msg-script .msg-tr', els => els.map(e => e.textContent.trim()));
   ok(trs[0].startsWith('[en] 안전 교육을 시작하겠습니다.'), '청취자: trans[en] 표시');
+  // L4-3 (MASTER 10-08 10:25): 원고 줄은 기본으로 읽지 않는다 — 소리 단추를 건드린 적 없으면 첫 원고 줄에서 "소리 끔"이 된다
   const spoken = await lis.evaluate(() => window.__spoken.length);
-  ok(spoken === 3, `청취자: 번역문 읽기 3회 (${spoken})`);
+  ok(spoken === 0, `청취자: 원고 줄은 기본으로 읽지 않는다 (읽기 ${spoken}회)`);
+  ok((await lis.textContent('#btn-toggle-tts')).includes('Sound off'), '청취자: 소리 단추가 "소리 끔"으로 보인다(en UI: Sound off)');
 
   ok(await host.$eval('#live-para-3', el => el.classList.contains('is-current')), '호스트: 3번 문단 강조(현재)');
   ok(await host.$eval('#live-para-4', el => el.classList.contains('is-next')), '호스트: 4번 문단 흐림(다음)');
   ok((await host.textContent('#liveProgress')).trim() === '3 / 4', '호스트: 진행 3 / 4');
 
-  // ── 이전(←): 2번을 다시 보낸다 ──
+  // ── 이전(←): 2번을 다시 보낸다. 그 앞에 청취자가 소리 단추를 켠다 → 이번 원고 줄은 읽는다 ──
+  await lis.click('#btn-toggle-tts');
+  ok((await lis.textContent('#btn-toggle-tts')).includes('Sound on'), '청취자: 단추를 한 번 누르면 "소리 켜짐"');
   await host.keyboard.press('ArrowLeft');
   await lis.waitForFunction(() => document.querySelectorAll('#chat-list .msg-line.msg-script').length === 4, null, { timeout: 5000 });
   const last = hostReceived.filter(m => m.kind === 'script').pop();
   ok(last.para === 2, '← = 이전 문단(2) script 다시 송출');
+  const spokenOn = await lis.evaluate(() => window.__spoken.slice());
+  ok(spokenOn.length === 1 && spokenOn[0] === '[en] 안전모를 반드시 착용하십시오.', `청취자: 소리 단추를 켠 뒤의 원고 줄은 읽는다 (${spokenOn.length}회)`);
 
   // ── 건너뜀: 3번(다음)을 건너뛴다 ──
   await host.click('#btnSkip');
@@ -289,11 +172,11 @@ srv.on('upgrade', (req, socket, head) => {
   ok(outside.length === 0, `바깥 요청 0건 (${outside.length})`);
 
   await browser.close();
-  srv.close();
+  relay.close();
   console.log(`\n전부 통과 (${passCount}건)`);
   process.exit(0);
 })().catch(err => {
   console.error('\n[FAIL]', err && err.message ? err.message : err);
-  srv.close();
+  relay.close();
   process.exit(1);
 });
