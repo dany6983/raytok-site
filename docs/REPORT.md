@@ -6,6 +6,60 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] feat/l4-2 및 feat/mint-code main 병합 · 처리방침 웹 사본 · 서버 사용 제한 묶음 1차 완료
+커밋: 235a48c (머지 헤드)
+
+만든·바꾼 파일
+- web/host/index.html (마스터 feat/l4-2 정본 병합: 끝내기·요약·리포트 3x3·참석 CSV·방닫기·data-t 다국어)
+- web/listener/index.html (마스터 feat/l4-2 정본 병합: 원고 줄 기본 TTS 안 함 및 토글 연동)
+- privacy/index.html 및 en/index.html (참석 기록 3줄: 이름·언어·시각 진행자 한정, 종료 시 삭제 반영)
+- web/privacy/index.html 및 en/index.html (처리방침 웹 사본 생성)
+- relay/src/index.js (서버 사용 제한 묶음 1차: TRANSLATE_CAP_CHARS 300만 글자 상한·X-RayTok-Warn: 80 헤더, LICENSE_MAX_DEVICES 동시 기기 3대 상한 및 /license/verify)
+- relay/src/room.js (/devices/register 핸들러 및 D1/DO 토큰 해시+기기 해시 등록)
+- relay/tools/mint-code.mjs (feat/mint-code 정본 병합: Ed25519 128자 Crockford base32 발급)
+- lic/index.html 및 404.html (feat/mint-code 정본 병합: /lic/<code> 딥링크 페이지)
+- relay/test/limits-bundle.mjs (신규: 사용 제한 묶음 1차 단위 시험 13건)
+- package.json 및 relay/package.json
+- docs/REPORT.md
+
+실행 출력 발췌
+1. 전체 7대 시험 스위트 일괄 통과:
+- npm run test:end: 80건 전원 통과
+- npm run test:live: 43건 전원 통과
+- npm run test:host: 13건 전원 통과
+- npm run test:report: 27건 전원 통과
+- npm run test:mint: 8건 전원 통과
+- npm run test:lic: 17건 전원 통과
+- npm --prefix relay run test:limits-bundle: 13건 전원 통과 (기기 3대 상한, 4번째 401 too_many_devices, 번역 80% X-RayTok-Warn: 80 헤더, 100% 429 quota_exceeded)
+- screen_view_test.js (9절 포함 전원 통과)
+- rtl_test.js (5건 전원 통과)
+
+2. 되돌림 실패 검증 실증 2건:
+- 429 quota_exceeded 제거 시: AssertionError [ERR_ASSERTION]: 상한 100% 초과 시 HTTP 429 반환
+- LICENSE_MAX_DEVICES 차단 제거 시: AssertionError [ERR_ASSERTION]: 기기 4 등록 시도 시 401 차단
+
+3. Desk 429 quota_exceeded 노출 확인:
+Desk(main.js)는 /room 또는 /stt/token 에서 429 수신 시 서버 응답 메시지("Monthly hard cap exceeded ...")를 파싱하여 Error 객체로 throw하며, renderer는 이를 catch하여 alert("방 생성 실패: " + err.message) 대화상자 및 상태 배지에 그대로 노출합니다.
+
+4. samples/host_flow_test.js 정리:
+마스터의 end_test.js(80건) 및 live_test.js(43건)와 중복되므로 지침에 따라 정리 완료.
+
+한 줄 판정
+feat/l4-2(80건) 및 feat/mint-code(25건)를 main에 성공적으로 병합하고, 처리방침 웹 사본 3줄 명시 및 서버 사용 제한 묶음 1차(13건) 구현·되돌림 실증 완료.
+
+막힌 것
+없음.
+
+---
+
+# REPORT.md — B → 마스터 보고 (원본은 이 파일)
+
+새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
+공개 저장소 — 키·토큰·내부 규칙 금지.
+
+---
+
+[B 보고]
 <<<<<<< HEAD
 <<<<<<< HEAD
 2026-10-07 [열림] L4-2 진행 화면 · L4-3 끝 화면 1차 완료
