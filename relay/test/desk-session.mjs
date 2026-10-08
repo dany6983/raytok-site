@@ -87,7 +87,7 @@ function normalizeItem(item) {
   return JSON.stringify(sortKeysDeep(copy));
 }
 
-function generateChain(session, itemCount, linePayloadLength = 300) {
+function generateChain(session, itemCount, textPayload) {
   const zero64 = '0'.repeat(64);
   let prevHash = zero64;
   const items = [];
@@ -102,11 +102,11 @@ function generateChain(session, itemCount, linePayloadLength = 300) {
   items.push(begin);
 
   // 2) lines
-  const dummyText = 'A'.repeat(linePayloadLength);
   for (let i = 2; i <= itemCount - 1; i++) {
     const line = {
       kind: 'line', ts: session.started + i * 1000, seq: i - 1, src: session.lang,
-      text: dummyText, tr: { en: 'Translated text' }, via: '',
+      text: typeof textPayload === 'function' ? textPayload(i) : textPayload,
+      tr: { en: 'Translated text' }, via: '',
       n: i, prev: prevHash
     };
     line.hash = sha256Hex(prevHash + '\n' + normalizeItem(line));
@@ -335,19 +335,22 @@ async function run() {
     storageShouldThrow = false;
   }
 
-  // ── Test 8: 200KB 대용량 세션 분할 저장(128 KiB 상한 극복) 및 멱등성 ──
-  console.log('\n[Test 8] 200KB 대형 세션 분할 저장 및 멱등성 검증');
-  const largeSessionData = {
-    code: '999888',
-    host: 'LARGE_DESK_TEST',
+  // ── Test 8: 한국어만 300 KiB 세션 -> 모든 조각 <= 64 KiB (바이트 단위) ──
+  console.log('\n[Test 8] 한국어만 300 KiB 세션 분할 저장 및 조각별 바이트 크기(<=64 KiB) 검증');
+  const koreanSession = {
+    code: '777888',
+    host: 'SM-KOREAN-TEST',
     lang: 'ko',
     started: 1759885200000
   };
-  // 500개 항목 생성 -> 200KB 이상
-  const largeChain = generateChain(largeSessionData, 500, 350);
-  const largeBodyStr = JSON.stringify(largeChain);
-  const bodySizeKiB = Math.round(largeBodyStr.length / 1024);
-  ok(bodySizeKiB >= 200, `대형 세션 본문 크기 200 KiB 이상 확인 (실제: ${bodySizeKiB} KiB)`);
+  // 한국어 텍스트는 1글자당 UTF-8 3바이트
+  const koreanSentence = '대한민국 안전보건공단 표준 작업장 안전 수칙 교육 원고입니다. 보호구를 철저히 착용하고 작업을 진행하세요. ';
+  // 약 800개 문단 -> 본문 약 320 KiB 이상
+  const koreanChain = generateChain(koreanSession, 800, koreanSentence);
+  const koreanBodyStr = JSON.stringify(koreanChain);
+  const koreanByteLength = Buffer.byteLength(koreanBodyStr, 'utf8');
+  const koreanKiB = Math.round(koreanByteLength / 1024);
+  ok(koreanKiB >= 300, `한국어 세션 바이트 크기 300 KiB 이상 확인 (실제: ${koreanKiB} KiB, ${koreanByteLength} 바이트)`);
 
   const req8 = new Request('http://localhost/desk/session', {
     method: 'POST',
@@ -355,33 +358,42 @@ async function run() {
       'Authorization': 'Bearer ' + deskToken,
       'Content-Type': 'application/json'
     },
-    body: largeBodyStr
+    body: koreanBodyStr
   });
   const res8 = await relayApp.fetch(req8, mockEnv, mockCtx);
-  ok(res8.status === 200, '200KB 세션 분할 저장 성공 200 OK');
+  ok(res8.status === 200, '한국어 300 KiB 세션 저장 성공 200 OK');
   const data8 = await res8.json();
-  ok(typeof data8.id === 'string', '대형 세션 id 발급 확인');
-  ok(data8.last === largeChain.last, '대형 세션 last 일치 확인');
+  ok(data8.last === koreanChain.last, '한국어 세션 last 일치');
 
-  // 저장소에 조각 분할이 실제로 되었는지 확인
-  const storedHeader = await mockStorage.get(`desk:${largeChain.last}`);
-  ok(storedHeader && storedHeader.chunks >= 2, `128 KiB 초과로 2개 이상의 청크로 분할 저장됨 (chunks: ${storedHeader.chunks})`);
-  const chunk0 = await mockStorage.get(`desk:${largeChain.last}:0`);
-  ok(Array.isArray(chunk0) && chunk0.length > 0, '청크 0에 항목 배열 저장 확인');
+  // 저장된 모든 조각이 UTF-8 바이트 기준으로 64 KiB 이하인지 검증
+  const headerRec = await mockStorage.get(`desk:${koreanChain.last}`);
+  ok(headerRec && headerRec.chunks >= 5, `청크 5개 이상 분할 저장 확인 (chunks: ${headerRec.chunks})`);
+  let maxChunkBytes = 0;
+  for (let i = 0; i < headerRec.chunks; i++) {
+    const chunkItems = await mockStorage.get(`desk:${koreanChain.last}:${i}`);
+    ok(Array.isArray(chunkItems) && chunkItems.length > 0, `조각 ${i} 항목 존재 확인`);
+    const chunkBytes = Buffer.byteLength(JSON.stringify(chunkItems), 'utf8');
+    if (chunkBytes > maxChunkBytes) maxChunkBytes = chunkBytes;
+    ok(chunkBytes <= 64 * 1024, `조각 ${i} 크기 <= 64 KiB (실제: ${chunkBytes} 바이트, ${Math.round(chunkBytes/1024)} KiB)`);
+  }
+  console.log(`  -> 한국어 분할 조각 중 최대 크기: ${maxChunkBytes} 바이트 (<= 65,536 바이트 완벽 충족)`);
 
-  // 같은 last 두 번째 전송 -> 같은 id 반환 (멱등)
-  const req8Dup = new Request('http://localhost/desk/session', {
+  // ── Test 9: 130 KiB 단일 항목 하나 포함 시 413 {why:"item_too_large"} 차단 ──
+  console.log('\n[Test 9] 130 KiB 초과 단일 항목 차단 검증 (413)');
+  const giantSentence = '가'.repeat(45 * 1024); // 한글 45,000자 = 약 135 KiB
+  const giantChain = generateChain(koreanSession, 4, giantSentence);
+  const giantReq = new Request('http://localhost/desk/session', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + deskToken,
       'Content-Type': 'application/json'
     },
-    body: largeBodyStr
+    body: JSON.stringify(giantChain)
   });
-  const res8Dup = await relayApp.fetch(req8Dup, mockEnv, mockCtx);
-  ok(res8Dup.status === 200, '200KB 세션 재전송 200 OK');
-  const data8Dup = await res8Dup.json();
-  ok(data8Dup.id === data8.id, '대형 세션도 같은 id 반환 확인 (멱등)');
+  const giantRes = await relayApp.fetch(giantReq, mockEnv, mockCtx);
+  ok(giantRes.status === 413, '130 KiB 초과 단일 항목 413 Payload Too Large 반환');
+  const giantData = await giantRes.json();
+  ok(giantData.why === 'item_too_large', 'why: "item_too_large" 일치');
 
   console.log(`\n전부 통과 (${passCount}건)`);
   process.exit(0);

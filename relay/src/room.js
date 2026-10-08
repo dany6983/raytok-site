@@ -369,7 +369,7 @@ export class Room {
 
     // 0-5. 내부 월별·코드별 사용량 조회 (/usage/summary)
     // 0-6. 내부 동시 기기 등록 및 한도 검사 (/devices/register)
-    // 0-7. Desk 세션 멱등 저장 (/desk/session) - 128 KiB 상한 분할 저장 지원
+    // 0-7. Desk 세션 멱등 저장 (/desk/session) - 바이트 단위 분할 저장 및 크기 상한
     if (url.pathname === '/desk/session' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const { last, session, items } = body;
@@ -389,15 +389,38 @@ export class Room {
       }
 
       const id = 'ds_' + (last ? last.slice(0, 8) : 'session');
-      
-      // items 분할: 단일 키 128 KiB 상한을 고려하여 64 KiB 단위로 청크 분할
+      const encoder = new TextEncoder();
+      const MAX_CHUNK_BYTES = 64 * 1024; // 64 KiB
+      const MAX_SINGLE_ITEM_BYTES = 120 * 1024; // 120 KiB
+
+      // items 분할: TextEncoder 바이트 단위로 정확히 측정하여 64 KiB 이하 청크 분할
       const chunks = [];
       let currentChunk = [];
       let currentBytes = 0;
-      const MAX_CHUNK_BYTES = 64 * 1024; // 64 KiB 안전 마진
 
       for (const item of items) {
-        const itemBytes = JSON.stringify(item).length;
+        const itemJson = JSON.stringify(item);
+        const itemBytes = encoder.encode(itemJson).length;
+
+        // 120 KiB 초과 단일 항목 -> 413
+        if (itemBytes > MAX_SINGLE_ITEM_BYTES) {
+          return new Response(JSON.stringify({ why: 'item_too_large', max: MAX_SINGLE_ITEM_BYTES, size: itemBytes }), {
+            status: 413,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // 단일 항목이 64 KiB 초과 (64~120 KiB): 단독 조각으로 분리
+        if (itemBytes > MAX_CHUNK_BYTES) {
+          if (currentChunk.length > 0) {
+            chunks.push(currentChunk);
+            currentChunk = [];
+            currentBytes = 0;
+          }
+          chunks.push([item]);
+          continue;
+        }
+
         if (currentBytes + itemBytes > MAX_CHUNK_BYTES && currentChunk.length > 0) {
           chunks.push(currentChunk);
           currentChunk = [item];
@@ -409,6 +432,14 @@ export class Room {
       }
       if (currentChunk.length > 0) {
         chunks.push(currentChunk);
+      }
+
+      // DO put 키 상한 128개 (헤더 1 + 조각 최대 127)
+      if (chunks.length > 127) {
+        return new Response(JSON.stringify({ why: 'too_large', max_chunks: 127, chunks: chunks.length }), {
+          status: 413,
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
 
       const recordHeader = {

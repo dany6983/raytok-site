@@ -620,8 +620,10 @@ export default {
             headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
           });
         } else {
-          return new Response(JSON.stringify({ why: 'store', error: 'storage_error' }), {
-            status: 503,
+          const errData = await storeRes.json().catch(() => ({}));
+          const status = storeRes.status || 503;
+          return new Response(JSON.stringify(errData.why ? errData : { why: 'store', error: 'storage_error' }), {
+            status,
             headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
           });
         }
