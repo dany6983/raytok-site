@@ -6,6 +6,82 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 12: Desk 세션 꺼내 보기 1차 완료 (가지 feat/desk-read)
+커밋: 8d41d00
+
+만든·바꾼 파일과 이유
+- relay/src/index.js — ① GET /desk/sessions: 토큰 0x08 권한 검증 후 토큰 주인(sub)의 세션 목록 최신 50개 반환. ② GET /desk/session/:id: 분할 저장된 조각을 순서대로 병합하여 올린 그대로의 정본 JSON 복원 반환, 남의 세션은 404 차단. ③ POST /desk/session 시 sub 인덱싱 연동.
+- relay/src/room.js — DO storage 에 세션 주인 sub 기록 및 sub_sessions:${sub} 인덱스(최신 50개), desk_id:${id} 역인덱스 관리. GET /desk/sessions 및 GET /desk/session/:id 핸들러 구현.
+- web/desk/index.html — 신규 Desk 기록 보관함 웹 뷰어. 이용권 코드 입력(0x08) -> 세션 목록 -> 상세 원문/번역 타임라인 표시(이름 가린 세션은 익명 표시). JSON 내려받기 단추 + web/verify 해시 체인 무결성 검증 연동 단추. (⚠ P-16 준수: 외부 CDN 0건, 요약/번역/재생 API 호출 금지 순수 뷰어).
+- web/verify/index.html — sessionStorage('verify_payload')를 통한 자동 검증 연동 지원.
+- relay/package.json — test:desk-read 스크립트 추가.
+- package.json — test:desk-view 스크립트 추가.
+- relay/test/desk-read.mjs — 신규 단위 시험 18건: 주인 목록 2건 분리, User B 세션 1건 분리, 조각 합친 원형 복원 및 last 일치(100% 동일), 남의 세션 404 차단, 0x08 누락 403 차단. 되돌림 실증 1건.
+- samples/desk_view_test.js — 신규 브라우저 자동 시험 9건: 목록 렌더링, 타임라인 원문/번역 표시, 익명 표시, JSON 다운로드 단추, web/verify 이동 후 자동 "통과" 뱃지 확인, 외부 요청 0건 확인.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. node relay/test/desk-read.mjs (18건 전원 통과):
+=== Relay Desk 세션 꺼내 보기 (GET /desk/sessions, GET /desk/session/:id) 단위 시험 ===
+  [PASS] User A 세션 1 업로드 성공
+  [PASS] User A 세션 2 대형 세션 업로드 성공
+  [PASS] User B 세션 3 업로드 성공
+[Test 1] User A 세션 목록 조회 (주인 것만 2건)
+  [PASS] User A 목록 조회 200 OK
+  [PASS] User A 세션 수 2건 일치 (실제: 2)
+  [PASS] User A의 세션 id1, id2 모두 포함
+  [PASS] User B의 세션 id3은 목록에 일절 없음
+[Test 2] User B 세션 목록 조회 (1건)
+  [PASS] User B 목록 조회 200 OK
+  [PASS] User B 세션 수 1건 일치
+  [PASS] User B 세션 id3 일치
+[Test 3] 분할 저장된 세션 2 원형 복원 및 last 해시 일치 검증
+  [PASS] 세션 2 조회 200 OK
+  [PASS] ver 1 일치
+  [PASS] session.code 일치
+  [PASS] items 개수 복원 일치 (200)
+  [PASS] last 해시 일치
+  [PASS] 분할 저장된 items 원본과 글자 단위 100% 일치
+[Test 4] 남의 세션 조회 시 404 차단 (보안)
+  [PASS] 남의 세션 조회 시 404 Not Found 반환
+[Test 5] Desk 권한(0x08) 없는 토큰 차단 (403)
+  [PASS] 0x08 누락 토큰 목록 조회 시 403 Forbidden 반환
+전부 통과 (18건)
+
+2. npm run test:desk-view (9건 전원 통과):
+=== L12 Desk 세션 꺼내 보기 (web/desk/index.html) 브라우저 시험 ===
+  [PASS] 세션 목록 1건 노출 확인
+  [PASS] 세션 카드 렌더링 확인
+  [PASS] 회의 코드 483921 상세 표시 확인
+  [PASS] 원문 줄 텍스트 표시 확인
+  [PASS] 번역 줄 텍스트 표시 확인
+  [PASS] 이름 가린 세션 익명 표시 확인
+  [PASS] JSON 내려받기 단추 노출 확인
+  [PASS] web/verify 이동 후 해시 체인 자동 검증 "통과" 확인
+  [PASS] 외부 네트워크 요청 0건 확인 (실제: 0)
+전부 통과 (9건)
+
+3. 되돌림 확인 실증 1건 (D-09):
+relay/src/room.js 에서 남의 세션 조회 차단 검사 제거 시:
+[FAIL] AssertionError [ERR_ASSERTION]: 남의 세션 조회 시 404 Not Found 반환
+    at ok (file:///C:/GitHub/raytok-site/relay/test/desk-read.mjs:11:3)
+    at run (file:///C:/GitHub/raytok-site/relay/test/desk-read.mjs:207:3)
+
+4. 회귀 시험 전체:
+test:desk-session(35건), test:retry(13건), limits-bundle(13건), test:script(10건), test:mint(8건), test:hwpx(13건), test:end(80건) 전원 초록 통과.
+
+5. 배포 방침 준수:
+지침대로 feat/desk-read 가지에 푸시 완료, wrangler 배포는 일절 실행하지 않음.
+
+한 줄 판정
+주인별 Desk 세션 목록 및 단건 복원(last 일치·남의 세션 404), web/desk 뷰어(JSON 다운로드·web/verify 검증 연동·외부요청 0) 및 되돌림 실증 완료.
+
+막힌 것
+없음.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 11: 릴레이 배포 직후 확인 및 태그 완료
 커밋: 6ace356 (태그: relay-20261008-1609)
 
