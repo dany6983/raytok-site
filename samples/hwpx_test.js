@@ -138,13 +138,15 @@ const srv = http.createServer(async (req, res) => {
     ok(paras[2].includes('세 번째 화재 대피 요령'), '문단 3 텍스트 일치');
     ok(paras[3].includes('표 안에 작성된 네 번째 문단'), '표 안 문단 4 텍스트 일치');
 
-    // 검증 2: 머리말 0개, 꼬리말/각주 0개
+    // 검증 2: 머리말 0개, 꼬리말/각주/미주 0개
     const hasHeader = paras.some(p => p.includes('머리말'));
     const hasFooter = paras.some(p => p.includes('꼬리말'));
     const hasFootNote = paras.some(p => p.includes('각주'));
+    const hasEndNote = paras.some(p => p.includes('미주'));
     ok(!hasHeader, '머리말 텍스트 제외 확인 (머리말 0)');
     ok(!hasFooter, '꼬리말 텍스트 제외 확인 (꼬리말 0)');
     ok(!hasFootNote, '각주 텍스트 제외 확인 (각주 0)');
+    ok(!hasEndNote, '미주 텍스트 제외 확인 (미주 0)');
 
     // 3. 옛 .hwp 파일 업로드 시 안내 검증
     const dummyHwpPath = path.join(FIXTURE_DIR, 'dummy.hwp');

@@ -778,11 +778,11 @@
         const secXml = fflate.strFromU8(secBytes);
         const doc = parser.parseFromString(secXml, 'application/xml');
 
-        // 머리말(header), 꼬리말(footer), 각주(footNote) 태그 내부 요소는 배제
+        // 머리말(header), 꼬리말(footer), 각주(footNote), 미주(endNote) 태그 내부 요소는 배제
         const docClone = doc.cloneNode(true);
         const excludedSelectors = [
-          'header', 'footer', 'footNote', 'footnote',
-          'hp\\:header', 'hp\\:footer', 'hp\\:footNote', 'hp\\:footnote'
+          'header', 'footer', 'footNote', 'footnote', 'endNote', 'endnote',
+          'hp\\:header', 'hp\\:footer', 'hp\\:footNote', 'hp\\:footnote', 'hp\\:endNote', 'hp\\:endnote'
         ];
         excludedSelectors.forEach(sel => {
           try {
@@ -793,12 +793,12 @@
         // 모든 문단 (hp:p 또는 p) - 표(hp:tbl -> hp:tc -> hp:p) 안 글자도 포함됨
         const pNodes = Array.from(docClone.querySelectorAll('p, hp\\:p'));
         for (const pNode of pNodes) {
-          // 머리말/꼬리말/각주 내부 요소 이중 방어
+          // 머리말/꼬리말/각주/미주 내부 요소 이중 방어
           let parent = pNode.parentElement;
           let isExcluded = false;
           while (parent) {
             const pName = (parent.localName || parent.tagName || '').toLowerCase();
-            if (pName.includes('header') || pName.includes('footer') || pName.includes('footnote')) {
+            if (pName.includes('header') || pName.includes('footer') || pName.includes('footnote') || pName.includes('endnote')) {
               isExcluded = true;
               break;
             }
@@ -858,7 +858,7 @@
             renderParagraphs();
             saveParagraphsToDB(paragraphs);
           } catch (err) {
-            alert('HWPX 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+            alert((urlParams.get('lang') === 'en') ? 'Error reading HWPX file: ' + err.message : 'HWPX 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
           }
         };
         reader.readAsArrayBuffer(file);
