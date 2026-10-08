@@ -369,11 +369,11 @@ export class Room {
 
     // 0-5. 내부 월별·코드별 사용량 조회 (/usage/summary)
     // 0-6. 내부 동시 기기 등록 및 한도 검사 (/devices/register)
-    // 0-7. Desk 세션 멱등 저장 (/desk/session)
+    // 0-7. Desk 세션 멱등 저장 (/desk/session) - 128 KiB 상한 분할 저장 지원
     if (url.pathname === '/desk/session' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const { last, session, items } = body;
-      if (!last || !session) {
+      if (!last || !session || !Array.isArray(items)) {
         return new Response(JSON.stringify({ error: 'bad_params' }), { status: 400 });
       }
 
@@ -389,16 +389,45 @@ export class Room {
       }
 
       const id = 'ds_' + (last ? last.slice(0, 8) : 'session');
-      const record = {
+      
+      // items 분할: 단일 키 128 KiB 상한을 고려하여 64 KiB 단위로 청크 분할
+      const chunks = [];
+      let currentChunk = [];
+      let currentBytes = 0;
+      const MAX_CHUNK_BYTES = 64 * 1024; // 64 KiB 안전 마진
+
+      for (const item of items) {
+        const itemBytes = JSON.stringify(item).length;
+        if (currentBytes + itemBytes > MAX_CHUNK_BYTES && currentChunk.length > 0) {
+          chunks.push(currentChunk);
+          currentChunk = [item];
+          currentBytes = itemBytes;
+        } else {
+          currentChunk.push(item);
+          currentBytes += itemBytes;
+        }
+      }
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+      }
+
+      const recordHeader = {
         id,
         last,
         code: session.code,
         host: session.host,
         started: session.started,
-        items,
+        chunks: chunks.length,
         received_at: new Date().toISOString()
       };
-      await this.ctx.storage.put(key, record);
+
+      const putMap = {};
+      putMap[key] = recordHeader;
+      for (let i = 0; i < chunks.length; i++) {
+        putMap[`desk:${last}:${i}`] = chunks[i];
+      }
+
+      await this.ctx.storage.put(putMap);
 
       return new Response(JSON.stringify({
         id,

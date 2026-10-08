@@ -1,4 +1,5 @@
 import assert from 'assert';
+import crypto from 'crypto';
 import relayApp from '../src/index.js';
 import { Room } from '../src/room.js';
 import { mintLicenseToken } from '../tools/mint-license.mjs';
@@ -23,11 +24,21 @@ class MockStorage {
     }
     return this.map.get(k);
   }
-  async put(k, v) { this.map.set(k, v); }
+  async put(k, v) {
+    if (typeof k === 'object' && v === undefined) {
+      for (const [key, val] of Object.entries(k)) {
+        this.map.set(key, val);
+      }
+      return;
+    }
+    this.map.set(k, v);
+  }
   async delete(k) { this.map.delete(k); }
 }
 
-const mockStorage = new MockStorage();
+let mockStorage = new MockStorage();
+let storageShouldThrow = false;
+
 const mockCtxObj = {
   storage: mockStorage,
   getTags: () => ['listener'],
@@ -41,7 +52,12 @@ const mockEnv = {
   ROOM: {
     idFromName: (name) => ({ name }),
     get: (_id) => ({
-      fetch: (req) => mockRoomInstance.fetch(req)
+      fetch: async (req) => {
+        if (storageShouldThrow) {
+          throw new Error('Durable Object Storage Disconnected');
+        }
+        return mockRoomInstance.fetch(req);
+      }
     })
   }
 };
@@ -49,6 +65,71 @@ const mockEnv = {
 const mockCtx = {
   waitUntil: (p) => p
 };
+
+// ── 헬퍼: SHA-256 및 해시 체인 생성 ──
+function sha256Hex(str) {
+  return crypto.createHash('sha256').update(str).digest('hex');
+}
+
+function sortKeysDeep(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sortKeysDeep);
+  const sorted = {};
+  for (const k of Object.keys(obj).sort()) {
+    sorted[k] = sortKeysDeep(obj[k]);
+  }
+  return sorted;
+}
+
+function normalizeItem(item) {
+  const copy = { ...item };
+  delete copy.hash;
+  return JSON.stringify(sortKeysDeep(copy));
+}
+
+function generateChain(session, itemCount, linePayloadLength = 300) {
+  const zero64 = '0'.repeat(64);
+  let prevHash = zero64;
+  const items = [];
+
+  // 1) begin
+  const begin = {
+    kind: 'begin', ts: session.started, session: session.code, host: session.host, lang: session.lang,
+    n: 1, prev: prevHash
+  };
+  begin.hash = sha256Hex(prevHash + '\n' + normalizeItem(begin));
+  prevHash = begin.hash;
+  items.push(begin);
+
+  // 2) lines
+  const dummyText = 'A'.repeat(linePayloadLength);
+  for (let i = 2; i <= itemCount - 1; i++) {
+    const line = {
+      kind: 'line', ts: session.started + i * 1000, seq: i - 1, src: session.lang,
+      text: dummyText, tr: { en: 'Translated text' }, via: '',
+      n: i, prev: prevHash
+    };
+    line.hash = sha256Hex(prevHash + '\n' + normalizeItem(line));
+    prevHash = line.hash;
+    items.push(line);
+  }
+
+  // 3) end
+  const end = {
+    kind: 'end', ts: session.started + itemCount * 1000, lines: itemCount - 2, minutes: 10, joined_max: 5,
+    n: itemCount, prev: prevHash
+  };
+  end.hash = sha256Hex(prevHash + '\n' + normalizeItem(end));
+  prevHash = end.hash;
+  items.push(end);
+
+  return {
+    ver: 1,
+    session,
+    items,
+    last: prevHash
+  };
+}
 
 // ── 정본 예시 1: 이름 보임 ──
 const sampleNamed = {
@@ -233,6 +314,74 @@ async function run() {
   ok(res6.status === 400, '허용 밖 키 포함 시 400 반환');
   const data6 = await res6.json();
   ok(data6.why === 'bad_key', '에러 사유 why: "bad_key" 일치');
+
+  // ── Test 7: 저장 가짜가 던지면 503 {why:"store"} 반환 (200 아님!) ──
+  console.log('\n[Test 7] DO 스토리지 저장 실패 시 503 {why:"store"} 반환 검증');
+  storageShouldThrow = true;
+  try {
+    const req7 = new Request('http://localhost/desk/session', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + deskToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(sampleNamed)
+    });
+    const res7 = await relayApp.fetch(req7, mockEnv, mockCtx);
+    ok(res7.status === 503, '저장 실패 시 503 Service Unavailable 반환 (200 아님)');
+    const data7 = await res7.json();
+    ok(data7.why === 'store', 'why: "store" 일치 (앱 대기열 재전송 대상)');
+  } finally {
+    storageShouldThrow = false;
+  }
+
+  // ── Test 8: 200KB 대용량 세션 분할 저장(128 KiB 상한 극복) 및 멱등성 ──
+  console.log('\n[Test 8] 200KB 대형 세션 분할 저장 및 멱등성 검증');
+  const largeSessionData = {
+    code: '999888',
+    host: 'LARGE_DESK_TEST',
+    lang: 'ko',
+    started: 1759885200000
+  };
+  // 500개 항목 생성 -> 200KB 이상
+  const largeChain = generateChain(largeSessionData, 500, 350);
+  const largeBodyStr = JSON.stringify(largeChain);
+  const bodySizeKiB = Math.round(largeBodyStr.length / 1024);
+  ok(bodySizeKiB >= 200, `대형 세션 본문 크기 200 KiB 이상 확인 (실제: ${bodySizeKiB} KiB)`);
+
+  const req8 = new Request('http://localhost/desk/session', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + deskToken,
+      'Content-Type': 'application/json'
+    },
+    body: largeBodyStr
+  });
+  const res8 = await relayApp.fetch(req8, mockEnv, mockCtx);
+  ok(res8.status === 200, '200KB 세션 분할 저장 성공 200 OK');
+  const data8 = await res8.json();
+  ok(typeof data8.id === 'string', '대형 세션 id 발급 확인');
+  ok(data8.last === largeChain.last, '대형 세션 last 일치 확인');
+
+  // 저장소에 조각 분할이 실제로 되었는지 확인
+  const storedHeader = await mockStorage.get(`desk:${largeChain.last}`);
+  ok(storedHeader && storedHeader.chunks >= 2, `128 KiB 초과로 2개 이상의 청크로 분할 저장됨 (chunks: ${storedHeader.chunks})`);
+  const chunk0 = await mockStorage.get(`desk:${largeChain.last}:0`);
+  ok(Array.isArray(chunk0) && chunk0.length > 0, '청크 0에 항목 배열 저장 확인');
+
+  // 같은 last 두 번째 전송 -> 같은 id 반환 (멱등)
+  const req8Dup = new Request('http://localhost/desk/session', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + deskToken,
+      'Content-Type': 'application/json'
+    },
+    body: largeBodyStr
+  });
+  const res8Dup = await relayApp.fetch(req8Dup, mockEnv, mockCtx);
+  ok(res8Dup.status === 200, '200KB 세션 재전송 200 OK');
+  const data8Dup = await res8Dup.json();
+  ok(data8Dup.id === data8.id, '대형 세션도 같은 id 반환 확인 (멱등)');
 
   console.log(`\n전부 통과 (${passCount}건)`);
   process.exit(0);

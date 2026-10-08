@@ -619,18 +619,19 @@ export default {
             status: 200,
             headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
           });
+        } else {
+          return new Response(JSON.stringify({ why: 'store', error: 'storage_error' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+          });
         }
       } catch (e) {
         console.warn('[Desk Session Store Error]:', e.message);
+        return new Response(JSON.stringify({ why: 'store', error: 'storage_error' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
       }
-
-      return new Response(JSON.stringify({
-        id: 'ds_' + chainRes.last.slice(0, 8),
-        last: chainRes.last
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
-      });
     }
 
     if (url.pathname === '/license/verify' && request.method === 'POST') {
