@@ -6,6 +6,70 @@
 ---
 
 [B 보고]
+2026-10-08 [열림] 줄 6: Desk 받는 끝점 POST /desk/session 1차 완료
+커밋: e16a763
+
+만든·바꾼 파일과 이유
+- relay/src/index.js — 정본 v1(raytok-native1 docs/samples/desk-session.md) 그대로 POST /desk/session 끝점 신설. ① 토큰 검사 및 이용권 플래그 0x08(Desk) 누락 시 403 {why:"forbidden"} 차단. ② 허용 칸 목록(몸통·session·items kind별) 검사, 밖의 키 포함 시 400 {why:"bad_key"}. ③ 해시 체인 v1 전체 재계산 검증, 불일치 시 400 {why:"chain", at:n}. ④ 멱등 저장 연동. (※ 지침대로 relay 배포는 일절 하지 않음).
+- relay/src/room.js — DO storage 기반 /desk/session 멱등 저장 핸들러 추가 (id, last, code, host, started, items, received_at 저장).
+- relay/package.json — test:desk-session 스크립트 등록.
+- relay/test/desk-session.mjs — 신규 15건: 정본 예시 2건(이름 보임, 이름 가림) 해시 글자 단위 일치, 멱등(동일 id 반환), last 위조 차단(400 chain), 0x08 플래그 누락 차단(403), 허용 밖 키 차단(400 bad_key).
+- docs/REPORT.md
+
+실행 출력 발췌
+1. node relay/test/desk-session.mjs (15건 전원 통과):
+=== Relay Desk 세션 업로드 (POST /desk/session) 단위 시험 ===
+
+[Test 1] 정본 예시 1: 이름 보임
+  [PASS] 예시 1 응답 200 OK
+  [PASS] id 발급 확인
+  [PASS] 다시 센 last 일치 확인 (73d30ff91fab9cdf21392fb9469337aff4bf1ef0126871d745f4c5ba3dd31689)
+
+[Test 2] 멱등성 검증 (같은 것 두 번 -> 같은 id)
+  [PASS] 예시 1 재전송 200 OK
+  [PASS] 새로 만들지 않고 기존 id 반환 (멱등)
+  [PASS] last 일치 확인
+
+[Test 3] 정본 예시 2: 이름 가림
+  [PASS] 예시 2 응답 200 OK
+  [PASS] 가린 것은 새 id 발급
+  [PASS] 가린 것의 새 last 일치 확인 (1f123c8f29d4ce4f92d4dc1602d9876a3c377097a10f2d6bb3eb2fa54b8f34b4)
+
+[Test 4] last 위조 차단 검증
+  [PASS] last 위조 시 400 반환
+  [PASS] 에러 사유 why: "chain" 일치
+
+[Test 5] 이용권 플래그 0x08 누락 차단 검증
+  [PASS] 0x08 플래그 누락 시 403 반환
+  [PASS] 에러 사유 why: "forbidden" 일치
+
+[Test 6] 허용 목록 외 키 포함 차단 검증
+  [PASS] 허용 밖 키 포함 시 400 반환
+  [PASS] 에러 사유 why: "bad_key" 일치
+
+전부 통과 (15건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+relay/src/index.js 에서 체인 검증(verifyDeskHashChain) 생략 시:
+[FAIL] AssertionError [ERR_ASSERTION]: last 위조 시 400 반환
+    at ok (file:///C:/GitHub/raytok-site/relay/test/desk-session.mjs:10:3)
+    at run (file:///C:/GitHub/raytok-site/relay/test/desk-session.mjs:202:3)
+
+3. 회귀 시험 전체:
+test:end(80건), test:live(43건), test:host(13건), test:report(27건), test:mint(8건), test:lic(17건), limits-bundle(13건), screen_view(9절 포함), rtl(5건) 전원 초록 통과.
+
+4. 릴레이 배포:
+지침대로 wrangler deploy 는 일절 실행하지 않음.
+
+한 줄 판정
+정본 v1(desk-session.md)에 따른 POST /desk/session 끝점 신설, 정본 예시 2건 해시 글자 단위 일치, 멱등, last 위조(400 chain), 0x08 플래그 검사(403), 허용 밖 키 차단(400 bad_key) 및 되돌림 실증 완료.
+
+막힌 것
+없음.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 11:10 지침 이행: feat/l4-2 및 feat/mint-code main 병합 · 처리방침 웹 사본 · 서버 사용 제한 묶음 1차
 커밋: 235a48c (머지) · d494191 · 964d884
 
