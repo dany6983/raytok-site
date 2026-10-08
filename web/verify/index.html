@@ -160,6 +160,16 @@
       }
     });
 
+    // Desk 뷰어 연동: sessionStorage에 검증 대상 세션이 있으면 자동 검증 실행
+    try {
+      const pendingPayload = sessionStorage.getItem('verify_payload');
+      if (pendingPayload) {
+        sessionStorage.removeItem('verify_payload');
+        const parsed = JSON.parse(pendingPayload);
+        verifyAndShow(parsed);
+      }
+    } catch (_) {}
+
     function handleFile(file) {
       const reader = new FileReader();
       reader.onload = async (e) => {

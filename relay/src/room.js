@@ -372,7 +372,7 @@ export class Room {
     // 0-7. Desk 세션 멱등 저장 (/desk/session) - 바이트 단위 분할 저장 및 크기 상한
     if (url.pathname === '/desk/session' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      const { last, session, items } = body;
+      const { last, session, items, sub } = body;
       if (!last || !session || !Array.isArray(items)) {
         return new Response(JSON.stringify({ error: 'bad_params' }), { status: 400 });
       }
@@ -445,8 +445,10 @@ export class Room {
       const recordHeader = {
         id,
         last,
+        sub: sub || null,
         code: session.code,
         host: session.host,
+        lang: session.lang || 'ko',
         started: session.started,
         chunks: chunks.length,
         received_at: new Date().toISOString()
@@ -454,8 +456,29 @@ export class Room {
 
       const putMap = {};
       putMap[key] = recordHeader;
+      putMap[`desk_id:${id}`] = last;
+
       for (let i = 0; i < chunks.length; i++) {
         putMap[`desk:${last}:${i}`] = chunks[i];
+      }
+
+      // 사용자별 세션 목록 인덱싱 (최신 50개 유지)
+      if (sub) {
+        let subList = (await this.ctx.storage.get(`sub_sessions:${sub}`)) || [];
+        if (!Array.isArray(subList)) subList = [];
+        const itemSummary = {
+          id,
+          code: session.code,
+          host: session.host,
+          started: session.started,
+          received_at: recordHeader.received_at,
+          count: items.length
+        };
+        if (!subList.some(s => s.id === id)) {
+          subList.unshift(itemSummary);
+          if (subList.length > 50) subList = subList.slice(0, 50);
+          putMap[`sub_sessions:${sub}`] = subList;
+        }
       }
 
       await this.ctx.storage.put(putMap);
@@ -464,6 +487,64 @@ export class Room {
         id,
         last
       }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 0-8. 내부 Desk 세션 목록 조회 (/desk/sessions)
+    if (url.pathname === '/desk/sessions' && request.method === 'GET') {
+      const sub = url.searchParams.get('sub');
+      if (!sub) {
+        return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json' } });
+      }
+      const list = (await this.ctx.storage.get(`sub_sessions:${sub}`)) || [];
+      return new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // 0-9. 내부 Desk 단건 세션 상세 조회 (/desk/session/:id)
+    if (url.pathname.startsWith('/desk/session/') && request.method === 'GET') {
+      const id = url.pathname.slice('/desk/session/'.length);
+      const sub = url.searchParams.get('sub');
+      if (!id) {
+        return new Response(JSON.stringify({ error: 'id_required' }), { status: 400 });
+      }
+
+      const last = await this.ctx.storage.get(`desk_id:${id}`);
+      if (!last) {
+        return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
+      }
+
+      const header = await this.ctx.storage.get(`desk:${last}`);
+      if (!header || (sub && header.sub !== sub)) {
+        return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
+      }
+
+      // 조각들을 순서대로 결합하여 items 복원
+      const keys = Array.from({ length: header.chunks || 1 }, (_, i) => `desk:${last}:${i}`);
+      const chunkMap = await this.ctx.storage.get(keys);
+      let items = [];
+      for (const k of keys) {
+        const c = chunkMap.get(k);
+        if (Array.isArray(c)) {
+          items.push(...c);
+        }
+      }
+
+      // 올린 그대로의 정본 JSON 형태 복원
+      const fullSession = {
+        ver: 1,
+        session: {
+          code: header.code,
+          host: header.host,
+          lang: header.lang || 'ko',
+          started: header.started
+        },
+        items,
+        last: header.last
+      };
+
+      return new Response(JSON.stringify(fullSession), {
+        status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
     }

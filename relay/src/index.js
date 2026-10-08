@@ -606,7 +606,8 @@ export default {
           body: JSON.stringify({
             last: chainRes.last,
             session: body.session,
-            items: body.items
+            items: body.items,
+            sub: licenseRes.payload.sub
           })
         }));
 
@@ -634,6 +635,63 @@ export default {
           headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
         });
       }
+    }
+
+    // 0-0-2. Desk 세션 목록 조회: GET /desk/sessions (주인 세션 최신 50개)
+    if (url.pathname === '/desk/sessions' && request.method === 'GET') {
+      const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
+      const licenseRes = await verifyLicense(request, secret);
+      if (!licenseRes.valid) {
+        return new Response(JSON.stringify({ why: 'token' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+      const flags = Number(licenseRes.payload.flags || 0);
+      if ((flags & 0x08) === 0) {
+        return new Response(JSON.stringify({ why: 'forbidden', message: 'Desk flag 0x08 required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+      const limiter = env.ROOM.get(limiterId);
+      const res = await limiter.fetch(new Request('http://internal/desk/sessions?sub=' + encodeURIComponent(licenseRes.payload.sub)));
+      const data = await res.text();
+      return new Response(data, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    }
+
+    // 0-0-3. Desk 단건 세션 상세 조회: GET /desk/session/:id (정본 원형 복원, 남의 세션 404)
+    if (url.pathname.startsWith('/desk/session/') && request.method === 'GET') {
+      const secret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
+      const licenseRes = await verifyLicense(request, secret);
+      if (!licenseRes.valid) {
+        return new Response(JSON.stringify({ why: 'token' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+      const flags = Number(licenseRes.payload.flags || 0);
+      if ((flags & 0x08) === 0) {
+        return new Response(JSON.stringify({ why: 'forbidden', message: 'Desk flag 0x08 required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      const id = url.pathname.slice('/desk/session/'.length);
+      const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+      const limiter = env.ROOM.get(limiterId);
+      const res = await limiter.fetch(new Request('http://internal/desk/session/' + encodeURIComponent(id) + '?sub=' + encodeURIComponent(licenseRes.payload.sub)));
+      const data = await res.text();
+      return new Response(data, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
     }
 
     if (url.pathname === '/license/verify' && request.method === 'POST') {
