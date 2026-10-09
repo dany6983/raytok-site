@@ -6,6 +6,65 @@
 ---
 
 [B 보고]
+2026-10-09 줄 19: P-16 릴레이 자물쇠 청취자 번역 403 및 요청 칸 허용 목록·요약·재생 차단 완료
+가지: feat/p16-lock (ba964c3)
+
+만든·바꾼 파일과 이유
+- relay/src/index.js — P-16 릴레이 자물쇠 적용: ① POST /translate 에서 청취자 역할(body.role 또는 X-Role: listener/audience 또는 청취자 토큰 payload) 요청 시 403 차단 ({ why: 'p16_listener_translate' | 'p16_listener_token' }), ② POST /translate 요청 본문 키 허용 목록(ALLOWED_TRANSLATE_KEYS: q, source, target, format, role) 외 필드 유입 시 400 bad_key 차단 ({ why: 'bad_key' }), ③ 요약(/summarize, /summary, /desk/summary) 및 재생(/tts, /playback) 끝점 요청 시 403 차단 ({ why: 'p16_forbidden_endpoint' }). 공개 저장소 규칙에 따라 주석은 // RULE: P-16 만 기재.
+- relay/test/p16-lock.mjs — 신규 단위 시험 20건: 호스트 정상 번역 요청 200 OK, body role: listener 403 차단, body role: audience 403 차단, 헤더 X-Role: listener 403 차단, 허용 목록 외 필드 400 bad_key 차단, 요약 끝점 3곳 403 차단, 재생 끝점 2곳 403 차단, 되돌림 실증 1건.
+- package.json — test:p16 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:p16 (20건 전원 통과):
+=== 줄 19 P-16 릴레이 자물쇠 단위 시험 ===
+[Test 1] 호스트 정상 번역 요청 허용 검증
+  [PASS] 호스트 번역 요청 200 OK
+  [PASS] 번역 결과 배열 반환
+[Test 2] body role: listener 차단 검증
+  [PASS] 청취자 role=listener 403 Forbidden 반환
+  [PASS] 에러 사유 why: p16_listener_translate 일치
+[Test 3] body role: audience 차단 검증
+  [PASS] 청취자 role=audience 403 Forbidden 반환
+  [PASS] why: p16_listener_translate 일치
+[Test 4] 헤더 X-Role: listener 차단 검증
+  [PASS] 헤더 X-Role: listener 403 Forbidden 반환
+[Test 5] 허용 목록 외 필드 포함 시 400 bad_key 차단 검증
+  [PASS] 허용 밖 키 포함 시 400 Bad Request 반환
+  [PASS] 에러 사유 why: bad_key 일치
+  [PASS] error: bad_key 일치
+[Test 6] 요약 요청 끝점 403 차단 검증
+  [PASS] /summarize 요약 요청 403 Forbidden 반환
+  [PASS] /summarize why: p16_forbidden_endpoint 일치
+  [PASS] /summary 요약 요청 403 Forbidden 반환
+  [PASS] /summary why: p16_forbidden_endpoint 일치
+  [PASS] /desk/summary 요약 요청 403 Forbidden 반환
+  [PASS] /desk/summary why: p16_forbidden_endpoint 일치
+[Test 7] 재생 요청 끝점 403 차단 검증
+  [PASS] /tts 재생 요청 403 Forbidden 반환
+  [PASS] /tts why: p16_forbidden_endpoint 일치
+  [PASS] /playback 재생 요청 403 Forbidden 반환
+  [PASS] /playback why: p16_forbidden_endpoint 일치
+전부 통과 (20건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+relay/src/index.js 에서 청취자 역할 차단 검사 임시 주석 처리 시:
+  [PASS] 청취자 role=listener 403 Forbidden 반환
+  [FAIL] AssertionError [ERR_ASSERTION]: 에러 사유 why: p16_listener_translate 일치
+복구 후 20건 전원 정상 통과 확인.
+
+3. 전체 회귀 시험 일괄 통과:
+test:p16(20건), test:usage(29건), test:guide(35건), test:terms(48건), test:wire(24건), test:dual(24건), test:report(27건), test:host(13건), test:live(43건), test:end(80건), test:desk-view(9건) 전원 초록 통과.
+
+한 줄 판정
+줄 19 P-16 릴레이 자물쇠(청취자 번역 403 차단, 본문 키 허용 목록 외 400 차단, 요약·재생 403 차단) 완료, 자동 검증 20건 및 되돌림 실증 통과 (feat/p16-lock).
+
+막힌 것
+없음. 다음 순서(새 차례 10번, 줄 20: 웹 화면 디자인)로 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-09 줄 17: 고객 사용량 화면 web/usage 구현 및 GET /usage 연동 완료
 가지: feat/usage (4a6806b)
 
