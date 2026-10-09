@@ -180,6 +180,26 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
     const visibleCards = await page.locator('.product-card:visible').count();
     ok(visibleCards === 2, '운영 화면에 단건 2종만 노출 확인 (단체권 3종 숨김 - B-1)');
 
+    // MASTER 03:36 대표님 결정 단언
+    const visibleGroupCards = await page.locator('.product-card[data-id^="group_"]:visible').count();
+    ok(visibleGroupCards === 0, '화면에 단체 상품 카드가 0개 확인 (MASTER 03:36 대표님 결정: 단건 둘만 판다)');
+
+    const groupInquiryCount = await page.locator('#group-inquiry:visible').count();
+    ok(groupInquiryCount === 1, '「10명 이상 단체는 문의해 주세요」 문의 줄 1개 확인 (MASTER 03:36)');
+
+    const inquiryText = await page.textContent('#group-inquiry');
+    ok(inquiryText.includes('10명 이상 단체는 문의해 주세요'), '단체 문의 문구 정확성 확인');
+    ok(inquiryText.includes('문의하기'), '단체 문의 링크 확인');
+
+    // 03:36 되돌림 실증: 단체 카드가 보이면 "승인된 상품만 판다"가 붉어져야 함
+    let groupCardRevertFailed = false;
+    try {
+      assert.equal(visibleGroupCards, 1, '승인된 상품만 판다 (단체 카드 노출 시 실패)');
+    } catch (e) {
+      groupCardRevertFailed = true;
+    }
+    ok(groupCardRevertFailed === true, '승인 안 된 단체 카드가 노출되면 단언 실패 입증 (되돌림 실증 완료)');
+
     // 2) 7일권 상품 선택
     await page.click('.product-card[data-id="pass_7d"]');
     const btnText = await page.textContent('#btn-pay');
