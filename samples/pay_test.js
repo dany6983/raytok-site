@@ -174,7 +174,10 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
     ok(title.includes('RayTok 손님 쿠폰 구매'), '구매 페이지 헤더 확인');
 
     const cardCount = await page.locator('.product-card').count();
-    ok(cardCount === 5, '5개 상품 카드 렌더링 확인');
+    ok(cardCount === 5, '전체 5개 상품 카드 보존 확인 (시험용)');
+
+    const visibleCards = await page.locator('.product-card:visible').count();
+    ok(visibleCards === 2, '운영 화면에 단건 2종만 노출 확인 (단체권 3종 숨김 - B-1)');
 
     // 2) 7일권 상품 선택
     await page.click('.product-card[data-id="pass_7d"]');
