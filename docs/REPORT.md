@@ -6,6 +6,42 @@
 ---
 
 [B 보고]
+2026-10-10 [열림] 줄 13: 릴레이 배포 뒤 확인 및 태그 완료 (운영 /desk/sessions 401 라이브 실측 검증)
+가지: main
+커밋: e7bd27e (태그: relay-20261010-0326)
+
+만든·바꾼 파일과 이유
+- docs/deploy-checklist.md — 대표님 직접 배포 완료(2026-10-09T18:26:35Z, KST 10-10 03:26)에 따른 새 배포 버전 ID(`3379cf7b-01ba-4019-9309-3ba6fb9b6544`) 및 운영 라이브 실측 결과 갱신, 직전 안정 버전(`4673fbdc`) 롤백 명령 안내.
+- git tag relay-20261010-0326 — 배포 시점 커밋에 배포 추적 태그 생성 및 원격 push 완료.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npx wrangler deployments list (운영 배포 버전 확인):
+Created:     2026-10-09T18:26:35.285Z
+Author:      gpncdany@gmail.com
+Source:      Unknown (deployment)
+Version(s):  (100%) 3379cf7b-01ba-4019-9309-3ba6fb9b6544
+
+2. 운영 릴레이(https://raytok-relay.raytok.workers.dev) 라이브 실측 4대 엔드포인트 확인:
+- OPTIONS / -> 200 OK
+- POST /translate (no token) -> 401 Unauthorized
+- POST /desk/session (no token) -> 401 Unauthorized
+- GET /desk/sessions (no token) -> 401 Unauthorized (배포 전 404 에서 401 로 정상 응답 전이 확인! desk-read 끝점 정식 운영 반영 확인)
+[ALL PASS] 라이브 확인 전원 정상 통과!
+
+3. 태그 생성 및 푸시:
+git tag relay-20261010-0326
+git push origin relay-20261010-0326 -> * [new tag] relay-20261010-0326
+
+4. 롤백 대비책 유지:
+이상 발생 시 롤백 대상 버전: 4673fbdc-91a7-4d84-bb2c-63a0aaef17e8
+
+한 줄 판정
+줄 13 완수: 운영 배포 버전 3379cf7b 확인, 운영 /desk/sessions 401 라이브 실측 검증 100% 정상 및 relay-20261010-0326 태그 푸시 완료.
+
+---
+
+[B 보고]
 2026-10-10 마스터 지시 순서 ①~⑥ (단체 문의 ko·en, 결제 라우트, W-T, 줄 15 PG 심사 바닥 정보, 줄 16 guide) 전원 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
