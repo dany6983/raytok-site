@@ -72,8 +72,8 @@
     .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
     .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
     input[type="text"], input[type="password"] {
-      flex: 1;
-      min-width: 140px;
+      flex: 1 1 140px;
+      min-width: 0;
       background: #090d16;
       border: 1px solid var(--border);
       color: #fff;
@@ -94,6 +94,11 @@
       cursor: pointer;
       font-size: 14px;
       transition: background 0.2s;
+      max-width: 100%;
+      white-space: nowrap;
+    }
+    @media (max-width: 360px) {
+      .input-row .btn { width: 100%; }
     }
     .btn:hover { background: var(--primary-hover); }
     .btn-secondary {

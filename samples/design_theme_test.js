@@ -105,26 +105,44 @@ TARGET_FILES.forEach(t => {
 
       await page.goto(`${baseUrl}${t.url}`);
 
-      // 1.3배 글자 확대 적용 및 시험 환경 글꼴 고정 (기기별 폰트 차이로 인한 넘침 방지)
+      // 1.3배 글자 확대 적용 (마스터 17:20 지시: 글꼴 주입 제거)
       await page.evaluate(() => {
-        const style = document.createElement('style');
-        // 마스터 16:45 지시에 따라, 시험 환경의 글꼴을 고정 스택으로 통일하여 기기별 오차 제거
-        style.textContent = '* { font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }';
-        document.head.appendChild(style);
         document.body.style.zoom = '1.3';
       });
       await page.waitForTimeout(100);
 
-      // 가로 넘침(horizontal overflow) 실측 검사: scrollWidth <= clientWidth
+      // 가로 넘침(horizontal overflow) 실측 검사 및 넘치는 요소 탐색 (마스터 17:20 지시)
       const overflowData = await page.evaluate(() => {
         const docEl = document.documentElement;
         const body = document.body;
         const scrollW = Math.max(docEl.scrollWidth, body.scrollWidth);
         const clientW = Math.max(docEl.clientWidth, body.clientWidth);
         const diff = scrollW - clientW;
-        return { scrollW, clientW, diff };
+
+        let overflowingElements = [];
+        if (diff > 1) {
+          const allEls = document.querySelectorAll('*');
+          for (const el of allEls) {
+            const rect = el.getBoundingClientRect();
+            if (rect.right > clientW + 1) {
+              const tag = el.tagName.toLowerCase();
+              const id = el.id ? `#${el.id}` : '';
+              const cls = el.className && typeof el.className === 'string' ? `.${el.className.trim().split(/\s+/).join('.')}` : '';
+              overflowingElements.push({
+                selector: `${tag}${id}${cls}`,
+                right: Math.round(rect.right),
+                overflowPx: Math.round(rect.right - clientW)
+              });
+            }
+          }
+        }
+        return { scrollW, clientW, diff, overflowingElements };
       });
 
+      if (overflowData.diff > 1) {
+        console.error(`  [FAIL] ${t.name} 화면 1.3배 확대 시 가로 넘침 발생 (diff: ${overflowData.diff}px)`);
+        console.error('  [넘치는 요소 목록]:', JSON.stringify(overflowData.overflowingElements, null, 2));
+      }
       ok(overflowData.diff <= 1, `${t.name} 화면 1.3배 확대 시 가로 넘침 0건 검증 (diff: ${overflowData.diff}px)`);
 
       // 원문(13px) 및 번역(17px) 스타일 검증 (말 줄이 있는 화면)
