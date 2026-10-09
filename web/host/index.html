@@ -5,8 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RayTok 웹 강사 화면 — 사전 원고 번역 및 강의 진행</title>
   <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="stylesheet" href="/common/theme.css">
   <style>
     :root {
+      /* 줄 20 디자인 체계 동기화 */
+      --font-xs: 11px;
+      --font-sm: 13px;
+      --font-md: 15px;
+      --font-lg: 17px;
+      --font-xl: 22px;
+      --font-hero: 30px;
+      --sp-xs: 4px;
+      --sp-sm: 8px;
+      --sp-md: 12px;
+      --sp-lg: 16px;
+      --sp-xl: 24px;
+      --ink-high: #ffffff;
+      --ink-mid: rgba(255, 255, 255, 0.5);
+      --ink-low: rgba(255, 255, 255, 0.45);
+
       --bg: #0f172a;
       --card-bg: #1e293b;
       --border: #334155;
@@ -33,7 +50,7 @@
     header {
       background: var(--card-bg);
       border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
+      padding: var(--sp-md) var(--sp-xl);
       display: flex;
       justify-content: space-between;
       align-items: center;

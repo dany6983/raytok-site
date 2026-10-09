@@ -1,0 +1,71 @@
+/**
+ * RayTok Web Design System Theme (줄 20)
+ * 앱과 같은 글자·간격 체계 (A2 줄 11 theme.js 동기화)
+ * 정본: raytok-native1/docs/design/README.md
+ */
+
+:root {
+  /* 글자 크기 체계 (Font Sizes) */
+  --font-xs: 11px;
+  --font-sm: 13px;
+  --font-md: 15px;
+  --font-lg: 17px;
+  --font-xl: 22px;
+  --font-hero: 30px;
+
+  /* 간격 체계 (Spacing: 4/8/12/16/24) */
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 24px;
+
+  /* 불투명도 및 잉크 체계 (Ink) */
+  --ink-high: #ffffff;
+  --ink-mid: rgba(255, 255, 255, 0.5);
+  --ink-low: rgba(255, 255, 255, 0.45);
+
+  /* 띠 및 동그라미 규격 */
+  --band-height: 78px;
+  --circle-size: 64px;
+  --icon-scale: 1.5;
+
+  /* 테마 기본 색상 */
+  --bg-dark: #0b0f19;
+  --bg-card: #1e293b;
+  --border-color: #334155;
+  --primary-color: #38bdf8;
+  --success-color: #34d399;
+  --warn-color: #fbbf24;
+  --danger-color: #f87171;
+}
+
+/* 말 줄 한 쌍 표준 체계 (원문 13 ink0.5 / 번역 17 굵게) */
+.pair-bubble, .msg-bubble, .session-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.pair-src, .msg-src, .line-src {
+  font-size: var(--font-sm) !important;
+  color: var(--ink-mid) !important;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.pair-tr, .msg-tr, .line-tr {
+  font-size: var(--font-lg) !important;
+  font-weight: 700 !important;
+  color: var(--ink-high) !important;
+  line-height: 1.4;
+}
+
+/* 1.3배 글자 확대 대응: 넘침 방지 기본 유틸리티 */
+.scalable-container {
+  min-height: min-content;
+  overflow: visible;
+  box-sizing: border-box;
+}

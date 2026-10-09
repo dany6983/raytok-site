@@ -5,8 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>RayTok Desk 기록 보관함</title>
   <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="stylesheet" href="/common/theme.css">
   <style>
     :root {
+      /* 줄 20 디자인 체계 동기화 */
+      --font-xs: 11px;
+      --font-sm: 13px;
+      --font-md: 15px;
+      --font-lg: 17px;
+      --font-xl: 22px;
+      --font-hero: 30px;
+      --sp-xs: 4px;
+      --sp-sm: 8px;
+      --sp-md: 12px;
+      --sp-lg: 16px;
+      --sp-xl: 24px;
+      --ink-high: #ffffff;
+      --ink-mid: rgba(255, 255, 255, 0.5);
+      --ink-low: rgba(255, 255, 255, 0.45);
+
       --bg: #0f172a;
       --card-bg: #1e293b;
       --card-hover: #334155;
@@ -26,7 +43,7 @@
       background-color: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      padding: 20px;
+      padding: var(--sp-xl) var(--sp-md);
     }
     .container { max-width: 800px; margin: 0 auto; }
     header {
