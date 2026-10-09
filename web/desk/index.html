@@ -54,24 +54,26 @@
       padding-bottom: 16px;
       border-bottom: 1px solid var(--border);
     }
-    .logo-area { display: flex; align-items: center; gap: 10px; }
-    .logo-area img { width: 32px; height: 32px; border-radius: 6px; }
-    h1 { font-size: 20px; font-weight: 700; }
-    .sub-title { font-size: 13px; color: var(--text-muted); }
+    .logo-area { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .logo-area > div { min-width: 0; flex: 1; }
+    .logo-area img { width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0; }
+    h1 { font-size: 20px; font-weight: 700; overflow-wrap: break-word; }
+    .sub-title { font-size: 13px; color: var(--text-muted); overflow-wrap: break-word; word-break: keep-all; }
 
     /* 토큰 입력 카드 */
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 24px;
+      padding: var(--sp-lg);
       margin-bottom: 24px;
     }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
-    .input-row { display: flex; gap: 10px; }
+    .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
     input[type="text"], input[type="password"] {
       flex: 1;
+      min-width: 140px;
       background: #090d16;
       border: 1px solid var(--border);
       color: #fff;
