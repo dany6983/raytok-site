@@ -6,6 +6,64 @@
 ---
 
 [B 보고]
+2026-10-09 새 차례 3번: 줄 16 guide/ data-t 99개 속성 부여 및 ko·en 다국어 사전 실시간 전환 완료
+가지: feat/guide-i18n (994c740)
+
+만든·바꾼 파일과 이유
+- guide/index.html — 마스터 13:25 지적(data-t 0개 결함) 해결: 모든 제목, 본문, 목록, 캡션, 표, 버튼, 바닥 링크에 data-t 속성 99개 전면 부여. 상단 언어 선택 버튼(#btn-lang-ko, #btn-lang-en) 추가 및 GUIDE_STR 다국어 사전(ko, en) 구축. setLang(lang)을 통해 ?lang=en URL 파라미터 및 버튼 클릭 시 전체 안내 페이지 실시간 영문화 렌더링 지원. 강사·청취자·Desk 3단계 및 회의앱 3종(Zoom·Teams·Meet) 소리잡기 기능 명시 보존.
+- samples/guide_test.js — 검증 시험 24건 갱신: guide/index.html 내 data-t 속성 30개 이상 보유 검증(실제: 99개), web/guide/ 리다이렉트 검증, Playwright 브라우저 E2E 실측 검증(기본 한국어 렌더링, English 버튼 클릭 시 실시간 영문화 전환, ?lang=en 직접 접속 시 영문 렌더링), data-t 개수 임계값 초과 되돌림 실증 완료.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:guide (24건 전원 통과):
+=== 줄 16 사용 안내 페이지 (guide/) data-t 다국어 및 내용 검증 시험 ===
+[Test 1] guide/index.html data-t 속성 보유 검증 (0개 방지)
+  [PASS] guide/index.html 파일 존재
+  [PASS] data-t 속성이 충분히 부여됨 (실제: 99개)
+  [PASS] 강사 1단계: data-t 및 HWPX 확인
+  [PASS] 강사 2단계: data-t 확인
+  [PASS] 강사 3단계: data-t 확인
+  [PASS] 청취자 1단계: data-t 확인
+  [PASS] 청취자 2단계: data-t 확인
+  [PASS] 청취자 3단계: data-t 확인
+  [PASS] Desk 1단계: data-t 확인
+  [PASS] Desk 2단계: data-t 확인
+  [PASS] Desk 3단계: data-t 확인
+  [PASS] Desk 회의 앱 3종(Zoom, Teams, Meet) 명시 확인
+  [PASS] 회의 앱 효과 data-t 속성 확인
+  [PASS] 바닥에 이용약관 링크 확인
+  [PASS] 바닥에 개인정보 처리방침 링크 확인
+[Test 2] web/guide/ 리다이렉트 확인
+  [PASS] web/guide/index.html 파일 존재
+  [PASS] web/guide/index.html -> /guide/ 리다이렉트 확인
+[Test 3] 브라우저 Playwright 다국어 전환 실측 검증
+  [PASS] 기본 ko: "RayTok 사용설명서" 렌더링 확인
+  [PASS] ko 강사 1단계 HWPX 포함 확인
+  [PASS] English 전환: "RayTok User Guide" 실시간 반영 확인
+  [PASS] en 강사 1단계 영문화 확인
+  [PASS] en 청취자 1단계 영문화 확인
+  [PASS] en Desk 1단계 영문화 확인
+  [PASS] ?lang=en 직접 접속 시 영문 렌더링 확인
+전부 통과 (24건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+samples/guide_test.js 에서 data-t 속성 최소 개수 단언을 200개로 변경 시:
+  [PASS] guide/index.html 파일 존재
+  [FAIL] data-t 속성이 충분히 부여됨 (실제: 99개)
+복구 후 24건 전원 정상 통과 확인.
+
+3. 전체 회귀 시험 일괄 통과:
+test:guide(24건), test:w-t(22건), test:retention(13건), test:release(30건), test:design(30건), test:p16(20건), test:usage(29건), test:terms(48건), test:wire(24건), test:dual(24건), test:report(27건), test:host(13건), test:live(43건), test:end(80건), test:desk-view(10건) 전원 초록 통과.
+
+한 줄 판정
+마스터 13:25 새 차례 3번 줄 16 guide/ data-t 99개 속성 부여 및 ko·en 다국어 사전 실시간 전환 완료, 자동 검증 24건 및 되돌림 실증 통과 (feat/guide-i18n).
+
+막힌 것
+없음. 마스터 13:25 새 차례 표의 1번(W-T), 2번(15 이용약관), 3번(16 guide/ data-t), 4번(17·19·20·23) 모든 줄 완수.
+
+---
+
+[B 보고]
 2026-10-09 새 차례 1번: W-T 강사→청취 끝까지 시험 및 P-16 검증 완료
 가지: feat/w-t (abc3eb0)
 
