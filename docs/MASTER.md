@@ -303,3 +303,19 @@ Desk 를 **버리는 것이 아니다** — 14(세션 보관 기한)는 Desk 가
 ### 같은 자리 더 찾아봤다 (10-09 08:40)
 - **언어 표**(`docs/samples/langs.json`): 82개 전부, 공유 칸(`name_ko`·`name_en`·`offline`·`fallback`) **어긋남 없음.** 차이는 앱 전용 `ocr` 칸 하나뿐이고 여기(웹)는 카메라가 없으니 **옮기지 않는다.** 다시 대조하지 않아도 된다 — 어느 쪽 82개 중 하나라도 손대면 그때 다시 본다.
 - 와이어·언어 표 말고 두 저장소가 함께 읽는 사양은 지금 없다. B 가 W3 에서 새 메시지를 만들면 **정본(native1)에 먼저** 넣고 여기로 옮긴다.
+
+## 2026-10-09 11:40 — B 가 매달린 까닭: **편집 승인이 자동 승인 목록에 없었다** [B]
+대표님이 11:32 에 B 화면을 보여 주셨다: `package.json` 편집 **Rejected (+2,-1)** · `[API Error: Operation cancelled by user]` · `Thinking... 36m 28s`.
+
+### 까닭
+`C:\Users\drago\.gemini\settings.json` 의 `tools.allowed` 에 **`run_shell_command` 하나만** 있었다. 그래서 **파일 편집(`replace`·`write_file`)은 편집마다 승인을 기다린다.** 그 상태로 취소(Esc)가 들어가면 편집은 Rejected 로 끝나고, B 는 그 뒤로 다시 생각하느라 매달린다 — 36분이 그것이다.
+→ **10-08 에 내가 고친 것은 `run_shell_command` 뿐이었다.** 셸의 리다이렉션만 보고 **편집 도구를 세지 않았다.** 값의 형태를 바꾸면 읽는 곳을 전부 센다는 규칙(AGENTS §4)을 또 어겼다 — 같은 날 언어팩에서도 같은 실수를 했다.
+
+### 고쳤다 (마스터가 대표님 PC 에서)
+- `settings.json` `tools.allowed` 에 더했다: `replace` · `write_file` · `read_file` · `read_many_files` · `list_directory` · `glob` · `search_file_content` · `web_fetch` · `google_web_search`. 되돌릴 자리: `settings.json.bak-1009`
+- **금지는 그대로 이긴다** — `policies/raytok-deny.toml` 의 deny 규칙(900~950: 릴레이 배포 · force push · `git add -A` · `rm -rf` · `.env`·`desk-license` 읽기)이 allow 보다 높다. 자동 승인은 **평범한 편집·읽기**만 넓힌 것이다.
+- **B 는 다시 켜야 적용된다** (Ctrl+C 두 번 → 다시 시작).
+
+### [B] 다시 켠 뒤
+- 지금 하던 줄(15 이용약관 · 16 가이드)을 **끝내고**, 그다음은 10-09 06:05 의 새 차례 **W1**(웹 강사 L2-fix + L4-1)이다. W3 앞에 와이어 원고 메시지 셋이 이 저장소에 들어와 있다(`npm run test:wire`).
+- 36분처럼 매달리면 **기다리지 말고 Ctrl+C 로 끊고 그 줄을 다시** 시작한다. 매달린 이유를 REPORT "막힌 것"에 한 줄 적는다.
