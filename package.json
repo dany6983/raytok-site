@@ -22,7 +22,8 @@
     "test:p16": "node relay/test/p16-lock.mjs",
     "test:design": "node samples/design_theme_test.js",
     "test:release": "node samples/release_e2e_test.js",
-    "test:retention": "node relay/test/desk-retention.mjs"
+    "test:retention": "node relay/test/desk-retention.mjs",
+    "test:w-t": "node samples/w_t_test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"
