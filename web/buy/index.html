@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RayTok 쿠폰 구매</title>
+  <link rel="stylesheet" href="/web/common/theme.css">
+  <!-- 포트원 V2 결제 SDK -->
+  <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: var(--sp-xl) var(--sp-md);
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    header { margin-bottom: 24px; text-align: center; }
+    h1 { font-size: var(--font-hero); font-weight: 700; margin-bottom: 8px; }
+    p.sub { font-size: var(--font-md); color: var(--text-muted); }
+
+    .test-badge {
+      display: inline-block;
+      background: #f59e0b;
+      color: #0f172a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+
+    .product-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .product-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: var(--sp-lg);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .product-card:hover {
+      border-color: var(--primary);
+      background: var(--card-hover);
+    }
+    .product-card.selected {
+      border-color: var(--primary);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .prod-info h3 { font-size: var(--font-lg); font-weight: 600; margin-bottom: 4px; }
+    .prod-info p { font-size: var(--font-sm); color: var(--text-muted); }
+    .prod-price { font-size: var(--font-xl); font-weight: 700; color: var(--primary); }
+
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus { border-color: var(--primary); }
+
+    .btn-pay {
+      width: 100%;
+      background: var(--primary);
+      color: #0f172a;
+      border: none;
+      font-weight: 700;
+      padding: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: var(--font-lg);
+      transition: background 0.2s;
+    }
+    .btn-pay:hover { background: var(--primary-hover); }
+    .btn-pay:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* 결과 뷰 */
+    #view-result { display: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: var(--sp-xl); }
+    .result-head { text-align: center; margin-bottom: 20px; }
+    .result-head h2 { font-size: var(--font-xl); color: #34d399; margin-bottom: 6px; }
+    .code-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; max-height: 360px; overflow-y: auto; }
+    .code-card {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .code-text { font-family: monospace; font-size: 13px; color: #fff; word-break: break-all; }
+    .code-btn {
+      background: #334155;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .code-btn:hover { background: #475569; }
+
+    footer { margin-top: 32px; text-align: center; font-size: var(--font-sm); color: var(--text-muted); }
+    footer a { color: var(--text-muted); text-decoration: none; margin: 0 8px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="test-badge">테스트 모드 P1</span>
+      <h1>RayTok 손님 쿠폰 구매</h1>
+      <p class="sub">구매 즉시 발급된 링크로 손님이 바로 입장합니다.</p>
+    </header>
+
+    <div id="view-buy">
+      <div class="product-list" id="product-list">
+        <div class="product-card selected" data-id="pass_1d" data-price="3300">
+          <div class="prod-info">
+            <h3>손님 1일권 (1장)</h3>
+            <p>24시간 동안 사용 가능 · 개인 여행 손님용</p>
+          </div>
+          <div class="prod-price">3,300원</div>
+        </div>
+
+        <div class="product-card" data-id="pass_7d" data-price="9900">
+          <div class="prod-info">
+            <h3>손님 7일권 (1장)</h3>
+            <p>7일 동안 사용 가능 · 다일 투어 손님용</p>
+          </div>
+          <div class="prod-price">9,900원</div>
+        </div>
+
+        <div class="product-card" data-id="group_1d_20" data-price="66000">
+          <div class="prod-info">
+            <h3>손님 20명 당일 투어 (1일권 20장)</h3>
+            <p>단일 투어 단체 쿠폰 20장 발급</p>
+          </div>
+          <div class="prod-price">66,000원</div>
+        </div>
+
+        <div class="product-card" data-id="group_7d_10" data-price="99000">
+          <div class="prod-info">
+            <h3>손님 10명 3박 4일 투어 (7일권 10장)</h3>
+            <p>중소형 패키지 여행 쿠폰 10장 발급</p>
+          </div>
+          <div class="prod-price">99,000원</div>
+        </div>
+
+        <div class="product-card" data-id="group_7d_20" data-price="198000">
+          <div class="prod-info">
+            <h3>손님 20명 6박 7일 투어 (7일권 20장)</h3>
+            <p>대형 투어 단체 쿠폰 20장 발급</p>
+          </div>
+          <div class="prod-price">198,000원</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="buyer-name">구매자명 (또는 여행사명)</label>
+        <input type="text" id="buyer-name" value="테스트가이드" placeholder="이름을 입력하세요">
+      </div>
+
+      <div class="form-group">
+        <label for="buyer-email">이메일 (발급 내역 수신용)</label>
+        <input type="email" id="buyer-email" value="guide@test.com" placeholder="email@example.com">
+      </div>
+
+      <button type="button" class="btn-pay" id="btn-pay">3,300원 결제하기</button>
+    </div>
+
+    <!-- 결제 완료 결과 뷰 -->
+    <div id="view-result">
+      <div class="result-head">
+        <h2>결제가 완료되었습니다!</h2>
+        <p class="sub" id="result-desc">쿠폰 코드가 즉시 발급되었습니다.</p>
+      </div>
+
+      <div class="code-list" id="code-list"></div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn-pay" style="flex:1; background:#334155; color:#fff;" id="btn-copy-all">모든 링크 복사</button>
+        <button type="button" class="btn-pay" style="flex:1;" onclick="location.reload()">추가 구매하기</button>
+      </div>
+    </div>
+
+    <footer>
+      <a href="/field/">현장교육</a>
+      <a href="/tour/">관광가이드</a>
+      <a href="/guide/">사용설명서</a>
+      <a href="/privacy/">개인정보 처리방침</a>
+      <a href="/web/terms/">이용약관</a>
+    </footer>
+  </div>
+
+  <script>
+    let selectedProduct = { id: 'pass_1d', price: 3300, name: '손님 1일권 (1장)' };
+    const cards = document.querySelectorAll('.product-card');
+    const btnPay = document.getElementById('btn-pay');
+
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        cards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedProduct = {
+          id: card.dataset.id,
+          price: Number(card.dataset.price),
+          name: card.querySelector('h3').textContent
+        };
+        btnPay.textContent = `${selectedProduct.price.toLocaleString()}원 결제하기`;
+      });
+    });
+
+    btnPay.addEventListener('click', async () => {
+      const name = document.getElementById('buyer-name').value.trim() || 'Guest';
+      const email = document.getElementById('buyer-email').value.trim();
+      const paymentId = 'pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+
+      btnPay.disabled = true;
+      btnPay.textContent = '결제창을 여는 중...';
+
+      // 포트원 V2 모의/테스트 호출
+      try {
+        let paymentResponse;
+        const isTestStore = true; // 운영 전환은 대표님 PG 계약 뒤 (MASTER §18)
+
+        if (window.PortOne && typeof window.PortOne.requestPayment === 'function' && !isTestStore) {
+          // 실제 포트원 SDK 호출 (PG 계약 후)
+          paymentResponse = await PortOne.requestPayment({
+            storeId: 'store-raytok-test',
+            channelKey: 'channel-key-test',
+            paymentId: paymentId,
+            orderName: selectedProduct.name,
+            totalAmount: selectedProduct.price,
+            currency: 'CURRENCY_KRW',
+            payMethod: 'CARD',
+            customer: { fullName: name, email: email }
+          });
+        } else {
+          // 테스트 모드 (MASTER §18: "테스트 모드까지는 한다", 자립형 모의 승인)
+          await new Promise(r => setTimeout(r, 100)); // 모의 창 지연
+          paymentResponse = { code: 0, paymentId };
+        }
+
+        if (paymentResponse && paymentResponse.code != null && paymentResponse.code !== 0) {
+          alert('결제가 취소되었거나 실패했습니다: ' + (paymentResponse.message || ''));
+          btnPay.disabled = false;
+          btnPay.textContent = `${selectedProduct.price.toLocaleString()}원 결제하기`;
+          return;
+        }
+
+        // 백엔드 발급 처리 호출 (로컬 또는 모의 핸들러)
+        const res = await fetch('/pay/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentId: paymentId,
+            productId: selectedProduct.id,
+            amount: selectedProduct.price,
+            customerName: name,
+            customerEmail: email
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.message || '쿠폰 발급에 실패했습니다.');
+        }
+
+        renderResult(data);
+      } catch (err) {
+        alert('결제 처리 중 오류가 발생했습니다: ' + err.message);
+        btnPay.disabled = false;
+        btnPay.textContent = `${selectedProduct.price.toLocaleString()}원 결제하기`;
+      }
+    });
+
+    function renderResult(data) {
+      document.getElementById('view-buy').style.display = 'none';
+      document.getElementById('view-result').style.display = 'block';
+      document.getElementById('result-desc').textContent = `${data.productName} (${data.quantity}장) 결제가 완료되었습니다.`;
+
+      const listEl = document.getElementById('code-list');
+      listEl.innerHTML = '';
+
+      let allLinks = [];
+      data.codes.forEach((item, idx) => {
+        allLinks.push(item.link);
+        const card = document.createElement('div');
+        card.className = 'code-card';
+        card.innerHTML = `
+          <div>
+            <div style="font-size:11px; color:#94a3b8; margin-bottom:2px;">쿠폰 #${idx + 1} (${item.days}일권)</div>
+            <div class="code-text">${item.grouped}</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="code-btn" onclick="navigator.clipboard.writeText('${item.link}'); alert('입장 링크가 복사되었습니다.')">링크 복사</button>
+            <a class="code-btn" href="${item.link}" target="_blank" style="text-decoration:none; display:inline-block; line-height:20px;">입장</a>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+
+      document.getElementById('btn-copy-all').onclick = () => {
+        navigator.clipboard.writeText(allLinks.join('\n'));
+        alert(`${allLinks.length}개의 쿠폰 링크가 복사되었습니다.`);
+      };
+    }
+  </script>
+</body>
+</html>

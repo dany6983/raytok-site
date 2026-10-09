@@ -23,6 +23,7 @@
     "test:design": "node samples/design_theme_test.js",
     "test:release": "node samples/release_e2e_test.js",
     "test:retention": "node relay/test/desk-retention.mjs",
+    "test:pay": "node samples/pay_test.js",
     "test:w-t": "node samples/w_t_test.js"
   },
   "dependencies": {
