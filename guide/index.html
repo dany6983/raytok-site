@@ -44,6 +44,9 @@
   <div class="lang-switcher">
     <button type="button" class="lang-btn active" id="btn-lang-ko" onclick="setLang('ko')">한국어</button>
     <button type="button" class="lang-btn" id="btn-lang-en" onclick="setLang('en')">English</button>
+    <button type="button" class="lang-btn" id="btn-lang-ja" onclick="setLang('ja')">日本語</button>
+    <button type="button" class="lang-btn" id="btn-lang-zh" onclick="setLang('zh')">中文</button>
+    <button type="button" class="lang-btn" id="btn-lang-vi" onclick="setLang('vi')">Tiếng Việt</button>
   </div>
 </div>
 
@@ -404,21 +407,102 @@
       foot_terms: 'Terms of Service',
       foot_privacy: 'Privacy Policy',
       foot_top: 'Back to Top ↑'
+    },
+    ja: {
+      meta_title: 'RayTok 使い方ガイド',
+      nav_terms: '利用規約',
+      nav_privacy: 'プライバシーポリシー',
+      nav_home: 'ホーム',
+      main_title: 'RayTok 使い方ガイド',
+      sub_date: 'Android アプリ & Web 講師・リスナー & RayTok Desk · 2026-10-09',
+      intro_desc: 'RayTokは、イヤホン・スマートグラス、Webブラウザ、PCビデオ会議と連動する<strong>リアルタイム多言語通訳・字幕中継サービス</strong>です。',
+      h2_web_host: '8. ★ Web 講師画面 (web/host) 3つのステップ',
+      host_step1: '<strong>ステップ 1: 原稿の準備 (TXT · PDF · DOCX · HWPX)</strong><br>講義ファイル(.txt, .pdf, .docx, .hwpx)をアップロードします。ブラウザ内でのみ段落に分割され、外部サーバーへのファイル流出は一切ありません。事前翻訳を完了します。',
+      host_step2: '<strong>ステップ 2: 講義開始とリスナー招待</strong><br>6桁のルームコードと参加用QRコードが自動生成されます。',
+      host_step3: '<strong>ステップ 3: リアルタイム進行と終了レポート</strong><br>段落をリスナーに順次送信します。終了後に3×3レポートと参加者CSVをダウンロードできます。',
+      h2_web_listener: '9. ★ リスナー画面 (web/listener) 3つのステップ',
+      listener_step1: '<strong>ステップ 1: セッションに参加</strong><br>QRコードを読み取るか、6桁のコードを入力して参加します。',
+      listener_step2: '<strong>ステップ 2: リアルタイム字幕と音声の聴取</strong><br>原稿と翻訳字幕を同時に受信します。',
+      listener_step3: '<strong>ステップ 3: 記録の保存</strong><br>講義字幕をローカルファイルとして保存します。',
+      h2_desk_guide: '10. ★ RayTok Desk ビデオ会議 3つのステップ',
+      desk_step1: '<strong>ステップ 1: 起動とライセンス認証</strong><br>PCでRayTok Deskを起動し、ライセンスを認証します。',
+      desk_step2: '<strong>ステップ 2: 音声設定と接続</strong><br>マイクとスピーカーを正しく設定します。',
+      desk_step3: '<strong>ステップ 3: リアルタイム字幕中継と完全性保管</strong><br>SHA-256ハッシュチェーンによる改ざん防止記録を生成します。',
+      h2_desk_apps: '11. ★ 会議アプリ別音声キャプチャ (Zoom · Teams · Meet)',
+      foot_terms: '利用規約',
+      foot_privacy: 'プライバシーポリシー',
+      foot_top: 'トップへ ↑'
+    },
+    zh: {
+      meta_title: 'RayTok 使用指南',
+      nav_terms: '使用条款',
+      nav_privacy: '隐私政策',
+      nav_home: '首页',
+      main_title: 'RayTok 使用指南',
+      sub_date: 'Android 应用 & Web 讲师/听众 & RayTok Desk · 2026-10-09',
+      intro_desc: 'RayTok 是一项<strong>实时多语言同声传译与字幕转播服务</strong>。',
+      h2_web_host: '8. ★ Web 讲师界面 (web/host) 3个步骤',
+      host_step1: '<strong>第 1 步：准备讲稿 (TXT · PDF · DOCX · HWPX)</strong><br>上传课件文件(.txt, .pdf, .docx, .hwpx)，仅在浏览器本地解析并完成预翻译。',
+      host_step2: '<strong>第 2 步：开始讲课与邀请听众</strong><br>生成6位房间码与二维码，邀请多语言听众加入。',
+      host_step3: '<strong>第 3 步：实时转播与结课报告</strong><br>顺次发送讲稿段落，结课后下载3×3报告及听众名单CSV。',
+      h2_web_listener: '9. ★ 听众界面 (web/listener) 3个步骤',
+      listener_step1: '<strong>第 1 步：加入会话</strong><br>扫描二维码或输入6位房间码进入。',
+      listener_step2: '<strong>第 2 步：实时字幕与收听</strong><br>实时接收原文与译文字幕。',
+      listener_step3: '<strong>第 3 步：保存记录</strong><br>将会话记录保存至手机本地。',
+      h2_desk_guide: '10. ★ RayTok Desk 视频会议 3个步骤',
+      desk_step1: '<strong>第 1 步：启动与许可证认证</strong><br>在电脑上启动 RayTok Desk 并认证许可证。',
+      desk_step2: '<strong>第 2 步：音频设置与连接</strong><br>配置麦克风与扬声器回环捕获。',
+      desk_step3: '<strong>第 3 步：实时字幕与完整性归档</strong><br>生成不可篡改的 SHA-256 哈希链防篡改记录。',
+      h2_desk_apps: '11. ★ 各视频会议软件音频捕获 (Zoom · Teams · Meet)',
+      foot_terms: '使用条款',
+      foot_privacy: '隐私政策',
+      foot_top: '回到顶部 ↑'
+    },
+    vi: {
+      meta_title: 'Hướng dẫn sử dụng RayTok',
+      nav_terms: 'Điều khoản dịch vụ',
+      nav_privacy: 'Chính sách bảo mật',
+      nav_home: 'Trang chủ',
+      main_title: 'Hướng dẫn sử dụng RayTok',
+      sub_date: 'Ứng dụng Android & Web Giảng viên/Người nghe & RayTok Desk · 2026-10-09',
+      intro_desc: 'RayTok là <strong>dịch vụ phiên dịch và tiếp sóng phụ đề đa ngôn ngữ thời gian thực</strong>.',
+      h2_web_host: '8. ★ Màn hình Giảng viên Web (web/host) 3 bước',
+      host_step1: '<strong>Bước 1: Chuẩn bị bài giảng (TXT · PDF · DOCX · HWPX)</strong><br>Tải lên tệp tài liệu giảng dạy (.txt, .pdf, .docx, .hwpx), hoàn thành dịch trước an toàn.',
+      host_step2: '<strong>Bước 2: Bắt đầu giảng bài và mời người nghe</strong><br>Tạo mã phòng 6 chữ số và mã QR để mời học viên.',
+      host_step3: '<strong>Bước 3: Tiếp sóng thời gian thực và báo cáo kết thúc</strong><br>Gửi phụ đề tuần tự, tải xuống báo cáo 3×3 và danh sách người tham gia CSV.',
+      h2_web_listener: '9. ★ Màn hình Người nghe (web/listener) 3 bước',
+      listener_step1: '<strong>Bước 1: Tham gia phiên</strong><br>Quét mã QR hoặc nhập mã phòng 6 chữ số.',
+      listener_step2: '<strong>Bước 2: Xem phụ đề và nghe giọng nói thời gian thực</strong><br>Nhận phụ đề song ngữ tức thì.',
+      listener_step3: '<strong>Bước 3: Lưu bản ghi</strong><br>Lưu bản ghi phiên vào thiết bị cục bộ.',
+      h2_desk_guide: '10. ★ Hội nghị truyền hình RayTok Desk 3 bước',
+      desk_step1: '<strong>Bước 1: Khởi chạy và xác thực giấy phép</strong><br>Mở RayTok Desk trên PC và đăng ký giấy phép.',
+      desk_step2: '<strong>Bước 2: Cấu hình âm thanh và kết nối</strong><br>Thiết lập micro và thu âm thanh loa.',
+      desk_step3: '<strong>Bước 3: Tiếp sóng phụ đề và lưu trữ tính toàn vẹn</strong><br>Lưu trữ bản ghi chuỗi băm SHA-256 chống giả mạo.',
+      h2_desk_apps: '11. ★ Thu âm thanh theo ứng dụng hội nghị (Zoom · Teams · Meet)',
+      foot_terms: 'Điều khoản dịch vụ',
+      foot_privacy: 'Chính sách bảo mật',
+      foot_top: 'Lên đầu trang ↑'
     }
   };
 
   function setLang(lang) {
-    const target = (lang === 'en') ? 'en' : 'ko';
+    const supported = ['ko', 'en', 'ja', 'zh', 'vi'];
+    const target = supported.includes(lang) ? lang : 'ko';
     localStorage.setItem('raytok_guide_lang', target);
-    document.getElementById('btn-lang-ko').classList.toggle('active', target === 'ko');
-    document.getElementById('btn-lang-en').classList.toggle('active', target === 'en');
+    supported.forEach(l => {
+      const btn = document.getElementById(`btn-lang-${l}`);
+      if (btn) btn.classList.toggle('active', l === target);
+    });
     document.documentElement.lang = target;
 
     const dict = GUIDE_STR[target] || GUIDE_STR.ko;
+    const fallback = GUIDE_STR.en || GUIDE_STR.ko;
     document.querySelectorAll('[data-t]').forEach(el => {
       const key = el.getAttribute('data-t');
       if (dict[key]) {
         el.innerHTML = dict[key];
+      } else if (fallback[key]) {
+        el.innerHTML = fallback[key];
       }
     });
   }

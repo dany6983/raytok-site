@@ -114,6 +114,24 @@ ok(webGuide.includes('/guide/'), 'web/guide/index.html -> /guide/ 리다이렉�
     const directTitleEn = await page.textContent('h1');
     ok(directTitleEn.includes('RayTok User Guide'), '?lang=en 직접 접속 시 영문 렌더링 확인');
 
+    // 4) 日本語 (ja) 전환 검증
+    await page.click('#btn-lang-ja');
+    await page.waitForTimeout(100);
+    const titleJa = await page.textContent('h1');
+    ok(titleJa.includes('使い方ガイド'), 'ja 일본어판 전환 렌더링 확인');
+
+    // 5) 中文 (zh) 전환 검증
+    await page.click('#btn-lang-zh');
+    await page.waitForTimeout(100);
+    const titleZh = await page.textContent('h1');
+    ok(titleZh.includes('使用指南'), 'zh 중국어판 전환 렌더링 확인');
+
+    // 6) Tiếng Việt (vi) 전환 검증
+    await page.click('#btn-lang-vi');
+    await page.waitForTimeout(100);
+    const titleVi = await page.textContent('h1');
+    ok(titleVi.includes('Hướng dẫn'), 'vi 베트남어판 전환 렌더링 확인');
+
     await browser.close();
     server.close();
 
