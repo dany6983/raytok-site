@@ -14,7 +14,8 @@
     "test:lic": "node samples/lic_page_test.js",
     "mail": "node scripts/mailcheck.js --force",
     "test:hwpx": "node samples/hwpx_test.js",
-    "test:desk-view": "node samples/desk_view_test.js"
+    "test:desk-view": "node samples/desk_view_test.js",
+    "test:dual": "npm --prefix relay run test:dual"
   },
   "dependencies": {
     "ws": "^8.18.0"

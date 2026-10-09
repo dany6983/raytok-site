@@ -12,7 +12,8 @@
     "test:mint": "node --test test/mint-code.mjs",
     "test:desk-session": "node test/desk-session.mjs",
     "test:retry": "node test/translate-retry.mjs",
-    "test:desk-read": "node test/desk-read.mjs"
+    "test:desk-read": "node test/desk-read.mjs",
+    "test:dual": "node test/w5-dual-host.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.143.0",

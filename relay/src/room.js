@@ -1,3 +1,5 @@
+import { verifyLicense } from './license.js';
+
 export class Room {
   constructor(ctx, env) {
     this.ctx = ctx;
@@ -710,7 +712,35 @@ export class Room {
       const token = url.searchParams.get('token');
 
       if (role === 'host') {
-        if (!this.initialized || token !== this.hostToken) {
+        if (!this.initialized) {
+          return new Response('Forbidden: Room uninitialized', { status: 403 });
+        }
+
+        // 호스트 상한: 같은 방에 호스트 최대 2명 (W5 기본안: 한 방에 호스트 둘 허용)
+        const currentHosts = this.ctx.getWebSockets('host').length;
+        if (currentHosts >= 2) {
+          return new Response('Too Many Requests: Host limit reached (2 max)', { status: 429 });
+        }
+
+        // 호스트 인증:
+        // 1) 발급된 host_token 과 일치하거나,
+        // 2) 이용권 토큰(License Token)인 경우: sub 가 이 방의 this.sub 와 일치하고 유효한 서명
+        let authorized = false;
+        if (token && token === this.hostToken) {
+          authorized = true;
+        } else if (token) {
+          const secret = (this.env && this.env.LICENSE_SECRET ? this.env.LICENSE_SECRET : '').trim().replace(/^["']|["']$/g, '');
+          const reqFlags = (this.kind === 'desk' || this.kind === 'script') ? (0x04 | 0x08) : 0x01;
+          const fakeReq = new Request('http://internal', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const licRes = await verifyLicense(fakeReq, secret, reqFlags);
+          if (licRes.valid && this.sub && licRes.payload.sub === this.sub) {
+            authorized = true;
+          }
+        }
+
+        if (!authorized) {
           return new Response('Forbidden: Token mismatch or room uninitialized', { status: 403 });
         }
         // 호스트 재연결 시 타임아웃 알람 취소
@@ -801,6 +831,15 @@ export class Room {
         try {
           listenerWs.send(message);
         } catch (e) {}
+      }
+
+      // 호스트 둘(1:N 실시간 강사 컨트롤, W5): 다른 호스트(폰 마이크 / PC 컨트롤)에게도 중계 (자기 자신은 제외)
+      for (const otherHostWs of this.ctx.getWebSockets('host')) {
+        if (otherHostWs !== ws) {
+          try {
+            otherHostWs.send(message);
+          } catch (e) {}
+        }
       }
 
       // 무음(새 자막 줄 없음) 판정 기준: 호스트가 보낸 메시지에 text가 있고 end가 아닌 경우 새 자막으로 판정.
