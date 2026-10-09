@@ -6,6 +6,88 @@
 ---
 
 [B 보고]
+2026-10-09 마스터 14:35 새 차례 1·2·3 (W-T·줄 15 이용약관·줄 16 guide 5개 언어판) 및 줄 14·17·19·20·23 전체 완수
+가지: main (2ce505c)
+
+만든·바꾼 파일과 이유
+- samples/w_t_test.js, package.json — [차례 1 W-T] 강사→청취 끝까지 시험 22건: 마스터 13:25 사양 7개 항목 완전 검증(문단 번역문 표출, para·total 와이어 규격 뱃지 1/4 표출, skip 건너뜀, break on/off 띠 제어, 외부 요청 0건 P-16 ① 자물쇠, 리포트 3×3 TXT·DOC·PDF 인쇄문서 + 참석 CSV + 방 닫기 후 자막 줄 삭제, sendScript 미송출 시 1번 붉어짐 되돌림 실증 완료). npm run test:host 에 w_t_test.js 를 연결하여 L4-1 및 W-T 동시 검증. 커밋에 P-16 명시.
+- web/terms/index.html, web/terms/en/index.html, terms/index.html, samples/terms_test.js, 14개 주요 페이지 — [차례 2 줄 15 이용약관] 신규 구축: 필수 4대 조항(대한민국 서비스 지역, 환불 규정, 월 300만 글자/동시 기기 공정사용, 기계번역 오역 면책) 반영 및 전 화면 14곳 바닥 이용약관 링크 추가. 48건 단언 전원 통과.
+- guide/index.html, samples/guide_test.js — [차례 3 줄 16 guide/ 다국어] data-t 속성 99개 전면 부여 및 상단 5개 언어 전환(#btn-lang-ko, en, ja, zh, vi) 구축. GUIDE_STR 다국어 사전을 통해 ?lang=en 또는 버튼 클릭 시 5개 언어판 실시간 전환 E2E 검증 통과(27건).
+- web/usage/index.html, usage/index.html, samples/usage_view_test.js — [차례 4 줄 17 고객 사용량] 번역 글자·Desk 분·기기 수 순수 통계 표출, 사람 기록 0건 원칙 대시보드(29건 통과).
+- relay/src/index.js, relay/test/p16-lock.mjs — [차례 4 줄 19 P-16 릴레이 자물쇠] 청취자 번역 403 차단, 본문 키 허용 목록 외 400 차단, 요약·재생 403 차단(20건 통과).
+- web/common/theme.css, samples/design_theme_test.js — [차례 4 줄 20 웹 화면 디자인 1차] 청취·강사·Desk·검증 4개 화면 앱 글자(xs11~hero30)·간격(4~24) 체계 적용, 1.3배 확대 넘침 0건 검증(30건 통과).
+- samples/release_e2e_test.js — [차례 4 줄 23 출시 전 끝까지 시험] 강사→릴레이→청취 3대 E2E 및 Desk 연동 10단계 30건 통과.
+- relay/src/room.js, relay/test/desk-retention.mjs — [줄 14 Desk 보관 기한] 30일 자동 삭제, 주인 삭제 DELETE /desk/session/:id, web/desk 삭제 단추, 개인정보 처리방침 문장 연동(13건 통과).
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:host (L4-1 13건 + W-T 22건 = 총 35건 전원 통과):
+=== L4-1 웹 강사 화면 (web/host/index.html) 검증 시험 ===
+  [PASS] 초기 화면: 이용권 인증 화면 표시
+  [PASS] 올바른 토큰 인증 성공 ➔ 준비 화면 활성화
+  [PASS] TXT 원고: 3개 문단 자동 분리 확인
+  [PASS] 미리 번역 완료 후 준비 완료 영역 표시
+  [PASS] IndexedDB: 2개 문단 및 사전 번역문 저장 확인
+  [PASS] relay 외 외부 요청 0건 검증
+전부 통과 (13건)
+=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16) ===
+  [PASS] W-T ① 청취자 A에 해당 문단 번역문(trans[en]) 표출 확인
+  [PASS] W-T ① 번역 없는 언어(vi)는 원문 보존 표출 확인 (R-15)
+  [PASS] W-T ② 청취 화면에 para·total 규격 뱃지("1/4") 표출 확인 (실제: Script 1/4)
+  [PASS] W-T ③ 청취 화면에 건너뜀 3 표시 확인
+  [PASS] W-T ④ break on:true 동안 쉬는 시간 띠 표시 확인
+  [PASS] W-T ④ break on:false 해제 시 원고 복귀 확인
+  [PASS] W-T ⑤ 원고 넘길 때 청취 페이지가 새로 번역을 청하지 않음 (P-16 ①)
+  [PASS] W-T ⑤ 바깥 네트워크 요청 0건 확인 (실제: 0)
+  [PASS] W-T ⑥ 리포트 TXT 형식 정상 생성
+  [PASS] W-T ⑥ 리포트 DOC 형식 정상 생성
+  [PASS] W-T ⑥ 리포트 PDF 인쇄 문서 정상 생성
+  [PASS] W-T ⑥ 참석 CSV 정상 생성
+  [PASS] W-T ⑥ 방 닫기 신호 발송 및 방 종료 완료
+  [PASS] W-T ⑥ 청취자 세션 종료 상태 전이 확인
+  [PASS] W-T ⑥ 방 닫힌 뒤 릴레이에 자막 줄이 지워지고 끝 표시만 남음
+전부 통과 (22건)
+
+2. npm run test:terms (48건 전원 통과):
+=== 줄 15 이용약관 페이지 (web/terms) 및 바닥 링크 검증 시험 ===
+  [PASS] 제1조 서비스 지역: 대한민국 명시 확인
+  [PASS] 제2조 공정사용: 월 3,000,000자 / 동시 기기 3대·10대 / 10분 무음 자동 종료 확인
+  [PASS] 제3조 환불: 사용 전 7일 전액 환불 / 사용 후 환불 불가 확인
+  [PASS] 제4조 기계번역 오역 한계 및 면책 고지 확인
+  [PASS] 영문 이용약관(en) 조항 확인
+  [PASS] 14개 주요 화면 바닥 이용약관 링크 전원 확인
+전부 통과 (48건)
+
+3. npm run test:guide (27건 전원 통과):
+=== 줄 16 사용 안내 페이지 (guide/) data-t 다국어 및 내용 검증 시험 ===
+  [PASS] data-t 속성이 충분히 부여됨 (실제: 99개)
+  [PASS] 강사/청취자/Desk 3단계 data-t 및 HWPX 확인
+  [PASS] Desk 회의 앱 3종(Zoom, Teams, Meet) 명시 및 효과 data-t 확인
+  [PASS] 기본 ko 렌더링 및 HWPX 포함 확인
+  [PASS] English 전환: "RayTok User Guide" 실시간 반영 확인
+  [PASS] ja 일본어판 전환 렌더링 확인 ("使い方ガイド")
+  [PASS] zh 중국어판 전환 렌더링 확인 ("使用指南")
+  [PASS] vi 베트남어판 전환 렌더링 확인 ("Hướng dẫn")
+전부 통과 (27건)
+
+4. 되돌림 확인 실증 3건 (D-09):
+- W-T: sendScript wsSend 주석 처리 시 1번 단언 붉어짐(타임아웃 실패) 실증 후 복구.
+- 줄 15: 이용약관 필수 조항 임시 변경 시 단언 실패 실증 후 복구.
+- 줄 16: guide/ data-t 속성 최소 개수 임계값 초과 시 단언 실패 실증 후 복구.
+
+5. 전체 14대 자동화 시험 스위트 일괄 통과:
+test:host(35건), test:terms(48건), test:guide(27건), test:wire(24건), test:retention(13건), test:release(30건), test:design(30건), test:p16(20건), test:usage(29건), test:dual(24건), test:report(27건), test:live(43건), test:end(80건), test:desk-view(10건) 전원 초록 통과.
+
+한 줄 판정
+마스터 14:35 지시 3대 핵심 작업(W-T 22건 P-16, 줄 15 이용약관 48건, 줄 16 guide data-t 99개 및 5개 언어판 27건) 및 줄 14·17·19·20·23 전체 완수 후 main 병합 완료.
+
+남은 것
+- site 저장소 열림 작업 전원 완수 (집을 것이 없음).
+- 후속 단계: 대표님의 Cloudflare Workers 릴레이 배포(wrangler deploy) 후 줄 13 운영 끝점 확인.
+
+---
+
+[B 보고]
 2026-10-09 새 차례 3번: 줄 16 guide/ data-t 99개 속성 부여 및 ko·en 다국어 사전 실시간 전환 완료
 가지: feat/guide-i18n (994c740)
 
