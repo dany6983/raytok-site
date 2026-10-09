@@ -6,6 +6,73 @@
 ---
 
 [B 보고]
+2026-10-09 줄 17: 고객 사용량 화면 web/usage 구현 및 GET /usage 연동 완료
+가지: feat/usage (4a6806b)
+
+만든·바꾼 파일과 이유
+- web/usage/index.html — 신규 고객 사용량 조회 대시보드 화면: 이용권 코드(Bearer 토큰) 입력 폼, 이번 달 3대 핵심 지표 카드(이번 달 번역 글자 수 게이지·퍼센트 및 300만 상한 표시, Desk 회의 분 및 시간·분 누적 환산, 등록 기기 수 및 10대 동시 기기 상한·정상/도달 뱃지), 언어별 번역 현황(targets) 카드 목록, 개인정보 보호 및 사람 기록 0건 원칙(발화·원문·번역·화자 이름 일절 없음, 오직 순수 통계 숫자만 표시) 및 공정사용 정책 안내, 바닥 이용약관/개인정보 처리방침 링크, 외부 네트워크 요청 0건.
+- usage/index.html — /usage/ 접근 시 /web/usage/ 로 리다이렉트.
+- relay/src/room.js — GET /devices/count 내부 핸들러 추가: 토큰 해시 기준 등록 기기 수(devices.length) 및 한도 조회.
+- relay/src/index.js — GET /usage 끝점 개선: 라이선스 토큰 인증 시 등록 기기 수(device_count), 기기 상한(max_devices), 월간 번역 상한(cap_chars) 필드를 기존 응답에 병합 제공.
+- samples/usage_view_test.js — 신규 검증 시험 29건: web/usage 정적 마크업 검증, usage/ 리다이렉트 검증, 릴레이 모의 연동 Playwright E2E 검증(401 차단, 125만 글자, 185분/3시간 5분, 3대 기기, 언어별 현황, 사람 기록 0건, 외부 요청 0건, 재조회 복귀), 되돌림 실증 1건.
+- package.json — test:usage 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:usage (29건 전원 통과):
+=== 줄 17 고객 사용량 화면 (web/usage) 검증 시험 ===
+[Test 1] web/usage/index.html 정적 마크업 확인
+  [PASS] web/usage/index.html 파일 존재
+  [PASS] 헤더 타이틀 확인
+  [PASS] 인증 뷰 요소 확인
+  [PASS] 사용량 대시보드 뷰 요소 확인
+  [PASS] 번역 글자 수 메트릭 카드 확인
+  [PASS] Desk 회의 시간 메트릭 카드 확인
+  [PASS] 등록 기기 수 메트릭 카드 확인
+  [PASS] 언어별 번역 현황 섹션 확인
+  [PASS] 개인정보 및 사람 기록 0건 원칙 안내 확인
+  [PASS] 바닥 이용약관 링크 확인
+  [PASS] 바닥 개인정보 처리방침 링크 확인
+[Test 2] usage/index.html 리다이렉트 확인
+  [PASS] usage/index.html 파일 존재
+  [PASS] usage/ -> /web/usage/ 리다이렉트 확인
+[Test 3] 브라우저 E2E 및 릴레이 연동 검증
+  [PASS] 초기 화면: 인증 뷰 노출
+  [PASS] 초기 화면: 대시보드 뷰 숨김
+  [PASS] 잘못된 토큰 입력 시 401 오류 메시지 노출 확인
+  [PASS] 올바른 토큰 입력 후 대시보드 뷰 활성화
+  [PASS] 대시보드 진입 후 인증 뷰 숨김
+  [PASS] 번역 글자 수 1,250,000자 노출 확인
+  [PASS] Desk 회의 분 185분 노출 확인
+  [PASS] Desk 회의 시간 환산(3시간 5분) 확인
+  [PASS] 등록 기기 수 3대 노출 확인
+  [PASS] 고객 식별자 cust_RT0001 노출 확인
+  [PASS] 언어별 번역 en 800,000자 확인
+  [PASS] 언어별 번역 ja 450,000자 확인
+  [PASS] 전문/발화/이름 등 사람 기록 0건 확인
+  [PASS] 외부 네트워크 요청 0건 확인 (실제: 0)
+  [PASS] 다른 코드 조회 클릭 시 인증 뷰 복귀 확인
+  [PASS] 인증 뷰 복귀 시 대시보드 숨김 확인
+전부 통과 (29건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+web/usage/index.html 에서 <span>등록 기기 수</span> 타이틀 변경 시:
+  [PASS] Desk 회의 시간 메트릭 카드 확인
+  [FAIL] 등록 기기 수 메트릭 카드 확인
+복구 후 29건 전원 정상 통과 확인.
+
+3. 전체 회귀 시험 일괄 통과:
+test:usage(29건), test:guide(35건), test:terms(48건), test:wire(24건), test:dual(24건), test:report(27건), test:host(13건), test:live(43건), test:end(80건), test:desk-view(9건) 전원 초록 통과.
+
+한 줄 판정
+줄 17 고객 사용량 화면 web/usage 및 GET /usage 연동(이번 달 번역 글자·Desk 분·기기 수 순수 숫자 표출, 사람 기록 0건 원칙) 완료, 자동 검증 29건 및 되돌림 실증 통과 (feat/usage).
+
+막힌 것
+없음. 다음 순서(새 차례 9번, 줄 19: P-16 릴레이 자물쇠)로 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-09 줄 16: 사용 안내 페이지 guide/ ko·en 정리 및 Desk 회의 앱 소리 잡기 완료
 가지: feat/guide (a487a45)
 
