@@ -1103,6 +1103,7 @@ export default {
       }
 
       // 2) 라이선스 토큰 확인
+      let authedToken = null;
       if (!isAuthorized) {
         const licenseSecret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
         if (licenseSecret) {
@@ -1110,6 +1111,9 @@ export default {
           if (licRes.valid) {
             isAuthorized = true;
             authedSub = licRes.payload.sub;
+            if (authHeader.startsWith('Bearer ')) {
+              authedToken = authHeader.slice(7).trim();
+            }
           }
         }
       }
@@ -1122,18 +1126,32 @@ export default {
       const targetSub = authedSub ? authedSub : querySub;
       const month = url.searchParams.get('month') || '';
 
+      const capChars = parseInt(env.TRANSLATE_CAP_CHARS || '3000000', 10);
+      const maxDevices = parseInt(env.LICENSE_MAX_DEVICES || '10', 10);
+      let deviceCount = 0;
+
       let engineStats = {};
       let usageData = {};
       try {
         const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
         const limiter = env.ROOM.get(limiterId);
-        const [engRes, useRes] = await Promise.all([
+        const fetches = [
           limiter.fetch(new Request('http://internal/metric/engine')),
           limiter.fetch(new Request(`http://internal/usage/summary?month=${encodeURIComponent(month)}&sub=${encodeURIComponent(targetSub || '')}`))
-        ]);
+        ];
+        if (authedToken) {
+          const tokenHash = await sha256Hex(authedToken);
+          fetches.push(limiter.fetch(new Request(`http://internal/devices/count?tokenHash=${encodeURIComponent(tokenHash)}&max=${maxDevices}`)));
+        }
 
-        if (engRes.ok) engineStats = await engRes.json();
-        if (useRes.ok) usageData = await useRes.json();
+        const [engRes, useRes, devRes] = await Promise.all(fetches);
+
+        if (engRes && engRes.ok) engineStats = await engRes.json();
+        if (useRes && useRes.ok) usageData = await useRes.json();
+        if (devRes && devRes.ok) {
+          const devData = await devRes.json();
+          deviceCount = devData.count || 0;
+        }
       } catch (_) {
         const formatRate = (calls, fails) => calls > 0 ? Number(((fails / calls) * 100).toFixed(2)) + '%' : '0%';
         for (const [eng, s] of memoryEngineStats.entries()) {

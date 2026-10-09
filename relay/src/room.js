@@ -586,6 +586,22 @@ export class Room {
       });
     }
 
+    if (url.pathname === '/devices/count' && request.method === 'GET') {
+      const tokenHash = url.searchParams.get('tokenHash');
+      const maxDevices = parseInt(url.searchParams.get('max') || '3', 10);
+      if (!tokenHash) {
+        return new Response(JSON.stringify({ count: 0, max: maxDevices }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const key = `devices:${tokenHash}`;
+      const devices = (await this.ctx.storage.get(key)) || [];
+      const count = Array.isArray(devices) ? devices.length : 0;
+      return new Response(JSON.stringify({ count, max: maxDevices }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     if (url.pathname === '/usage/summary' && request.method === 'GET') {
       const now = new Date();
       const currentMonth = now.toISOString().slice(0, 7);

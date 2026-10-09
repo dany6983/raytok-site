@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RayTok 고객 사용량 조회</title>
+<meta name="description" content="RayTok B2B 및 교육용 이용권 이번 달 사용량 조회 — 번역 글자 수, Desk 회의 분, 등록 기기 수">
+<style>
+  :root {
+    --bg: #0b0f19;
+    --card-bg: #1e293b;
+    --card-hover: #24344d;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --primary: #38bdf8;
+    --primary-hover: #0284c7;
+    --primary-light: rgba(56, 189, 248, 0.15);
+    --border: #334155;
+    --success: #34d399;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --progress-bg: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    align-items: center;
+  }
+  .container {
+    width: 100%;
+    max-width: 780px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+  .logo-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-title h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .sub-tag {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.06);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .nav-right a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    margin-left: 12px;
+  }
+  .nav-right a:hover { color: var(--primary); text-decoration: underline; }
+
+  /* 인증 뷰 */
+  .auth-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-top: 40px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .auth-card h2 { font-size: 20px; margin-bottom: 10px; }
+  .auth-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  input[type="text"], input[type="password"] {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    color: #fff;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    font-family: monospace;
+    width: 100%;
+  }
+  input[type="text"]:focus, input[type="password"]:focus { border-color: var(--primary); }
+  .btn {
+    background: var(--primary);
+    color: #0f172a;
+    border: none;
+    font-weight: 700;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: var(--primary-hover); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .btn-outline:hover { color: #fff; border-color: var(--primary); }
+  .auth-msg {
+    color: var(--danger);
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* 사용량 대시보드 뷰 */
+  .hidden { display: none !important; }
+  .dashboard-header {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .dash-sub-info h2 { font-size: 18px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .dash-sub-info .month-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 13px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .dash-sub-id { font-size: 13px; color: var(--text-muted); }
+
+  /* 3대 핵심 지표 카드 */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .metric-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .metric-card.highlight {
+    border-color: rgba(56, 189, 248, 0.4);
+    background: linear-gradient(180deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 1) 100%);
+  }
+  .metric-title {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .metric-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 8px;
+    font-family: monospace;
+  }
+  .metric-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .progress-bar-bg {
+    background: var(--progress-bg);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: auto;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+  .progress-bar-fill.warn { background: var(--warn); }
+  .progress-bar-fill.danger { background: var(--danger); }
+
+  /* 세부 정보 영역 */
+  .section-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .section-card h3 {
+    font-size: 15px;
+    margin-bottom: 14px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .lang-item {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .lang-name { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .lang-chars { font-size: 15px; font-weight: 700; color: #fff; font-family: monospace; }
+  .lang-calls { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+  /* 공지 및 개인정보 안내 */
+  .notice-box {
+    background: rgba(15, 23, 42, 0.8);
+    border-left: 3px solid var(--primary);
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+  }
+  .notice-box p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+  .notice-box p:last-child { margin-bottom: 0; }
+  .notice-box strong { color: var(--text); }
+
+  footer {
+    width: 100%;
+    max-width: 780px;
+    margin-top: auto;
+    padding: 20px 0 10px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer a { color: var(--text-muted); text-decoration: none; }
+  footer a:hover { color: var(--primary); text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-title">
+      <h1>RayTok Usage</h1>
+      <span class="sub-tag">고객 사용량 조회</span>
+    </div>
+    <div class="nav-right">
+      <a href="/guide/">사용설명서</a>
+      <a href="/web/terms/">이용약관</a>
+      <a href="/privacy/">개인정보 처리방침</a>
+      <a href="/">홈</a>
+    </div>
+  </header>
+
+  <!-- 1. 인증 폼 화면 -->
+  <div id="view-auth" class="auth-card">
+    <h2>이용권 사용량 조회</h2>
+    <p>보유하신 RayTok 이용권 코드를 입력하여 이번 달의 번역 글자 수, 회의 시간, 기기 연결 현황을 확인하세요.</p>
+    <div class="auth-form">
+      <input type="password" id="input-token" placeholder="이용권 코드를 입력하세요 (Bearer 토큰)" autocomplete="off">
+      <button type="button" id="btn-auth" class="btn">사용량 조회하기</button>
+      <div id="auth-msg" class="auth-msg"></div>
+    </div>
+  </div>
+
+  <!-- 2. 사용량 대시보드 화면 -->
+  <div id="view-usage" class="hidden">
+    <div class="dashboard-header">
+      <div class="dash-sub-info">
+        <h2>
+          <span>이번 달 누적 사용 현황</span>
+          <span id="dash-month" class="month-badge">2026-10</span>
+        </h2>
+        <div class="dash-sub-id" id="dash-sub">고객 식별자: -</div>
+      </div>
+      <div>
+        <button type="button" id="btn-reauth" class="btn-outline">다른 코드 조회</button>
+      </div>
+    </div>
+
+    <!-- 3대 핵심 지표 카드 -->
+    <div class="metrics-grid">
+      <!-- 1) 이번 달 번역 글자 수 -->
+      <div class="metric-card highlight">
+        <div>
+          <div class="metric-title">
+            <span>이번 달 번역 글자 수</span>
+            <span id="chars-percent-badge" style="font-weight:700; color:var(--primary);">0.0%</span>
+          </div>
+          <div class="metric-value" id="val-chars">0</div>
+          <div class="metric-sub" id="sub-chars">월간 상한: 3,000,000자</div>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="bar-chars" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- 2) 이번 달 Desk 회의 분 -->
+      <div class="metric-card">
+        <div>
+          <div class="metric-title">
+            <span>Desk 회의 시간</span>
+            <span style="font-size:11px; color:#64748b;">실시간 STT 중계</span>
+          </div>
+          <div class="metric-value" id="val-desk">0분</div>
+          <div class="metric-sub" id="sub-desk">누적 0시간 0분</div>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="bar-desk" class="progress-bar-fill" style="width: 100%; background: #475569;"></div>
+        </div>
+      </div>
+
+      <!-- 3) 등록된 기기 수 -->
+      <div class="metric-card">
+        <div>
+          <div class="metric-title">
+            <span>등록 기기 수</span>
+            <span id="badge-device" style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(52,211,153,0.15); color:var(--success);">정상</span>
+          </div>
+          <div class="metric-value" id="val-devices">0대</div>
+          <div class="metric-sub" id="sub-devices">동시 기기 상한: 10대</div>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="bar-devices" class="progress-bar-fill" style="width: 0%; background: var(--success);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 언어별 번역 분포 (targets) -->
+    <div class="section-card" id="section-targets">
+      <h3>언어별 번역 현황</h3>
+      <div class="lang-grid" id="lang-list">
+        <div style="font-size:13px; color:var(--text-muted);">이번 달 번역 내역이 없습니다.</div>
+      </div>
+    </div>
+
+    <!-- 원가 감시 및 개인정보 안내 -->
+    <div class="notice-box">
+      <p><strong>조회 전용 안내</strong>: 본 페이지는 이용권의 월간 자원 소모량을 확인하는 읽기 전용 대시보드입니다.</p>
+      <p><strong>사람 기록 0건 원칙</strong>: RayTok은 개인정보 보호 및 기업 보안 원칙에 따라 회의 발화 전문, 번역문, 화자 이름 등 일체의 사람 기록을 저장하지 않으며 오직 집계된 <strong>순수 숫자 통계</strong>만 표시합니다.</p>
+      <p><strong>공정사용(Fair Use) 정책</strong>: 월 3,000,000자 번역 및 동시 기기 상한(3대/10대)을 초과할 경우 안전 가드가 작동합니다. 상한 증액이 필요하신 경우 B2B 지원팀으로 문의해 주세요.</p>
+    </div>
+  </div>
+
+  <footer>
+    <div>
+      <a href="/web/terms/">이용약관</a>
+      <span style="margin: 0 8px; color:#475569;">·</span>
+      <a href="/privacy/">개인정보 처리방침</a>
+    </div>
+    <div>RayTok B2B Usage Dashboard</div>
+  </footer>
+</div>
+
+<script>
+  (function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const relayUrl = urlParams.get('relay') || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://raytok-relay.raytok.workers.dev');
+
+    const viewAuth = document.getElementById('view-auth');
+    const inputToken = document.getElementById('input-token');
+    const btnAuth = document.getElementById('btn-auth');
+    const authMsg = document.getElementById('auth-msg');
+
+    const viewUsage = document.getElementById('view-usage');
+    const btnReauth = document.getElementById('btn-reauth');
+
+    const dashMonth = document.getElementById('dash-month');
+    const dashSub = document.getElementById('dash-sub');
+
+    const valChars = document.getElementById('val-chars');
+    const subChars = document.getElementById('sub-chars');
+    const barChars = document.getElementById('bar-chars');
+    const charsPercentBadge = document.getElementById('chars-percent-badge');
+
+    const valDesk = document.getElementById('val-desk');
+    const subDesk = document.getElementById('sub-desk');
+
+    const valDevices = document.getElementById('val-devices');
+    const subDevices = document.getElementById('sub-devices');
+    const barDevices = document.getElementById('bar-devices');
+    const badgeDevice = document.getElementById('badge-device');
+
+    const langList = document.getElementById('lang-list');
+
+    btnAuth.addEventListener('click', () => loadUsage());
+    inputToken.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadUsage(); });
+
+    btnReauth.addEventListener('click', () => {
+      inputToken.value = '';
+      viewUsage.classList.add('hidden');
+      viewAuth.classList.remove('hidden');
+      inputToken.focus();
+    });
+
+    function showAuthError(msg) {
+      authMsg.textContent = msg;
+      authMsg.style.display = 'block';
+    }
+
+    async function loadUsage() {
+      const token = inputToken.value.trim();
+      if (!token) {
+        showAuthError('이용권 코드를 입력해 주세요.');
+        return;
+      }
+      authMsg.style.display = 'none';
+      btnAuth.disabled = true;
+      btnAuth.textContent = '조회 중...';
+
+      try {
+        const res = await fetch(`${relayUrl}/usage`, {
+          method: 'GET',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) throw new Error('유효하지 않거나 만료된 이용권 토큰입니다. (401)');
+          if (res.status === 403) throw new Error('사용량 접근 권한이 없는 토큰입니다. (403)');
+          throw new Error(`사용량을 조회할 수 없습니다. (상태 코드: ${res.status})`);
+        }
+
+        const data = await res.json();
+        renderDashboard(data);
+        viewAuth.classList.add('hidden');
+        viewUsage.classList.remove('hidden');
+      } catch (err) {
+        showAuthError(err.message);
+      } finally {
+        btnAuth.disabled = false;
+        btnAuth.textContent = '사용량 조회하기';
+      }
+    }
+
+    function renderDashboard(data) {
+      // 1) 기본 정보
+      const month = data.month || new Date().toISOString().slice(0, 7);
+      dashMonth.textContent = month;
+      dashSub.textContent = `고객 식별자: ${data.sub || '알 수 없음'}`;
+
+      // 2) 번역 글자 수
+      const totalChars = Number(data.total_chars || 0);
+      const capChars = Number(data.cap_chars || 3000000);
+      valChars.textContent = totalChars.toLocaleString() + '자';
+      subChars.textContent = `월간 상한: ${capChars.toLocaleString()}자`;
+
+      const charsPct = Math.min(100, (totalChars / capChars) * 100);
+      barChars.style.width = charsPct.toFixed(1) + '%';
+      charsPercentBadge.textContent = charsPct.toFixed(1) + '%';
+
+      if (charsPct >= 90) {
+        barChars.className = 'progress-bar-fill danger';
+        charsPercentBadge.style.color = 'var(--danger)';
+      } else if (charsPct >= 80) {
+        barChars.className = 'progress-bar-fill warn';
+        charsPercentBadge.style.color = 'var(--warn)';
+      } else {
+        barChars.className = 'progress-bar-fill';
+        charsPercentBadge.style.color = 'var(--primary)';
+      }
+
+      // 3) Desk 회의 시간
+      const deskMin = Number(data.desk_minutes || 0);
+      valDesk.textContent = deskMin.toLocaleString() + '분';
+      const hours = Math.floor(deskMin / 60);
+      const remainingMin = deskMin % 60;
+      subDesk.textContent = `누적 ${hours}시간 ${remainingMin}분`;
+
+      // 4) 등록 기기 수
+      const devCount = Number(data.device_count || 0);
+      const maxDev = Number(data.max_devices || 10);
+      valDevices.textContent = `${devCount}대`;
+      subDevices.textContent = `동시 기기 상한: ${maxDev}대`;
+
+      const devPct = Math.min(100, (devCount / maxDev) * 100);
+      barDevices.style.width = devPct.toFixed(1) + '%';
+
+      if (devCount >= maxDev) {
+        badgeDevice.textContent = '상한 도달';
+        badgeDevice.style.background = 'rgba(248,113,113,0.15)';
+        badgeDevice.style.color = 'var(--danger)';
+      } else {
+        badgeDevice.textContent = '정상';
+        badgeDevice.style.background = 'rgba(52,211,153,0.15)';
+        badgeDevice.style.color = 'var(--success)';
+      }
+
+      // 5) 언어별 번역 분포
+      langList.innerHTML = '';
+      const targets = data.targets || {};
+      const targetKeys = Object.keys(targets);
+
+      if (targetKeys.length === 0) {
+        langList.innerHTML = '<div style="font-size:13px; color:var(--text-muted); grid-column:1/-1;">이번 달 번역 내역이 없습니다.</div>';
+      } else {
+        for (const lang of targetKeys) {
+          const item = targets[lang] || {};
+          const c = Number(item.chars || 0);
+          const calls = Number(item.calls || 0);
+
+          const card = document.createElement('div');
+          card.className = 'lang-item';
+          card.innerHTML = `
+            <div class="lang-name">${escapeHtml(lang.toUpperCase())}</div>
+            <div class="lang-chars">${c.toLocaleString()}자</div>
+            <div class="lang-calls">${calls.toLocaleString()}회 호출</div>
+          `;
+          langList.appendChild(card);
+        }
+      }
+    }
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  })();
+</script>
+</body>
+</html>
