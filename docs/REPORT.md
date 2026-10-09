@@ -6,6 +6,62 @@
 ---
 
 [B 보고]
+2026-10-09 줄 14: Desk 세션 보관 기한 30일 자동 삭제 및 주인 삭제 DELETE, web/desk 삭제 단추 추가 완료
+가지: feat/desk-retention (79db62f)
+
+만든·바꾼 파일과 이유
+- relay/src/room.js — 세션 보관 기한(기본 30일, env DESK_KEEP_DAYS) 자동 만료 필터링(GET /desk/sessions, GET /desk/session/:id) 및 주인 삭제 내부 핸들러(DELETE /desk/session/:id) 추가. 삭제 시 헤더, 청크 전체, ID 역인덱스, sub 세션 목록 인덱스 영구 삭제.
+- relay/src/index.js — DELETE /desk/session/:id 외부 엔드포인트 추가: 0x08 권한 검증 및 본인 sub 일치 검사, 권한 누락/타인 삭제 차단(403/404).
+- web/desk/index.html — 세션 상세 화면에 기록 삭제 단추(#btn-delete) 및 삭제 API 연동: 확인 대화상자, DELETE 호출 후 세션 목록 갱신 및 목록 화면 복귀.
+- privacy/index.html, web/privacy/index.html — 개인정보 처리방침 1항 보관 표에 Desk 회의 기록 보관 기한(기본 30일 경과 시 자동 영구 삭제, 웹 뷰어에서 소유자 직접 즉시 영구 삭제권) 명시.
+- samples/desk_view_test.js — 모의 DELETE 핸들러 및 브라우저 시험 내 기록 삭제 단추(#btn-delete) 노출 검증 추가.
+- relay/test/desk-retention.mjs — 신규 단위 시험 13건: 만료 세션 목록 자동 제외 검증, 만료 세션 단건 조회 404 검증, 타인 삭제 차단(404), 권한 누락 차단(403), 주인 삭제 성공(200 ok), 삭제 후 영구 제거 검증, UI/처리방침 문구 검증, 되돌림 실증 1건.
+- package.json — test:retention 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:retention (13건 전원 통과):
+=== 줄 14 Desk 세션 보관 기한 및 삭제 단위 시험 ===
+  [PASS] 최근 세션 업로드 성공 (id 발급)
+  [PASS] 35일 전 세션 업로드 성공 (id 발급)
+[Test 1] 30일 경과 세션 목록 자동 필터링 검증
+  [PASS] 만료 세션 제외되어 목록에 1건만 노출 (실제: 1)
+  [PASS] 유효한 최근 세션만 목록에 유지
+[Test 2] 만료 세션 상세 조회 시 404 검증
+  [PASS] 30일 지난 세션 상세 조회 시 404 반환
+[Test 3] 타인(User B) 토큰으로 삭제 시도 시 차단 검증
+  [PASS] 남의 세션 삭제 시 404 Not Found 반환
+[Test 4] 0x08 미보유 토큰 삭제 차단 검증
+  [PASS] 0x08 누락 토큰 삭제 시 403 Forbidden 반환
+[Test 5] 주인 토큰 영구 삭제 검증
+  [PASS] 주인 삭제 요청 200 OK
+  [PASS] deleted: recentId 응답 확인
+[Test 6] 삭제 후 영구 제거 확인
+  [PASS] 삭제 후 상세 조회 404 확인
+  [PASS] 삭제 후 목록 0건 확인
+[Test 7] web/desk 및 처리방침 UI/문구 확인
+  [PASS] web/desk 에 기록 삭제 단추 확인
+  [PASS] 처리방침에 30일 보관 및 즉시 영구 삭제권 명시 확인
+전부 통과 (13건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+relay/src/room.js 에서 만료 세션 필터링 로직 임시 무력화 시:
+  [PASS] 최근 세션 업로드 성공 (id 발급)
+  [FAIL] AssertionError [ERR_ASSERTION]: 만료 세션 제외되어 목록에 1건만 노출 (실제: 2)
+복구 후 13건 전원 정상 통과 확인.
+
+3. 전체 회귀 시험 일괄 통과:
+test:retention(13건), test:desk-view(10건), test:release(30건), test:design(30건), test:p16(20건), test:usage(29건), test:guide(35건), test:terms(48건), test:wire(24건), test:dual(24건), test:report(27건), test:host(13건), test:live(43건), test:end(80건) 전원 초록 통과.
+
+한 줄 판정
+줄 14 Desk 세션 보관 기한(기본 30일 자동 삭제, 주인 삭제 DELETE /desk/session/:id, web/desk 삭제 단추, 개인정보 처리방침 문장 연동) 완료, 자동 검증 13건 및 되돌림 실증 통과 (feat/desk-retention).
+
+막힌 것
+없음. 다음 작업으로 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-09 줄 23: 출시 전 끝까지 시험 (웹 강사→릴레이→청취 3대 E2E 및 Desk 연동) 완료
 가지: feat/release-e2e (324f577)
 
