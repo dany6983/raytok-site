@@ -329,10 +329,15 @@
         <div>
           <div class="metric-title">
             <span>이번 달 번역 글자 수</span>
-            <span id="chars-percent-badge" style="font-weight:700; color:var(--primary);">0.0%</span>
+            <span id="chars-percent-badge" style="font-weight:700; color:var(--primary);"></span>
           </div>
           <div class="metric-value" id="val-chars">0</div>
-          <div class="metric-sub" id="sub-chars">월간 상한: 3,000,000자</div>
+          <!--
+            ★ 10-09 — 상한 숫자를 **페이지에 적지 않는다.** 상한은 고객마다 계약서로 정해지고,
+            여기 적힌 값은 내부 감시선이었다(적는 순간 그게 한도가 된다 — 가격 문서 §4-1).
+            서버가 그 고객의 상한(`cap_chars`)을 줄 때만 띠와 퍼센트를 보인다.
+          -->
+          <div class="metric-sub" id="sub-chars">이번 달 누적</div>
         </div>
         <div class="progress-bar-bg">
           <div id="bar-chars" class="progress-bar-fill" style="width: 0%;"></div>
@@ -362,7 +367,7 @@
             <span id="badge-device" style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(52,211,153,0.15); color:var(--success);">정상</span>
           </div>
           <div class="metric-value" id="val-devices">0대</div>
-          <div class="metric-sub" id="sub-devices">동시 기기 상한: 10대</div>
+          <div class="metric-sub" id="sub-devices">등록된 기기</div>
         </div>
         <div class="progress-bar-bg">
           <div id="bar-devices" class="progress-bar-fill" style="width: 0%; background: var(--success);"></div>
@@ -382,7 +387,7 @@
     <div class="notice-box">
       <p><strong>조회 전용 안내</strong>: 본 페이지는 이용권의 월간 자원 소모량을 확인하는 읽기 전용 대시보드입니다.</p>
       <p><strong>사람 기록 0건 원칙</strong>: RayTok은 개인정보 보호 및 기업 보안 원칙에 따라 회의 발화 전문, 번역문, 화자 이름 등 일체의 사람 기록을 저장하지 않으며 오직 집계된 <strong>순수 숫자 통계</strong>만 표시합니다.</p>
-      <p><strong>공정사용(Fair Use) 정책</strong>: 월 3,000,000자 번역 및 동시 기기 상한(3대/10대)을 초과할 경우 안전 가드가 작동합니다. 상한 증액이 필요하신 경우 B2B 지원팀으로 문의해 주세요.</p>
+      <p><strong>공정사용(Fair Use) 기준</strong>: 월 사용량이 통상 범위를 크게 넘을 경우 협의합니다. 적용되는 상한은 고객별 계약서 기준이며, 상한 증액이 필요하시면 B2B 지원팀으로 문의해 주세요.</p>
     </div>
   </div>
 
@@ -484,23 +489,35 @@
 
       // 2) 번역 글자 수
       const totalChars = Number(data.total_chars || 0);
-      const capChars = Number(data.cap_chars || 3000000);
+      /*
+       * 상한은 **서버가 줄 때만** 있다 (10-09). 전에는 없으면 내부 감시선을 기본값으로
+       * 썼다 — 그러면 계약과 무관한 숫자가 고객 화면에 상한으로 뜬다.
+       */
+      const capChars = Number(data.cap_chars || 0);
       valChars.textContent = totalChars.toLocaleString() + '자';
-      subChars.textContent = `월간 상한: ${capChars.toLocaleString()}자`;
-
-      const charsPct = Math.min(100, (totalChars / capChars) * 100);
-      barChars.style.width = charsPct.toFixed(1) + '%';
-      charsPercentBadge.textContent = charsPct.toFixed(1) + '%';
-
-      if (charsPct >= 90) {
-        barChars.className = 'progress-bar-fill danger';
-        charsPercentBadge.style.color = 'var(--danger)';
-      } else if (charsPct >= 80) {
-        barChars.className = 'progress-bar-fill warn';
-        charsPercentBadge.style.color = 'var(--warn)';
-      } else {
+      if (!capChars) {
+        /* 상한이 없으면 띠·퍼센트는 뜻이 없다. 숨기고 누적만 보인다 (아래는 건너뛴다) */
+        subChars.textContent = '이번 달 누적 · 상한은 계약서 기준';
+        charsPercentBadge.textContent = '';
+        barChars.style.width = '0%';
         barChars.className = 'progress-bar-fill';
-        charsPercentBadge.style.color = 'var(--primary)';
+      } else {
+        subChars.textContent = `월간 상한: ${capChars.toLocaleString()}자`;
+
+        const charsPct = Math.min(100, (totalChars / capChars) * 100);
+        barChars.style.width = charsPct.toFixed(1) + '%';
+        charsPercentBadge.textContent = charsPct.toFixed(1) + '%';
+
+        if (charsPct >= 90) {
+          barChars.className = 'progress-bar-fill danger';
+          charsPercentBadge.style.color = 'var(--danger)';
+        } else if (charsPct >= 80) {
+          barChars.className = 'progress-bar-fill warn';
+          charsPercentBadge.style.color = 'var(--warn)';
+        } else {
+          barChars.className = 'progress-bar-fill';
+          charsPercentBadge.style.color = 'var(--primary)';
+        }
       }
 
       // 3) Desk 회의 시간
@@ -512,21 +529,30 @@
 
       // 4) 등록 기기 수
       const devCount = Number(data.device_count || 0);
-      const maxDev = Number(data.max_devices || 10);
+      /* 기기 상한도 **서버가 줄 때만** 있다 (10-09, 글자 수와 같은 까닭) */
+      const maxDev = Number(data.max_devices || 0);
       valDevices.textContent = `${devCount}대`;
-      subDevices.textContent = `동시 기기 상한: ${maxDev}대`;
-
-      const devPct = Math.min(100, (devCount / maxDev) * 100);
-      barDevices.style.width = devPct.toFixed(1) + '%';
-
-      if (devCount >= maxDev) {
-        badgeDevice.textContent = '상한 도달';
-        badgeDevice.style.background = 'rgba(248,113,113,0.15)';
-        badgeDevice.style.color = 'var(--danger)';
-      } else {
+      if (!maxDev) {
+        subDevices.textContent = '등록된 기기 · 상한은 계약서 기준';
+        barDevices.style.width = '0%';
         badgeDevice.textContent = '정상';
         badgeDevice.style.background = 'rgba(52,211,153,0.15)';
         badgeDevice.style.color = 'var(--success)';
+      } else {
+        subDevices.textContent = `동시 기기 상한: ${maxDev}대`;
+
+        const devPct = Math.min(100, (devCount / maxDev) * 100);
+        barDevices.style.width = devPct.toFixed(1) + '%';
+
+        if (devCount >= maxDev) {
+          badgeDevice.textContent = '상한 도달';
+          badgeDevice.style.background = 'rgba(248,113,113,0.15)';
+          badgeDevice.style.color = 'var(--danger)';
+        } else {
+          badgeDevice.textContent = '정상';
+          badgeDevice.style.background = 'rgba(52,211,153,0.15)';
+          badgeDevice.style.color = 'var(--success)';
+        }
       }
 
       // 5) 언어별 번역 분포
