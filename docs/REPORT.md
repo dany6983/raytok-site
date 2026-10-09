@@ -6,6 +6,75 @@
 ---
 
 [B 보고]
+2026-10-09 줄 20: 웹 화면 디자인 1차 앱 글자·간격 체계 적용 및 1.3배 확대 넘침 0 검증 완료
+가지: feat/design (70b5b2f)
+
+만든·바꾼 파일과 이유
+- web/common/theme.css — 신규 생성: 앱과 같은 글자·간격 디자인 체계(A2 줄 11 theme.js 동기화, 정본 raytok-native1/docs/design/README.md) 정의. 글자 체계 xs11·sm13(원문)·md15·lg17(번역 굵게)·xl22·hero30, 간격 4/8/12/16/24, 잉크 ink0.5 / ink0.45, 띠 78 및 동그라미 64, 말 줄 한 쌍(원문 13 ink0.5 / 번역 17 굵게) 및 1.3배 글자 확대 넘침 방지 규칙.
+- web/listener/index.html — theme.css 링크 및 디자인 체계 동기화 변수 적용.
+- web/host/index.html — theme.css 링크 및 디자인 체계 동기화 변수 적용.
+- web/desk/index.html — theme.css 링크 및 디자인 체계 동기화 변수 적용.
+- web/verify/index.html — theme.css 링크 및 디자인 체계 동기화 변수 적용.
+- samples/design_theme_test.js — 신규 검증 시험 30건: theme.css 토큰 검증, 4개 화면 연동 검증, Playwright 모바일 뷰포트(390px) 1.3배 글자 확대(130% zoom) 가로 넘침(overflow) 0건 실측 검증, 되돌림 실증 1건.
+- package.json — test:design 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:design (30건 전원 통과):
+=== 줄 20 웹 화면 디자인 1차 검증 시험 ===
+[Test 1] web/common/theme.css 디자인 체계 토큰 검증
+  [PASS] web/common/theme.css 파일 존재
+  [PASS] 글자 xs: 11px 확인
+  [PASS] 글자 sm: 13px (원문) 확인
+  [PASS] 글자 md: 15px (본문) 확인
+  [PASS] 글자 lg: 17px (번역 굵게) 확인
+  [PASS] 글자 xl: 22px (섹션 헤더) 확인
+  [PASS] 글자 hero: 30px (타이틀) 확인
+  [PASS] 간격 4/8/12/16/24 규격 확인
+  [PASS] 잉크 ink0.5 불투명도 확인
+  [PASS] 잉크 ink0.45 불투명도 확인
+  [PASS] 앱 디자인 띠 78 규격 확인
+  [PASS] 앱 디자인 동그라미 64 규격 확인
+[Test 2] 4개 주요 화면 theme 연동 검증
+  [PASS] listener 파일 존재 확인
+  [PASS] listener 에 theme.css 링크 포함 확인
+  [PASS] listener 에 13px(원문) / 17px(번역) 토큰 확인
+  [PASS] host 파일 존재 확인
+  [PASS] host 에 theme.css 링크 포함 확인
+  [PASS] host 에 13px(원문) / 17px(번역) 토큰 확인
+  [PASS] desk 파일 존재 확인
+  [PASS] desk 에 theme.css 링크 포함 확인
+  [PASS] desk 에 13px(원문) / 17px(번역) 토큰 확인
+  [PASS] verify 파일 존재 확인
+  [PASS] verify 에 theme.css 링크 포함 확인
+  [PASS] verify 에 13px(원문) / 17px(번역) 토큰 확인
+[Test 3] Playwright 1.3배 글자 확대 넘침(overflow) 0건 실측 검증
+  [PASS] listener 화면 1.3배 확대 시 가로 넘침 0건 검증 (diff: 0px)
+  [PASS] listener 화면 원문 13px 토큰 확인
+  [PASS] listener 화면 번역 17px 토큰 확인
+  [PASS] host 화면 1.3배 확대 시 가로 넘침 0건 검증 (diff: 0px)
+  [PASS] desk 화면 1.3배 확대 시 가로 넘침 0건 검증 (diff: 0px)
+  [PASS] verify 화면 1.3배 확대 시 가로 넘침 0건 검증 (diff: 0px)
+전부 통과 (30건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+web/common/theme.css 에서 --font-lg: 16px 로 임시 변경 시:
+  [PASS] 글자 md: 15px (본문) 확인
+  [FAIL] 글자 lg: 17px (번역 굵게) 확인
+복구 후 30건 전원 정상 통과 확인.
+
+3. 전체 회귀 시험 일괄 통과:
+test:design(30건), test:p16(20건), test:usage(29건), test:guide(35건), test:terms(48건), test:wire(24건), test:dual(24건), test:report(27건), test:host(13건), test:live(43건), test:end(80건), test:desk-view(9건) 전원 초록 통과.
+
+한 줄 판정
+줄 20 웹 화면 디자인 1차(청취·강사·Desk 보기·검증 4 화면 앱 디자인 글자 xs11·sm13·md15·lg17·xl22·hero30 및 간격 4/8/12/16/24 체계 적용, 1.3배 확대 넘침 0건) 완료, 자동 검증 30건 및 되돌림 실증 통과 (feat/design).
+
+막힌 것
+없음. 다음 순서(새 차례 11번, 줄 23: 출시 전 끝까지 시험)로 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-09 줄 19: P-16 릴레이 자물쇠 청취자 번역 403 및 요청 칸 허용 목록·요약·재생 차단 완료
 가지: feat/p16-lock (ba964c3)
 
