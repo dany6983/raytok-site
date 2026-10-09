@@ -90,6 +90,7 @@ async function sha256Hex(str) {
 
 export { Room } from './room.js';
 import { verifyLicense, mintLicense, computeSub } from './license.js';
+import { handlePaymentComplete, verifyPortoneWebhook } from './pay.js';
 
 // Crockford Base32 (I, L, O, U 제외 32자)
 const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -1490,6 +1491,61 @@ export default {
           }
         });
       }
+    }
+
+    // 1-2. 쿠폰 온라인 결제 P1: POST /pay/complete (포트원 V2 결제 승인 후 0x02 쿠폰 발급 - MASTER §18 B-2)
+    if (url.pathname === '/pay/complete' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const privSeed = env.LIC_TEST_SEED || null;
+        const result = handlePaymentComplete({
+          paymentId: body.paymentId,
+          productId: body.productId,
+          amount: body.amount,
+          customerName: body.customerName,
+          testKey: true,
+          privateKeySeed: privSeed
+        });
+        return new Response(JSON.stringify(result.body), {
+          status: result.status,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'bad_request', message: err.message }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      }
+    }
+
+    // 1-3. 포트원 웹훅: POST /pay/webhook
+    if (url.pathname === '/pay/webhook' && request.method === 'POST') {
+      const sig = request.headers.get('x-portone-signature') || '';
+      const secret = env.PORTONE_WEBHOOK_SECRET || 'test_webhook_secret_key_123';
+      const bodyText = await request.text();
+      const valid = verifyPortoneWebhook(sig, bodyText, secret);
+      if (!valid) {
+        return new Response(JSON.stringify({ error: 'invalid_signature' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS
+          }
+        });
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      });
     }
 
     // 2. 방 정보 조회: GET /room/CODE -> { exists, listeners, started_at }

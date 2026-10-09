@@ -12,6 +12,7 @@ import {
   handlePaymentComplete,
   verifyPortoneWebhook
 } from '../relay/src/pay.js';
+import relayWorker from '../relay/src/index.js';
 import { verifyCode, FLAG } from '../relay/tools/mint-code.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -215,6 +216,45 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
       revertedFail = true;
     }
     ok(revertedFail === true, '플래그가 0x01(host)로 변경 시 단언 실패 입증 (되돌림 실증 완료)');
+
+    // [Test 9] relay/src/index.js 라우트 실제 fetch 검증 (MASTER 03:35 B-2)
+    console.log('\n[Test 9] relay/src/index.js 라우트 실제 fetch 검증 (B-2)');
+    const mockEnv = {};
+    const httpReq = new Request('http://localhost/pay/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paymentId: 'pay_route_live_001',
+        productId: 'pass_1d',
+        amount: 3300,
+        customerName: 'RouteTest'
+      })
+    });
+    const httpRes = await relayWorker.fetch(httpReq, mockEnv, {});
+    ok(httpRes.status === 200, 'relay 라우트 POST /pay/complete 200 OK 응답 확인');
+    const httpData = await httpRes.json();
+    ok(httpData.ok === true && httpData.codes.length === 1, 'relay 라우트를 통한 0x02 쿠폰 정상 발급 확인');
+    ok(httpData.codes[0].flags === 0x02, 'relay 라우트 발급 쿠폰 플래그 0x02 확인');
+
+    // [Test 10] relay/src/index.js 웹훅 라우트 fetch 검증
+    const webhookSecret = 'test_webhook_secret_key_123';
+    const hookBody = JSON.stringify({ type: 'Transaction.Paid', paymentId: 'pay_route_live_001' });
+    const hookSig = crypto.createHmac('sha256', webhookSecret).update(hookBody, 'utf8').digest('hex');
+    const hookReq = new Request('http://localhost/pay/webhook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-portone-signature': hookSig
+      },
+      body: hookBody
+    });
+    const hookRes = await relayWorker.fetch(hookReq, { PORTONE_WEBHOOK_SECRET: webhookSecret }, {});
+    ok(hookRes.status === 200, 'relay 라우트 POST /pay/webhook 200 OK 서명 통과 확인');
+
+    // 라우트 되돌림 실증: 없는 라우트 호출 시 404 반환
+    const notFoundReq = new Request('http://localhost/pay/unknown', { method: 'POST' });
+    const notFoundRes = await relayWorker.fetch(notFoundReq, mockEnv, {});
+    ok(notFoundRes.status === 404, '라우트 미존재 시 404 반환 실증 (되돌림 실증)');
 
     console.log(`\n전부 통과 (${checks}건)`);
   } catch (err) {

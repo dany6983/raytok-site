@@ -6,6 +6,54 @@
 ---
 
 [B 보고]
+2026-10-10 마스터 03:35 지시 B-1(단체권 숨김) 및 B-2(relay 끝점 라우트 연결 및 fetch 시험) 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
+
+만든·바꾼 파일과 이유
+- web/buy/index.html — [B-1 급함 완수] 가격확정 문서에 없는 단체권 3종(20명 당일·10명 3박4일·20명 6박7일)을 `style="display: none;"` 으로 운영 화면에서 즉시 숨김 처리. 10-06 확정 가격인 단건 2종(1일권 3,300원 · 7일권 9,900원)만 노출 (bb8b412 즉시 푸시 완료).
+- relay/src/index.js — [B-2 완수] 결제 모듈 라우트 정식 연결: `POST /pay/complete` (결제 승인 검증 및 0x02 쿠폰 발급) 및 `POST /pay/webhook` (포트원 HMAC-SHA256 웹훅 서명 검증) 끝점 추가.
+- samples/pay_test.js — [B-2 완수] 실제 HTTP 호출 검증: `relayWorker.fetch` 로 `POST /pay/complete` 및 `POST /pay/webhook` 을 직접 호출하는 라우트 시험 2건 추가, 존재하지 않는 라우트 호출 시 404 반환 되돌림 실증 1건 추가 (총 45건 전원 통과).
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:pay (45건 전원 통과):
+=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시험 ===
+[Test 1] 상품 카탈로그 및 가격/플래그 검증 (6건 PASS)
+[Test 2] 단건 결제 승인 및 0x02 쿠폰 발급 검증 (7건 PASS)
+[Test 3] 단체 묶음 결제 승인 (10장) 및 고유성 검증 (13건 PASS)
+[Test 4] 중복 결제 요청 멱등성 검증 (2건 PASS)
+[Test 5] 결제 금액 위조 차단 검증 (2건 PASS)
+[Test 6] 포트원 웹훅 서명 검증 (2건 PASS)
+[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검증
+  [PASS] 구매 페이지 헤더 확인
+  [PASS] 전체 5개 상품 카드 보존 확인 (시험용)
+  [PASS] 운영 화면에 단건 2종만 노출 확인 (단체권 3종 숨김 - B-1)
+  [PASS] 상품 선택에 따른 결제 버튼 금액 갱신 확인
+  [PASS] 결제 완료 화면 노출 확인
+  [PASS] 결제 결과 쿠폰 카드 1개 노출 확인
+  [PASS] 쿠폰 바로가기 링크 생성 확인
+[Test 8] 되돌림 실증 1건 (D-09)
+  [PASS] 플래그가 0x01(host)로 변경 시 단언 실패 입증 (되돌림 실증 완료)
+[Test 9] relay/src/index.js 라우트 실제 fetch 검증 (B-2)
+  [PASS] relay 라우트 POST /pay/complete 200 OK 응답 확인
+  [PASS] relay 라우트를 통한 0x02 쿠폰 정상 발급 확인
+  [PASS] relay 라우트 발급 쿠폰 플래그 0x02 확인
+  [PASS] relay 라우트 POST /pay/webhook 200 OK 서명 통과 확인
+  [PASS] 라우트 미존재 시 404 반환 실증 (되돌림 실증)
+전부 통과 (45건)
+
+2. 기존 회귀 시험 일괄:
+test:design(30건), test:terms(51건), test:guide(27건), test:host(35건), test:release(30건) 전원 초록 통과.
+
+한 줄 판정
+B-1 단체권 운영 숨김 완료, B-2 relay 라우트 연결 및 fetch 엔드포인트 시험 45건 전원 통과 완료.
+
+배포 대기: 예 (relay/src/index.js 에 /pay/complete, /pay/webhook 라우트 신규 연결)
+
+---
+
+[B 보고]
 2026-10-09 줄 18: 쿠폰 온라인 결제 P1 테스트 모드 및 0x02 쿠폰 발급 완료
 가지: feat/pay-p1 (d87d3e7)
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
