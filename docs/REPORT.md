@@ -6,6 +6,84 @@
 ---
 
 [B 보고]
+2026-10-09 줄 13 점검 및 W5(1:N 실시간 강사 컨트롤 — 한 방 호스트 둘 허용) 완료
+가지: feat/w5-dual-host (220ee60)
+
+만든·바꾼 파일과 이유
+- relay/src/room.js — W5 1:N 실시간 강사 컨트롤: 한 방 호스트 둘(최대 2명) 허용, host_token 또는 동일 이용권 토큰(sub 일치) 검증, 3번째 호스트(429) 및 타인 토큰(403) 차단, 호스트 간 상호 메시지 중계(음성 자막·원고 script 교차 전달, 자기 자신 에코 없음), 잔여 호스트 존재 시 세션 유지 및 전체 이탈 시 10분 종료 예약 연동 (P-16).
+- relay/test/w5-dual-host.mjs — 신규 단위 시험 24건: 호스트 1 접속, 동일 이용권 호스트 2 접속, 3번째 호스트 429 차단, 타인 토큰 403 차단, 음성 말 줄 및 원고 script 교차 중계, 청취자 hello 수신, 단계적 호스트 종료 알람 제어 검증. 되돌림 실증 1건.
+- relay/package.json, package.json — test:dual 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. 줄 13 배포 상태 점검 (실측):
+- npx wrangler deployments list: 마지막 배포 2026-10-08T07:09:40Z (4673fbdc, 줄 11 버전).
+- curl GET https://raytok-relay.raytok.workers.dev/desk/sessions -> 404 Not Found 확인.
+-> 대표님 릴레이 배포(wrangler deploy) 전 상태로 줄 13은 배포 대기.
+
+2. npm run test:dual (24건 전원 통과):
+=== W5 1:N 실시간 강사 컨트롤: 한 방 호스트 둘 허용 및 중계 단위 시험 ===
+  [PASS] 방 초기화 성공 (sub=cust_A, code=W5ROOM)
+[Test 1] 호스트 1 접속 (host_token)
+  [PASS] 호스트 1 접속 허용 (101 Switching Protocols)
+  [PASS] 호스트 1 웹소켓 등록 확인
+[Test 2] 호스트 2 접속 (같은 이용권 토큰 tokenA)
+  [PASS] 호스트 2 접속 허용 (101 Switching Protocols)
+  [PASS] 호스트 2 웹소켓 등록 확인 (현재 호스트 2명)
+[Test 3] 세 번째 호스트 접속 차단
+  [PASS] 세 번째 호스트 429 차단 확인 (2명 상한 초과)
+[Test 4] 다른 사람(sub=cust_B)의 토큰으로 호스트 접속 시도
+  [PASS] 호스트 2 퇴장 후 현재 호스트 1명
+  [PASS] 다른 고객(sub 불일치)의 토큰은 403 차단
+  [PASS] 호스트 2 재접속 성공
+  [PASS] 청취자 2명 접속 확인
+[Test 5] 호스트 간 메시지 교차 중계 검증
+  [PASS] 청취자 1이 음성 자막 수신
+  [PASS] 청취자 2가 음성 자막 수신
+  [PASS] 호스트 2(PC 브라우저)가 호스트 1의 음성 자막 수신
+  [PASS] 호스트 1(자기 자신)에게는 에코되지 않음
+  [PASS] 청취자 1이 원고 script 수신
+  [PASS] 청취자 2가 원고 script 수신
+  [PASS] 호스트 1(폰)이 호스트 2의 script 수신
+  [PASS] 호스트 2(자기 자신)에게는 에코되지 않음
+  [PASS] 호스트 1이 청취자 hello 수신
+  [PASS] 호스트 2가 청취자 hello 수신
+[Test 6] 호스트 하나 끊김 시 알람 미발생 및 둘 다 끊길 때 알람 발생
+  [PASS] 호스트 1 종료 후 남은 호스트 1명
+  [PASS] 남은 호스트가 있으므로 10분 호스트 끊김 알람으로 변경되지 않음 (방 유지)
+  [PASS] 모든 호스트 종료
+  [PASS] 모든 호스트가 끊겼으므로 10분 후 종료 알람으로 새로 예약됨
+전부 통과 (24건)
+
+3. 되돌림 확인 실증 1건 (D-09):
+relay/src/room.js 에서 호스트 둘 허용(currentHosts >= 2)을 1명 제한(currentHosts >= 1)으로 되돌릴 때:
+  [PASS] 호스트 1 접속 허용 (101 Switching Protocols)
+  [PASS] 호스트 1 웹소켓 등록 확인
+[Test 2] 호스트 2 접속 (같은 이용권 토큰 tokenA)
+  [FAIL] 호스트 2 접속 허용 (101 Switching Protocols)
+복구 후 24건 전원 정상 통과 확인.
+
+4. 전체 회귀 시험 일괄 통과:
+- test:wire (25건 통과)
+- test:script (10건 통과)
+- test:relay (운영 limits 가드 정상 통과)
+- test:dual (24건 통과)
+- test:host (13건 통과)
+- test:live (43건 통과)
+- test:end (80건 통과)
+- test:report (27건 통과)
+- test:desk-view (9건 통과)
+
+한 줄 판정
+줄 13 운영 배포 대기(404) 확인, 대표님 05:56 현장 웹 지침에 따라 W5 한 방 호스트 둘 허용·교차 중계 구현 및 단위 시험 24건·되돌림 실증 통과 (feat/w5-dual-host).
+
+막힌 것
+- 줄 13 배포 뒤 확인: 대표님이 relay 배포(wrangler deploy)를 하셔야 /desk/sessions 실호출 및 태그 가능 (기본안: 대표님 배포 시 즉시 호출 검증 및 태그 진행).
+- 다음 작업: 새 차례 6번(줄 15: 이용약관 web/terms ko·en) 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-08 [열림] 줄 12: feat/desk-read main 합침 및 안내 문구 추가 완료
 커밋: 5c86464
 
