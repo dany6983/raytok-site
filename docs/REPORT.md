@@ -6,6 +6,65 @@
 ---
 
 [B 보고]
+2026-10-09 새 차례 1번: W-T 강사→청취 끝까지 시험 및 P-16 검증 완료
+가지: feat/w-t (abc3eb0)
+
+만든·바꾼 파일과 이유
+- samples/w_t_test.js — 신규 종단간 시험 22건: 마스터 13:25 사양 7개 항목 완전 검증 ① 문단 넘기기 시 청취자 A(en)에 번역문(trans[en]) 표출 및 번역 실패 언어(vi) 원문 fallback(R-15) 표출, ② para·total 와이어 사양 뱃지("1/4") 표출, ③ skip 시 청취 화면 건너뜀 3 표시, ④ break on:true 쉬는 시간 띠 표시 및 on:false 원고 복귀, ⑤ 청취 페이지 번역 미요청 및 외부 네트워크 요청 0건 (P-16 ①), ⑥ 리포트 3×3(TXT·DOC·PDF 인쇄문서) 다운로드 및 참석 CSV 다운로드, 방 닫기 후 자막 줄 삭제(끝 표시 1줄만 보존), ⑦ sendScript 미송출 시 1번 붉어짐 되돌림 실증 완료.
+- package.json — test:w-t 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:w-t (22건 전원 통과):
+=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16) ===
+[W-T STEP 1] 호스트 방 개설 및 사전 번역 준비
+  [PASS] 호스트 1단계 인증 통과 및 준비 화면 진입
+  [PASS] 원고 4개 문단 정상 분리
+  [PASS] 사전 번역 완료 및 강의 시작 준비 완료
+  [PASS] 강의 시작 → 6자리 방 코드 발급: ABC123
+[W-T STEP 2] 청취자 접속 (en, vi)
+  [PASS] 청취자 A (en) 참여 완료
+  [PASS] 청취자 B (vi) 참여 완료
+[W-T 검증 1·2] 문단 넘기기 → 번역문 표출 및 para·total 와이어 규격
+  [PASS] W-T ① 청취자 A에 해당 문단 번역문(trans[en]) 표출 확인
+  [PASS] W-T ① 번역 없는 언어(vi)는 원문 보존 표출 확인 (R-15)
+  [PASS] W-T ② 청취 화면에 para·total 규격 뱃지("1/4") 표출 확인 (실제: Script 1/4)
+[W-T 검증 3] 건너뜀 (skip) 처리
+  [PASS] W-T ③ 청취 화면에 건너뜀 3 표시 확인
+[W-T 검증 4] 쉬는 시간 끼어들기 (break on:true / on:false)
+  [PASS] W-T ④ break on:true 동안 쉬는 시간 띠 표시 확인
+  [PASS] W-T ④ break on:false 해제 시 원고 복귀 확인
+[W-T 검증 5] 청취 페이지 번역 미요청 및 외부 요청 0건 (P-16 ①)
+  [PASS] W-T ⑤ 원고 넘길 때 청취 페이지가 새로 번역을 청하지 않음 (P-16 ①)
+  [PASS] W-T ⑤ 바깥 네트워크 요청 0건 확인 (실제: 0)
+[W-T 검증 6] 리포트 3×3 다운로드, 참석 CSV, 방 닫기 후 줄 삭제
+  [PASS] 강의 끝 화면 진입
+  [PASS] W-T ⑥ 리포트 TXT 형식 정상 생성 (raytok_20261009_1331_en.txt)
+  [PASS] W-T ⑥ 리포트 DOC 형식 정상 생성 (raytok_20261009_1331_en.doc)
+  [PASS] W-T ⑥ 리포트 PDF 인쇄 문서 정상 생성
+  [PASS] W-T ⑥ 참석 CSV 정상 생성 (raytok_20261009_1331_roster_ko.csv)
+  [PASS] W-T ⑥ 방 닫기 신호 발송 및 방 종료 완료
+  [PASS] W-T ⑥ 청취자 세션 종료 상태 전이 확인
+  [PASS] W-T ⑥ 방 닫힌 뒤 릴레이에 자막 줄이 지워지고 끝 표시만 남음
+전부 통과 (22건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+web/host/index.html 에서 sendScript 송출을 임시 중단(sent = false) 시:
+  [FAIL] page.waitForSelector: Timeout 30000ms exceeded (청취자 A 번역문 표출 타임아웃 붉어짐)
+복구 후 22건 전원 정상 통과 확인.
+
+3. 와이어 정본 대조 및 전체 회귀 시험 통과:
+test:wire(24건 PASS), test:w-t(22건 PASS), test:retention(13건 PASS), test:release(30건 PASS), test:design(30건 PASS), test:p16(20건 PASS), test:usage(29건 PASS), test:guide(35건 PASS), test:terms(48건 PASS), test:dual(24건 PASS), test:report(27건 PASS), test:host(13건 PASS), test:live(43건 PASS), test:end(80건 PASS), test:desk-view(10건 PASS) 전원 초록 통과.
+
+한 줄 판정
+마스터 13:25 새 차례 1번 W-T 강사→청취 끝까지 시험(7대 사양, 외부 요청 0건 P-16 ①, 되돌림 실증) 완료 (feat/w-t).
+
+막힌 것
+없음. 다음 순서(새 차례 2번 줄 15 이용약관, 3번 줄 16 guide/ data-t 다국어 정리)로 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-09 줄 14: Desk 세션 보관 기한 30일 자동 삭제 및 주인 삭제 DELETE, web/desk 삭제 단추 추가 완료
 가지: feat/desk-retention (79db62f)
 
