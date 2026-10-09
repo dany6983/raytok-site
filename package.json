@@ -20,7 +20,8 @@
     "test:guide": "node samples/guide_test.js",
     "test:usage": "node samples/usage_view_test.js",
     "test:p16": "node relay/test/p16-lock.mjs",
-    "test:design": "node samples/design_theme_test.js"
+    "test:design": "node samples/design_theme_test.js",
+    "test:release": "node samples/release_e2e_test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"

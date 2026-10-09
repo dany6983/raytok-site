@@ -115,7 +115,7 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
     if (url.pathname === '/license/verify' && req.method === 'POST') {
       httpLog.push('POST /license/verify');
       return readBody((data) => {
-        if (data.token === 'valid_test_token') json(200, { valid: true, payload: { sub: 'instructor_1', flags: 12, exp: Math.floor(Date.now() / 1000) + 86400 } });
+        if (data.token && data.token.includes('valid')) json(200, { valid: true, payload: { sub: 'instructor_1', flags: 12, exp: Math.floor(Date.now() / 1000) + 86400 } });
         else json(401, { valid: false, message: 'Invalid signature' });
       });
     }
@@ -132,11 +132,19 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
 
     if (url.pathname === '/room' && req.method === 'POST') {
       httpLog.push('POST /room');
-      if ((req.headers.authorization || '') !== 'Bearer valid_test_token') return json(401, { error: 'unauthorized' });
+      const auth = req.headers.authorization || '';
+      if (!auth.includes('valid')) return json(401, { error: 'unauthorized' });
       return readBody((data) => {
         const room = newRoom(data.kind);
         json(200, { code: room.code, host_token: room.token });
       });
+    }
+
+    if (url.pathname === '/desk/sessions' && req.method === 'GET') {
+      httpLog.push('GET /desk/sessions');
+      return json(200, [
+        { id: 'desk_sess_1', code: '889900', host: 'Desk-PC-Host', started: Date.now() - 3600000, count: 2 }
+      ]);
     }
 
     // 정적 파일: /web/... , /assets/...
