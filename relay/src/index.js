@@ -1,5 +1,7 @@
 
 const ALLOWED_BODY_KEYS = new Set(['ver', 'session', 'items', 'last']);
+// RULE: P-16
+const ALLOWED_TRANSLATE_KEYS = new Set(['q', 'source', 'target', 'format', 'role']);
 const ALLOWED_SESSION_KEYS = new Set(['code', 'host', 'lang', 'started']);
 const ALLOWED_ITEM_KEYS = {
   common: new Set(['n', 'ts', 'kind', 'prev', 'hash']),
@@ -756,6 +758,11 @@ export default {
       });
     }
 
+    // RULE: P-16
+    if (url.pathname === '/summarize' || url.pathname === '/summary' || url.pathname === '/desk/summary' || url.pathname === '/tts' || url.pathname === '/playback') {
+      return jsonError('forbidden', 'Summarization and playback requests are forbidden (RULE: P-16)', 403, { why: 'p16_forbidden_endpoint' });
+    }
+
     if (url.pathname === '/translate' && request.method === 'POST') {
       const capChars = parseInt(env.TRANSLATE_CAP_CHARS || '3000000', 10);
       let currentUsedChars = 0;
@@ -763,6 +770,14 @@ export default {
       const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x02 | 0x04);
       if (!licenseRes.valid) {
         return jsonError(licenseRes.error, licenseRes.message, licenseRes.status);
+      }
+
+      // RULE: P-16 - 청취자 토큰 차단
+      if (licenseRes.payload && licenseRes.payload.role) {
+        const payloadRole = String(licenseRes.payload.role).toLowerCase().trim();
+        if (payloadRole === 'listener' || payloadRole === 'audience') {
+          return jsonError('forbidden', 'Listener tokens cannot request translation (RULE: P-16)', 403, { why: 'p16_listener_token' });
+        }
       }
 
       // 2) Rate Limit: 토큰 sub당 분당 60회 (Durable Object로 전역 카운팅 보장)
@@ -821,6 +836,21 @@ export default {
         body = await request.json();
       } catch (_) {
         return jsonError('bad_request', 'Invalid JSON body', 400, { why: 'invalid_json' });
+      }
+
+      // RULE: P-16 - 요청 칸 허용 목록 검사
+      if (typeof body === 'object' && body !== null && !Array.isArray(body)) {
+        for (const k of Object.keys(body)) {
+          if (!ALLOWED_TRANSLATE_KEYS.has(k)) {
+            return jsonError('bad_key', `Field '${k}' is not allowed in /translate body (RULE: P-16)`, 400, { why: 'bad_key', key: k });
+          }
+        }
+      }
+
+      // RULE: P-16 - 청취자 역할 차단
+      const reqRole = String((body && body.role) || request.headers.get('X-Role') || url.searchParams.get('role') || '').toLowerCase().trim();
+      if (reqRole === 'listener' || reqRole === 'audience') {
+        return jsonError('forbidden', 'Listeners cannot request translation (RULE: P-16)', 403, { why: 'p16_listener_translate' });
       }
 
       const { q, source, target } = body || {};

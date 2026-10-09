@@ -18,7 +18,8 @@
     "test:dual": "npm --prefix relay run test:dual",
     "test:terms": "node samples/terms_test.js",
     "test:guide": "node samples/guide_test.js",
-    "test:usage": "node samples/usage_view_test.js"
+    "test:usage": "node samples/usage_view_test.js",
+    "test:p16": "node relay/test/p16-lock.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"
