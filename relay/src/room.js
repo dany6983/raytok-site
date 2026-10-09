@@ -493,14 +493,21 @@ export class Room {
       });
     }
 
-    // 0-8. 내부 Desk 세션 목록 조회 (/desk/sessions)
+    // 0-8. 내부 Desk 세션 목록 조회 (/desk/sessions) — 보관 기한(기본 30일) 자동 필터링
     if (url.pathname === '/desk/sessions' && request.method === 'GET') {
       const sub = url.searchParams.get('sub');
       if (!sub) {
         return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json' } });
       }
-      const list = (await this.ctx.storage.get(`sub_sessions:${sub}`)) || [];
-      return new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } });
+      const keepDays = parseInt(this.env.DESK_KEEP_DAYS || '30', 10);
+      const cutoff = Date.now() - (keepDays * 86400 * 1000);
+      const rawList = (await this.ctx.storage.get(`sub_sessions:${sub}`)) || [];
+      const validList = rawList.filter(item => !item.started || item.started >= cutoff);
+
+      if (validList.length !== rawList.length) {
+        await this.ctx.storage.put(`sub_sessions:${sub}`, validList);
+      }
+      return new Response(JSON.stringify(validList), { headers: { 'Content-Type': 'application/json' } });
     }
 
     // 0-9. 내부 Desk 단건 세션 상세 조회 (/desk/session/:id)
@@ -519,6 +526,13 @@ export class Room {
       const header = await this.ctx.storage.get(`desk:${last}`);
       if (!header || (sub && header.sub !== sub)) {
         return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
+      }
+
+      // 보관 기한(기본 30일) 검사
+      const keepDays = parseInt(this.env.DESK_KEEP_DAYS || '30', 10);
+      const cutoff = Date.now() - (keepDays * 86400 * 1000);
+      if (header.started && header.started < cutoff) {
+        return new Response(JSON.stringify({ error: 'expired' }), { status: 404 });
       }
 
       // 조각들을 순서대로 결합하여 items 복원
@@ -546,6 +560,44 @@ export class Room {
       };
 
       return new Response(JSON.stringify(fullSession), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 0-9-1. 내부 Desk 세션 영구 삭제 (/desk/session/:id - DELETE)
+    if (url.pathname.startsWith('/desk/session/') && request.method === 'DELETE') {
+      const id = url.pathname.slice('/desk/session/'.length);
+      const sub = url.searchParams.get('sub');
+      if (!id) {
+        return new Response(JSON.stringify({ error: 'id_required' }), { status: 400 });
+      }
+
+      const last = await this.ctx.storage.get(`desk_id:${id}`);
+      if (!last) {
+        return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
+      }
+
+      const header = await this.ctx.storage.get(`desk:${last}`);
+      if (!header || (sub && header.sub !== sub)) {
+        return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
+      }
+
+      // 1) 청크 및 헤더, ID 인덱스 영구 삭제
+      const keysToDelete = [`desk_id:${id}`, `desk:${last}`];
+      for (let i = 0; i < (header.chunks || 1); i++) {
+        keysToDelete.push(`desk:${last}:${i}`);
+      }
+      await this.ctx.storage.delete(keysToDelete);
+
+      // 2) sub 세션 목록 인덱스에서도 제거
+      if (header.sub) {
+        const curList = (await this.ctx.storage.get(`sub_sessions:${header.sub}`)) || [];
+        const nextList = curList.filter(item => item.id !== id);
+        await this.ctx.storage.put(`sub_sessions:${header.sub}`, nextList);
+      }
+
+      return new Response(JSON.stringify({ ok: true, deleted: id }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });

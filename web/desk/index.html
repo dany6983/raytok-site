@@ -225,6 +225,7 @@
         <div class="detail-actions">
           <button class="btn btn-secondary" id="btn-download">JSON 내려받기</button>
           <button class="btn" id="btn-verify">검증</button>
+          <button class="btn" style="background: var(--danger); color: #fff;" id="btn-delete">기록 삭제</button>
         </div>
       </div>
 
@@ -263,6 +264,7 @@
     const btnBack = document.getElementById('btn-back');
     const btnDownload = document.getElementById('btn-download');
     const btnVerify = document.getElementById('btn-verify');
+    const btnDelete = document.getElementById('btn-delete');
     const detailCode = document.getElementById('detail-code');
     const detailHost = document.getElementById('detail-host');
     const detailTime = document.getElementById('detail-time');
@@ -270,12 +272,15 @@
 
     let currentToken = '';
     let currentSessionData = null;
+    let currentSessionId = null;
+    let currentSessionList = [];
 
     btnAuth.addEventListener('click', () => loadSessions());
     inputToken.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadSessions(); });
 
     btnLogout.addEventListener('click', () => {
       currentToken = '';
+      currentSessionId = null;
       inputToken.value = '';
       viewList.classList.add('hidden');
       viewDetail.classList.add('hidden');
@@ -283,6 +288,7 @@
     });
 
     btnBack.addEventListener('click', () => {
+      currentSessionId = null;
       viewDetail.classList.add('hidden');
       viewList.classList.remove('hidden');
     });
@@ -310,7 +316,8 @@
 
         const list = await res.json();
         currentToken = token;
-        renderSessionList(list);
+        currentSessionList = Array.isArray(list) ? list : [];
+        renderSessionList(currentSessionList);
         viewAuth.classList.add('hidden');
         viewList.classList.remove('hidden');
       } catch (err) {
@@ -364,6 +371,7 @@
 
         const data = await res.json();
         currentSessionData = data;
+        currentSessionId = id;
         renderSessionDetail(data);
 
         viewList.classList.add('hidden');
@@ -442,6 +450,38 @@
         window.location.href = '../verify/';
       } catch (e) {
         alert('검증 화면 이동 중 오류: ' + e.message);
+      }
+    });
+
+    // 세션 영구 삭제 (DELETE /desk/session/:id)
+    btnDelete.addEventListener('click', async () => {
+      if (!currentSessionId || !currentToken) return;
+      if (!confirm('이 회의 기록을 릴레이에서 영구 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.')) return;
+      btnDelete.disabled = true;
+      btnDelete.textContent = '삭제 중...';
+
+      try {
+        const res = await fetch(`${relayUrl}/desk/session/${encodeURIComponent(currentSessionId)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + currentToken }
+        });
+
+        if (!res.ok) {
+          throw new Error('삭제 실패 (상태: ' + res.status + ')');
+        }
+
+        alert('회의 기록이 영구 삭제되었습니다.');
+        currentSessionList = currentSessionList.filter(s => s.id !== currentSessionId);
+        currentSessionId = null;
+        currentSessionData = null;
+        renderSessionList(currentSessionList);
+        viewDetail.classList.add('hidden');
+        viewList.classList.remove('hidden');
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btnDelete.disabled = false;
+        btnDelete.textContent = '기록 삭제';
       }
     });
 

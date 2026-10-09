@@ -75,6 +75,13 @@ const srv = http.createServer((req, res) => {
     return;
   }
 
+  // 2-1) DELETE /desk/session/:id
+  if (url.pathname.startsWith('/desk/session/') && req.method === 'DELETE') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, deleted: 'ds_test' }));
+    return;
+  }
+
   // 3) Assets
   if (url.pathname.startsWith('/assets/')) {
     const f = path.join(ASSETS_DIR, url.pathname.replace('/assets/', ''));
@@ -147,8 +154,9 @@ const srv = http.createServer((req, res) => {
     ok(timelineText.includes('Wear a helmet'), '번역 줄 텍스트 표시 확인');
     ok(timelineText.includes('(익명)'), '이름 가린 세션 익명 표시 확인');
 
-    // 4. JSON 내려받기 단추 존재 확인
+    // 4. JSON 내려받기 단추 및 삭제 단추 존재 확인
     ok(await page.isVisible('#btn-download'), 'JSON 내려받기 단추 노출 확인');
+    ok(await page.isVisible('#btn-delete'), '기록 삭제 단추 노출 확인');
 
     // 5. 검증 단추 클릭 -> web/verify 로 이동하여 통과 뱃지 확인
     await page.click('#btn-verify');

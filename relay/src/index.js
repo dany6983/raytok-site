@@ -696,6 +696,37 @@ export default {
       });
     }
 
+    // 0-0-4. Desk 세션 삭제: DELETE /desk/session/:id (주인 삭제)
+    if (url.pathname.startsWith('/desk/session/') && request.method === 'DELETE') {
+      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x08);
+      if (!licenseRes.valid) {
+        return new Response(JSON.stringify({ why: 'token', message: licenseRes.message }), {
+          status: licenseRes.status || 401,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      const flags = Number(licenseRes.payload.flags || 0);
+      if ((flags & 0x08) === 0) {
+        return new Response(JSON.stringify({ why: 'forbidden', message: 'Desk flag 0x08 required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+
+      const id = url.pathname.slice('/desk/session/'.length);
+      const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+      const limiter = env.ROOM.get(limiterId);
+      const res = await limiter.fetch(new Request('http://internal/desk/session/' + encodeURIComponent(id) + '?sub=' + encodeURIComponent(licenseRes.payload.sub), {
+        method: 'DELETE'
+      }));
+      const data = await res.text();
+      return new Response(data, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    }
+
     if (url.pathname === '/license/verify' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const authHeader = request.headers.get('Authorization') || '';
