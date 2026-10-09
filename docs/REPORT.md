@@ -6,6 +6,79 @@
 ---
 
 [B 보고]
+2026-10-09 줄 16: 사용 안내 페이지 guide/ ko·en 정리 및 Desk 회의 앱 소리 잡기 완료
+가지: feat/guide (a487a45)
+
+만든·바꾼 파일과 이유
+- guide/index.html — 국문 사용 안내 페이지 개편: 웹 강사 화면 3단계(1단계 원고 준비 TXT·PDF·DOCX·HWPX 및 IndexedDB 사전 번역, 2단계 6자리 방 코드·QR 생성 및 참석자 초대, 3단계 순차 송출·skip·break 및 3×3 리포트·참석자 CSV), 청취자 화면 3단계(1단계 QR/코드 참여, 2단계 실시간 자막·음성 수신 및 ?view=screen 큰 화면, 3단계 로컬 3×3 저장), RayTok Desk 3단계(1단계 실행 및 인증, 2단계 마이크·루프백 설정, 3단계 양방향 자막 및 SHA-256 해시체인 무결성 보관), Desk 회의 앱별 소리 잡기(Zoom, Teams, Meet - 특허 출원 공개 규칙에 따라 내부 기술 대신 기능 명칭 및 음향 분리·하울링 방지 효과만 기술), 바닥 이용약관 및 개인정보 처리방침 링크 추가.
+- guide/en/index.html — 영문 사용 안내 페이지 개편: Web Presenter Screen 3 Steps, Audience Listener Screen 3 Steps, RayTok Desk Meeting 3 Steps, Audio Capture by Meeting App (Zoom, Teams, Meet), 바닥 링크 반영.
+- web/guide/index.html — /web/guide/ 접근 시 /guide/ 자동 이동 리다이렉트 페이지.
+- samples/guide_test.js — 신규 검증 시험 35건: 국문·영문 가이드 강사/청취자/Desk 3단계 및 회의 앱 3종 명시 검증, 바닥 링크 검증, web/guide 리다이렉트 검증, 되돌림 실증 1건.
+- package.json — test:guide 스크립트 추가.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:guide (35건 전원 통과):
+=== 줄 16 사용 안내 페이지 (guide/) 국문·영문 검증 시험 ===
+[Test 1] 국문 사용 안내 (guide/index.html) 필수 항목 확인
+  [PASS] guide/index.html 파일 존재
+  [PASS] 강사 화면 섹션 명시 확인
+  [PASS] 강사 1단계: 원고 준비(HWPX 포함) 확인
+  [PASS] 강사 2단계: 강의 시작 및 초대 확인
+  [PASS] 강사 3단계: 실시간 진행 및 리포트/CSV/방닫기 확인
+  [PASS] 청취자 화면 섹션 명시 확인
+  [PASS] 청취자 1단계: 세션 참여 확인
+  [PASS] 청취자 2단계: 실시간 자막/음성 청취 확인
+  [PASS] 청취자 3단계: 로컬 기록 저장 확인
+  [PASS] Desk 섹션 명시 확인
+  [PASS] Desk 1단계: 실행 및 인증 확인
+  [PASS] Desk 2단계: 소리 설정 확인
+  [PASS] Desk 3단계: 중계 및 해시 체인 무결성 보관 확인
+  [PASS] Desk 회의 앱 3종(Zoom, Teams, Meet) 명시 확인
+  [PASS] Desk 회의 앱 음향 캡처 효과 기술 확인
+  [PASS] 바닥에 이용약관 링크 확인
+  [PASS] 바닥에 개인정보 처리방침 링크 확인
+[Test 2] 영문 사용 안내 (guide/en/index.html) 필수 항목 확인
+  [PASS] guide/en/index.html 파일 존재
+  [PASS] English Presenter Screen section 확인
+  [PASS] English Presenter Step 1 확인
+  [PASS] English Presenter Step 2 확인
+  [PASS] English Presenter Step 3 확인
+  [PASS] English Listener section 확인
+  [PASS] English Listener Step 1 확인
+  [PASS] English Listener Step 2 확인
+  [PASS] English Listener Step 3 확인
+  [PASS] English Desk section 확인
+  [PASS] English Desk Step 1 확인
+  [PASS] English Desk Step 2 확인
+  [PASS] English Desk Step 3 확인
+  [PASS] English Meeting apps (Zoom, Teams, Meet) 확인
+  [PASS] English Terms of Service link 확인
+  [PASS] English Privacy Policy link 확인
+[Test 3] web/guide/ 리다이렉트 확인
+  [PASS] web/guide/index.html 파일 존재
+  [PASS] web/guide/index.html -> /guide/ 리다이렉트 확인
+전부 통과 (35건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+guide/index.html 에서 원고 준비 1단계 HWPX 표기 임시 제거 시:
+  [PASS] guide/index.html 파일 존재
+  [PASS] 강사 화면 섹션 명시 확인
+  [FAIL] 강사 1단계: 원고 준비(HWPX 포함) 확인
+복구 후 35건 전원 정상 통과 확인.
+
+3. 전체 회귀 시험 일괄 통과:
+test:guide(35건), test:terms(48건), test:wire(24건), test:dual(24건), test:report(27건), test:host(13건), test:live(43건), test:end(80건), test:desk-view(9건) 전원 초록 통과.
+
+한 줄 판정
+줄 16 사용 안내 페이지 guide/ ko·en 정리(강사·청취자·Desk 3단계 및 회의 앱별 소리잡기 이름·효과) 완료, 자동 검증 35건 및 되돌림 실증 통과 (feat/guide).
+
+막힌 것
+없음. 다음 순서로 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-09 줄 15: 이용약관 페이지 web/terms ko·en 및 전 화면 바닥 링크 추가 완료
 가지: feat/terms (f0fd56a)
 
