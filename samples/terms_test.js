@@ -143,4 +143,34 @@ targetPages.forEach((relPath) => {
      `${relPath} 바닥에 이용약관 링크 포함 확인`);
 });
 
+/* ── 7. PG 결제 심사 필수 — 사업자 정보 및 통신판매업 신고번호 자리 (MASTER 03:35) ── */
+console.log('\n[Test 7] PG 결제 심사 필수 — 바닥 사업자 정보 및 통신판매업 신고번호 자리');
+const pgFooterPages = [
+  'index.html',
+  'field/index.html',
+  'tour/index.html',
+  'student/index.html',
+  'ows/index.html',
+  'desk/index.html',
+  'guide/index.html',
+  'web/buy/index.html',
+  'web/terms/index.html',
+  'web/terms/en/index.html',
+  'privacy/index.html',
+  'web/privacy/index.html',
+  'web/host/index.html',
+  'web/desk/index.html',
+  'web/listener/index.html',
+  'lic/index.html',
+];
+
+pgFooterPages.forEach((relPath) => {
+  const filePath = path.join(ROOT, relPath);
+  const content = fs.readFileSync(filePath, 'utf-8');
+  ok(content.includes('주식회사 피엔엘에코') || content.includes('PNL ECO Co., Ltd.'),
+     `${relPath} 바닥에 상호명 포함 확인`);
+  ok(content.includes('통신판매업 신고번호') || content.includes('Mail-order Business Report'),
+     `${relPath} 바닥에 통신판매업 신고번호 자리 포함 확인`);
+});
+
 console.log(`\n전부 통과 (${checks}건)`);
