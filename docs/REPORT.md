@@ -6,6 +6,58 @@
 ---
 
 [B 보고]
+2026-10-10 마스터 지시 순서 ①~⑥ (단체 문의 ko·en, 결제 라우트, W-T, 줄 15 PG 심사 바닥 정보, 줄 16 guide) 전원 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
+
+만든·바꾼 파일과 이유
+- web/buy/index.html, samples/pay_test.js — [순서 ① 완수] 「10명 이상 단체는 문의해 주세요」 영역에 상단 언어 선택 버튼 및 ko·en 실시간 전환(`setLang`) 탑재. 단체 상품 카드 0개, 문의 줄 1개 검증 단언, 영문 문의 렌더링 검증, 단체 카드 노출 시 단언 실패하는 되돌림 실증 완료 (fe3241b 푸시 완료).
+- relay/src/index.js, samples/pay_test.js — [순서 ② B-2 완수] 결제 모듈 라우트 연결: `POST /pay/complete` 및 `POST /pay/webhook` 끝점 정식 연결. `relayWorker.fetch` 로 실제 HTTP 호출 시험 2건 및 404 미존재 되돌림 실증 완료 (총 51건 PASS, fba53f2 푸시 완료).
+- samples/w_t_test.js, samples/host_view_test.js — [순서 ④ 완수] W-T 강사→청취 끝까지 시험: 문단 번역문 표출, para·total 규격 뱃지 1/4, skip 건너뜀, break on/off, 외부 요청 0건(P-16 ①), 리포트 3×3(TXT/DOC/PDF) + 참석 CSV 로컬 생성 및 방 닫기 후 줄 삭제 검증 (`npm run test:host` 35건 전원 초록 통과).
+- web/terms/index.html, web/terms/en/index.html, samples/terms_test.js, 16개 주요 페이지 — [순서 ⑤ 줄 15 완수] PG 결제 심사 필수 통과 요건 전면 반영: 약관 본문에 사업장 소재지, 통신판매업 신고번호 자리(`[신고 준비 중]`), 공식 판매 상품(1일 3,300원, 7일 9,900원) 명시. 사이트 주요 16개 화면 바닥(footer)에 상호명 및 통신판매업 신고번호 자리 일괄 탑재. `samples/terms_test.js` [Test 7] 16개 화면 전수 검증 추가 (`npm run test:terms` 83건 전원 초록 통과, b0f2807 푸시 완료).
+- guide/index.html, samples/guide_test.js — [순서 ⑥ 줄 16 완수] 99개 `data-t` 및 5개 언어판(ko, en, ja, zh, vi) 실시간 전환 및 렌더링 검증 (`npm run test:guide` 27건 전원 초록 통과).
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:terms (83건 전원 통과):
+=== 줄 15 이용약관 — 준비 중 페이지 + 비공개 숫자 자물쇠 ===
+[Test 1] 국문 (web/terms/index.html) — 준비 중 고지 (7건 PASS)
+[Test 2] 영문 (web/terms/en/index.html) — 준비 중 고지 (5건 PASS)
+[Test 3] ★ 확정 안 된 조항이 약관에 없다 (8건 PASS)
+[Test 4] ★★ 비공개 숫자가 고객이 보는 글에 없다 (1건 PASS)
+[Test 5] 루트 경로 /terms/ 리다이렉트 (2건 PASS)
+[Test 6] 모든 대상 페이지 바닥(footer) 이용약관 링크 (28건 PASS)
+[Test 7] PG 결제 심사 필수 — 바닥 사업자 정보 및 통신판매업 신고번호 자리 (32건 PASS)
+전부 통과 (83건)
+
+2. npm run test:host (35건 전원 통과):
+=== L4-1 웹 강사 화면 검증 시험 === (13건 PASS)
+=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16) === (22건 PASS)
+전부 통과 (35건)
+
+3. npm run test:pay (51건 전원 통과):
+=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시험 ===
+[Test 1~6] 상품 카탈로그, 0x02 발급, 단체 10장 고유성, 멱등성, 위조 차단, 웹훅 서명 (32건 PASS)
+[Test 7] 브라우저 Playwright E2E: 단체 카드 0개, 문의 줄 1개, 영문 전환, 결과 링크 노출 (12건 PASS)
+[Test 8] 되돌림 실증 1: 0x01 변경 시 실패 입증 (1건 PASS)
+[Test 9~10] relayWorker.fetch 라우트 직접 호출 및 404 되돌림 실증 (6건 PASS)
+전부 통과 (51건)
+
+4. npm run test:guide (27건 전원 통과):
+=== 줄 16 사용 안내 페이지 (guide/) data-t 다국어 및 내용 검증 시험 ===
+[Test 1~3] data-t 99개, HWPX 명시, 5개 언어판(ko, en, ja, zh, vi) 실시간 전환 검증 (27건 PASS)
+
+한 줄 판정
+마스터 지시 순서 ①~⑥ (B-1 단체 문의 ko·en, B-2 relay 라우트 연결 및 fetch 검증, W-T 끝까지 시험, 줄 15 PG 심사 바닥 정보 83건, 줄 16 guide 5개 언어) 전원 초록 완수.
+
+배포 대기: 예 (relay/src/index.js 에 /pay/complete, /pay/webhook 라우트 신규 연결)
+
+막힌 것
+없음 (신고번호 자리는 마스터 지침대로 `[신고 준비 중]` / `[In Preparation]` 으로 비워 두고 나머지 법적 필수 고지 사항 완성함).
+
+---
+
+[B 보고]
 2026-10-10 마스터 03:36 대표님 결정(단건 둘만 판매 + 10명 이상 단체 문의 한 줄) 및 B-2 relay 끝점 연동 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
