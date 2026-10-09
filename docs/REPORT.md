@@ -6,6 +6,93 @@
 ---
 
 [B 보고]
+2026-10-09 줄 15: 이용약관 페이지 web/terms ko·en 및 전 화면 바닥 링크 추가 완료
+가지: feat/terms (f0fd56a)
+
+만든·바꾼 파일과 이유
+- web/terms/index.html — 국문 서비스 이용약관 전문: 제1조 서비스 지역 대한민국(Republic of Korea), 제2조 공정사용 정책(월 3,000,000자 상한, 동시 기기 3대/10대 상한, 10분 무음 자동 종료), 제3조 결제 및 환불 규정(사용 전 7일 이내 전액 환불 / 사용 후 환불 불가), 제4조 AI 기계번역 및 자동 음성인식 한계·오역 면책 고지, 제5조 개인정보 원칙, 제6조 운영사(주식회사 피엔엘에코) 정보 및 문의처. 영문 전환 링크 포함.
+- web/terms/en/index.html — 영문 서비스 이용약관 전문: Article 1 Korea Service Region, Article 2 Fair Use Policy, Article 3 Payments & Refund, Article 4 AI Translation Disclaimers, Article 5 Privacy Principles, Article 6 Company Info. 국문 전환 링크 포함.
+- terms/index.html, terms/en/index.html — 루트 /terms/ 접근 시 /web/terms/ 자동 이동 리다이렉트 페이지.
+- samples/terms_test.js — 신규 검증 시험 48건: 국문·영문 약관 필수 4대 조항 및 링크 무결성 검증, 14개 주요 화면 바닥의 이용약관 링크 존재 검증, 되돌림 실증 1건.
+- package.json — test:terms 스크립트 추가.
+- 바닥(footer) 이용약관 링크 추가 13개 파일 — index.html, desk/index.html, field/index.html, tour/index.html, student/index.html, ows/index.html, tools/build_home.py, web/host/index.html, web/desk/index.html, web/verify/index.html, web/listener/index.html, lic/index.html, privacy/index.html, web/privacy/index.html.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:terms (48건 전원 통과):
+=== 줄 15 이용약관 페이지 (web/terms) 및 바닥 링크 검증 시험 ===
+[Test 1] 국문 이용약관 (web/terms/index.html) 필수 조항 확인
+  [PASS] web/terms/index.html 파일 존재
+  [PASS] 제1조 서비스 지역: 대한민국 명시 확인
+  [PASS] 제2조 공정사용: 월 3,000,000자 상한 명시 확인
+  [PASS] 제2조 공정사용: 동시 기기 3대/10대 상한 명시 확인
+  [PASS] 제2조 공정사용: 10분 무음 자동 종료 명시 확인
+  [PASS] 제3조 환불: 사용 전 7일 이내 전액 환불 명시 확인
+  [PASS] 제3조 환불: 사용 후 환불 불가 명시 확인
+  [PASS] 제4조 기계번역 오역 한계 및 면책 고지 확인
+  [PASS] 영문 이용약관 전환 링크 존재 확인
+  [PASS] 개인정보 처리방침 링크 존재 확인
+[Test 2] 영문 이용약관 (web/terms/en/index.html) 필수 조항 확인
+  [PASS] web/terms/en/index.html 파일 존재
+  [PASS] Article 1 Service Region: Republic of Korea 확인
+  [PASS] Article 2 Fair Use: 3,000,000 chars limit 확인
+  [PASS] Article 2 Fair Use: 3 / 10 devices limit 확인
+  [PASS] Article 3 Refund: Full refund before use 확인
+  [PASS] Article 3 Refund: No refund after use 확인
+  [PASS] Article 4 Translation disclaimers 확인
+  [PASS] 국문 이용약관 전환 링크 존재 확인
+[Test 3] 루트 경로 /terms/ 리다이렉트 확인
+  [PASS] terms/index.html 파일 존재
+  [PASS] terms/index.html -> /web/terms/ 리다이렉트 확인
+[Test 4] 모든 대상 페이지 바닥(footer) 이용약관 링크 확인
+  [PASS] index.html 파일 존재
+  [PASS] index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] desk/index.html 파일 존재
+  [PASS] desk/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] field/index.html 파일 존재
+  [PASS] field/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] tour/index.html 파일 존재
+  [PASS] tour/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] student/index.html 파일 존재
+  [PASS] student/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] ows/index.html 파일 존재
+  [PASS] ows/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] tools/build_home.py 파일 존재
+  [PASS] tools/build_home.py 바닥에 이용약관 링크 포함 확인
+  [PASS] web/host/index.html 파일 존재
+  [PASS] web/host/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] web/desk/index.html 파일 존재
+  [PASS] web/desk/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] web/verify/index.html 파일 존재
+  [PASS] web/verify/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] web/listener/index.html 파일 존재
+  [PASS] web/listener/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] lic/index.html 파일 존재
+  [PASS] lic/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] privacy/index.html 파일 존재
+  [PASS] privacy/index.html 바닥에 이용약관 링크 포함 확인
+  [PASS] web/privacy/index.html 파일 존재
+  [PASS] web/privacy/index.html 바닥에 이용약관 링크 포함 확인
+전부 통과 (48건)
+
+2. 되돌림 확인 실증 1건 (D-09):
+web/terms/index.html 에서 서비스 지역 대한민국(Republic of Korea) 조항 제거 시:
+  [PASS] web/terms/index.html 파일 존재
+  [FAIL] 제1조 서비스 지역: 대한민국 명시 확인
+복구 후 48건 전원 정상 통과 확인.
+
+3. 전체 회귀 시험 일괄 통과:
+test:terms(48건), test:wire(25건), test:dual(24건), test:host(13건), test:live(43건), test:end(80건), test:report(27건), test:desk-view(9건) 전원 초록 통과.
+
+한 줄 판정
+줄 15 이용약관 페이지 web/terms ko·en 생성(필수 4대 조항 반영) 및 사이트·웹 화면 14곳 바닥 링크 추가 완료, 자동 검증 48건 및 되돌림 실증 통과 (feat/terms).
+
+막힌 것
+없음. 다음 순서인 새 차례 7번(줄 16: 사용 안내 페이지 guide/ 정리)으로 바로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-09 줄 13 점검 및 W5(1:N 실시간 강사 컨트롤 — 한 방 호스트 둘 허용) 완료
 가지: feat/w5-dual-host (220ee60)
 
