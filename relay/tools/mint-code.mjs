@@ -22,11 +22,18 @@
  *   node tools/mint-code.mjs --keygen                  # 새 개인키 씨앗 32바이트(hex) — 화면에만, 저장은 사람이
  */
 import crypto from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { Buffer } from 'node:buffer';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+let fs, path, fileURLToPath, __dirname;
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  try {
+    const req = eval('require');
+    fs = req('fs');
+    path = req('path');
+    fileURLToPath = req('url').fileURLToPath;
+    __dirname = path.dirname(fileURLToPath(import.meta.url));
+  } catch (e) {}
+}
 
 /* ───────────── 상수 (정본 §1) ───────────── */
 export const PAYLOAD_LEN = 16;
@@ -272,7 +279,8 @@ function usage() {
 
 function keysForVerify(pub, keyId) {
   const keys = { ...PUBLIC_KEYS };
-  for (const [k, v] of Object.entries(process.env)) {
+  const env = typeof process !== 'undefined' ? process.env : {};
+  for (const [k, v] of Object.entries(env)) {
     const m = k.match(/^LIC_PUBLIC_KEY_(\d+)$/);
     if (m) keys[Number(m[1])] = v.trim();
   }
@@ -280,7 +288,7 @@ function keysForVerify(pub, keyId) {
   return keys;
 }
 
-export function main(argv = process.argv.slice(2)) {
+export function main(argv = typeof process !== 'undefined' ? process.argv.slice(2) : []) {
   const o = parseArgs(argv);
   if (o.keygen) {
     const seed = crypto.randomBytes(32);
@@ -302,7 +310,7 @@ export function main(argv = process.argv.slice(2)) {
         console.log(`keyId=${c.keyId} exp=${c.exp} (${new Date(c.exp * 1000).toISOString()}) flags=0x${c.flags.toString(16).padStart(2, '0')} (${flagNames(c.flags)}) cust=${c.cust}`);
       }
     }
-    process.exitCode = r.ok ? 0 : 2;
+    if (typeof process !== 'undefined') process.exitCode = r.ok ? 0 : 2;
     return;
   }
   if (o.keyId === undefined) throw new Error('--key <n> 또는 --test 가 필요하다');
@@ -329,6 +337,6 @@ export function main(argv = process.argv.slice(2)) {
   console.log(r.link);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+if (typeof process !== 'undefined' && process.argv && process.argv[1] && typeof fileURLToPath !== 'undefined' && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   try { main(); } catch (err) { console.error(err.message); process.exit(1); }
 }

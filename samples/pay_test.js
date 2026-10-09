@@ -224,6 +224,68 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
     const linkHref = await page.getAttribute('.code-card a', 'href');
     ok(linkHref.startsWith('https://raytok.kr/lic/'), '쿠폰 바로가기 링크 생성 확인');
 
+    // [B-5] 모바일 화면 레이아웃 및 디자인 검증 (360px, 420px)
+    const mobileWidths = [420, 360];
+    for (const w of mobileWidths) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.goto(`${baseUrl}/web/buy/`);
+      await page.waitForTimeout(300);
+
+      // 1. 가격 오른쪽 끝 잘림 (product-card gap) & 가로 넘침 검증
+      const overflowData = await page.evaluate(() => {
+        const docEl = document.documentElement;
+        const body = document.body;
+        const scrollW = Math.max(docEl.scrollWidth, body.scrollWidth);
+        const clientW = Math.max(docEl.clientWidth, body.clientWidth);
+        return scrollW - clientW;
+      });
+      ok(overflowData <= 1, `모바일 ${w}px 에서 가로 넘침(잘림) 0건 검증`);
+
+      // 2. 단추가 단추로 안 보임 (배경색, 테두리 문제 해결 확인)
+      const btnBg = await page.evaluate(() => window.getComputedStyle(document.querySelector('.btn-pay')).backgroundColor);
+      // var(--primary-color) #38bdf8 -> rgb(56, 189, 248)
+      ok(btnBg === 'rgb(56, 189, 248)', `모바일 ${w}px 에서 결제 단추 배경색(primary) 정상 렌더링 확인`);
+
+      // 3. 입력칸 검은 박스 문제 (하드코딩 #090d16 제거 확인)
+      const inputBg = await page.evaluate(() => window.getComputedStyle(document.querySelector('input[type="text"]')).backgroundColor);
+      // var(--bg-dark) #0b0f19 -> rgb(11, 15, 25)
+      ok(inputBg === 'rgb(11, 15, 25)', `모바일 ${w}px 에서 입력칸 배경색(테마 연동) 정상 렌더링 확인`);
+
+      // 4. 바닥 메뉴 쪼개짐 (white-space: nowrap) 확인
+      const footerLinkWrap = await page.evaluate(() => window.getComputedStyle(document.querySelector('footer a')).whiteSpace);
+      ok(footerLinkWrap === 'nowrap', `모바일 ${w}px 에서 바닥 메뉴 줄바꿈 방지(nowrap) 확인`);
+    }
+
+    // [B-4] 테스트 모드 배지 (테스트 키 여부로 판정) 숨김 검증
+    const isBadgeVisible = await page.evaluate(() => {
+      const badge = document.querySelector('.test-badge');
+      return window.getComputedStyle(badge).display !== 'none';
+    });
+    ok(isBadgeVisible === true, '테스트 키 사용 시 테스트 모드 배지 노출 확인');
+
+    // 되돌림 실증: 운영 키일 때 숨겨지는지
+    const prodPage = await browser.newPage();
+    // 운영 환경 흉내를 위해 HTML 응답을 변조해서 로드
+    await prodPage.route('**/web/buy/', async route => {
+      const response = await route.fetch();
+      let body = await response.text();
+      body = body.replace(/const STORE_ID = 'store-raytok-test';/, "const STORE_ID = 'store-raytok-prod';");
+      body = body.replace(/const CHANNEL_KEY = 'channel-key-test';/, "const CHANNEL_KEY = 'channel-key-prod';");
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: body
+      });
+    });
+    await prodPage.goto(`${baseUrl}/web/buy/`);
+    await prodPage.waitForTimeout(300);
+    const isProdBadgeVisible = await prodPage.evaluate(() => {
+      const badge = document.querySelector('.test-badge');
+      return window.getComputedStyle(badge).display !== 'none';
+    });
+    ok(isProdBadgeVisible === false, '운영 결제 키 사용 시 테스트 모드 배지 숨김 확인 (B-4 되돌림 실증 완료)');
+    await prodPage.close();
+
     await browser.close();
     server.close();
 

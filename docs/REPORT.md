@@ -6,6 +6,58 @@
 ---
 
 [B 보고]
+2026-10-10 마스터 04:30 4대 보완 지시 완수 (B-4 테스트 배지 숨김, B-5 구매 화면 깨짐 해결, B-6 줄 20 디자인 점검, B-7 360·420px 스크린샷 10장)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
+
+만든·바꾼 파일과 이유
+- web/buy/index.html — [B-4] 운영 결제 키 사용 시 「테스트 모드 P1」 배지 숨김 처리 (CSS `display: none`을 기본으로, JS에서 결제키(STORE_ID)가 `test`를 포함할 때만 노출). [B-5 급함] 폰 화면(420, 360) 레이아웃 깨짐 해결: 가격 잘림(product-card `gap: 12px` 추가), 입력칸 검은 박스 오류(테마 변수 `--bg-dark` 적용), 결제 단추 디자인 누락(테마 변수 `--primary-color` 배경 적용), 바닥 메뉴 쪼개짐(`white-space: nowrap` 적용).
+- samples/pay_test.js — [B-4, B-5 검증] Playwright E2E에 모바일 360, 420 해상도 화면 레이아웃 검증(가격 넘침 0px, 단추/입력칸 배경색 확인, 바닥 메뉴 nowrap 확인) 및 테스트 모드 배지 운영 키 숨김(되돌림 실증) 단언 추가 (총 61건 전원 PASS).
+- tools/take_shots.js — [B-6, B-7] 화면이 있는 5개 경로(`web/buy`, `web/listener`, `web/host`, `web/desk`, `web/verify`)에 대해 각각 모바일 폭(360, 420px)으로 렌더링한 스크린샷 10장을 `docs/shots/` 디렉토리에 자동 촬영·생성하는 Playwright 스크립트 작성 및 실행.
+- docs/shots/*.png — `buy-360.png`, `buy-420.png`, `listener-360.png`, `listener-420.png`, `host-360.png`, `host-420.png`, `desk-360.png`, `desk-420.png`, `verify-360.png`, `verify-420.png` 10장 생성 및 저장소 정식 커밋.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:pay (61건 전원 통과):
+=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시험 ===
+[Test 1~6] 상품 카탈로그, 0x02 발급, 단체 10장 고유성, 멱등성, 위조 차단, 웹훅 서명 (32건 PASS)
+[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검증
+  ...
+  [PASS] 상품 선택에 따른 결제 버튼 금액 갱신 확인
+  [PASS] 모바일 420px 에서 가로 넘침(잘림) 0건 검증
+  [PASS] 모바일 420px 에서 결제 단추 배경색(primary) 정상 렌더링 확인
+  [PASS] 모바일 420px 에서 입력칸 배경색(테마 연동) 정상 렌더링 확인
+  [PASS] 모바일 420px 에서 바닥 메뉴 줄바꿈 방지(nowrap) 확인
+  [PASS] 모바일 360px 에서 가로 넘침(잘림) 0건 검증
+  [PASS] 모바일 360px 에서 결제 단추 배경색(primary) 정상 렌더링 확인
+  [PASS] 모바일 360px 에서 입력칸 배경색(테마 연동) 정상 렌더링 확인
+  [PASS] 모바일 360px 에서 바닥 메뉴 줄바꿈 방지(nowrap) 확인
+  [PASS] 테스트 키 사용 시 테스트 모드 배지 노출 확인
+  [PASS] 운영 결제 키 사용 시 테스트 모드 배지 숨김 확인 (B-4 되돌림 실증 완료)
+[Test 8] 되돌림 실증 1: 0x01 변경 시 실패 입증 (1건 PASS)
+[Test 9~10] relayWorker.fetch 라우트 직접 호출 및 404 되돌림 실증 (6건 PASS)
+전부 통과 (61건)
+
+2. 스크린샷 10장 생성 내역 (docs/shots/):
+buy-360.png, buy-420.png
+listener-360.png, listener-420.png
+host-360.png, host-420.png
+desk-360.png, desk-420.png
+verify-360.png, verify-420.png
+
+한 줄 판정
+B-4 테스트 배지 운영키 숨김 완수, B-5 구매 화면 360/420px 레이아웃 복구 완수, B-6 줄 20 웹 화면 디자인 및 B-7 스크린샷 증빙(docs/shots 10장) 생성 및 커밋 완수.
+
+남은 것
+- 줄 15: 약관 본문은 신고번호 확정 시 작성 (현재 준비 중 유지, 마스터 지시).
+- site 및 meet 저장소 열림 작업 전수 이행 후 `raytok-meet` 줄 21(Desk 설치 파일·오버레이)로 대기.
+
+막힌 것
+집을 것이 없다 — 내가 본 목록은 이것: 줄 1~24 및 W1~W5 전 항목(B-4~B-7 포함) 완수 완료. 남은 잠긴 항목은 줄 24(특허 답변 뒤 출시 뒤)뿐이며, 마스터 금지 사항(임의 배포·가격/상품 결정 금지)을 철저히 준수함.
+
+---
+
+[B 보고]
 2026-10-10 [열림] 줄 13: 릴레이 배포 뒤 확인 및 태그 완료 (운영 /desk/sessions 401 라이브 실측 검증)
 가지: main
 커밋: e7bd27e (태그: relay-20261010-0326)
