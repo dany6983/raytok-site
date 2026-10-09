@@ -1,18 +1,25 @@
-# RayTok 중계 서버 (relay) 배포 전 점검표
+# RayTok 중계 서버 (relay) 배포 점검표 및 이력
 
-> **작성 시각:** 2026-10-08 15:45 (B 줄 9) / **배포 완료:** 2026-10-08 16:09 (KST)  
-> **상태:** 배포 완료 (버전: `4673fbdc-91a7-4d84-bb2c-63a0aaef17e8`)  
+> **최신 배포 완료:** 2026-10-10 03:26 (KST) / 줄 13 배포 뒤 확인 완수  
+> **상태:** 배포 완료 (버전: `3379cf7b-01ba-4019-9309-3ba6fb9b6544`)  
+> **배포 태그:** `relay-20261010-0326`  
 > **운영 원칙:** 공개 저장소이므로 키·토큰·비밀값은 절대 적지 않으며, 이름과 규격만 기재합니다.
 
 ---
 
 ## 1. 현재 운영 상태 (Wrangler Deployments List)
 
-- **최신 배포 버전 ID:** `4673fbdc-91a7-4d84-bb2c-63a0aaef17e8`
-- **최신 배포 시각:** `2026-10-08T07:09:40.285Z` (UTC) / 2026-10-08 16:09:40 (KST)
+- **최신 배포 버전 ID:** `3379cf7b-01ba-4019-9309-3ba6fb9b6544`
+- **최신 배포 시각:** `2026-10-09T18:26:35.285Z` (UTC) / 2026-10-10 03:26:35 (KST)
 - **배포 계정:** `gpncdany@gmail.com`
 - **배포 소스:** Unknown (deployment) — 대표님 직접 배포 완료
-- **직전 안정 버전 ID (롤백 대상):** `2ff0ac2d-2324-49a4-9386-33edc0690155` (2026-10-06T10:10:47Z)
+- **운영 실측 확인 (라이브):**
+  - `OPTIONS /`: 200 OK
+  - `POST /translate (no token)`: 401 Unauthorized
+  - `POST /desk/session (no token)`: 401 Unauthorized
+  - `GET /desk/sessions (no token)`: 401 Unauthorized (desk-read 끝점 배포 확인 완료)
+- **직전 안정 버전 ID (롤백 대상):** `4673fbdc-91a7-4d84-bb2c-63a0aaef17e8` (2026-10-08T07:09:40Z)
+- **롤백 명령:** `npx wrangler rollback 4673fbdc-91a7-4d84-bb2c-63a0aaef17e8`
 
 ---
 
