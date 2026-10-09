@@ -16,7 +16,8 @@
     "test:hwpx": "node samples/hwpx_test.js",
     "test:desk-view": "node samples/desk_view_test.js",
     "test:dual": "npm --prefix relay run test:dual",
-    "test:terms": "node samples/terms_test.js"
+    "test:terms": "node samples/terms_test.js",
+    "test:guide": "node samples/guide_test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"
