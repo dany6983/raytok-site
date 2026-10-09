@@ -116,14 +116,23 @@
     footer { margin-top: 32px; text-align: center; font-size: var(--font-sm); color: var(--text-muted); }
     footer a { color: var(--text-muted); text-decoration: none; margin: 0 8px; }
     footer a:hover { color: var(--text); }
+
+    .lang-btn { background: #1e293b; color: #94a3b8; border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .lang-btn.active { background: var(--primary); color: #0f172a; font-weight: 700; border-color: var(--primary); }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <span class="test-badge">테스트 모드 P1</span>
-      <h1>RayTok 손님 쿠폰 구매</h1>
-      <p class="sub">구매 즉시 발급된 링크로 손님이 바로 입장합니다.</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span class="test-badge">테스트 모드 P1</span>
+        <div>
+          <button type="button" id="btn-lang-ko" class="lang-btn active" onclick="setLang('ko')">한국어</button>
+          <button type="button" id="btn-lang-en" class="lang-btn" onclick="setLang('en')">English</button>
+        </div>
+      </div>
+      <h1 id="buy-title">RayTok 손님 쿠폰 구매</h1>
+      <p class="sub" id="buy-sub">구매 즉시 발급된 링크로 손님이 바로 입장합니다.</p>
     </header>
 
     <div id="view-buy">
@@ -326,6 +335,35 @@
         alert(`${allLinks.length}개의 쿠폰 링크가 복사되었습니다.`);
       };
     }
+
+    function setLang(lang) {
+      const isEn = lang === 'en';
+      document.getElementById('btn-lang-ko').classList.toggle('active', !isEn);
+      document.getElementById('btn-lang-en').classList.toggle('active', isEn);
+      document.documentElement.lang = lang;
+      localStorage.setItem('raytok_buy_lang', lang);
+
+      document.getElementById('buy-title').textContent = isEn ? 'Purchase RayTok Guest Pass' : 'RayTok 손님 쿠폰 구매';
+      document.getElementById('buy-sub').textContent = isEn ? 'Guests can enter immediately with the issued link.' : '구매 즉시 발급된 링크로 손님이 바로 입장합니다.';
+      document.getElementById('group-inquiry-text').textContent = isEn ? 'For groups of 10 or more, please contact us.' : '10명 이상 단체는 문의해 주세요.';
+      document.getElementById('group-inquiry-link').textContent = isEn ? 'Contact Us' : '문의하기';
+
+      const p1 = document.querySelector('.product-card[data-id="pass_1d"]');
+      if (p1) {
+        p1.querySelector('h3').textContent = isEn ? 'Guest 1-Day Pass (1 Qty)' : '손님 1일권 (1장)';
+        p1.querySelector('p').textContent = isEn ? 'Valid for 24 hours · For solo travelers' : '24시간 동안 사용 가능 · 개인 여행 손님용';
+      }
+      const p7 = document.querySelector('.product-card[data-id="pass_7d"]');
+      if (p7) {
+        p7.querySelector('h3').textContent = isEn ? 'Guest 7-Day Pass (1 Qty)' : '손님 7일권 (1장)';
+        p7.querySelector('p').textContent = isEn ? 'Valid for 7 days · For multi-day tour guests' : '7일 동안 사용 가능 · 다일 투어 손님용';
+      }
+
+      btnPay.textContent = `${selectedProduct.price.toLocaleString()}원 ${isEn ? 'Pay' : '결제하기'}`;
+    }
+
+    const initLang = new URLSearchParams(location.search).get('lang') || localStorage.getItem('raytok_buy_lang') || 'ko';
+    if (initLang === 'en') setLang('en');
   </script>
 </body>
 </html>

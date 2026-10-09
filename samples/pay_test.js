@@ -191,6 +191,12 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
     ok(inquiryText.includes('10명 이상 단체는 문의해 주세요'), '단체 문의 문구 정확성 확인');
     ok(inquiryText.includes('문의하기'), '단체 문의 링크 확인');
 
+    // English 전환 검증 (MASTER 03:36 ko·en 필수)
+    await page.click('#btn-lang-en');
+    const enInquiryText = await page.textContent('#group-inquiry');
+    ok(enInquiryText.includes('For groups of 10 or more, please contact us'), '영문 단체 문의 문구 렌더링 확인 (ko·en)');
+    await page.click('#btn-lang-ko'); // 다시 ko로 복귀
+
     // 03:36 되돌림 실증: 단체 카드가 보이면 "승인된 상품만 판다"가 붉어져야 함
     let groupCardRevertFailed = false;
     try {
