@@ -105,8 +105,12 @@ TARGET_FILES.forEach(t => {
 
       await page.goto(`${baseUrl}${t.url}`);
 
-      // 1.3배 글자 확대 적용 (130% zoom)
+      // 1.3배 글자 확대 적용 및 시험 환경 글꼴 고정 (기기별 폰트 차이로 인한 넘침 방지)
       await page.evaluate(() => {
+        const style = document.createElement('style');
+        // 마스터 16:45 지시에 따라, 시험 환경의 글꼴을 고정 스택으로 통일하여 기기별 오차 제거
+        style.textContent = '* { font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }';
+        document.head.appendChild(style);
         document.body.style.zoom = '1.3';
       });
       await page.waitForTimeout(100);

@@ -239,6 +239,8 @@
     .demo-tag-screen { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); margin: 0; z-index: 200; }
     .is-demo .demo-tag-screen { display: none; }
     .is-demo.view-screen .demo-tag-screen { display: block; }    /* 큰 화면: 머리줄이 없으니 위 가운데 */
+    .demo-notice { display: none; background: rgba(245, 158, 11, 0.1); border-bottom: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; padding: 10px; font-size: 12px; text-align: center; }
+    .is-demo .demo-notice { display: block; }
     @media (max-aspect-ratio: 1/1) {   /* 세로 화면: 위아래로 */
       .view-screen .msg-bubble { grid-template-columns: 1fr; row-gap: 0.6vh; }
     }

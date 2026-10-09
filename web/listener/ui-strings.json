@@ -789,6 +789,10 @@
     "break_band": {
       "ko": "쉬는 시간",
       "en": "Break"
+    },
+    "demo_notice": {
+      "ko": "※ 이 화면의 대화는 앱 작동을 보여주는 예시이며, 실제 번역 품질과는 무관합니다.",
+      "en": "※ The dialogue on this screen is an example showing how the app works, and is not related to actual translation quality."
     }
   }
 }
