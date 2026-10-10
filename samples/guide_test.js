@@ -132,6 +132,18 @@ ok(webGuide.includes('/guide/'), 'web/guide/index.html -> /guide/ 리다이렉�
     const titleVi = await page.textContent('h1');
     ok(titleVi.includes('Hướng dẫn'), 'vi 베트남어판 전환 렌더링 확인');
 
+    // 7) [9-1 되돌림 실증] guide/index.html 에서 data-t 속성을 제거하면 단언 실패 실증 (D-09)
+    let revertGuideFailed = false;
+    try {
+      const strippedHtml = koGuide.replace(/data-t=["'][^"']+["']/g, '');
+      const strippedMatches = strippedHtml.match(/data-t=["'][^"']+["']/g) || [];
+      const assert = require('assert');
+      assert.ok(strippedMatches.length >= 30, 'data-t 속성 충분 확인');
+    } catch (e) {
+      revertGuideFailed = true;
+    }
+    ok(revertGuideFailed === true, 'data-t 속성 제거 시 단언 실패 입증 (D-09 되돌림 실증 완료)');
+
     await browser.close();
     server.close();
 

@@ -457,11 +457,23 @@
       btnAuth.disabled = true;
       btnAuth.textContent = '조회 중...';
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+
       try {
-        const res = await fetch(`${relayUrl}/usage`, {
-          method: 'GET',
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
+        let res;
+        try {
+          res = await fetch(`${relayUrl}/usage`, {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token },
+            signal: controller.signal
+          });
+        } catch (fetchErr) {
+          if (fetchErr.name === 'AbortError') throw new Error('서버 응답 시간 초과 (5초)');
+          throw new Error('서버에 닿지 않습니다: ' + fetchErr.message);
+        } finally {
+          clearTimeout(timer);
+        }
 
         if (!res.ok) {
           if (res.status === 401) throw new Error('유효하지 않거나 만료된 이용권 토큰입니다. (401)');
@@ -469,7 +481,13 @@
           throw new Error(`사용량을 조회할 수 없습니다. (상태 코드: ${res.status})`);
         }
 
-        const data = await res.json();
+        let data;
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          throw new Error('서버로부터 올바르지 않은(빈) 응답을 받았습니다.');
+        }
+
         renderDashboard(data);
         viewAuth.classList.add('hidden');
         viewUsage.classList.remove('hidden');

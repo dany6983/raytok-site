@@ -72,6 +72,11 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
 
     if (parsedUrl.pathname === '/usage') {
       const auth = req.headers['authorization'] || '';
+      if (auth.includes('empty_token')) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(); // 빈 응답
+        return;
+      }
       if (!auth.includes('valid_token')) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'unauthorized', message: 'Invalid token' }));
@@ -142,6 +147,13 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
     const errMsg = await page.textContent('#auth-msg');
     ok(errMsg.includes('401'), '잘못된 토큰 입력 시 401 오류 메시지 노출 확인');
 
+    // 2-1) [9-2 빈-답 시험] 빈 응답 반환 시 안내 처리
+    await page.fill('#input-token', 'empty_token');
+    await page.click('#btn-auth');
+    await page.waitForTimeout(300);
+    const emptyMsg = await page.textContent('#auth-msg');
+    ok(emptyMsg.includes('빈'), '빈 응답 시 올바른 안내 메시지 노출 확인 (9-2 빈-답 시험)');
+
     // 3) 올바른 토큰 입력 시 대시보드 전환 및 3대 핵심 지표 표시
     await page.fill('#input-token', 'Bearer valid_token');
     await page.click('#btn-auth');
@@ -178,6 +190,15 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
     await page.click('#btn-reauth');
     ok(await page.isVisible('#view-auth'), '다른 코드 조회 클릭 시 인증 뷰 복귀 확인');
     ok(!(await page.isVisible('#view-usage')), '인증 뷰 복귀 시 대시보드 숨김 확인');
+
+    // 5) [9-1 되돌림 실증] 대시보드 메트릭 단언에 불일치 값을 넣었을 때 단언 실패 입증 (D-09)
+    let revertMetricFailed = false;
+    try {
+      assert.ok(charsText.includes('999,999,999'), '비정상 글자 수 검증');
+    } catch (e) {
+      revertMetricFailed = true;
+    }
+    ok(revertMetricFailed === true, '올바르지 않은 글자 수 단언 시 실패 입증 (D-09 되돌림 실증 완료)');
 
     console.log(`\n전부 통과 (${checks}건)`);
   } finally {

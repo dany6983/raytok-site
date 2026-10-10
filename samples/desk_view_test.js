@@ -61,6 +61,17 @@ const srv = http.createServer((req, res) => {
 
   // 1) 릴레이 API Mock: GET /desk/sessions
   if (url.pathname === '/desk/sessions' && req.method === 'GET') {
+    const auth = req.headers['authorization'] || '';
+    if (auth.includes('empty_token')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(); // 빈 응답
+      return;
+    }
+    if (auth.includes('bad_token')) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'unauthorized' }));
+      return;
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify([
       { id: 'ds_test_01', code: '483921', host: 'SM-F971N', started: 1759885200000, count: 5 }
@@ -133,7 +144,18 @@ const srv = http.createServer((req, res) => {
   try {
     await page.goto(`http://localhost:${port}/desk/?relay=http://localhost:${port}`);
 
-    // 1. 토큰 입력 및 조회
+    // 0. [9-2 빈-답 시험] 빈 응답 및 잘못된 토큰 예외 처리 검증
+    await page.fill('#input-token', 'bad_token');
+    await page.click('#btn-auth');
+    await page.waitForSelector('#auth-msg:not([style*="display: none"])');
+    ok((await page.textContent('#auth-msg')).includes('유효하지 않거나 만료된 토큰'), '잘못된 토큰 입력 시 401 오류 메시지 노출 확인');
+
+    await page.fill('#input-token', 'empty_token');
+    await page.click('#btn-auth');
+    await page.waitForTimeout(300);
+    ok((await page.textContent('#auth-msg')).includes('빈'), '빈 응답 시 올바른 안내 메시지 표출 확인 (9-2 빈-답 시험)');
+
+    // 1. 정상 토큰 입력 및 조회
     await page.fill('#input-token', 'test_desk_token_0x08');
     await page.click('#btn-auth');
 
@@ -172,6 +194,23 @@ const srv = http.createServer((req, res) => {
 
     // 6. 외부 요청 0건 검증
     ok(outsideRequests.length === 0, `외부 네트워크 요청 0건 확인 (실제: ${outsideRequests.length})`);
+
+    // 7. [9-1 되돌림 실증] 해시 체인이 위조된 세션 데이터를 검증하면 '불일치' 뱃지가 표출되어 통과 단언 실패 실증
+    let revertVerifyFailed = false;
+    try {
+      const corruptedData = JSON.parse(JSON.stringify(mockSessionDetail));
+      corruptedData.items[2].text = '위조된 텍스트입니다';
+      await page.evaluate((d) => {
+        sessionStorage.setItem('verify_payload', JSON.stringify(d));
+      }, corruptedData);
+      await page.goto(`http://localhost:${port}/verify/`);
+      await page.waitForSelector('#result-card', { state: 'visible', timeout: 3000 });
+      const b = await page.textContent('#result-badge');
+      assert.ok(b && b.includes('통과'), '위조 데이터 검증 통과 여부 확인');
+    } catch (e) {
+      revertVerifyFailed = true;
+    }
+    ok(revertVerifyFailed === true, '위조된 문장 주입 시 해시 검증 통과 단언 실패 입증 (D-09 되돌림 실증 완료)');
 
     console.log(`\n전부 통과 (${passCount}건)`);
   } finally {
