@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
   <title>RayTok 쿠폰 구매</title>
   <link rel="stylesheet" href="/web/common/theme.css">
   <!-- 포트원 V2 결제 SDK -->
@@ -76,18 +77,23 @@
 
     .btn-pay {
       width: 100%;
-      background: var(--primary-color);
+      min-height: 48px;
+      background-color: var(--primary-color);
       color: #0f172a;
-      border: none;
+      border: 1px solid var(--primary-color);
       font-weight: 700;
-      padding: 16px;
+      padding: 12px 16px;
       border-radius: 8px;
       cursor: pointer;
       font-size: var(--font-lg);
-      transition: background 0.2s;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .btn-pay:hover { background: #0284c7; }
-    .btn-pay:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-pay:hover { background-color: #0284c7; border-color: #0284c7; }
+    .btn-pay:active { background-color: #0369a1; border-color: #0369a1; transform: scale(0.98); }
+    .btn-pay:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
     /* 결과 뷰 */
     #view-result { display: none; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: var(--sp-xl); }
@@ -127,6 +133,7 @@
 </head>
 <body>
   <div class="container">
+    <div id="test-banner" style="display: none; background: var(--danger-color); color: #fff; text-align: center; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 8px; margin-bottom: 24px;">준비 중입니다. 결제는 아직 받지 않습니다.</div>
     <header>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <span class="test-badge">테스트 모드 P1</span>
@@ -230,14 +237,19 @@
   </div>
 
   <script>
+    const btnPay = document.getElementById('btn-pay');
+
     const STORE_ID = 'store-raytok-test'; // 운영 전환은 대표님 PG 계약 뒤 (MASTER §18)
     const CHANNEL_KEY = 'channel-key-test';
     const isTestStore = STORE_ID.includes('test') || CHANNEL_KEY.includes('test');
-    if (isTestStore) document.body.classList.add('is-test-mode');
+    if (isTestStore) {
+      document.body.classList.add('is-test-mode');
+      document.getElementById('test-banner').style.display = 'block';
+      btnPay.disabled = true;
+    }
 
     let selectedProduct = { id: 'pass_1d', price: 3300, name: '손님 1일권 (1장)' };
     const cards = document.querySelectorAll('.product-card');
-    const btnPay = document.getElementById('btn-pay');
 
     cards.forEach(card => {
       card.addEventListener('click', () => {
@@ -368,6 +380,11 @@
       if (p7) {
         p7.querySelector('h3').textContent = isEn ? 'Guest 7-Day Pass (1 Qty)' : '손님 7일권 (1장)';
         p7.querySelector('p').textContent = isEn ? 'Valid for 7 days · For multi-day tour guests' : '7일 동안 사용 가능 · 다일 투어 손님용';
+      }
+
+      const testBanner = document.getElementById('test-banner');
+      if (testBanner) {
+        testBanner.textContent = isEn ? 'Preparing. Payments are not yet accepted.' : '준비 중입니다. 결제는 아직 받지 않습니다.';
       }
 
       btnPay.textContent = `${selectedProduct.price.toLocaleString()}원 ${isEn ? 'Pay' : '결제하기'}`;

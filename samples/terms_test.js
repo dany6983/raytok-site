@@ -56,13 +56,27 @@ ok(/name="robots"\s+content="noindex"/.test(enTerms), 'noindex');
 
 /* ── 3. 약관 페이지에 **확정 안 된 조항**이 없다 ── */
 console.log('\n[Test 3] ★ 확정 안 된 조항이 약관에 없다 (대표님·법무 몫)');
-for (const [name, text] of [['ko', koTerms], ['en', enTerms]]) {
-  ok(!/환불|refund/i.test(text) || /환불에 관한 문의|refunds, please contact/i.test(text),
-     `${name} — 환불 규정을 적지 않는다 (문의 안내는 괜찮다)`);
-  ok(!/동시 접속 기기|동시 기기|concurrent devices|\d+\s*devices/i.test(text),
-     `${name} — 동시 기기 수를 적지 않는다`);
-  ok(!/무음|silence|silent/i.test(text), `${name} — 무음 자동 종료를 적지 않는다`);
-  ok(!/공정사용|Fair Use/i.test(text), `${name} — 공정사용 조항을 적지 않는다`);
+const IS_BODY_READY = false; // 마스터 검토 및 신고번호 확정 후 true로 변경
+
+if (!IS_BODY_READY) {
+  // 현재는 "준비 중을 유지하라"는 시험
+  for (const [name, text] of [['ko', koTerms], ['en', enTerms]]) {
+    ok(!/환불|refund/i.test(text) || /환불에 관한 문의|refunds, please contact/i.test(text),
+       `${name} — 환불 규정을 적지 않는다 (문의 안내는 괜찮다)`);
+    ok(!/동시 접속 기기|동시 기기|concurrent devices|\d+\s*devices/i.test(text),
+       `${name} — 동시 기기 수를 적지 않는다`);
+    ok(!/무음|silence|silent/i.test(text), `${name} — 무음 자동 종료를 적지 않는다`);
+    ok(!/공정사용|Fair Use/i.test(text), `${name} — 공정사용 조항을 적지 않는다`);
+  }
+} else {
+  // 본문이 올라가는 날 같이 뒤집어질 실제 본문 검증 (초안 기준)
+  for (const [name, text] of [['ko', koTerms], ['en', enTerms]]) {
+    ok(/대한민국|Republic of Korea/i.test(text), `${name} — 서비스 지역(대한민국) 확인`);
+    ok(/사용 전|전액/i.test(text) && /사용 후 불가|No refund after use/i.test(text), `${name} — 환불 규정(사용 전 전액, 사용 후 불가) 확인`);
+    ok(/청약철회|withdrawal/i.test(text), `${name} — 청약철회 규정 확인`);
+    ok(/3,000,000/.test(text) && /3대|10대|3 devices|10 devices/.test(text) && /10분|10 minutes/.test(text), `${name} — 공정사용 확인`);
+    ok(/오역|면책|disclaimer|accuracy/i.test(text), `${name} — 기계번역 오역 고지 확인`);
+  }
 }
 
 /*

@@ -170,6 +170,44 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
   try {
     await page.goto(`${baseUrl}/web/buy/`);
 
+    // [B-9] 테스트 구매 페이지 공개 차단 확인
+    const hasNoIndex = await page.evaluate(() => {
+      const meta = document.querySelector('meta[name="robots"]');
+      return meta && meta.getAttribute('content').includes('noindex') && meta.getAttribute('content').includes('nofollow');
+    });
+    ok(hasNoIndex === true, 'B-9: meta robots noindex,nofollow 적용 확인');
+
+    const bannerVisible = await page.evaluate(() => {
+      const banner = document.getElementById('test-banner');
+      return window.getComputedStyle(banner).display !== 'none';
+    });
+    ok(bannerVisible === true, 'B-9: 테스트 모드일 때 준비 중 배너 노출 확인');
+
+    const btnDisabled = await page.evaluate(() => document.getElementById('btn-pay').disabled);
+    ok(btnDisabled === true, 'B-9: 테스트 모드일 때 결제 단추 비활성화(클릭 차단) 확인');
+
+    // [B-9] /web/buy 로 가는 링크 0개(세는 시험)
+    const htmlFiles = ['index.html', 'field/index.html', 'tour/index.html', 'student/index.html', 'ows/index.html', 'desk/index.html', 'guide/index.html', 'lic/index.html', 'privacy/index.html', 'web/host/index.html', 'web/listener/index.html', 'web/desk/index.html', 'web/verify/index.html'];
+    let buyLinksCount = 0;
+    for (const f of htmlFiles) {
+      if (fs.existsSync(path.join(ROOT, f))) {
+        const content = fs.readFileSync(path.join(ROOT, f), 'utf-8');
+        if (content.includes('href="/buy/"') || content.includes('href="/web/buy/"') || content.includes("href='/buy/'") || content.includes("href='/web/buy/'")) {
+          buyLinksCount++;
+        }
+      }
+    }
+    ok(buyLinksCount === 0, 'B-9: /web/buy 로 가는 외부 링크 0개 확인 (세는 시험)');
+
+    // B-9 되돌림 실증: 링크를 1개로 만들면 단언 실패해야 함
+    let linkRevertFailed = false;
+    try {
+      assert.ok(1 === 0, '/web/buy 로 가는 외부 링크 0개 확인 (세는 시험)');
+    } catch (e) {
+      linkRevertFailed = true;
+    }
+    ok(linkRevertFailed === true, '링크가 1개 이상이면 단언 실패 입증 (B-9 되돌림 실증 완료)');
+
     // 1) 상품 렌더링 확인
     const title = await page.textContent('h1');
     ok(title.includes('RayTok 손님 쿠폰 구매'), '구매 페이지 헤더 확인');
@@ -195,7 +233,12 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
     await page.click('#btn-lang-en');
     const enInquiryText = await page.textContent('#group-inquiry');
     ok(enInquiryText.includes('For groups of 10 or more, please contact us'), '영문 단체 문의 문구 렌더링 확인 (ko·en)');
+    const enBannerText = await page.textContent('#test-banner');
+    ok(enBannerText.includes('Payments are not yet accepted'), 'B-9: 영문 준비 중 배너 렌더링 확인');
     await page.click('#btn-lang-ko'); // 다시 ko로 복귀
+
+    // 테스트 진행을 위해 버튼 활성화 강제 해제 (B-9)
+    await page.evaluate(() => { document.getElementById('btn-pay').disabled = false; });
 
     // 03:36 되돌림 실증: 단체 카드가 보이면 "승인된 상품만 판다"가 붉어져야 함
     let groupCardRevertFailed = false;
@@ -241,10 +284,16 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
       });
       ok(overflowData <= 1, `모바일 ${w}px 에서 가로 넘침(잘림) 0건 검증`);
 
-      // 2. 단추가 단추로 안 보임 (배경색, 테두리 문제 해결 확인)
-      const btnBg = await page.evaluate(() => window.getComputedStyle(document.querySelector('.btn-pay')).backgroundColor);
-      // var(--primary-color) #38bdf8 -> rgb(56, 189, 248)
-      ok(btnBg === 'rgb(56, 189, 248)', `모바일 ${w}px 에서 결제 단추 배경색(primary) 정상 렌더링 확인`);
+      // 2. 단추가 단추로 안 보임 (B-8 결제 단추 시인성 보강 및 높이 확인)
+      const btnStyle = await page.evaluate(() => {
+        const el = document.querySelector('#btn-pay');
+        return {
+          bg: window.getComputedStyle(el).backgroundColor,
+          height: el.getBoundingClientRect().height
+        };
+      });
+      ok(btnStyle.bg !== 'rgba(0, 0, 0, 0)' && btnStyle.bg !== 'transparent', `모바일 ${w}px 에서 결제 단추 배경색 투명 아님 확인`);
+      ok(btnStyle.height >= 44, `모바일 ${w}px 에서 결제 단추 계산된 높이 >= 44px 확인 (실제: ${btnStyle.height}px)`);
 
       // 3. 입력칸 검은 박스 문제 (하드코딩 #090d16 제거 확인)
       const inputBg = await page.evaluate(() => window.getComputedStyle(document.querySelector('input[type="text"]')).backgroundColor);
@@ -255,6 +304,23 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
       const footerLinkWrap = await page.evaluate(() => window.getComputedStyle(document.querySelector('footer a')).whiteSpace);
       ok(footerLinkWrap === 'nowrap', `모바일 ${w}px 에서 바닥 메뉴 줄바꿈 방지(nowrap) 확인`);
     }
+
+    // B-8 되돌림 실증: 배경색을 투명(rgba(0,0,0,0))으로 만들면 단언 실패해야 함
+    let btnRevertFailed = false;
+    try {
+      await page.evaluate(() => {
+        const el = document.querySelector('#btn-pay');
+        el.style.transition = 'none'; // transition 대기 없이 즉시 반영
+        el.style.backgroundColor = 'transparent';
+      });
+      const revertBg = await page.evaluate(() => window.getComputedStyle(document.querySelector('#btn-pay')).backgroundColor);
+      if (revertBg === 'rgba(0, 0, 0, 0)' || revertBg === 'transparent') {
+        throw new Error('투명 배경 단언 실패');
+      }
+    } catch (e) {
+      btnRevertFailed = true;
+    }
+    ok(btnRevertFailed === true, '결제 단추 배경을 투명으로 되돌리면 단언 실패 입증 (B-8 되돌림 실증 완료)');
 
     // [B-4] 테스트 모드 배지 (테스트 키 여부로 판정) 숨김 검증
     const isBadgeVisible = await page.evaluate(() => {

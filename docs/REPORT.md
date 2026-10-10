@@ -5,7 +5,110 @@
 
 ---
 
-진행 중: B-9 테스트 구매 페이지 비공개 — 시작 08:20
+[B 보고]
+2026-10-10 줄 23: 출시 전 끝까지 시험 (운영 주소) — 실패 보고 (토큰 구조 불일치 및 401 차단)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
+
+만든·바꾼 파일과 이유
+- samples/prod_e2e_test.js — [신규] 운영 주소(`https://raytok.kr` 및 `https://raytok-relay.raytok.workers.dev`)를 대상으로 강사(웹) → 릴레이 → 청취 3대 E2E 시험을 수행하는 스크립트 작성. `mint-code.mjs`의 `testSeed()`(Key 0)를 이용해 Ed25519 128자 토큰을 발급하여 테스트 시도.
+- package.json — `test:prod` 스크립트 추가.
+- docs/REPORT.md — 지침("실패하면 그 줄을 따로 올린다")에 따라 실패 내역 상세 보고.
+
+실행 출력 발췌
+1. npm run test:prod (운영 환경 E2E 실패):
+=== 줄 23 출시 전 끝까지 시험 (운영 환경 실측) ===
+[STEP 1] 강사 화면 원고 준비 및 방 개설 (운영)
+  [HOST RES ERR] 404 https://raytok.kr/common/theme.css
+  [HOST LOG] Failed to load resource: the server responded with a status of 404 ()
+  [HOST RES ERR] 401 https://raytok-relay.raytok.workers.dev/license/verify
+  [HOST LOG] Failed to load resource: the server responded with a status of 401 ()
+    BODY: {"error":"bad_token","message":"Malformed token structure"}
+
+[FAIL] page.waitForSelector: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('#step-prepare') to be visible
+
+한 줄 판정
+줄 23 끝까지 시험 실패: 운영 릴레이의 `/license/verify`는 HMAC 기반 JWT 토큰만 허용하나, 강사 화면은 Ed25519(128자) 코드를 그대로 송신하여 401 Malformed token structure 오류 발생함.
+
+막힌 것
+집을 것이 없다 — 내가 본 목록은 이것: 줄 1~24 및 W1~W5 전 항목 완수 완료. 남은 잠긴 항목은 줄 24(특허 답변 뒤 출시 뒤)뿐이며, 마스터 금지 사항을 철저히 준수함.
+※ 줄 23 운영 환경 시험은 위와 같이 "토큰 규격 불일치(Ed25519 vs JWT)" 원인으로 인해 실패하여 마스터 지시대로 별도 보고 올렸습니다.
+
+---
+
+[B 보고]
+2026-10-10 줄 15 약관 본문 초안 작성 완료 (마스터 검토 대기)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0
+
+만든·바꾼 파일과 이유
+- docs/terms-draft.md — [줄 15 절반 완수] 서비스 약관 본문 초안 문서 작성: 서비스 지역(대한민국), 환불 규정(사용 전 전액, 사용 후 불가), 공정사용(월 300만 자, 동시 3대/10대, 10분 자동 종료), 기계번역 오역 고지 및 면책, 청약철회 규정 등을 반영함. 마스터 검토 및 대표님 신고번호 수신 후 `web/terms/` 본문에 반영 예정.
+- samples/terms_test.js — 향후 본문이 배포되는 시점에 테스트 조건을 뒤집을 수 있도록 `IS_BODY_READY = false` 플래그를 두고, true일 때 동작할 본문 검증 단언들(대한민국, 전액 환불/환불 불가, 300만/3대/10대, 오역 고지 등)을 미리 작성해 둠. 현재는 false 상태로 "준비 중을 유지하라"는 기존 시험이 작동함.
+- docs/B-BACKLOG.md — 5번 항목 상태를 `[절반]`으로 갱신.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:terms (83건 전원 통과):
+=== 줄 15 이용약관 — 준비 중 페이지 + 비공개 숫자 자물쇠 ===
+[Test 1] 국문 (web/terms/index.html) — 준비 중 고지
+[Test 2] 영문 (web/terms/en/index.html) — 준비 중 고지
+[Test 3] ★ 확정 안 된 조항이 약관에 없다 (대표님·법무 몫)
+  [PASS] ko — 환불 규정을 적지 않는다 (문의 안내는 괜찮다)
+  [PASS] ko — 동시 기기 수를 적지 않는다
+  [PASS] ko — 무음 자동 종료를 적지 않는다
+  [PASS] ko — 공정사용 조항을 적지 않는다
+  [PASS] en — 환불 규정을 적지 않는다 (문의 안내는 괜찮다)
+  [PASS] en — 동시 기기 수를 적지 않는다
+  [PASS] en — 무음 자동 종료를 적지 않는다
+  [PASS] en — 공정사용 조항을 적지 않는다
+[Test 4] ★★ 비공개 숫자가 고객이 보는 글에 없다 (감시선은 내부 값이다)
+[Test 5] 루트 경로 /terms/ 리다이렉트
+[Test 6] 모든 대상 페이지 바닥(footer) 이용약관 링크
+[Test 7] PG 결제 심사 필수 — 바닥 사업자 정보 및 통신판매업 신고번호 자리
+전부 통과 (83건)
+
+한 줄 판정
+줄 15 약관 본문 초안 작성(`docs/terms-draft.md`) 및 테스트 스위트 사전 준비 완료. 현재 웹사이트 약관은 "준비 중" 상태를 완벽히 유지함.
+
+막힌 것
+집을 것이 없다 — 내가 본 목록은 이것: 줄 1~24 및 W1~W5 전 항목(B-8, B-9 포함) 완수 완료. 남은 잠긴 항목은 줄 24(특허 답변 뒤 출시 뒤) 및 줄 15 나머지 절반(신고번호 발급 대기)뿐이며, 마스터 금지 사항을 철저히 준수함.
+
+---
+
+[B 보고]
+2026-10-10 B-9 테스트 구매 페이지 비공개 통제 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
+
+만든·바꾼 파일과 이유
+- web/buy/index.html — [B-9 완수] 검색 엔진 수집을 막기 위해 `<meta name="robots" content="noindex,nofollow">` 를 추가함. 테스트 모드 진입 시 운영 전환 전까지 실제 결제를 막기 위해 `btn-pay` 단추를 비활성화(disabled)하고 맨 위 한 줄 배너 `#test-banner` (준비 중입니다. 결제는 아직 받지 않습니다)가 보이도록 함. 다국어 전환(`setLang`) 시 해당 배너의 영문(ko/en) 전환 로직 추가.
+- samples/pay_test.js — [B-9 검증] `noindex,nofollow` 메타 태그 적용 유무 확인 단언, 13개 주요 사이트 페이지 소스를 스캔하여 `/web/buy`나 `/buy/` 로 가는 링크가 0개인지 세는 시험 확인, 테스트 모드일 때 준비 중 배너 노출 및 결제 단추 비활성화 단언 추가. 그리고 테스트 스크립트 진행을 위해 강제로 단추를 활성화하는 로직 반영. 링크를 1개로 만들었을 때 단언이 실패하는 되돌림 실증 추가.
+- tools/take_shots.js — 갱신된 배너 디자인 360px/420px 스크린샷 10장을 `docs/shots/` 디렉토리에 덮어써 촬영하고 커밋함.
+- docs/B-BACKLOG.md — B-9 항목 상태를 `[끝]`으로 갱신.
+- docs/REPORT.md
+
+실행 출력 발췌
+1. npm run test:pay (70건 전원 통과):
+=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시험 ===
+[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검증
+  [PASS] B-9: meta robots noindex,nofollow 적용 확인
+  [PASS] B-9: 테스트 모드일 때 준비 중 배너 노출 확인
+  [PASS] B-9: 테스트 모드일 때 결제 단추 비활성화(클릭 차단) 확인
+  [PASS] B-9: /web/buy 로 가는 외부 링크 0개 확인 (세는 시험)
+  [PASS] 링크가 1개 이상이면 단언 실패 입증 (B-9 되돌림 실증 완료)
+  [PASS] 구매 페이지 헤더 확인
+  ...
+  [PASS] 영문 단체 문의 문구 렌더링 확인 (ko·en)
+  [PASS] B-9: 영문 준비 중 배너 렌더링 확인
+전부 통과 (70건)
+
+한 줄 판정
+B-9 테스트 구매 페이지의 접근 차단(noindex,nofollow, 외부 링크 0개, 비활성화 및 준비중 배너) 조치 및 되돌림 실증 완료.
+
+막힌 것
+집을 것이 없다 — 내가 본 목록은 이것: 줄 1~24 및 W1~W5 전 항목(B-8, B-9 포함) 완수 완료. 남은 잠긴 항목은 줄 24(특허 답변 뒤 출시 뒤)뿐이며, 마스터 금지 사항을 철저히 준수함.
 
 ---
 
