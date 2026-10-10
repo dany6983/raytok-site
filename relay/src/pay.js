@@ -5,6 +5,7 @@
  *   - 멱등성: 동일 paymentId 중복 요청 시 기존 발급 목록 반환
  */
 import crypto from 'node:crypto';
+import { Buffer } from 'node:buffer';
 import {
   mintCode,
   verifyCode,

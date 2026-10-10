@@ -224,14 +224,22 @@ function readDevVar(name) {
  * 개인키 찾는 차례 — 저장소 밖에서만:
  *   --test(키 0) → --key-file 경로 → env LIC_PRIVATE_KEY_<id> → env LIC_PRIVATE_KEY → relay/.dev.vars LIC_PRIVATE_KEY_<id>
  */
+function getProcessEnv() {
+  try { return typeof process !== 'undefined' ? process.env : {}; } catch (e) { return {}; }
+}
+
+function getProcessArgv() {
+  try { return typeof process !== 'undefined' ? process.argv : []; } catch (e) { return []; }
+}
+
 export function loadPrivateKey({ keyId, keyFile, test }) {
   if (test || keyId === TEST_KEY_ID) {
     if (keyId !== TEST_KEY_ID) throw new Error('--test 는 키 0 만');
     return privateKeyFromSeed(testSeed());
   }
   let hex;
-  if (keyFile) hex = fs.readFileSync(keyFile, 'utf8');
-  else hex = process.env[`LIC_PRIVATE_KEY_${keyId}`] || process.env.LIC_PRIVATE_KEY || readDevVar(`LIC_PRIVATE_KEY_${keyId}`);
+  if (keyFile && fs) hex = fs.readFileSync(keyFile, 'utf8');
+  else hex = getProcessEnv()[`LIC_PRIVATE_KEY_${keyId}`] || getProcessEnv().LIC_PRIVATE_KEY || readDevVar(`LIC_PRIVATE_KEY_${keyId}`);
   if (!hex) throw new Error(`키 ${keyId} 의 개인키가 없다 — --key-file <경로> 또는 LIC_PRIVATE_KEY_${keyId} (env / relay/.dev.vars)`);
   return privateKeyFromSeed(hex.trim());
 }
@@ -253,7 +261,7 @@ function parseArgs(argv) {
     else if (a === '--pubkey') o.pubkey = true;
     else if (a === '--keygen') o.keygen = true;
     else if (a === '--json') o.json = true;
-    else if (a === '-h' || a === '--help') { console.log(usage()); process.exit(0); }
+    else if (a === '-h' || a === '--help') { console.log(usage()); try { if (typeof process !== 'undefined') process.exit(0); } catch(e){} }
     else throw new Error(`모르는 인자: ${a}`);
   }
   if (o.test && o.keyId === undefined) o.keyId = TEST_KEY_ID;
@@ -270,16 +278,16 @@ function usage() {
     '  --exp <YYYY-MM-DD|unix초>    만료 (UTC)      --days <n>  지금부터 n일',
     '  --flags <host,private,meet,desk | 0x03>   호스트 0x01 · 카메라/앱 개인(private|camera|app) 0x02 · Meet 0x04 · Desk 0x08',
     '  --cust <ASCII 6자 이내>      고객',
-    '  --verify <code> [--pub <hex>]  코드 검사 (키 0 은 내장, 운영 키는 --pub 또는 env LIC_PUBLIC_KEY_<n>)',
+    '  --verify <code> [--pub <hex>]  코드 검사 (키 0 은 내장, 운영 키는 --pub 또는 env LIC_PUBLIC_KEY_<n>)',     
     '  --pubkey [--key n]           개인키의 공개키 hex (앱 PUBLIC_KEYS 에 넣는 값)',
-    '  --keygen                     새 씨앗 32바이트 hex — 화면에만. 저장은 사람이 .dev.vars/wrangler secret 에',
+    '  --keygen                     새 씨앗 32바이트 hex — 화면에만. 저장은 사람이 .dev.vars/wrangler secret 에', 
     '  --json                       JSON 한 줄로',
   ].join('\n');
 }
 
 function keysForVerify(pub, keyId) {
   const keys = { ...PUBLIC_KEYS };
-  const env = typeof process !== 'undefined' ? process.env : {};
+  const env = getProcessEnv();
   for (const [k, v] of Object.entries(env)) {
     const m = k.match(/^LIC_PUBLIC_KEY_(\d+)$/);
     if (m) keys[Number(m[1])] = v.trim();
@@ -288,7 +296,7 @@ function keysForVerify(pub, keyId) {
   return keys;
 }
 
-export function main(argv = typeof process !== 'undefined' ? process.argv.slice(2) : []) {
+export function main(argv = getProcessArgv().slice(2)) {
   const o = parseArgs(argv);
   if (o.keygen) {
     const seed = crypto.randomBytes(32);
@@ -310,7 +318,7 @@ export function main(argv = typeof process !== 'undefined' ? process.argv.slice(
         console.log(`keyId=${c.keyId} exp=${c.exp} (${new Date(c.exp * 1000).toISOString()}) flags=0x${c.flags.toString(16).padStart(2, '0')} (${flagNames(c.flags)}) cust=${c.cust}`);
       }
     }
-    if (typeof process !== 'undefined') process.exitCode = r.ok ? 0 : 2;
+    try { if (typeof process !== 'undefined') process.exitCode = r.ok ? 0 : 2; } catch(e){}
     return;
   }
   if (o.keyId === undefined) throw new Error('--key <n> 또는 --test 가 필요하다');
@@ -337,6 +345,8 @@ export function main(argv = typeof process !== 'undefined' ? process.argv.slice(
   console.log(r.link);
 }
 
-if (typeof process !== 'undefined' && process.argv && process.argv[1] && typeof fileURLToPath !== 'undefined' && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  try { main(); } catch (err) { console.error(err.message); process.exit(1); }
-}
+try {
+  if (typeof process !== 'undefined' && process.argv && process.argv[1] && typeof fileURLToPath !== 'undefined' && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+    try { main(); } catch (err) { console.error(err.message); process.exit(1); }
+  }
+} catch (e) {}

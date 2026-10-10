@@ -35,6 +35,11 @@ const srv = http.createServer(async (req, res) => {
           valid: true,
           payload: { sub: 'instructor_1', flags: 12, exp: Math.floor(Date.now() / 1000) + 86400 }
         }));
+      } else if (data.token === 'empty_body') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(); // Empty body
+      } else if (data.token === 'timeout_token') {
+        // Do nothing, let it timeout
       } else {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ valid: false, message: 'Invalid signature' }));
@@ -117,6 +122,21 @@ const srv = http.createServer(async (req, res) => {
   await page.click('#btnVerifyToken');
   await page.waitForTimeout(200);
   ok(await page.isVisible('#authError'), '잘못된 토큰 입력 시 에러 메시지 표시');
+
+  // 2-1. 빈 응답 서버 오류 검증 (9-2 빈-답 시험)
+  await page.fill('#tokenInput', 'empty_body');
+  await page.click('#btnVerifyToken');
+  await page.waitForTimeout(500);
+  const emptyErr = await page.textContent('#authError');
+  ok(emptyErr.includes('빈'), '빈 응답 시 올바른 에러 메시지 처리 확인');
+
+  // 2-2. 시간 초과(Timeout) 서버 오류 검증 (9-2 빈-답 시험)
+  await page.fill('#tokenInput', 'timeout_token');
+  await page.click('#btnVerifyToken');
+  // AbortSignal.timeout(5000)을 테스트하기 위해 시간을 모의할 수는 없으므로 실제 타임아웃을 기다린다
+  await page.waitForTimeout(5500);
+  const timeoutErr = await page.textContent('#authError');
+  ok(timeoutErr.includes('초과'), '응답 시간 초과(5초) 시 올바른 에러 메시지 처리 확인');
 
   // 3. 올바른 토큰 입력 ➔ 준비 화면 전환
   await page.fill('#tokenInput', 'valid_test_token');

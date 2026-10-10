@@ -602,15 +602,34 @@
     // ── 1. 이용권 검증 (들어가기) ──
     async function verifyHostToken(token) {
       if (!token || !token.trim()) throw new Error('이용권 코드를 입력하세요.');
-      const res = await fetch(`${RELAY_BASE}/license/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token.trim() })
-      });
-      if (!res.ok) {
-        throw new Error('이용권이 유효하지 않습니다. (상태 코드: ' + res.status + ')');
+      
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      let res;
+      try {
+        res = await fetch(`${RELAY_BASE}/license/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token.trim() }),
+          signal: controller.signal
+        });
+      } catch (err) {
+        if (err.name === 'AbortError') throw new Error('서버 응답 시간 초과 (5초)');
+        throw new Error('서버에 닿지 않습니다: ' + err.message);
+      } finally {
+        clearTimeout(timer);
       }
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        throw new Error('서버로부터 올바르지 않은(빈) 응답을 받았습니다.');
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || '이용권이 유효하지 않습니다. (상태 코드: ' + res.status + ')');
+      }
       if (!data.valid) {
         throw new Error(data.message || '이용권 서명 검증 실패');
       }
