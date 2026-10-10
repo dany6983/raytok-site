@@ -6,7 +6,71 @@
 ---
 
 [B 보고]
-2026-10-10 9. 목록이 비면 할 것 (되돌림 실증 점검, 빈-답 시험, 접근성) 완수
+2026-10-10 마스터 17:20 지시 (인증·모델 보고, npm test 묶음화) 완수 및 세션 종료
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
+
+만든·바꾼 파일과 이유
+- package.json — [지시 ②] `"test"` 스크립트를 신설하여 `test:*` 17개 시험 스위트 전체를 연쇄(`&&`) 연결함. 빈 통과(0으로 끝나는 현상)를 원천 차단하고 `npm test` 한 줄로 전체 525+건의 단위·브라우저 E2E 시험을 완주하도록 조치함.
+- relay/tools/mint-code.mjs — Node.js ES 모듈 환경에서 `test:mint` 실행 시 `eval('require')` 실패로 `path`가 `undefined`가 되어 발생하던 구문 결함을 `node:fs`, `node:path`, `node:url` 정적 import로 복구함.
+- docs/REPORT.md — 마스터 17:20 지시 ①, ② 보고 및 작업 종료 기록.
+
+① 인증 방식 및 모델 보고 (지시 ①)
+1. 현재 인증 방식:
+   - 개인 구글 계정 OAuth 로그인 (`Sign in with Google` / Gemini Code Assist) 상태입니다.
+   - 현재 쉘 및 시스템 환경에 `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY` 환경변수가 설정되어 있지 않습니다.
+2. 현재 모델 이름:
+   - `gemini-3.8-flash` (세션 대화 로그 식별자 기준)
+3. 무료 전환 (개인 계정 1,000요청/일) 및 2026-06-18 문서 확인:
+   - 전환/로그인 방법: 터미널에서 `/auth` 입력 후 `Sign in with Google` 선택 또는 `gemini --login`
+   - 공식 문서 확인 결과: 2026-06-18 이후 무료 티어가 Antigravity CLI로 강제 대체되거나 폐지된 사실은 없으며, 공식 문서상 개인 계정 1일 1,000회 무료 티어가 유효하게 명시되어 있습니다.
+   - Antigravity CLI 공식 문서: https://antigravity.google/docs/cli-getting-started
+4. 기본 모델을 Flash 계열로 낮추는 설정 위치:
+   - 설정 파일: `C:\Users\drago\.gemini\settings.json` (또는 `%USERPROFILE%\.gemini\settings.json`)
+   - 설정 문법:
+     ```json
+     {
+       "model": {
+         "name": "gemini-2.5-flash"
+       }
+     }
+     ```
+   - CLI 세션 명령어: `/model set flash --persist` (또는 실행 시 `gemini -m flash`)
+
+실행 출력 발췌 (지시 ②)
+1. npm test (전체 17개 test:* 스위트 연쇄 실행 — 전원 초록 통과):
+> raytok-site@1.0.5 test
+> npm run test:pay && npm run test:design && npm run test:terms && npm run test:guide && npm run test:host && npm run test:usage && npm run test:desk-view && npm run test:lic && npm run test:wire && npm run test:end && npm run test:release && npm run test:retention && npm run test:p16 && npm run test:hwpx && npm run test:mint && npm run test:dual && npm run test:script
+
+- test:pay — 전부 통과 (74건)
+- test:design — 전부 통과 (30건)
+- test:terms — 전부 통과 (83건)
+- test:guide — 전부 통과 (28건)
+- test:host — 전부 통과 (37건 = L4-1 15건 + W-T 22건)
+- test:usage — 전부 통과 (31건)
+- test:desk-view — 전부 통과 (13건)
+- test:lic — 전부 통과 (17건)
+- test:wire — 전부 통과 (24건)
+- test:end — 전부 통과 (80건)
+- test:release — 전부 통과 (30건)
+- test:retention — 전부 통과 (13건)
+- test:p16 — 전부 통과 (20건)
+- test:hwpx — 전부 통과 (13건)
+- test:mint — 전부 통과 (8건)
+- test:dual — 전부 통과 (24건)
+- test:script — 전부 통과 (10건)
+-> 전체 525+개 단언문 일괄 통과 (종료 코드 0).
+
+한 줄 판정
+마스터 17:20 지시(인증·모델 보고, npm test 묶음화 및 전체 525+건 초록 통과 확인) 완수. 마스터의 §15 예외 지시에 따라 새 작업을 일절 집지 않고 여기서 세션을 종료함.
+
+막힌 것
+없음. (대표님의 통신판매업 신고번호 발급 및 토스페이먼츠 상점 MID 추가 후 후속 작업 가능)
+
+---
+
+[B 보고]
+2026-10-10 9. 목록이 비면 할 것 (되돌림 실증 점검, 빈-답 시험, 접근성) 전수 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
 

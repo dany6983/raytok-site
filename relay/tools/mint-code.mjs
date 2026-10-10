@@ -23,17 +23,11 @@
  */
 import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-let fs, path, fileURLToPath, __dirname;
-if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-  try {
-    const req = eval('require');
-    fs = req('fs');
-    path = req('path');
-    fileURLToPath = req('url').fileURLToPath;
-    __dirname = path.dirname(fileURLToPath(import.meta.url));
-  } catch (e) {}
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /* ───────────── 상수 (정본 §1) ───────────── */
 export const PAYLOAD_LEN = 16;

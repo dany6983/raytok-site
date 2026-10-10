@@ -3,6 +3,7 @@
   "version": "1.0.5",
   "description": "RayTok static website and local server mockup",
   "scripts": {
+    "test": "npm run test:pay && npm run test:design && npm run test:terms && npm run test:guide && npm run test:host && npm run test:usage && npm run test:desk-view && npm run test:lic && npm run test:wire && npm run test:end && npm run test:release && npm run test:retention && npm run test:p16 && npm run test:hwpx && npm run test:mint && npm run test:dual && npm run test:script",
     "test:relay": "npm --prefix relay run test:limits",
     "test:host": "node -e \"try { require('ws'); } catch(e) { console.error('[FAIL] Cannot find module ws. Please run npm ci first.'); process.exit(1); }\" && node samples/host_view_test.js && node samples/w_t_test.js",
     "test:wire": "node samples/wire_script_test.js",
