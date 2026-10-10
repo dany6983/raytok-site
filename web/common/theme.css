@@ -22,8 +22,8 @@
 
   /* 불투명도 및 잉크 체계 (Ink) */
   --ink-high: #ffffff;
-  --ink-mid: rgba(255, 255, 255, 0.5);
-  --ink-low: rgba(255, 255, 255, 0.45);
+  --ink-mid: rgba(255, 255, 255, 0.65); /* 접근성 향상을 위해 0.5 -> 0.65 상향 */
+  --ink-low: rgba(255, 255, 255, 0.5); /* 접근성 향상을 위해 0.45 -> 0.5 상향 */
 
   /* 띠 및 동그라미 규격 */
   --band-height: 78px;
@@ -38,6 +38,16 @@
   --success-color: #34d399;
   --warn-color: #fbbf24;
   --danger-color: #f87171;
+}
+
+/* 9-3 접근성 보완: 키보드 포커스 명확화 및 터치 영역 최소 44px 보장 */
+button, .btn, .btn-start, .btn-stop, .btn-copy, .btn-create, a, select, input {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 3px solid var(--primary-color) !important;
+  outline-offset: 2px !important;
 }
 
 /* 말 줄 한 쌍 표준 체계 (원문 13 ink0.5 / 번역 17 굵게) */
