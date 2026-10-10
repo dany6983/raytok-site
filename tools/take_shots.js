@@ -34,6 +34,8 @@ if (!fs.existsSync(SHOTS_DIR)) {
 
   const targets = [
     { name: 'buy', path: '/web/buy/' },
+    { name: 'b-8', path: '/web/buy/' },
+    { name: 'b-9', path: '/web/buy/' },
     { name: 'listener', path: '/web/listener/' },
     { name: 'host', path: '/web/host/' },
     { name: 'desk', path: '/web/desk/' },

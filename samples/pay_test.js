@@ -284,16 +284,22 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
       });
       ok(overflowData <= 1, `모바일 ${w}px 에서 가로 넘침(잘림) 0건 검증`);
 
-      // 2. 단추가 단추로 안 보임 (B-8 결제 단추 시인성 보강 및 높이 확인)
+      // 2. 단추가 단추로 안 보임 (B-8 결제 단추 시인성 보강 및 높이/폭/테두리 확인)
       const btnStyle = await page.evaluate(() => {
         const el = document.querySelector('#btn-pay');
+        const rect = el.getBoundingClientRect();
+        const cs = window.getComputedStyle(el);
         return {
-          bg: window.getComputedStyle(el).backgroundColor,
-          height: el.getBoundingClientRect().height
+          bg: cs.backgroundColor,
+          height: rect.height,
+          width: rect.width,
+          borderWidth: parseInt(cs.borderWidth || '0', 10)
         };
       });
-      ok(btnStyle.bg !== 'rgba(0, 0, 0, 0)' && btnStyle.bg !== 'transparent', `모바일 ${w}px 에서 결제 단추 배경색 투명 아님 확인`);
-      ok(btnStyle.height >= 44, `모바일 ${w}px 에서 결제 단추 계산된 높이 >= 44px 확인 (실제: ${btnStyle.height}px)`);
+      ok(btnStyle.bg !== 'rgba(0, 0, 0, 0)' && btnStyle.bg !== 'transparent', `모바일 ${w}px 에서 결제 단추 배경색 투명 아님 확인 (실제: ${btnStyle.bg})`);
+      ok(btnStyle.height >= 48, `모바일 ${w}px 에서 결제 단추 계산된 높이 >= 48px 확인 (실제: ${btnStyle.height}px)`);
+      ok(btnStyle.borderWidth >= 1, `모바일 ${w}px 에서 결제 단추 테두리 있음 확인 (실제: ${btnStyle.borderWidth}px)`);
+      ok(btnStyle.width >= (w - 40), `모바일 ${w}px 에서 결제 단추 폭 꽉 차게 렌더링 확인 (실제: ${btnStyle.width}px)`);
 
       // 3. 입력칸 검은 박스 문제 (하드코딩 #090d16 제거 확인)
       const inputBg = await page.evaluate(() => window.getComputedStyle(document.querySelector('input[type="text"]')).backgroundColor);
