@@ -5,7 +5,7 @@
 // 금지표현(번역본 포함)이 하나라도 있으면 실패(종료 코드 1)한다.
 // 원문을 고친 뒤에는 이 점검에서 빠진 문장이 0 이 되도록 사전을 같이 고친다. 사전에 없는 문장은 한국어로 남는다.
 const http = require('http'), fs = require('fs'), path = require('path');
-const ROOT = path.dirname(__dirname), PAGES = ['/', '/field/', '/tour/', '/ows/'], LANGS = ['en', 'zh', 'ja', 'vi'];
+const ROOT = path.dirname(__dirname), PAGES = ['/', '/field/', '/tour/', '/museum/', '/ows/', '/student/'], LANGS = ['en', 'zh', 'ja', 'vi'];
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const srv = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
