@@ -1,0 +1,33 @@
+{
+ "_설명": "Higgsfield 등 외부 CDN에서 img/ 로 받아올 미디어 목록. 이 파일을 고쳐서 push 하면 .github/workflows/fetch-media.yml 이 받아서 webp/mp4 로 img/ 에 커밋한다. 작업 세션의 컨테이너가 외부 CDN 을 막는 경우를 위한 경로다(tools/fetch_media.py 의 서버쪽 짝).",
+ "_규칙": "name 은 확장자 없이. 이미지는 webp(가로 width 로 축소, 품질 quality), 영상은 mp4 그대로. 이미 img/ 에 같은 이름이 있으면 덮어쓴다.",
+ "items": [
+  { "name": "mushero", "type": "image", "width": 2688, "quality": 82,
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075645_a9ee2229-4451-4eb3-8d5a-1e4965fbb559.png",
+    "note": "히어로 — 대형 전시실, 도슨트가 진열장 앞에서 해설 (4K 원본)" },
+  { "name": "musperm", "type": "image", "width": 2688, "quality": 82,
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075645_c3188515-1ce0-4e2d-958f-381c802cb189.png",
+    "note": "상설 전시실 — 청자 진열장 앞 소그룹" },
+  { "name": "musspec", "type": "image", "width": 2688, "quality": 82,
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075645_ce00edc6-8fa8-4e8a-bd89-55782c9c05f3.png",
+    "note": "기획전 — 화이트큐브 특별전, 큐레이터 설명" },
+  { "name": "musgard", "type": "image", "width": 2688, "quality": 82,
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075648_c177f75d-786e-4c64-81e4-77a56d851b07.png",
+    "note": "야외 조각정원 — 골든아워, 걸으며 해설" },
+  { "name": "musfort", "type": "image", "width": 2688, "quality": 82,
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075645_e1c979d3-d74f-4f44-aa33-f9c6cba1d233.png",
+    "note": "성곽·유적 — 길게 늘어선 단체" },
+  { "name": "mushano", "type": "image", "width": 2688, "quality": 82,
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075646_c0304169-c3e7-4794-b999-c94f7fbdff2f.png",
+    "note": "한옥 마당 — 전통 건축 해설" },
+  { "name": "musaudi", "type": "image", "width": 2688, "quality": 82,
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075646_a767fc5d-92c0-47c1-9bbf-b45524e1fba7.png",
+    "note": "오디토리움 — 강연 좌석 단체" },
+  { "name": "mus1", "type": "video",
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075811_957a39fd-a37a-4924-a1d4-0a0571f40ff5.mp4",
+    "note": "전시실 돌리인 6초 1080p 무음" },
+  { "name": "mus2", "type": "video",
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FLPjwlul3oTSAoiBakDCqNxfLc/hf_20261011_075818_80ef78b4-9f86-4c37-98c0-5524784ae67a.mp4",
+    "note": "조각정원 트래킹 6초 1080p 무음" }
+ ]
+}

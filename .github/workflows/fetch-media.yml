@@ -1,0 +1,72 @@
+# 외부 CDN 미디어를 img/ 로 받아 넣는다.
+# 작업 세션의 컨테이너가 CDN egress 를 막는 경우가 있어, 러너가 대신 받는다.
+# tools/media-queue.json 을 고쳐서 push 하면 돈다. 커밋 메시지의 [skip ci] 가 되돌이를 막는다.
+name: fetch-media
+
+on:
+  push:
+    paths:
+      - 'tools/media-queue.json'
+      - '.github/workflows/fetch-media.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pillow 설치
+        run: python3 -m pip install --quiet --upgrade pillow
+
+      - name: 목록대로 받아서 img/ 에 넣는다
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          from io import BytesIO
+          from urllib.request import urlopen, Request
+          from PIL import Image
+
+          q = json.load(open("tools/media-queue.json", encoding="utf-8"))
+          os.makedirs("img", exist_ok=True)
+          done, failed = [], []
+
+          for it in q.get("items", []):
+              name, url, kind = it["name"], it["url"], it.get("type", "image")
+              try:
+                  raw = urlopen(Request(url, headers={"User-Agent": "raytok-fetch-media"}), timeout=120).read()
+              except Exception as e:
+                  failed.append(f"{name}: 내려받기 실패 {e}")
+                  continue
+              if kind == "video":
+                  out = f"img/{name}.mp4"
+                  open(out, "wb").write(raw)
+              else:
+                  w = int(it.get("width", 2688))
+                  im = Image.open(BytesIO(raw)).convert("RGB")
+                  if im.width > w:
+                      im = im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
+                  out = f"img/{name}.webp"
+                  im.save(out, "WEBP", quality=int(it.get("quality", 82)), method=6)
+              done.append(f"{out}  {os.path.getsize(out)//1024}KB")
+
+          print("받음:\n  " + "\n  ".join(done) if done else "받은 것 없음")
+          if failed:
+              print("실패:\n  " + "\n  ".join(failed), file=sys.stderr)
+              sys.exit(1)
+          PY
+
+      - name: 커밋
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add img/
+          if git diff --cached --quiet; then
+            echo "바뀐 것 없음"
+          else
+            git commit -m "chore(media): tools/media-queue.json 의 미디어를 img/ 에 받아 넣음 [skip ci]"
+            git push
+          fi
