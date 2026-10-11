@@ -431,7 +431,7 @@
  "관람객은 QR 한 번": "Khách quét một mã QR",
  "안내 데스크나 전시실 입구의 QR을 자기 폰으로 찍고 언어를 고릅니다. 설치·가입이 없습니다.": "Khách dùng điện thoại của mình quét mã QR ở quầy thông tin hoặc cửa phòng trưng bày rồi chọn ngôn ngữ. Không cài đặt, không đăng ký.",
  "본인 이어폰으로 자기 언어를 듣습니다. 눈은 전시물에 둡니다. 자막도 함께 뜹니다.": "Khách nghe ngôn ngữ của mình qua tai nghe của họ, mắt vẫn hướng vào hiện vật. Phụ đề hiện ra cùng lúc.",
- "전시실에 새로 설치하는 장비는 소형 무선 공유기 한 대뿐입니다. 관람객에게 기기를 나눠 드리고 회수·충전·소독하고 분실을 관리하는 절차가 생기지 않습니다.": "Phòng trưng bày chỉ cần thêm một thiết bị: một bộ phát Wi-Fi nhỏ. Không phát sinh việc phát thiết bị rồi thu hồi, sạc, khử khuẩn và theo dõi thiết bị bị mất.",
+ "전시실에 새로 설치하는 장비는 소형 무선 공유기 한 대뿐입니다. 관람객에게 기기를 나눠 드리고 회수·충전·소독하고 분실을 관리하는 절차가 생기지 않습니다.": "Thiết bị mới duy nhất trong phòng trưng bày là một bộ phát Wi-Fi nhỏ. Không phát sinh việc phát thiết bị rồi thu hồi, sạc, khử khuẩn và theo dõi thiết bị bị mất.",
  "해설 문장": "Câu chữ của lời thuyết minh",
  "나가는 문장은<br>박물관이 확정합니다": "Bảo tàng chốt<br>từng câu được gửi ra",
  "해설 원고를 주시면 미리 번역해 두고, 박물관이 확인·수정하신 뒤 확정합니다. 관람객에게 나가는 것은 박물관이 승인한 문장입니다. <1>2026년 11월 출시에 포함 예정</1>입니다.": "Gửi cho chúng tôi bản thảo thuyết minh, chúng tôi dịch trước, bảo tàng xem lại, sửa rồi chốt. Những gì đến với khách là câu chữ bảo tàng đã chấp thuận. <1>Dự kiến có trong bản ra mắt tháng 11 năm 2026</1>.",
@@ -509,5 +509,16 @@
  "강의 노트는 어디에 남습니까?": "Ghi chú bài giảng được lưu ở đâu?",
  "내 폰에만 남습니다. 음성은 저장하지 않고 글만 남깁니다. 2026년 11월 출시에 포함 예정입니다.": "Chỉ trong điện thoại của tôi. Không lưu giọng nói, chỉ giữ phần chữ. Dự kiến có trong bản ra mắt tháng 11 năm 2026.",
  "교수가 영어로 강의해도 됩니까?": "Giáo sư giảng bằng tiếng Anh thì sao?",
- "네. 듣는 언어를 고르면 됩니다.": "Được. Chỉ cần chọn ngôn ngữ bạn muốn nghe."
+ "네. 듣는 언어를 고르면 됩니다.": "Được. Chỉ cần chọn ngôn ngữ bạn muốn nghe.",
+ "지금 쓰고 계신 방법에 맞춰 냅니다": "Định giá theo cách quý vị đang làm hiện nay",
+ "관마다 사정이 다릅니다. 외국어 해설에 예산 항목이 있는 관과 없는 관은 쓰는 돈이 열 배 넘게 차이가 납니다. 그래서 정가표를 걸지 않습니다. 아래 일곱 가지를 알려 주시면 그 기준에 맞춘 금액을 보내 드립니다.": "Mỗi bảo tàng một khác. Nơi có hạng mục ngân sách cho thuyết minh tiếng nước ngoài chi gấp hơn mười lần nơi không có. Vì vậy chúng tôi không treo bảng giá. Cho chúng tôi biết bảy điều dưới đây, chúng tôi sẽ gửi con số tính trên cơ sở đó.",
+ "지금 외국어 해설을 어떻게 하고 계십니까? (안 함 · 녹음 가이드 · 통역사 · 외국어 도슨트)": "Hiện quý vị làm thuyết minh tiếng nước ngoài thế nào? (không có · thuyết minh thu sẵn · phiên dịch viên · thuyết minh viên tiếng nước ngoài)",
+ "거기에 드는 연간 비용은 얼마입니까?": "Chi phí mỗi năm cho việc đó là bao nhiêu?",
+ "관람객에게 가이드 대여료를 받으십니까? 받으면 얼마입니까?": "Quý vị có thu phí thuê thiết bị thuyết minh của khách không? Nếu có thì bao nhiêu?",
+ "도슨트 투어는 하루 몇 회, 1회 몇 명입니까?": "Mỗi ngày có bao nhiêu lượt thuyết minh, mỗi lượt bao nhiêu người?",
+ "외국인 관람객 비율은 어느 정도이고, 어느 나라가 많습니까?": "Tỷ lệ khách nước ngoài là bao nhiêu, và chủ yếu từ nước nào?",
+ "이 예산은 어느 항목에 있습니까? (운영비 · 전시비 · 교육비 · 없음)": "Khoản này nằm ở hạng mục ngân sách nào? (vận hành · trưng bày · giáo dục · không có)",
+ "도입을 결정하시는 부서는 어디입니까?": "Bộ phận nào quyết định việc triển khai?",
+ "일곱 가지 적어 보내기": "Gửi bảy câu trả lời",
+ "상시 운영을 전제로 냅니다. 분 단위나 회차 단위로 과금하지 않습니다 — 상설 전시는 분으로 계산할 수 없기 때문입니다.": "Con số này tính theo vận hành thường xuyên. Chúng tôi không tính tiền theo phút hay theo lượt — trưng bày thường xuyên không thể đếm bằng phút."
 }

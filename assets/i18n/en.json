@@ -431,7 +431,7 @@
  "관람객은 QR 한 번": "Visitors scan one QR code",
  "안내 데스크나 전시실 입구의 QR을 자기 폰으로 찍고 언어를 고릅니다. 설치·가입이 없습니다.": "They scan the QR code at the information desk or the gallery entrance with their own phone and pick a language. No installing, no signing up.",
  "본인 이어폰으로 자기 언어를 듣습니다. 눈은 전시물에 둡니다. 자막도 함께 뜹니다.": "They hear their own language through their own earphones, with their eyes on the works. Subtitles appear alongside.",
- "전시실에 새로 설치하는 장비는 소형 무선 공유기 한 대뿐입니다. 관람객에게 기기를 나눠 드리고 회수·충전·소독하고 분실을 관리하는 절차가 생기지 않습니다.": "The gallery gets one new piece of equipment: a small wireless router. There is no procedure for handing out receivers and then collecting, charging, disinfecting and tracking lost ones.",
+ "전시실에 새로 설치하는 장비는 소형 무선 공유기 한 대뿐입니다. 관람객에게 기기를 나눠 드리고 회수·충전·소독하고 분실을 관리하는 절차가 생기지 않습니다.": "The only new equipment in the gallery is one small wireless router. There is no procedure for handing out receivers and then collecting, charging, disinfecting and tracking lost ones.",
  "해설 문장": "The wording of the narration",
  "나가는 문장은<br>박물관이 확정합니다": "The museum signs off<br>on every sentence that goes out",
  "해설 원고를 주시면 미리 번역해 두고, 박물관이 확인·수정하신 뒤 확정합니다. 관람객에게 나가는 것은 박물관이 승인한 문장입니다. <1>2026년 11월 출시에 포함 예정</1>입니다.": "Send us the narration script and we translate it in advance; the museum reviews it, edits it and signs it off. What reaches visitors is wording the museum approved. <1>Planned for the November 2026 release</1>.",
@@ -509,5 +509,16 @@
  "강의 노트는 어디에 남습니까?": "Where do the lecture notes end up?",
  "내 폰에만 남습니다. 음성은 저장하지 않고 글만 남깁니다. 2026년 11월 출시에 포함 예정입니다.": "On my phone only. No audio is stored — just the text. Planned for the November 2026 release.",
  "교수가 영어로 강의해도 됩니까?": "What if the professor lectures in English?",
- "네. 듣는 언어를 고르면 됩니다.": "That's fine — just pick the language you want to hear."
+ "네. 듣는 언어를 고르면 됩니다.": "That's fine — just pick the language you want to hear.",
+ "지금 쓰고 계신 방법에 맞춰 냅니다": "Priced against what you run today",
+ "관마다 사정이 다릅니다. 외국어 해설에 예산 항목이 있는 관과 없는 관은 쓰는 돈이 열 배 넘게 차이가 납니다. 그래서 정가표를 걸지 않습니다. 아래 일곱 가지를 알려 주시면 그 기준에 맞춘 금액을 보내 드립니다.": "Every museum is different. Those with a budget line for foreign-language interpretation spend more than ten times what those without it spend. That is why we do not post a price list. Tell us the seven things below and we will send a figure built on that basis.",
+ "지금 외국어 해설을 어떻게 하고 계십니까? (안 함 · 녹음 가이드 · 통역사 · 외국어 도슨트)": "How do you handle foreign-language interpretation today? (not at all · recorded guide · interpreter · foreign-language docent)",
+ "거기에 드는 연간 비용은 얼마입니까?": "What does that cost per year?",
+ "관람객에게 가이드 대여료를 받으십니까? 받으면 얼마입니까?": "Do you charge visitors a guide rental fee? If so, how much?",
+ "도슨트 투어는 하루 몇 회, 1회 몇 명입니까?": "How many docent tours run per day, and how many people join each?",
+ "외국인 관람객 비율은 어느 정도이고, 어느 나라가 많습니까?": "What share of your visitors are from abroad, and which countries dominate?",
+ "이 예산은 어느 항목에 있습니까? (운영비 · 전시비 · 교육비 · 없음)": "Which budget line does this sit under? (operations · exhibitions · education · none)",
+ "도입을 결정하시는 부서는 어디입니까?": "Which department makes the decision to adopt it?",
+ "일곱 가지 적어 보내기": "Send us the seven answers",
+ "상시 운영을 전제로 냅니다. 분 단위나 회차 단위로 과금하지 않습니다 — 상설 전시는 분으로 계산할 수 없기 때문입니다.": "The figure assumes continuous operation. We do not bill by the minute or by the session — a permanent exhibition cannot be counted in minutes."
 }
