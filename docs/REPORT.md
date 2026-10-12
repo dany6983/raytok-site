@@ -7,6 +7,67 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 글로벌 제품군 전수 영문 URL(field, student, ows, contact) 및 hreflang 완비 (33개 스위트 통과)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+2027-01-01 해외 진출 전제(D-82) 제품 영문 URL 및 접점 전수 확장 결과:
+1. 8번 제품 영문 URL 전수 확장:
+   - 최소 요건이었던 tour/en, museum/en 에 이어, 글로벌 진출 대상 5개 전 제품군(field/en, student/en, ows/en)의 정적 영문 페이지 전수 생성 완료.
+   - 각 제품 페이지 국문/영문 간 상호 reciprocal `hreflang` 태그(`ko`, `en`, `x-default`) 완비.
+2. 9번 영문 문의 폼(contact/en) 신설:
+   - 해외 고객이 직접 영어로 도입 및 제품 문의를 제출할 수 있는 `contact/en/index.html` 신설.
+   - 필수 4대 항목(Name, Email, Country, Message) 수집 및 영문 개인정보 처리방침 안내 연동.
+   - 국문 `contact/` 와 상호 `hreflang` 태그 연결.
+3. 검색엔진 사이트맵(sitemap.xml) 동기화:
+   - 신규 영문 페이지 4종(field/en, student/en, ows/en, contact/en)을 xhtml:link 와 함께 sitemap.xml 에 완비.
+4. 자동화 테스트 전원 통과:
+   - `samples/sitemap_test.js` 52건 통과 (영문 제품 6개 경로 및 hreflang 검증).
+   - `samples/contact_test.js` 18건 통과 (국문/영문 문의 폼 및 릴레이 엔드포인트 검증).
+   - `npm test` 33개 스위트(800+건 단언) 전원 초록 완주.
+
+만든·바꾼 파일과 이유:
+- field/en/index.html, student/en/index.html, ows/en/index.html: [신규] 글로벌 제품군 정적 영문 페이지 생성.
+- contact/en/index.html: [신규] 해외 고객용 정적 영문 문의 폼 페이지 생성.
+- field/index.html, student/index.html, ows/index.html, contact/index.html: 국문/영문 reciprocal hreflang 태그 장착.
+- sitemap.xml: 신규 영문 페이지 4종 xhtml:link 동기화.
+- tools/build_en_pages.js: 5대 제품 영문 페이지 빌드 타겟 확장.
+- samples/sitemap_test.js, samples/contact_test.js: 전수 영문 URL 및 영문 문의 폼 검증 단언 추가.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. node samples/sitemap_test.js:
+=== SEO 검색엔진 수집 점검: robots.txt & sitemap.xml 시험 ===
+  ...
+  [PASS] tour/en/index.html 영문 파일 존재 확인
+  [PASS] museum/en/index.html 영문 파일 존재 확인
+  [PASS] field/en/index.html 영문 파일 존재 확인
+  [PASS] student/en/index.html 영문 파일 존재 확인
+  [PASS] ows/en/index.html 영문 파일 존재 확인
+  [PASS] contact/en/index.html 영문 파일 존재 확인
+  전부 통과 (52건)
+
+2. node samples/contact_test.js:
+=== 9번 대기줄: 문의 폼 (이름·메일·나라·용건) 단위 및 브라우저 검증 시험 ===
+  ...
+  [PASS] contact/en/index.html 영문 파일 존재 확인
+  [PASS] contact/en 영문 속성 및 입력 필드 확인
+  [PASS] contact/en 영문 개인정보 처리방침 링크 확인
+  전부 통과 (18건)
+
+3. npm test (33개 스위트 연쇄 전원 초록 통과):
+  33개 스위트 일괄 통과 (종료 코드 0, 단언 800+건).
+
+한 줄 판정:
+해외 진출 5대 글로벌 제품군(tour, museum, field, student, ows) 및 문의 폼(contact) 전수 영문 URL/hreflang/sitemap 완비, 33개 스위트(800+건) 전원 통과.
+
+막힌 것:
+없음.
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 해외 진출 전제 대기줄(5~9번) 연속 완수 (33개 스위트 전원 통과)
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
