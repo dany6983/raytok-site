@@ -140,7 +140,8 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
       if (!auth.includes('valid')) return json(401, { error: 'unauthorized' });
       return readBody((data) => {
         const room = newRoom(data.kind);
-        json(200, { code: room.code, host_token: room.token });
+        room.raw = !!data.raw;
+        json(200, { code: room.code, host_token: room.token, raw: room.raw ? 1 : 0 });
       });
     }
 

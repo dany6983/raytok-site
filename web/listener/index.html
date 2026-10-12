@@ -695,7 +695,13 @@
       }
     }
 
+    let isRawBroadcast = new URLSearchParams(location.search).get('raw') === '1';
+
     function updateCurrentLangText() {
+      if (isRawBroadcast) {
+        currentLangText.textContent = (currentUiLang === 'ko') ? '원문 방송 (번역 없음)' : 'Original Broadcast (No translation)';
+        return;
+      }
       const isKo = currentUiLang === 'ko';
       const cur = langs.find(l => l.code === selectedLang);
       currentLangText.textContent = cur ? (isKo ? cur.name_ko : cur.name_en) : selectedLang;
@@ -750,6 +756,13 @@
       const initialUiLang = determineLanguage();
       applyStrings(initialUiLang);
       updateSubtitleDir();
+
+      // 아웃바운드 원문 방송 모드 (question.md §12: 청취자 화면에 언어 고르기가 없다)
+      if (isRawBroadcast) {
+        if (langSelect) langSelect.style.display = 'none';
+        const langLabel = document.querySelector('[data-i18n="lang_select_label"]');
+        if (langLabel) langLabel.style.display = 'none';
+      }
 
       if (isDemo) {
         roomInput.value = '000000';

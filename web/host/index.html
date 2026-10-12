@@ -372,10 +372,21 @@
       </div>
 
       <!-- ② 청취자 지원 언어 선택 -->
-      <div class="form-group">
+      <div class="form-group" id="langChipsGroup">
         <label>② 번역할 청취 언어 선택 (여럿 가능)</label>
         <div class="lang-chips" id="langChips">
           <!-- 동적 생성 -->
+        </div>
+      </div>
+
+      <!-- ②-B 번역 없이 방송 (아웃바운드 / 무선 가이드 모드, question.md §12) -->
+      <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
+          <input type="checkbox" id="chkBroadcastRaw" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+          <span data-t="broadcast_raw_title">번역 없이 방송 (원문 브로드캐스팅)</span>
+        </label>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4;" data-t="broadcast_raw_desc">
+          한국인 가이드·강연 등 같은 언어로 방송할 때 번역 API를 부르지 않고 원문 그대로 청취자에게 전송합니다 (번역 비용 0원, 지연 없음).
         </div>
       </div>
 
@@ -1053,9 +1064,41 @@
       }
     }
 
+    const chkBroadcastRaw = document.getElementById('chkBroadcastRaw');
+    if (chkBroadcastRaw) {
+      chkBroadcastRaw.addEventListener('change', () => {
+        const langGroup = document.getElementById('langChipsGroup');
+        if (chkBroadcastRaw.checked) {
+          if (langGroup) langGroup.style.opacity = '0.5';
+          btnPreTranslate.textContent = '🚀 원문 방송 준비 완료 (번역 없음)';
+          if (paragraphs.length > 0) btnPreTranslate.disabled = false;
+        } else {
+          if (langGroup) langGroup.style.opacity = '1';
+          btnPreTranslate.textContent = '🌐 사전 번역 시작';
+          if (paragraphs.length === 0 || selectedLangs.length === 0) btnPreTranslate.disabled = true;
+        }
+      });
+    }
+
     btnPreTranslate.addEventListener('click', async () => {
-      if (paragraphs.length === 0 || selectedLangs.length === 0) {
+      const isRaw = chkBroadcastRaw && chkBroadcastRaw.checked;
+      if (!isRaw && (paragraphs.length === 0 || selectedLangs.length === 0)) {
         alert('문단과 번역할 언어를 최소 1개 이상 선택하세요.');
+        return;
+      }
+      if (paragraphs.length === 0) {
+        alert('원고 파일을 먼저 올려주세요.');
+        return;
+      }
+
+      if (isRaw) {
+        // 아웃바운드 원문 방송: 번역 호출 건너뛰기 (/translate 호출 0회, question.md §12)
+        for (let i = 0; i < paragraphs.length; i++) {
+          paragraphs[i].trans = {};
+        }
+        await saveParagraphsToDB(paragraphs);
+        renderParagraphs();
+        readyArea.style.display = 'block';
         return;
       }
 
@@ -1132,6 +1175,7 @@
       // 청취 페이지 주소. 시험(relay 인자)이면 그 relay 를 같이 넘긴다.
       const u = new URL('../listener/', window.location.href);
       u.searchParams.set('room', code);
+      if (live.raw) u.searchParams.set('raw', '1');
       if (urlParams.get('relay')) u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));
       return u.toString();
     }
@@ -1147,10 +1191,12 @@
     }
 
     async function createRoom() {
+      const isRaw = chkBroadcastRaw && chkBroadcastRaw.checked;
+      live.raw = isRaw;
       const res = await fetch(`${RELAY_BASE}/room`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${hostToken}` },
-        body: JSON.stringify({ kind: 'script' })
+        body: JSON.stringify({ kind: 'script', raw: isRaw ? 1 : 0 })
       });
       if (!res.ok) {
         let msg = '';
@@ -1169,7 +1215,7 @@
     }
 
     function sendWelcome() {
-      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG });
+      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG, raw: live.raw ? 1 : 0 });
     }
 
     // 넘길 때 보내는 문단 — 와이어 정본 script 모양 그대로. trans 는 미리 번역된 것만.
@@ -1523,7 +1569,9 @@
         close_confirm: '방을 닫으면 청취자 화면이 종료되고 참석 명단이 지워집니다. 닫을까요?',
         close_confirm_csv: '참석 CSV 를 아직 받지 않았습니다.',
         closed: '방을 닫았습니다. 참석 명단은 지웠습니다.',
-        closed_nosend: '릴레이에 연결되어 있지 않아 종료 신호를 보내지 못했습니다 — 방은 10분 뒤 자동으로 닫힙니다. 참석 명단은 지웠습니다.'
+        closed_nosend: '릴레이에 연결되어 있지 않아 종료 신호를 보내지 못했습니다 — 방은 10분 뒤 자동으로 닫힙니다. 참석 명단은 지웠습니다.',
+        broadcast_raw_title: '번역 없이 방송 (원문 브로드캐스팅)',
+        broadcast_raw_desc: '한국인 가이드·강연 등 같은 언어로 방송할 때 번역 API를 부르지 않고 원문 그대로 청취자에게 전송합니다 (번역 비용 0원, 지연 없음).'
       },
       en: {
         btn_end: 'Finish',
@@ -1554,7 +1602,9 @@
         close_confirm: 'Closing the room ends the listeners\' screens and erases the attendance roster. Close it?',
         close_confirm_csv: 'You have not downloaded the attendance CSV yet.',
         closed: 'Room closed. The attendance roster has been erased.',
-        closed_nosend: 'Not connected to the relay, so the end signal could not be sent — the room closes by itself in 10 minutes. The attendance roster has been erased.'
+        closed_nosend: 'Not connected to the relay, so the end signal could not be sent — the room closes by itself in 10 minutes. The attendance roster has been erased.',
+        broadcast_raw_title: 'Broadcast without translation (Original broadcast)',
+        broadcast_raw_desc: 'Broadcast the original text directly to listeners without calling translation APIs when lecturing in the same language (Zero cost, no delay).'
       }
     };
     function T(key) {
