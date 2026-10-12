@@ -31,53 +31,47 @@ const ROOT = process.cwd();
 
 console.log('=== 줄 15 이용약관 — 준비 중 페이지 + 비공개 숫자 자물쇠 ===\n');
 
-/* ── 1. 국문 약관은 "준비 중"이고, 계약서로 안내한다 ── */
-console.log('[Test 1] 국문 (web/terms/index.html) — 준비 중 고지');
+/* ── 1. 국문 약관 실문구 검증 (10번 대기줄 완수) ── */
+console.log('[Test 1] 국문 (web/terms/index.html) — 약관 본문 실문구 검증');
 const koTermsPath = path.join(ROOT, 'web', 'terms', 'index.html');
 ok(fs.existsSync(koTermsPath), 'web/terms/index.html 파일 존재');
 const koTerms = fs.readFileSync(koTermsPath, 'utf-8');
 
-ok(koTerms.includes('준비 중'), '준비 중임을 밝힌다');
-ok(koTerms.includes('개별 계약서'), '그때까지의 이용 조건은 개별 계약서에 따른다고 적는다');
-ok(koTerms.includes('raytok.dany@gmail.com'), '문의 창구가 있다 — 빈 페이지로 두지 않는다');
+ok(koTerms.includes('제1조 (목적)'), '제1조 목적 명시');
+ok(koTerms.includes('보조 통역 도구'), '서비스 성격 및 보조 통역 도구 명시');
+ok(koTerms.includes('7일 이내') && koTerms.includes('전액 환불'), '미사용 7일 이내 전액 환불 명시');
+ok(koTerms.includes('사용을 개시한 이후') && koTerms.includes('환불이 불가'), '사용 개시 후 환불 불가(전자상거래법 제17조) 명시');
+ok(koTerms.includes('수원지방법원'), '분쟁 관할 법원(수원지방법원) 명시');
+ok(koTerms.includes('2025-화성동탄-2002'), '통신판매업 신고번호 명시');
+ok(koTerms.includes('376-88-02280'), '사업자등록번호 명시');
+ok(koTerms.includes('2026년 10월 12일'), '시행일자(2026년 10월 12일) 명시');
 ok(koTerms.includes('/web/terms/en/'), '영문 전환 링크');
 ok(koTerms.includes('/privacy/'), '개인정보 처리방침 링크');
-ok(/name="robots"\s+content="noindex"/.test(koTerms), '확정 전 페이지는 검색에 올리지 않는다(noindex)');
 
-/* ── 2. 영문도 같다 ── */
-console.log('\n[Test 2] 영문 (web/terms/en/index.html) — 준비 중 고지');
+/* ── 2. 영문 약관 실문구 검증 ── */
+console.log('\n[Test 2] 영문 (web/terms/en/index.html) — 약관 본문 실문구 검증');
 const enTermsPath = path.join(ROOT, 'web', 'terms', 'en', 'index.html');
 ok(fs.existsSync(enTermsPath), 'web/terms/en/index.html 파일 존재');
 const enTerms = fs.readFileSync(enTermsPath, 'utf-8');
-ok(/In preparation|being prepared/i.test(enTerms), 'in preparation 임을 밝힌다');
-ok(/individual contract/i.test(enTerms), '개별 계약서 안내');
+
+ok(enTerms.includes('Article 1 (Purpose)'), 'Article 1 Purpose');
+ok(enTerms.includes('supplementary interpretation tool'), 'Nature of Service');
+ok(enTerms.includes('7 days') && enTerms.includes('Full Refund'), 'Unused 7-day refund');
+ok(enTerms.includes('No Refund After Use'), 'No refund after activation');
+ok(enTerms.includes('Suwon District Court'), 'Jurisdiction');
+ok(enTerms.includes('2025-HwaseongDongtan-2002'), 'Mail-order business reg');
+ok(enTerms.includes('October 12, 2026'), 'Effective Date');
 ok(enTerms.includes('/web/terms/'), '국문 전환 링크');
-ok(/name="robots"\s+content="noindex"/.test(enTerms), 'noindex');
+ok(enTerms.includes('/privacy/en/'), '영문 개인정보 처리방침 링크');
 
-/* ── 3. 약관 페이지에 **확정 안 된 조항**이 없다 ── */
-console.log('\n[Test 3] ★ 확정 안 된 조항이 약관에 없다 (대표님·법무 몫)');
-const IS_BODY_READY = false; // 마스터 검토 및 신고번호 확정 후 true로 변경
-
-if (!IS_BODY_READY) {
-  // 현재는 "준비 중을 유지하라"는 시험
-  for (const [name, text] of [['ko', koTerms], ['en', enTerms]]) {
-    ok(!/환불|refund/i.test(text) || /환불에 관한 문의|refunds, please contact/i.test(text),
-       `${name} — 환불 규정을 적지 않는다 (문의 안내는 괜찮다)`);
-    ok(!/동시 접속 기기|동시 기기|concurrent devices|\d+\s*devices/i.test(text),
-       `${name} — 동시 기기 수를 적지 않는다`);
-    ok(!/무음|silence|silent/i.test(text), `${name} — 무음 자동 종료를 적지 않는다`);
-    ok(!/공정사용|Fair Use/i.test(text), `${name} — 공정사용 조항을 적지 않는다`);
-  }
-} else {
-  // 본문이 올라가는 날 같이 뒤집어질 실제 본문 검증 (초안 기준)
-  for (const [name, text] of [['ko', koTerms], ['en', enTerms]]) {
-    ok(/대한민국|Republic of Korea/i.test(text), `${name} — 서비스 지역(대한민국) 확인`);
-    ok(/사용 전|전액/i.test(text) && /사용 후 불가|No refund after use/i.test(text), `${name} — 환불 규정(사용 전 전액, 사용 후 불가) 확인`);
-    ok(/청약철회|withdrawal/i.test(text), `${name} — 청약철회 규정 확인`);
-    ok(/3,000,000/.test(text) && /3대|10대|3 devices|10 devices/.test(text) && /10분|10 minutes/.test(text), `${name} — 공정사용 확인`);
-    ok(/오역|면책|disclaimer|accuracy/i.test(text), `${name} — 기계번역 오역 고지 확인`);
-  }
-}
+/* ── 3. 11번 대기줄: 구매 화면(/web/buy/) 환불 고지 실측 검증 ── */
+console.log('\n[Test 3] 11번 환불·청약철회 정책 — /web/buy/ 구매 화면 사전 고지 검증');
+const buyPath = path.join(ROOT, 'web', 'buy', 'index.html');
+ok(fs.existsSync(buyPath), 'web/buy/index.html 파일 존재');
+const buyHtml = fs.readFileSync(buyPath, 'utf-8');
+ok(buyHtml.includes('id="refund-notice"'), '구매 화면에 refund-notice 영역 존재 확인');
+ok(buyHtml.includes('7일 이내 전액 환불'), '구매 화면에 미사용 7일 이내 전액 환불 고지 확인');
+ok(buyHtml.includes('사용을 개시한 이후') && buyHtml.includes('환불이 불가'), '구매 화면에 사용 개시 후 환불 불가 고지 확인');
 
 /*
  * ── 4. ★★ 비공개 숫자가 **공개 저장소 어디에도** 없다 ──
