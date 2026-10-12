@@ -7,6 +7,43 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 i18n_check 사전 누락 2건 전수 해결 및 test:i18n 전체 시험 연쇄 연결 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+사전 누락 점검 및 i18n_check 통과
+- 발견된 결함:
+  오전 마스터 커밋(7fa8aa7 및 ca90ee2)에서 푸터에 대표자·사업자번호·문의 메일 태그(`· 문의: <1>raytok.dany@gmail.com</1>`) 및 박물관 홍보자료 펼침(`더 보기 (3)`)이 추가되었으나, 4개 국어(en, ja, zh, vi) 사전 key에 해당 태그가 일치하지 않아 `tools/i18n_check.js` 에서 빠짐 2건 발생(종료 코드 1 실패 상태)하고 있었음.
+- 해결 내용:
+  · `assets/i18n/en.json`, `ja.json`, `zh.json`, `vi.json` 에 푸터 문의 메일 포함 전문 및 `더 보기 (3)` 정확한 번역 추가.
+  · `tools/i18n_check.js` 에 Chrome 실행 경로 fallback 추가.
+  · `package.json` 에 `test:i18n` 신설 및 `npm test` 연쇄 연결.
+  · 4개 언어 전원 빠짐 0건, 번호표 불일치 0건 완전 통과(종료 코드 0).
+
+실행 출력 발췌:
+1. node tools/i18n_check.js:
+en: 원문 466 · 빠짐 0 · 번호표 불일치 0 · 통지 1 · 안 쓰는 항목 56
+   통지 the only : The only new equipment in the gallery is one small wireless router. There is no procedure for handing out receivers and then collecting, charging, disinfecting and tracking lost ones.
+zh: 원문 466 · 빠짐 0 · 번호표 불일치 0 · 통지 0 · 안 쓰는 항목 56
+ja: 원문 466 · 빠짐 0 · 번호표 불일치 0 · 통지 0 · 안 쓰는 항목 56
+vi: 원문 466 · 빠짐 0 · 번호표 불일치 0 · 통지 1 · 안 쓰는 항목 56
+   통지 duy nhất : Thiết bị mới duy nhất trong phòng trưng bày là một bộ phát Wi-Fi nhỏ. Không phát sinh việc phát thiết bị rồi thu hồi, sạc, khử khuẩn và theo dõi thiết bị bị mất.
+통지 2건 — 막지 않는다. 쓸지 말지는 마케팅과 대표님이 정한다 (지시_창조우선_금지어폐지_1011).
+
+2. npm test (24개 스위트 연쇄 전원 초록 통과):
+  - test:pay (74건), test:design (30건), test:terms (83건), test:guide (28건), test:host (37건), test:usage (31건), test:desk-view (13건), test:lic (17건), test:wire (25건), test:end (81건), test:release (30건), test:retention (13건), test:p16 (20건), test:hwpx (13건), test:mint (8건), test:dual (24건), test:script (10건), test:screen (10절), test:live (44건), test:l3 (15건), test:report-common (27건), test:rtl (5건), test:match (5건), test:i18n (4개 국어 빠짐 0건)
+  -> 24개 스위트 일괄 통과 (종료 코드 0).
+
+한 줄 판정:
+푸터 및 박물관 추가분 4개 국어 번역 동기화로 `i18n_check` 빠짐 0건 통과 및 `test:i18n` 연결 완료 (24개 스위트 전원 초록).
+
+막힌 것:
+대기줄 5(N:1 웹쪽 지명 UI 설계 발췌 전달 대기) 및 줄 18(PG 상점 MID 추가 대기).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 마스터 11:05 지시 (대기줄 4 L4-3 끝 화면 — 리포트 3×3 + 참석 CSV 점검) 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
