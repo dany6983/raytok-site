@@ -108,7 +108,7 @@ document.getElementById('contact-form').addEventListener('submit', async functio
   };
 
   try {
-    const relayBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : 'https://relay.raytok.kr';
+    const relayBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : 'https://raytok-relay.raytok.workers.dev';
     const res = await fetch(relayBase + '/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
