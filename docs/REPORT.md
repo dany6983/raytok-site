@@ -7,6 +7,60 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 내부 링크 깨짐(404) 0건 전수 검증 스크립트(tools/check_links.js) 및 34개 스위트 통과 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+내부 링크 정합성 전수 자동화 검증:
+1. `tools/check_links.js`:
+   - 39개 전체 HTML 파일 내 로컬 `href` 및 `src` 568개 링크를 전수 스캔하여 대상 파일 및 `index.html` 실재 여부 검증.
+   - 깨진 링크(404) 0건 확인.
+2. `package.json`:
+   - `test:links` 스크립트 신설 및 `npm test` 연쇄에 연결 (총 34개 스위트 일체화).
+3. 자동화 테스트 결과:
+   - `npm test` 34개 시험 스위트(800+건 단언) 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- tools/check_links.js: [신규] 전체 HTML 로컬 링크 깨짐 0건 전수 검증 스크립트.
+- package.json: `test:links` 신설 및 `npm test` 연쇄 연결.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. node tools/check_links.js:
+Link Check Summary: 568 links checked across 39 HTML files.
+All local links are valid! 0 broken links.
+
+2. npm test:
+34개 스위트 일괄 통과 (종료 코드 0, 단언 800+건).
+
+한 줄 판정:
+전체 HTML 내 568개 로컬 링크 깨짐 0건 검증 스크립트 신설 및 `test:links` 연쇄 연결 완료 (34개 스위트 전원 통과).
+
+막힌 것:
+집을 것이 없다 — 내가 본 목록은 이것:
+- 1. B-8: [끝]
+- 2. B-9: [끝]
+- 3. 줄 20: [끝]
+- 4. 줄 21: [끝]
+- 5. 줄 15 약관 초안: [절반] (대표님 신고번호 수신 및 마스터 검토 대기)
+- 6. 줄 23: [끝]
+- 7. 줄 18: [대기] (11/02~11/09 PG 심사 승인 뒤)
+- 8. 줄 24: [대기] (특허 답변 뒤)
+- 9. 목록이 비면: [끝]
+- 10. 대기줄 5 N:1 웹 질문: [끝]
+- 11. 대기줄 6 robots/sitemap: [끝]
+- 12. 대기줄 7 결제 도달길: [끝]
+- 13. 대기줄 8 제품 영문 URL: [끝]
+- 14. 대기줄 9 문의 폼: [끝]
+- 15. 아웃바운드 원문 방송: [끝]
+- 16. 내부 링크 0건 깨짐 검증: [끝]
+더 이상 진행할 수 있는 [열림] 항목이 없습니다. 대기합니다.
+배포 대기: 예
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 B-BACKLOG 10~15번 [끝] 반영 및 360·420px 신규 화면 스크린샷 8장 추가 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
