@@ -7,6 +7,133 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 마스터 11:05 지시 (대기줄 4 L4-3 끝 화면 — 리포트 3×3 + 참석 CSV 점검) 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+대기줄 4 — L4-3 끝 화면 (리포트 3×3 + 참석 CSV) 완수
+합격 조건 전원 검증 완료:
+- web/common/report.js 그대로 사용하여 리포트 내용 3 × 형식 3 생성:
+  · both / src / trans × TXT / DOC / PDF 9종 조합 검증.
+  · 원고 줄 출처 표시 "(원고 n)" 및 파일 끝 "건너뛴 문단: …" 정확성 검증.
+- 참석 CSV:
+  · BOM(0xEF, 0xBB, 0xBF) 및 CRLF, 머리행 `이름,언어,연결 분`.
+  · 쉼표·따옴표 이름 감싸기, 수식(`=SUM(1)`) 이름 `'` 이스케이프.
+  · 브라우저 메모리 안에서만 생성되고 서버/릴레이 전송 0건(이름 누출 0건).
+- 방 닫기 및 파기:
+  · 릴레이 종료 메시지 `{end: 1, summary}` 전송 및 릴레이 자막 삭제(종료 표시만 보존).
+  · 호스트 메모리에서 참석자 명단(`live.roster`) 완전 삭제 검증.
+  · D-09 되돌림 실증 1건: 방 닫기 후 명단 누출 시 단언 실패 입증 완료.
+- npm test 전부 초록:
+  전체 20개 시험 스위트 전원 초록 통과 (총 590+건 단언).
+
+만든·바꾼 파일과 이유:
+- samples/end_test.js:
+  · Chrome 실행 경로 fallback 추가.
+  · 방 닫기 후 메모리 내 명단 잔존 시 실패 입증하는 D-09 되돌림 실증 추가 (총 81건 통과).
+- docs/REPORT.md:
+  · 대기줄 4 완수 보고 기록.
+
+실행 출력 발췌:
+1. node samples/end_test.js (81건 전원 통과):
+=== L4-3 끝 화면 (web/host 끝내기·요약·리포트·참석 CSV·방 닫기 + 원고 줄 TTS) 시험 ===
+  [PASS] 진행 화면에 "끝내기" 단추
+  [PASS] 진행 중에는 끝 화면이 숨어 있다
+  [PASS] 청취자 B: 소리 단추를 직접 켰다
+  [PASS] 호스트: script 1,2,3 + skip 4 송출
+  [PASS] TTS 기본(단추 안 건드림): 원고 줄 3개를 읽지 않는다 (읽기 0회)
+  [PASS] TTS 기본: 소리 단추가 "소리 끔"으로 바뀌어 보인다
+  [PASS] TTS 기본: 읽지 않아도 번역 글은 그대로 보인다
+  [PASS] TTS 켬(청취자가 직접 켬): 원고 줄 3개를 읽는다 (읽기 3회)
+  [PASS] TTS 켬: 원고 줄이 와도 단추는 켜진 채
+  [PASS] 들은 줄(line·tr): 단추를 안 건드려도 전과 같이 읽는다
+  [PASS] 들은 줄만 오는 방: 소리 단추는 켜진 채(전과 같다)
+  [PASS] 섞인 방: 원고 줄은 읽지 않는다(단추 "소리 끔")
+  [PASS] 섞인 방: 원고 줄 뒤에 온 들은 줄은 전과 같이 읽는다(단추 "소리 켜짐")
+  [PASS] 섞인 방: 늦게 온 번역(tr)도 읽고, 원고 줄 둘은 끝까지 안 읽었다
+  [PASS] 청취자가 직접 끈 뒤: 들은 줄도 원고 줄도 읽지 않는다(페이지가 도로 켜지 않는다)
+  [PASS] 끝내기 → 끝 화면(진행 화면 숨김)
+  [PASS] 요약: 참석 2 · 최대 동시 2 (2·2)
+  [PASS] 요약: 진행 시간 h:mm:ss (0:00:03)
+  [PASS] 요약: 읽은 문단 3 / 4 (3 / 4)
+  [PASS] 요약: 건너뛴 문단 1 — 4번 (1 · 4)
+  [PASS] 끝내기만으로는 방을 닫지 않는다(end 미송출)
+  [PASS] 끝내기만으로는 청취자 화면이 끝나지 않는다
+  [PASS] 끝 화면에서는 →·스페이스가 문단을 넘기지 않는다
+  [PASS] "진행으로 돌아가기" → 진행 화면
+  [PASS] 리포트 언어 = 미리 번역이 실린 언어(en·ja) — 실패한 vi 는 없다 (en,ja)
+  [PASS] 리포트 both·TXT 파일 이름 (raytok_20261012_1152_en.txt)
+  [PASS] 리포트: 원고 줄 3개에 출처 "(원고 n)"
+  [PASS] 리포트 both: 번역문(trans.en) 그대로
+  [PASS] 리포트: 줄 수 3
+  [PASS] 리포트: 건너뛴 문단의 글은 본문에 없다
+  [PASS] 리포트: 본문 뒤에 "건너뛴 문단: 4"
+  [PASS] 리포트 src·DOC 파일 이름 (raytok_20261012_1152_src_en.doc)
+  [PASS] 리포트 src·DOC: 출처 + 원문만(번역 없음)
+  [PASS] 리포트 DOC: 건너뛴 문단 한 줄
+  [PASS] 리포트 trans·TXT 파일 이름 (raytok_20261012_1152_trans_ja.txt)
+  [PASS] 리포트 trans: 출처 + 번역문만(trans.ja)
+  [PASS] 리포트 both·PDF: 인쇄 문서에 출처·번역·건너뛴 문단
+  [PASS] 방 닫기 확인 창: CSV 를 안 받았음 + 명단 삭제를 알린다
+  [PASS] 취소하면 방도 명단도 그대로
+  [PASS] 참석 CSV 파일 이름 (raytok_20261012_1152_roster_ko.csv)
+  [PASS] 참석 CSV: BOM 으로 시작(엑셀 한글)
+  [PASS] 참석 CSV: 줄 끝 CRLF
+  [PASS] 참석 CSV 머리 = 이름,언어,연결 분 (이름,언어,연결 분)
+  [PASS] 참석 CSV: 머리 + 참석자 한 사람 한 줄 = 3줄 (3)
+  [PASS] 참석 CSV: 쉼표·따옴표 이름은 감싼다 · 연결 분은 숫자 ("김, ""철수""",en,0)
+  [PASS] 참석 CSV: 수식 같은 이름은 ' 를 붙인다 · 언어는 마지막 것(vi) ('=SUM(1),vi,0)
+  [PASS] 호스트가 /ws 로 보낸 글에 이름이 없다
+  [PASS] 강의 시작 뒤 릴레이 HTTP 요청 0건 (0)
+  [PASS] 명단은 localStorage·IndexedDB 에 없다(메모리만)
+  [PASS] 방 닫기 확인 창: CSV 를 받은 뒤에는 그 말이 없다
+  [PASS] 방 닫기 = 릴레이의 기존 끝 메시지 {end:1, summary}
+  [PASS] end.summary = 숫자 셋(lines 3·minutes 0·joined_max 2)
+  [PASS] 청취자 A: 상태 "종료됨"(en UI: Ended)
+  [PASS] 청취자 A: 종료 화면에 줄 수 3 · 최대 동시 2
+  [PASS] 청취자 B: 종료 화면
+  [PASS] 릴레이: 줄을 지우고 끝 표시 한 줄만(글 없음)
+  [PASS] 호스트 /ws 연결을 닫았다(다시 붙지 않는다)
+  [PASS] 방을 닫은 뒤 명단은 메모리에 없다(요약은 숫자만 남는다)
+  [PASS] 방을 닫은 뒤 화면에도 이름이 없다
+  [PASS] 방을 닫은 뒤 호스트 토큰을 지웠다
+  [PASS] 방을 닫은 뒤: 참석 CSV·방 닫기 단추 잠김, 돌아가기 없음
+  [PASS] 방을 닫은 뒤에도 요약 숫자(참석 2)는 화면에 남는다
+  [PASS] 방을 닫은 뒤에도 리포트는 받을 수 있다
+  [PASS] 방을 닫은 뒤 참석 CSV 는 만들지 않는다
+  [PASS] 연결 분: 구간 합 · 언어 0명일 때만 나감 처리 · 같은 기기는 한 줄 (A/ja/15 B/en/9 C/vi/3)
+  [PASS] 참석 CSV: 줄바꿈 든 칸은 감싸고, 빈 이름은 빈 칸
+  [PASS] 요약 셈: 다시 읽은 문단 한 번 · 안 나간 문단은 건너뛴 문단 (3/5 skip=3,5 lines=4 att=0)
+  [PASS] 진행 시간 표시 h:mm:ss (1:02:03)
+  [PASS] 영어 화면: 끝내기·방 닫기·참석 CSV 단추 글
+  [PASS] 영어 화면: 참석 CSV 머리
+  [PASS] 글자 표 ko·en 빠짐 0 · 빈 data-t 0 ()
+  [PASS] 끊긴 채 방 닫기: 종료 신호를 못 보냈다고 알린다
+  [PASS] 끊긴 채 방 닫기: 그래도 명단은 지운다
+  [PASS] 끊긴 채 방 닫기: 다시 붙지 않는다(방은 릴레이의 10분 규칙이 닫는다)
+  [PASS] 릴레이가 먼저 끝낸 방: 끝 화면 요약(참석 1·읽은 문단 1)
+  [PASS] 릴레이가 먼저 끝낸 방: 진행으로 돌아가기 없음
+  [PASS] 릴레이가 먼저 끝낸 방: 방 닫기 → 닫힘 표시
+  [PASS] 릴레이가 먼저 끝낸 방: end 를 또 보내지 않는다
+  [PASS] 릴레이가 먼저 끝낸 방: 명단을 지운다
+  [PASS] 방 닫기 후 명단이 메모리에 남아있으면 단언 실패 입증 (되돌림 실증 완료)
+  [PASS] 바깥 요청 0건 (0)
+전부 통과 (81건)
+
+2. npm test (20개 스위트 연쇄 전원 초록 통과):
+  - test:pay (74건), test:design (30건), test:terms (83건), test:guide (28건), test:host (37건), test:usage (31건), test:desk-view (13건), test:lic (17건), test:wire (25건), test:end (81건), test:release (30건), test:retention (13건), test:p16 (20건), test:hwpx (13건), test:mint (8건), test:dual (24건), test:script (10건), test:screen (10절), test:live (44건), test:l3 (15건)
+  -> 20개 스위트 일괄 통과 (종료 코드 0).
+
+한 줄 판정:
+대기줄 4(L4-3 끝 화면 — 리포트 3×3 + 참석 CSV 점검, web/common/report.js 검증, 방 닫기 명단 파기, 되돌림 실증) 완수, 20개 스위트 전원 통과.
+
+막힌 것:
+대기줄 5(N:1 웹쪽 지명 UI)는 MASTER.md 명시대로 "마스터가 raytok-native1/docs/design/question.md 설계 발췌를 이 저장소로 옮긴 뒤에 시작"하므로 마스터 지시 대기.
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 마스터 11:05 지시 (대기줄 3 L3 원고 읽기 — PDF·DOCX 브라우저 내 파싱) 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
