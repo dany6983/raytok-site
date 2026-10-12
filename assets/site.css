@@ -140,6 +140,8 @@ section[id]{scroll-margin-top:96px}
 /* 가로 영상 + 세로(3:4) 영상을 같은 높이로 나란히 */
 .vduo{display:grid;grid-template-columns:2.37fr 1fr;gap:18px;align-items:start}
 .vid.tall video{aspect-ratio:3/4}
+.vduo.even{grid-template-columns:1fr 1fr}
+@media(max-width:700px){.vduo.even{grid-template-columns:1fr}.vduo.even>div:last-child{max-width:none}}
 @media(max-width:700px){.vduo{grid-template-columns:1fr}.vduo>div:last-child{max-width:340px}}
 
 /* 홈 쓰임 카드 4장 */
