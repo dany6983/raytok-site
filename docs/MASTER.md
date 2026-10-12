@@ -1256,3 +1256,24 @@ N:1 여섯 (진행 중)  →  10 약관  →  11 환불  →  12 PG 문서(토�
 - 그 뒤 **[대기].** 새 줄을 집지 않는다(§15 의 "스스로 집는다"는 이 지시가 이긴다).
   REPORT 맨 위에 "배포 끝 · 대기" 한 줄.
 - 13 속도 · 14 th·id · 해외 전부 — 그대로 11월 넘어서.
+
+---
+
+## 2026-10-13 08:25 — ★★ **[열림] B: 이용권 — 릴레이 쪽 끝에서 끝까지. 대기 해제** (대표님 08:22) [B]
+
+07:59 의 [대기]를 **이 줄 하나로** 푼다. 설계 정본은 앱 저장소 **`raytok-native1/docs/design/license.md`**
+(`git pull` 해서 읽는다). 대표님 확정 셋: **관광권은 하나(`0x01`) · 시작 = 가이드 QR 찍은 순간 · 쿠폰 하나 = 기기 하나.**
+
+### B 몫 — 릴레이 (설계 §4-1 · §4-2 · §4-4 · §4-5)
+1. **`pay.js` 플래그 `0x02` → `0x01`** 전 상품. 상품명 "손님 1일권"도 "관광 1일권"으로. 플래그 상수는 **한 곳**(`mint-core.js` 표)에서만 읽는다.
+2. **만료를 기간(일)로** — `mint-core` payload `[5..8]` 에 발급 시각 대신 **일수(1·7) + 묵힘 한도(90일)**. 배치를 `docs/samples/license-code.md`(앱 정본) 에 적고 A1 과 **같은 모양**으로. `test:mint` 8건 갱신.
+3. **`POST /license/redeem`** `{code, deviceId}` → Ed25519 검증 → DO `lic:${sha256(code)}` 에 `{activatedAt, deviceId}` **처음 한 번만** 적는다. 같은 deviceId 는 200, 다른 deviceId 는 `401 too_many_devices`. 발급 기록(`issued:${sha256(code)}` = 상품·결제ID·발급시각)이 없으면 `unknown_code`. 응답 `{valid, activatedAt, expiresAt, flags}`.
+4. **발급 기록을 DO 에** — `pay.js:57` 인메모리 Map 을 치운다(§5). 환불·재발급은 이 기록으로.
+5. **운영 키 1** — `testKey: true` 하드코딩(`index.js:1505`)을 뺀다 → `env.MINT_PRIVATE_KEY` 있으면 키 1, 없으면 키 0. 비밀값 이름은 **`MINT_PRIVATE_KEY` 하나**(`LIC_TEST_SEED` 는 시험 전용). `pg-switchover.md` 와 맞춘다. **키 쌍은 마스터가 만들어 공개키만 B·A1 에 준다. 개인키는 대표님이 Worker 에 직접.**
+6. `LICENSE_MAX_DEVICES` 기본값 셋(3·10·10)을 전부 **1** 로, `wrangler.toml` `"1"`.
+7. **가이드 화면에 코드마다 QR** — 결제 완료 페이지(`web/buy/`)와 가이드 화면에서 산 코드 N개를 `https://raytok.kr/lic/<code>` QR 로 하나씩. 손님 글자 19언어 같은 커밋.
+8. HMAC `/license/issue`·`/license/verify` 는 **번역 중계 전용**으로 남긴다 — 이용권에서 뺀다. 지우지 않는다(§5 는 "대체하면 치운다"인데 이건 대체가 아니라 용도 분리).
+9. 시험: 설계 §6 의 릴레이 쪽 전부(bad_sig·expired·둘째 기기 거부·unknown_code·DO 에 남음) + 되돌림 실증. 끝에서 끝까지 1회는 A1 앱이 나온 뒤 마스터가 건다.
+
+### 순서·그대로
+relay 배포는 **대표님이 직접**(지금처럼). 번역 실호출 금지(mock). 13·14·해외는 그대로 11월 넘어서.
