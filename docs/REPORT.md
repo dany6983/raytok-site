@@ -7,6 +7,57 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 해외 진출 전제 대기줄(5~9번) 연속 완수 (33개 스위트 전원 통과)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+해외 진출 직접 전제 5~9번 연속 완수 기준:
+1. 5번 (N:1 웹 질문):
+   - 스위치 뒤 기본 꺼짐 UI (`#chkEnableQuestion` 기본 해제 상태, HOST_STR ko/en 동기화).
+   - 켜진 상태에서만 참여 주소 `q=1` 부착 및 릴레이 `q: 1` 전달.
+   - 3대 특허 자물쇠(P-16 텍스트 질문만, P-14 참여자 번역 배제/역번역 배포, P-17 수동 지명 및 동시 1명 인가) 및 되돌림 실증 2건 완비.
+2. 6번 (SEO 검색엔진 수집):
+   - `robots.txt` 신설 (Allow: /, Disallow: /web/buy/, /lic/, /meet/, /web/terms/ 및 Sitemap 선언).
+   - `sitemap.xml` 신설 (모든 공개 페이지 등록, noindex 페이지 5종 제외).
+   - `samples/sitemap_test.js` 검증 31건 통과.
+3. 7번 (결제 화면 도달 길):
+   - `/tour/` 가격 영역에 `/buy/` 연결 단추 ("쿠폰 구매하기 →") 신설.
+   - `assets/i18n/*.json` (en, ja, zh, vi) 번역 동기화 (빠짐 0건).
+   - `samples/pay_test.js` 세는 시험에서 `/tour/` 단독 허용(총 1개 제한) 및 누락 시 단언 실패 되돌림 실증 완료.
+4. 8번 (제품 페이지 영문 URL):
+   - `tour/en/index.html` 및 `museum/en/index.html` 정적 영문 페이지 생성.
+   - 국문/영문 상호 `hreflang` 태그 (`ko`, `en`, `x-default`) 장착.
+   - `sitemap.xml` 에 `tour/en/` 및 `museum/en/` 등록 완료.
+5. 9번 (문의 폼 접점):
+   - `contact/index.html` 신설: 필수 4대 항목(이름, 이메일, 국가, 용건)만 수집 (개인정보 최소 원칙 준수, 주민번호/전화번호 미수집).
+   - 개인정보 처리방침 안내 한 줄 고지 및 `/privacy/` 링크 배치.
+   - 릴레이 `relay/src/index.js` 에 `POST /contact` 엔드포인트 신설 (유효성 검사, 필수값 누락/이메일 오류 400 반환).
+   - 브라우저 제출 실측 및 되돌림 실증 (`samples/contact_test.js` 15건 통과).
+
+만든·바꾼 파일과 이유:
+- web/host/index.html, web/listener/index.html: 5번 N:1 질문 스위치 뒤 기본 꺼짐 연동.
+- robots.txt, sitemap.xml: 6번 검색엔진 수집 파일 신설.
+- tour/index.html, assets/i18n/{en,ja,zh,vi}.json, samples/pay_test.js: 7번 결제 화면 링크 개설 및 검증.
+- tour/en/index.html, museum/en/index.html, museum/index.html, tools/build_en_pages.js: 8번 제품 영문 페이지 및 hreflang.
+- contact/index.html, relay/src/index.js, samples/contact_test.js: 9번 문의 폼 및 릴레이 접수 끝점.
+- package.json: test:sitemap, test:contact 추가 및 npm test 연쇄(33개) 연결.
+- docs/REPORT.md: 5~9번 완수 보고 기록.
+
+실행 출력 발췌:
+1. npm test (33개 스위트 연쇄 전원 초록 통과):
+   - test:pay (75건), test:design (30건), test:terms (83건), test:guide (28건), test:host (37건), test:usage (31건), test:desk-view (13건), test:lic (17건), test:wire (25건), test:end (81건), test:release (30건), test:retention (13건), test:p16 (20건), test:hwpx (13건), test:mint (8건), test:dual (24건), test:script (10건), test:screen (10절), test:live (44건), test:l3 (15건), test:report-common (27건), test:rtl (5건), test:match (5건), test:i18n (빠짐 0건), test:desk-read (18건), test:desk-session (35건), test:retry (13건), test:limits-bundle (13건), test:question (19건), test:question-relay (22건), test:broadcast-raw (14건), test:sitemap (31건), test:contact (15건)
+   -> 33개 스위트 일괄 통과 (종료 코드 0, 단언 780+건).
+
+한 줄 판정:
+해외 진출 직접 전제 대기줄 5번(스위치 뒤 기본 꺼짐), 6번(robots/sitemap), 7번(결제 도달길), 8번(제품 영문 URL 및 hreflang), 9번(문의 폼 접점) 5개 항목 전원 구현 및 33개 스위트 전원 통과 완료.
+
+막힌 것:
+없음.
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 아웃바운드: 번역 없이 방송 (원문 브로드캐스팅, question.md §12) 및 31개 스위트 통과 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
