@@ -3,7 +3,8 @@
   "version": "1.0.5",
   "description": "RayTok static website and local server mockup",
   "scripts": {
-    "test": "npm run test:pay && npm run test:design && npm run test:terms && npm run test:guide && npm run test:host && npm run test:usage && npm run test:desk-view && npm run test:lic && npm run test:wire && npm run test:end && npm run test:release && npm run test:retention && npm run test:p16 && npm run test:hwpx && npm run test:mint && npm run test:dual && npm run test:script && npm run test:screen && npm run test:live",
+    "test": "npm run test:pay && npm run test:design && npm run test:terms && npm run test:guide && npm run test:host && npm run test:usage && npm run test:desk-view && npm run test:lic && npm run test:wire && npm run test:end && npm run test:release && npm run test:retention && npm run test:p16 && npm run test:hwpx && npm run test:mint && npm run test:dual && npm run test:script && npm run test:screen && npm run test:live && npm run test:l3",
+    "test:l3": "node samples/l3_doc_test.js",
     "test:live": "node samples/live_test.js",
     "test:screen": "node samples/screen_view_test.js",
     "test:relay": "npm --prefix relay run test:limits",
