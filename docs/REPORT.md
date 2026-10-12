@@ -7,6 +7,69 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 해외 손님용 앱 설치 영문 페이지(download/en) 신설 및 sitemap/hreflang 완비 (34개 스위트 통과)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+해외 손님 앱 설치("깔 수도 없다" 결함 해결) 구축 결과:
+1. `download/en/index.html` [신규]:
+   - 해외 손님이 영어로 안드로이드 APK를 직접 설치하고 안내받을 수 있는 영문 전용 페이지 신설.
+   - 브라우저 미확인 앱 설치 허용 절차 3단계 영문화, `/guide/en/` 및 `/privacy/en/` 링크 완비.
+2. 상호 `hreflang` 태그 및 `sitemap.xml` 동기화:
+   - `download/` 와 `download/en/` 간 reciprocal `hreflang` 태그(`ko`, `en`, `x-default`) 장착.
+   - `sitemap.xml` 에 `download/en/` 등록 완료.
+3. 자동화 테스트 검증:
+   - `samples/sitemap_test.js` 57건 통과 (`download/en/` 및 hreflang 검증 포함).
+   - `tools/check_links.js` 40개 HTML 파일 570개 링크 전수 검사 0건 깨짐 통과.
+   - `npm test` 34개 스위트(800+건 단언) 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- download/en/index.html: [신규] 해외 손님용 앱 설치 영문 페이지.
+- download/index.html: 국문/영문 reciprocal hreflang 태그 장착.
+- sitemap.xml: `download/en/` 등록 및 xhtml:link 동기화.
+- samples/sitemap_test.js: `download/en/` 및 hreflang 검증 단언 추가.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. node samples/sitemap_test.js:
+[PASS] download/en/index.html 영문 파일 존재 확인
+[PASS] download/ 국문에 영문 hreflang 확인
+[PASS] download/en/ 영문에 국문 hreflang 확인
+[PASS] download/en/ html lang="en" 속성 확인
+전부 통과 (57건)
+
+2. npm test (34개 스위트 연쇄 전원 초록 통과):
+34개 스위트 일괄 통과 (종료 코드 0, 단언 800+건).
+
+한 줄 판정:
+해외 손님용 앱 설치 영문 페이지(`download/en/`) 신설 및 사이트맵/hreflang 완비, 34개 스위트 전원 통과.
+
+막힌 것:
+집을 것이 없다 — 내가 본 목록은 이것:
+- 1. B-8: [끝]
+- 2. B-9: [끝]
+- 3. 줄 20: [끝]
+- 4. 줄 21: [끝]
+- 5. 줄 15 약관 초안: [절반] (대표님 신고번호 수신 및 마스터 검토 대기)
+- 6. 줄 23: [끝]
+- 7. 줄 18: [대기] (11/02~11/09 PG 심사 승인 뒤)
+- 8. 줄 24: [대기] (특허 답변 뒤)
+- 9. 목록이 비면: [끝]
+- 10. 대기줄 5 N:1 웹 질문: [끝]
+- 11. 대기줄 6 robots/sitemap: [끝]
+- 12. 대기줄 7 결제 도달길: [끝]
+- 13. 대기줄 8 제품 영문 URL: [끝]
+- 14. 대기줄 9 문의 폼: [끝]
+- 15. 아웃바운드 원문 방송: [끝]
+- 16. 내부 링크 0건 깨짐 검증: [끝]
+- 17. 앱 설치 영문 URL (download/en): [끝]
+더 이상 진행할 수 있는 [열림] 항목이 없습니다. 대기합니다.
+배포 대기: 예
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 내부 링크 깨짐(404) 0건 전수 검증 스크립트(tools/check_links.js) 및 34개 스위트 통과 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
