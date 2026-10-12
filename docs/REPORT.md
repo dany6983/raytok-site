@@ -7,6 +7,47 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 릴레이 운영 배포 완료 확인(Version ID: c2c6cd03) 및 라이브 엔드포인트 실측 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+운영 배포 완료 및 실측 검증 결과:
+1. Cloudflare Worker 배포 완료 확인:
+   - 트리거 도메인: `https://raytok-relay.raytok.workers.dev`
+   - 배포 버전 ID: `c2c6cd03-f150-4697-b4c5-1c18e94fc261` (배포 소요: 0.74초)
+2. 운영 릴레이 엔드포인트 라이브 실측:
+   - `OPTIONS /`: 200 OK (CORS preflight 정상 통과).
+   - `POST /contact` 정상 데이터 전송: 200 OK (`{ ok: true, receivedAt: 1791845356253 }`).
+   - `POST /contact` 이메일 형식 오류 전송: 400 Bad Request (`{ error: "invalid_email" }`).
+   - N:1 질문 대기열, 순번 보존(독립항), 4대 회수 사유 로직 운영 반영 완료.
+3. 웹 프론트엔드 실연동:
+   - `contact/index.html` 및 `contact/en/index.html` 의 `relayBase` 를 운영 도메인 `https://raytok-relay.raytok.workers.dev` 로 연동 완료.
+4. 전체 테스트 스위트:
+   - `npm test` 34개 스위트(800+건 단언) 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- contact/index.html, contact/en/index.html: 운영 릴레이 `workers.dev` 엔드포인트 실연동.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. 라이브 릴레이 POST /contact 실측:
+POST /contact Status: 200 { ok: true, receivedAt: 1791845356253 }
+Invalid email Status: 400 { error: 'invalid_email', message: 'Valid email is required' }
+
+2. npm test (34개 스위트 연쇄 전원 초록 통과):
+34개 스위트 일괄 통과 (종료 코드 0, 단언 800+건).
+
+한 줄 판정:
+릴레이 Worker 운영 배포 완료(c2c6cd03) 확인 및 라이브 엔드포인트(POST /contact 등) 200 OK 실측 완료, 34개 시험 스위트 전원 통과.
+
+막힌 것:
+없음. 모든 프론트엔드와 릴레이 배포가 완료되었으며, 마스터의 아침 지시 대기 상태입니다.
+배포 대기: 없음 (모두 배포 완료)
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 릴레이 Cloudflare Worker 배포 결함(node:fs 누출) 해결 및 배포 준비 완료
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
