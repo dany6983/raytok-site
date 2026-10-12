@@ -27,6 +27,7 @@ export class Room {
     this.askQueue = [];
     this.askSeq = 0;
     this.activeAsk = null;
+    this.askHistory = [];
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
@@ -973,6 +974,10 @@ export class Room {
               trans: parsed.trans || {},
               grantedAt: Date.now()
             };
+            if (this.askHistory) {
+              const hItem = this.askHistory.find(h => h.id === target.id);
+              if (hItem) hItem.status = 'granted';
+            }
             const activeMsg = JSON.stringify({ kind: 'ask_active', ...this.activeAsk });
             for (const listenerWs of this.ctx.getWebSockets('listener')) {
               try { listenerWs.send(activeMsg); } catch (_) {}
@@ -986,16 +991,26 @@ export class Room {
 
         if (parsed.kind === 'ask_close') {
           const askId = parsed.id || (this.activeAsk && this.activeAsk.id);
+          const reason = parsed.reason || 'host_done';
+          // 특허 독립항 핵심: 호스트가 건너뛰어 지명하고 종료해도 다른 요청자의 요청 사실과 순번은 영구 보존
           this.askQueue = (this.askQueue || []).filter(q => q.id !== askId);
+          if (this.askHistory) {
+            const hItem = this.askHistory.find(h => h.id === askId);
+            if (hItem) {
+              hItem.status = 'closed';
+              hItem.reason = reason;
+              hItem.closedAt = Date.now();
+            }
+          }
           this.activeAsk = null;
-          const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: parsed.reason || 'host_done' });
+          const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: reason });
           for (const listenerWs of this.ctx.getWebSockets('listener')) {
             try { listenerWs.send(endMsg); } catch (_) {}
           }
           for (const hostWs of this.ctx.getWebSockets('host')) {
             try { hostWs.send(endMsg); } catch (_) {}
           }
-          const queueHostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue });
+          const queueHostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue, history: this.askHistory });
           for (const hostWs of this.ctx.getWebSockets('host')) {
             try { hostWs.send(queueHostMsg); } catch (_) {}
           }
@@ -1051,6 +1066,12 @@ export class Room {
 
       // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번)
       if (parsed && parsed.kind === 'ask_req') {
+        // P-14 자물쇠: 참여자는 번역하지 않는다 (trans 또는 tr 포함 시 거부)
+        if (parsed.trans || parsed.tr) {
+          try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}
+          return;
+        }
+
         this.askSeq = (this.askSeq || 0) + 1;
         const askItem = {
           id: 'q_' + this.askSeq + '_' + Math.random().toString(36).slice(2, 6),
@@ -1058,13 +1079,16 @@ export class Room {
           name: parsed.name || '익명',
           lang: parsed.lang || 'ko',
           text: parsed.text || '',
-          at: Date.now()
+          at: Date.now(),
+          status: 'requested'
         };
         if (!this.askQueue) this.askQueue = [];
+        if (!this.askHistory) this.askHistory = [];
         this.askQueue.push(askItem);
+        this.askHistory.push({ ...askItem });
 
         // 강사에게는 원문 포함 전달
-        const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue });
+        const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue, history: this.askHistory });
         for (const hostWs of this.ctx.getWebSockets('host')) {
           try { hostWs.send(hostMsg); } catch (_) {}
         }
@@ -1095,6 +1119,27 @@ export class Room {
     } catch (e) {}
     const tags = this.ctx.getTags(ws);
     if (tags.includes('listener') && this.att) await this.attLeave(ws);
+    if (tags.includes('listener') && this.activeAsk) {
+      // 발언 중인 청취자 단절 감지 시 사유 disconnect 기록 및 회수
+      const askId = this.activeAsk.id;
+      if (this.askHistory) {
+        const hItem = this.askHistory.find(h => h.id === askId);
+        if (hItem) {
+          hItem.status = 'closed';
+          hItem.reason = 'disconnect';
+          hItem.closedAt = Date.now();
+        }
+      }
+      this.askQueue = (this.askQueue || []).filter(q => q.id !== askId);
+      this.activeAsk = null;
+      const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: 'disconnect' });
+      for (const hostWs of this.ctx.getWebSockets('host')) {
+        try { hostWs.send(endMsg); } catch (_) {}
+      }
+      for (const listenerWs of this.ctx.getWebSockets('listener')) {
+        try { listenerWs.send(endMsg); } catch (_) {}
+      }
+    }
     if (tags.includes('host')) {
       const remainingHosts = this.ctx.getWebSockets('host').filter(w => w !== ws);
       if (remainingHosts.length === 0) {

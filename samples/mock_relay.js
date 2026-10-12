@@ -25,7 +25,7 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
     const room = {
       code, token, kind, ring: [], received: [],
       hosts: new Set(), listeners: new Map(), att: null, ended: false,
-      askQueue: [], askSeq: 0, activeAsk: null
+      askQueue: [], askSeq: 0, activeAsk: null, askHistory: []
     };   // received = 이 방의 호스트가 보낸 메시지
     rooms.set(code, room);
     return room;
@@ -196,6 +196,10 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
                 id: target.id, seq: target.seq, name: target.name, lang: target.lang,
                 text: target.text, trans: parsed.trans || {}, grantedAt: Date.now()
               };
+              if (room.askHistory) {
+                const hItem = room.askHistory.find(h => h.id === target.id);
+                if (hItem) hItem.status = 'granted';
+              }
               const activeMsg = JSON.stringify({ kind: 'ask_active', ...room.activeAsk });
               for (const l of room.listeners.keys()) { try { l.send(activeMsg); } catch (_) {} }
               for (const h of room.hosts) { try { h.send(activeMsg); } catch (_) {} }
@@ -204,12 +208,21 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
           }
           if (parsed && parsed.kind === 'ask_close') {
             const askId = parsed.id || (room.activeAsk && room.activeAsk.id);
+            const reason = parsed.reason || 'host_done';
             room.askQueue = (room.askQueue || []).filter(q => q.id !== askId);
+            if (room.askHistory) {
+              const hItem = room.askHistory.find(h => h.id === askId);
+              if (hItem) {
+                hItem.status = 'closed';
+                hItem.reason = reason;
+                hItem.closedAt = Date.now();
+              }
+            }
             room.activeAsk = null;
-            const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: parsed.reason || 'host_done' });
+            const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: reason });
             for (const l of room.listeners.keys()) { try { l.send(endMsg); } catch (_) {} }
             for (const h of room.hosts) { try { h.send(endMsg); } catch (_) {} }
-            const qMsgHost = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue });
+            const qMsgHost = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue, history: room.askHistory });
             for (const h of room.hosts) { try { h.send(qMsgHost); } catch (_) {} }
             const qMsgList = JSON.stringify({
               kind: 'ask_queue', count: room.askQueue.length,
@@ -249,6 +262,10 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
             if (p && p.hello && p.lang && room.att) attSetLang(room, ws, p.lang);
           } catch (_) {}
           if (p && p.kind === 'ask_req') {
+            if (p.trans || p.tr) {
+              try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}
+              return;
+            }
             room.askSeq = (room.askSeq || 0) + 1;
             const askItem = {
               id: 'q_' + room.askSeq + '_' + Math.random().toString(36).slice(2, 6),
@@ -256,10 +273,14 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
               name: p.name || '익명',
               lang: p.lang || 'ko',
               text: p.text || '',
-              at: Date.now()
+              at: Date.now(),
+              status: 'requested'
             };
+            if (!room.askQueue) room.askQueue = [];
+            if (!room.askHistory) room.askHistory = [];
             room.askQueue.push(askItem);
-            const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue });
+            room.askHistory.push({ ...askItem });
+            const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue, history: room.askHistory });
             for (const h of room.hosts) { try { h.send(hostMsg); } catch (_) {} }
             const listMsg = JSON.stringify({
               kind: 'ask_queue', count: room.askQueue.length,

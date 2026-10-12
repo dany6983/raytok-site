@@ -58,5 +58,52 @@ const brk = (spec.messages && spec.messages.break) || {};
 const ons = (brk.samples || []).map((s) => s.on);
 ok(ons.includes(true) && ons.includes(false), 'break — 켜는 보기와 끄는 보기 둘');
 
+/* N:1 질의응답 4대 메시지 — ask · grant · revoke · question (2026-10-12 21:30 마스터) */
+console.log('\nN:1 질의응답 메시지 넷 (와이어 정본 사양)');
+
+for (const kind of ['ask', 'grant', 'revoke', 'question']) {
+  const m = spec.messages && spec.messages[kind];
+  if (!ok(!!m, `${kind} 가 사양에 있다`)) continue;
+  ok(typeof m._dir === 'string' && m._dir.length > 0, `${kind} — 누가 누구에게 가는지 적혀 있다`);
+  ok(Array.isArray(m.samples) && m.samples.length > 0, `${kind} — 보기가 하나 이상`);
+  for (const s of m.samples || []) {
+    ok(s.kind === kind, `${kind} — 보기의 kind 가 "${kind}"`);
+    ok(typeof s.id === 'string' && s.id.length > 0, `${kind} — id 필드 확인`);
+    ok(Number.isInteger(s.seq) && s.seq >= 1, `${kind} — seq 번호 필드 확인`);
+  }
+}
+
+// ask: name, lang, at
+const askSamples = ((spec.messages && spec.messages.ask) || {}).samples || [];
+for (const s of askSamples) {
+  ok(typeof s.name === 'string' && s.name.length > 0, 'ask — name 확인');
+  ok(typeof s.lang === 'string' && s.lang.length > 0, 'ask — lang 확인');
+  ok(typeof s.at === 'number' && s.at > 0, 'ask — at unix ms 확인');
+}
+
+// grant: name, lang, max_sec
+const grantSamples = ((spec.messages && spec.messages.grant) || {}).samples || [];
+for (const s of grantSamples) {
+  ok(typeof s.name === 'string' && s.name.length > 0, 'grant — name 확인');
+  ok(typeof s.lang === 'string' && s.lang.length > 0, 'grant — lang 확인');
+  ok(typeof s.max_sec === 'number' && s.max_sec > 0, 'grant — max_sec 확인');
+}
+
+// revoke: 4대 사유 (host_done, silent, timeout, disconnect)
+const revokeSamples = ((spec.messages && spec.messages.revoke) || {}).samples || [];
+const revokeReasons = new Set(revokeSamples.map(s => s.reason));
+const EXPECTED_REASONS = ['host_done', 'silent', 'timeout', 'disconnect'];
+for (const r of EXPECTED_REASONS) {
+  ok(revokeReasons.has(r), `revoke — ${r} 회수 사유 보기 포함 확인`);
+}
+
+// question: src, srcLang, trans
+const questionSamples = ((spec.messages && spec.messages.question) || {}).samples || [];
+for (const s of questionSamples) {
+  ok(typeof s.src === 'string' && s.src.length > 0, 'question — src 원문 텍스트 확인 (P-16)');
+  ok(typeof s.srcLang === 'string' && s.srcLang.length > 0, 'question — srcLang 확인');
+  ok(s.trans && typeof s.trans === 'object', 'question — trans 역번역 객체 확인 (P-14)');
+}
+
 console.log(bad ? `\n붉음 ${bad}` : '\n전부 통과');
 process.exit(bad ? 1 : 0);

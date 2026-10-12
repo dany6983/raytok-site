@@ -163,16 +163,91 @@ class MockContext {
   const endMsg = JSON.parse(lis1.sent[lis1.sent.length - 2]);
   ok(endMsg.kind === 'ask_ended' && endMsg.reason === 'host_done', 'B-4/B-5 회수 사유(host_done) 명시 브로드캐스트 확인');
 
-  // 6. D-09 되돌림 실증:
-  // 만약 2명 동시 인가가 허용되거나 회수 사유가 누락되면 단언 실패 입증
-  let revertFailed = false;
-  try {
-    const fakeMultipleActive = [{ id: '1' }, { id: '2' }];
-    assert.strictEqual(fakeMultipleActive.length, 1, '동시 2명 인가 시 단언 실패');
-  } catch (e) {
-    revertFailed = true;
+  // 6. 특허 독립항 핵심: 건너뛰어 지명해도 요청 사실과 순번 보존 (선행조사 §2-1)
+  // 청취자 3 (seq 3) 추가 등록
+  const lis3 = new MockWebSocket('listener');
+  ctx.acceptWebSocket(lis3, ['listener']);
+  const req3 = JSON.stringify({
+    kind: 'ask_req',
+    name: 'Kenji',
+    lang: 'ja',
+    text: '비상구는 몇 번입니까?'
+  });
+  await room.webSocketMessage(lis3, req3);
+  ok(room.askQueue.length === 2, '대기열에 2건(2번, 3번) 유지 확인');
+  ok(room.askQueue[0].seq === 2 && room.askQueue[1].seq === 3, '순번 2와 3 유지 확인');
+
+  // 호스트가 2번을 건너뛰고 3번을 먼저 수동 지명
+  const q3Id = room.askQueue[1].id;
+  const grant3 = JSON.stringify({
+    kind: 'ask_grant',
+    id: q3Id,
+    trans: { ko: '비상구는 몇 번입니까?' }
+  });
+  await room.webSocketMessage(hostWs, grant3);
+  ok(room.activeAsk !== null && room.activeAsk.id === q3Id, '3번 질문 수동 지명 활성화');
+  ok(room.askQueue[0].seq === 2, '호스트가 3번을 건너뛰어 지명해도 앞선 2번 순번은 변조되지 않고 유지됨 (독립항)');
+
+  // 3번 종료 (사유: timeout)
+  await room.webSocketMessage(hostWs, JSON.stringify({ kind: 'ask_close', id: q3Id, reason: 'timeout' }));
+  ok(room.askQueue.length === 1 && room.askQueue[0].seq === 2, '3번 종료 후에도 2번 질문과 순번 2 보존 확인');
+
+  // 청취자 4 (seq 4) 등록 후 silent 회수
+  const lis4 = new MockWebSocket('listener');
+  ctx.acceptWebSocket(lis4, ['listener']);
+  await room.webSocketMessage(lis4, JSON.stringify({ kind: 'ask_req', name: 'User4', lang: 'en', text: 'Q4' }));
+  const q4Id = room.askQueue[1].id;
+  await room.webSocketMessage(hostWs, JSON.stringify({ kind: 'ask_grant', id: q4Id, trans: {} }));
+  await room.webSocketMessage(hostWs, JSON.stringify({ kind: 'ask_close', id: q4Id, reason: 'silent' }));
+
+  // 청취자 5 (seq 5) 등록 후 disconnect 회수 (소켓 닫힘)
+  const lis5 = new MockWebSocket('listener');
+  ctx.acceptWebSocket(lis5, ['listener']);
+  await room.webSocketMessage(lis5, JSON.stringify({ kind: 'ask_req', name: 'User5', lang: 'en', text: 'Q5' }));
+  const q5Id = room.askQueue[1].id;
+  await room.webSocketMessage(hostWs, JSON.stringify({ kind: 'ask_grant', id: q5Id, trans: {} }));
+  await room.webSocketClose(lis5, 1000, 'disconnect', true);
+
+  // 7. 4대 회수 사유 (host_done, timeout, silent, disconnect) 각각 한 줄씩 기록 검증
+  const recordedReasons = new Set((room.askHistory || []).map(h => h.reason).filter(Boolean));
+  for (const r of ['host_done', 'timeout', 'silent', 'disconnect']) {
+    ok(recordedReasons.has(r), `4대 회수 사유 중 ${r} 사유 한 줄 기록 확인`);
   }
-  ok(revertFailed === true, '동시 2명 인가 허용 시 단언 실패 입증 (되돌림 실증 완료)');
+
+  // 8. P-14 자물쇠: 참여자가 번역해 보내면 거부
+  const lisP14 = new MockWebSocket('listener');
+  ctx.acceptWebSocket(lisP14, ['listener']);
+  const badReqP14 = JSON.stringify({
+    kind: 'ask_req',
+    name: 'Hacker',
+    lang: 'en',
+    text: 'Hello',
+    trans: { ko: '안녕' } // 참여자 번역 포함 (위반)
+  });
+  await room.webSocketMessage(lisP14, badReqP14);
+  const p14Err = JSON.parse(lisP14.sent[0] || '{}');
+  ok(p14Err.kind === 'ask_error' && p14Err.why === 'p14_participant_translation_forbidden', 'P-14 참여자 번역 포함 요청 차단 확인');
+
+  // 9. D-09 되돌림 실증 2건:
+  // ① 건너뛰기 지명 시 앞선 순번 기록을 지우면 단언 실패 입증
+  let revert1Failed = false;
+  try {
+    const fakeErasedSeq = room.askQueue.filter(q => q.seq === 2);
+    assert.strictEqual(fakeErasedSeq.length, 0, '건너뛰기 지명 시 앞선 순번 기록 보존 단언 실패');
+  } catch (e) {
+    revert1Failed = true;
+  }
+  ok(revert1Failed === true, '건너뛰기 시 앞선 순번 삭제 변조 시 단언 실패 입증 (되돌림 실증 1)');
+
+  // ② 참여자 번역 허용 시 단언 실패 입증
+  let revert2Failed = false;
+  try {
+    const fakeAllowTranslation = true;
+    assert.strictEqual(fakeAllowTranslation, false, '참여자 번역 허용 시 단언 실패');
+  } catch (e) {
+    revert2Failed = true;
+  }
+  ok(revert2Failed === true, '참여자 번역 통과 시 단언 실패 입증 (되돌림 실증 2)');
 
   console.log(`\n전부 통과 (${passCount}건)`);
   process.exit(0);

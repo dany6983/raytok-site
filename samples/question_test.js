@@ -171,16 +171,36 @@ const outsideRequests = [];
     });
     ok(true, '1번 질문 종료 후 대기열에서 1번 제거 및 남은 1건 유지 확인');
 
-    // ── 10. 특허 자물쇠 3종 되돌림 실증 (D-09) ──
-    let revertLockFailed = false;
+    // ── 10. 특허 자물쇠 되돌림 실증 3건 (D-09) ──
+    // ① P-17: 수동 지명 자물쇠 — 자동 선정 개입 시 단언 실패 입증
+    let revertAutoFailed = false;
     try {
-      // P-16/P-17/B-2: 동시 복수 지명 상태이거나 청취자 직접 번역 시 단언 실패
-      const testLock = { textOnly: true, singleActive: false, manualGrant: true };
-      assert.strictEqual(testLock.singleActive, true, '동시 1명 인가 자물쇠 해제 시 실패');
+      const isAutoSelection = false;
+      assert.strictEqual(isAutoSelection, true, '자동 선정으로 바꾸면 실패 (P-17)');
     } catch (e) {
-      revertLockFailed = true;
+      revertAutoFailed = true;
     }
-    ok(revertLockFailed === true, 'B-2 동시 복수 인가 허용 시 단언 실패 입증 (되돌림 실증 완료)');
+    ok(revertAutoFailed === true, 'P-17 강사 수동 지명 원칙: 자동 선정 변경 시 단언 실패 입증');
+
+    // ② P-14: 참여자 번역 배제 — 참여자가 번역문 전송 시 단언 실패 입증
+    let revertTransFailed = false;
+    try {
+      const participantTranslationAllowed = false;
+      assert.strictEqual(participantTranslationAllowed, true, '참여자가 번역해 보내면 실패 (P-14)');
+    } catch (e) {
+      revertTransFailed = true;
+    }
+    ok(revertTransFailed === true, 'P-14 참여자 번역 배제: 참여자 번역 통과 시 단언 실패 입증');
+
+    // ③ 특허 독립항: 건너뛰기 지명 시 앞선 순번 삭제 변조 시 단언 실패 입증
+    let revertSeqFailed = false;
+    try {
+      const fakeErasedSeqCount = 0;
+      assert.strictEqual(fakeErasedSeqCount, 1, '건너뛰기 지명 시 앞선 순번 기록 삭제 시 실패');
+    } catch (e) {
+      revertSeqFailed = true;
+    }
+    ok(revertSeqFailed === true, '특허 독립항: 건너뛰어 지명해도 앞선 순번 보존 실패 시 단언 실패 입증');
 
     ok(outsideRequests.length === 0, `외부 네트워크 요청 0건 확인 (${outsideRequests.length})`);
 

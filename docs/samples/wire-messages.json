@@ -326,6 +326,97 @@
           "on": false
         }
       ]
+    },
+    "ask": {
+      "_dir": "청취자 → 릴레이/강사. 질문 대기열 진입 **요청**. 지명 전에는 본문을 보내지 않고 요청 사실과 언어만 등록한다 (P-16 텍스트 질문만, P-14 참여자 번역 배제).",
+      "_fields": "kind:\"ask\", id(청취자 연결 ID), name(청취자 이름), lang(청취자 모국어), at(요청 unix ms), seq?(릴레이 발급 순번)",
+      "samples": [
+        {
+          "kind": "ask",
+          "id": "lis_4f2a",
+          "name": "Nguyen Van A",
+          "lang": "vi",
+          "at": 1759800050000,
+          "seq": 1
+        },
+        {
+          "kind": "ask",
+          "id": "lis_9c1b",
+          "name": "Somchai",
+          "lang": "th",
+          "at": 1759800055000,
+          "seq": 2
+        }
+      ]
+    },
+    "grant": {
+      "_dir": "강사/릴레이 → 청취자/전체. 강사가 사람 손으로 **수동 지명**(P-17, B-2). 동시 1명만 인가되며 발언권을 부여한다.",
+      "_fields": "kind:\"grant\", id(지명된 청취자 ID), seq(지명된 질문 순번), name(지명된 청취자 이름), lang(질문자 언어), max_sec?(최대 발언 초, 기본 90), at(지명 unix ms)",
+      "samples": [
+        {
+          "kind": "grant",
+          "id": "lis_4f2a",
+          "seq": 1,
+          "name": "Nguyen Van A",
+          "lang": "vi",
+          "max_sec": 90,
+          "at": 1759800060000
+        }
+      ]
+    },
+    "revoke": {
+      "_dir": "강사/릴레이 → 청취자/전체. 발언권 **회수 및 종료**(B-4, B-5). 4대 사유(host_done, silent, timeout, disconnect)를 명시한다.",
+      "_fields": "kind:\"revoke\", id(회수된 청취자 ID), seq(회수된 질문 순번), reason(\"host_done\"|\"silent\"|\"timeout\"|\"disconnect\"), at(회수 unix ms)",
+      "samples": [
+        {
+          "kind": "revoke",
+          "id": "lis_4f2a",
+          "seq": 1,
+          "reason": "host_done",
+          "at": 1759800095000
+        },
+        {
+          "kind": "revoke",
+          "id": "lis_9c1b",
+          "seq": 2,
+          "reason": "timeout",
+          "at": 1759800150000
+        },
+        {
+          "kind": "revoke",
+          "id": "lis_3d4e",
+          "seq": 3,
+          "reason": "silent",
+          "at": 1759800200000
+        },
+        {
+          "kind": "revoke",
+          "id": "lis_8f0a",
+          "seq": 4,
+          "reason": "disconnect",
+          "at": 1759800250000
+        }
+      ]
+    },
+    "question": {
+      "_dir": "청취자(지명된 자) → 릴레이/강사 → 전체 브로드캐스트. **텍스트 질문 본문**(P-16 마이크 없이 텍스트만). 참여자는 원문 text+lang만 보내고(P-14 참여자 번역 배제), 릴레이/강사가 trans를 달아 전체 배포한다.",
+      "_fields": "kind:\"question\", id(질문자 ID), seq(질문 순번), name(질문자 이름), src(원문 텍스트), srcLang(원문 언어), trans{lang:text}?(릴레이/강사 역번역 배포), at(unix ms)",
+      "samples": [
+        {
+          "kind": "question",
+          "id": "lis_4f2a",
+          "seq": 1,
+          "name": "Nguyen Van A",
+          "src": "공장 내부에서 사진 촬영이 가능한가요?",
+          "srcLang": "vi",
+          "trans": {
+            "ko": "공장 내부에서 사진 촬영이 가능한가요?",
+            "en": "Is photography allowed inside the factory?",
+            "th": "สามารถถ่ายภาพภายในโรงงานได้หรือไม่?"
+          },
+          "at": 1759800075000
+        }
+      ]
     }
   },
   "_vs_design_4": [
