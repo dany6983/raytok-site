@@ -1277,3 +1277,14 @@ N:1 여섯 (진행 중)  →  10 약관  →  11 환불  →  12 PG 문서(토�
 
 ### 순서·그대로
 relay 배포는 **대표님이 직접**(지금처럼). 번역 실호출 금지(mock). 13·14·해외는 그대로 11월 넘어서.
+
+## 2026-10-13 08:50 — B 보탬: **묶음 QR 이 주력** (대표님 08:46 "기본안") [B]
+설계 §3-4(`raytok-native1/docs/design/license.md`). 08:25 줄에 더한다 — 7번(코드마다 QR)보다 **이것이 먼저**:
+- 상품에 **묶음** 추가: "버스 한 대 · 며칠 · 몇 명". 값·이름은 대표님(§21).
+- 결제 완료 → `batch:${batchId}` = {seats, days, validFrom, validTo, used:[]} 를 **DO 에** 적고
+  `https://raytok.kr/lic/b/<batch>` QR **한 장**을 완료 페이지에 (인쇄용 크게, 날짜·인원 글자와 같이).
+- `/license/redeem` 에 `{batch, deviceId}` 분기: 날짜 안 · `used.length < seats` · 같은 deviceId 재요청은 200(자리 안 씀) → 아니면 `no_seats`/`expired`.
+  응답에 `activatedAt`(그 폰의 첫 성공 시각)·`expiresAt`(= activatedAt + days).
+- 가이드 화면에 **"오늘 N명 / 총 M명"** 한 줄 (같은 DO 읽기).
+- 시험: 자리 N 에 N+1 번째 `no_seats` · 같은 폰 두 번은 자리 하나 · 날짜 밖 `expired` · 되돌림 실증.
+개별 코드(08:25 1~6·8·9)는 그대로 — 개인이 웹에서 혼자 사는 길.
