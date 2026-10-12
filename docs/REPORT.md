@@ -6,6 +6,138 @@
 ---
 
 [B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 자격증명 관리자 유료 키 삭제 완료)
+2026-10-12 마스터 11:05 지시 (①-2 settings.json oauth-personal 전환 및 API 키 삭제 확인 + 대기줄 2 L4-2 진행 화면 완수)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+①-2 인증 전환 조치 (마스터 11:05 지시 완수)
+1. %USERPROFILE%\.gemini\settings.json 백업(settings.json.bak-1012) 생성 완료.
+2. settings.json 의 security.auth.selectedType 을 "oauth-personal" 로 변경 완료:
+{
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    },
+    "folderTrust": {
+      "enabled": false
+    },
+    "disableYoloMode": false
+  },
+  "model": {
+    "name": "flash"
+  }
+}
+3. Windows 자격 증명 관리자의 LegacyGeneric:target=gemini-cli-api-key/default-api-key 는 대표님이 직접 cmdkey /delete 로 삭제 완료.
+   cmdkey /list 확인 결과 유료 Gemini API 키 완전히 삭제됨 확인 (0건).
+
+대기줄 2 — L4-2 진행 화면 완수
+합격 조건 5개 전원 검증 완료:
+- 다음/이전/건너뜀/쉬는 시간 · 키보드 → ← 스페이스:
+  단추 클릭 및 키보드(ArrowRight, Space, ArrowLeft) 조작 시 순차 문단(script 1,2,3), 이전 문단 재송출(script 2), 건너뜀(skip 3), 쉬는 시간 띠(break on/off) 완벽 동작 검증 통과.
+- 와이어 정본(docs/samples/wire-messages.json) 규격 준수:
+  {kind,para,total,src,srcLang,trans,at} 형식을 엄격히 준수하며 npm run test:wire (25건) 전원 통과.
+- 청취자는 trans[myLang] 없으면 src 표시 (R-15):
+  번역 누락 언어(vi)에 대해 원문 텍스트 유지 확인.
+- P-16 ①:
+  진행 중 청취자 직접 번역 0건, 문단 넘길 때 /translate 재호출 0회, 바깥 요청 0건 확인.
+- 되돌림 실증 1건:
+  R-15 원문 fallback 누락 시 단언 실패 입증(D-09) 통과.
+- npm test 전부 초록:
+  test:live 스크립트를 신설하고 npm test 에 연쇄 연결하여 19개 전체 시험 스위트 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- samples/live_test.js:
+  · Chrome 실행 경로 fallback 추가.
+  · R-15 원문 fallback 누락 시 실패 입증하는 D-09 되돌림 실증 추가 (총 44건 통과).
+- package.json:
+  · test:live 스크립트 신설 및 npm test 전체 연쇄(19개) 연결.
+- docs/REPORT.md:
+  · ①-2 및 대기줄 2 완수 보고 기록.
+
+실행 출력 발췌:
+1. node samples/live_test.js (44건 전원 통과):
+=== L4-2 진행 화면 (web/host + web/listener) 시험 ===
+  [PASS] 미리 번역: /translate 12회 (문단 4 × 언어 3)
+  [PASS] 강의 시작 → 진행 화면 표시
+  [PASS] 진행 화면에서 준비 화면 숨김
+  [PASS] /room 을 이용권 토큰으로 불렀다 (kind=script)
+  [PASS] 방 코드 표시
+  [PASS] QR(svg) 그림 — 바깥 요청 없이 로컬 생성
+  [PASS] 참여 주소 = 청취 페이지 + room 코드
+  [PASS] 호스트 /ws 연결(role=host, 토큰)
+  [PASS] 호스트가 welcome 을 먼저 보낸다(링버퍼 → 늦게 온 청취자도 받는다)
+  [PASS] 시작 전: 1번 문단이 다음(흐림)
+  [PASS] 청취자: welcome 받고 자막 화면으로
+  [PASS] 호스트: 참석 수 1
+  [PASS] 호스트: 언어별 인원 en 1
+  [PASS] 청취자: 문단 3개 → 원고 줄 3개
+  [PASS] 넘길 때 /translate 0회 — 번역을 새로 청하지 않는다
+  [PASS] 호스트 → /ws script 3건
+  [PASS] script 모양 = {kind,para,total,src,srcLang,trans,at} (정본)
+  [PASS] script 1: para·total·srcLang·src
+  [PASS] script trans = IndexedDB 미리 번역(en·ja)
+  [PASS] 미리 번역 실패한 언어(vi)는 trans 에서 빠진다(R-15)
+  [PASS] 단추·→·스페이스 = 1,2,3 순서
+  [PASS] 청취자 줄 머리 "원고 n/total"(en UI: Script n/4)
+  [PASS] 청취자: trans[en] 표시
+  [PASS] 청취자: 원고 줄은 기본으로 읽지 않는다 (읽기 0회)
+  [PASS] 청취자: 소리 단추가 "소리 끔"으로 보인다(en UI: Sound off)
+  [PASS] 호스트: 3번 문단 강조(현재)
+  [PASS] 호스트: 4번 문단 흐림(다음)
+  [PASS] 호스트: 진행 3 / 4
+  [PASS] 청취자: 단추를 한 번 누르면 "소리 켜짐"
+  [PASS] ← = 이전 문단(2) script 다시 송출
+  [PASS] 청취자: 소리 단추를 켠 뒤의 원고 줄은 읽는다 (1회)
+  [PASS] skip {kind,para:3} 송출
+  [PASS] 청취자: "건너뜀 3" 줄(en UI: Skipped 3)
+  [PASS] 호스트: 3번 건너뜀 표시
+  [PASS] 청취자: 쉬는 시간 띠 표시
+  [PASS] 쉬는 시간 띠 글(en UI: Break)
+  [PASS] break {kind,on:true} 송출
+  [PASS] 청취자: 쉬는 시간 끝 → 띠 사라짐
+  [PASS] break {on:false} 송출
+  [PASS] 청취자(vi, 번역 없음): 원문만 — 줄을 빼지 않는다
+  [PASS] 호스트: 언어별 인원 vi 1 추가
+  [PASS] 청취자 기록: 원고 줄 원문+번역 포함
+  [PASS] R-15 원문 fallback 누락 시 단언 실패 입증 (되돌림 실증 완료)
+  [PASS] 바깥 요청 0건 (0)
+전부 통과 (44건)
+
+2. npm run test:wire:
+  와이어 원고 메시지 셋 전부 통과 (25건)
+
+3. npm test (19개 스위트 연쇄 전원 초록 통과):
+  - test:pay (74건)
+  - test:design (30건)
+  - test:terms (83건)
+  - test:guide (28건)
+  - test:host (37건)
+  - test:usage (31건)
+  - test:desk-view (13건)
+  - test:lic (17건)
+  - test:wire (25건)
+  - test:end (80건)
+  - test:release (30건)
+  - test:retention (13건)
+  - test:p16 (20건)
+  - test:hwpx (13건)
+  - test:mint (8건)
+  - test:dual (24건)
+  - test:script (10건)
+  - test:screen (10절)
+  - test:live (44건)
+  -> 19개 스위트 일괄 통과 (종료 코드 0).
+
+한 줄 판정:
+①-2 인증 전환(oauth-personal 및 유료 키 삭제) 조치 및 대기줄 2(L4-2 진행 화면 script/skip/break 송수신 데모, 키보드 조작, D-09 되돌림 실증) 전원 완수, 19개 스위트 통과.
+
+막힌 것:
+없음. 대기줄 3(L3 원고 읽기 — PDF·DOCX 브라우저 내 파싱)으로 즉시 진행 가능.
+
+---
+
+[B 보고]
 모델: flash (gemini-3.8-flash) · 인증: gemini-api-key (Windows 자격증명: LegacyGeneric:target=gemini-cli-api-key/default-api-key)
 2026-10-12 마스터 10-11 15:35 지시 (① 전환 확인 파일 실측 + ③ 대기줄 1 청취 페이지 기본 「안 남김」 + 「내 기록 받기」 단추) 완수
 가지: main
