@@ -7,6 +7,85 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 국내 출시 전제(10.약관·11.환불·12.PG문서) 완수 및 전 구간 실측 검증 완료
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+국내 출시 전제 10·11·12 완수 결과:
+1. 10번 이용약관 실문구 게시:
+   - `web/terms/index.html`(국문 정본) 및 `web/terms/en/index.html`(영문 참고 번역) 게시.
+   - 계약 성립, 이용권 범위, 금지행위, 면책, 분쟁 관할(수원지방법원), 준거법(한국법), 사업자등록번호(376-88-02280), 통신판매업(2025-화성동탄-2002), 대표 박용음, 시행일자(2026년 10월 12일) 명시.
+   - 감시선 숫자(300만 자 등) 비공개 자물쇠 100% 준수 (공개 파일 0개 노출 확인).
+2. 11번 환불·청약철회 정책:
+   - 미사용 7일 이내 전액 환불 · 사용 개시 후(코드 등록/입장 후) 전자상거래법 제17조 제2항 제5호에 따른 환불 불가 · 기간 만료 후 환불 불가 조항 명시.
+   - 구매 화면(`/web/buy/`) 하단에 `#refund-notice` 사전 고지 UI 탑재 및 `setLang` 다국어 연동.
+   - `samples/terms_test.js` 에서 실측 검증 (총 88건 통과).
+3. 12번 PG 전환 문서(`docs/pg-switchover.md`) 및 전 구간 1회 실측:
+   - ① 키·MID 파일 및 변수명(STORE_ID, CHANNEL_KEY, PORTONE_API_SECRET, PORTONE_WEBHOOK_SECRET, MINT_PRIVATE_KEY - 값은 비움), ② 테스트->실결제 전환 순서, ③ 긴급 롤백 절차, ④ 전환 뒤 확인할 3가지 체크리스트 작성.
+   - 테스트 모드로 구매->웹훅->0x02 이용권 발급 전 구간 1회 실측 완료 (`samples/pay_test.js` 75건 전원 통과).
+4. 대표님 통지 사항:
+   - 환불 조건: 미사용 7일 이내 전액 환불, 사용 개시 후 불가.
+   - 분쟁 관할: 수원지방법원 (회사 본점 소재지).
+5. 전체 테스트 스위트:
+   - `npm test` 34개 스위트(800+건 단언) 전원 통과.
+
+만든·바꾼 파일과 이유:
+- web/terms/index.html: 10번 국문 약관 정본 실문구 게시.
+- web/terms/en/index.html: 10번 영문 약관 참고 번역 실문구 게시.
+- web/buy/index.html: 11번 환불·청약철회 사전 고지 UI 탑재 및 다국어 연동.
+- samples/terms_test.js: 약관 실문구 및 구매 화면 환불 고지 검증으로 갱신 (88건 통과).
+- docs/pg-switchover.md: [신규] 12번 토스/포트원 운영 실결제 전환 가이드 문서.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. npm run test:terms (88건 전원 통과):
+  [PASS] web/terms/index.html 파일 존재
+  [PASS] 제1조 목적 명시
+  [PASS] 서비스 성격 및 보조 통역 도구 명시
+  [PASS] 미사용 7일 이내 전액 환불 명시
+  [PASS] 사용 개시 후 환불 불가(전자상거래법 제17조) 명시
+  [PASS] 분쟁 관할 법원(수원지방법원) 명시
+  [PASS] 통신판매업 신고번호 명시
+  [PASS] 사업자등록번호 명시
+  [PASS] 시행일자(2026년 10월 12일) 명시
+  [PASS] Article 1 Purpose
+  [PASS] Unused 7-day refund
+  [PASS] No Refund After Use
+  [PASS] 구매 화면에 refund-notice 영역 존재 확인
+  [PASS] 구매 화면에 미사용 7일 이내 전액 환불 고지 확인
+  [PASS] 구매 화면에 사용 개시 후 환불 불가 고지 확인
+  [PASS] 감시선 글자 수가 적힌 공개 파일 0개
+  전부 통과 (88건)
+
+2. node samples/pay_test.js (전 구간 1회 실측, 75건 전원 통과):
+=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시험 ===
+  [PASS] 손님 1일권 가격 3,300원 일치
+  [PASS] 결제 완료 처리 200 OK
+  [PASS] 쿠폰 코드 1개 발급 확인
+  [PASS] 발급된 코드 Ed25519 서명 유효성 검증 통과 (0x02 손님 쿠폰)
+  [PASS] 중복 요청 멱등성 검증 통과
+  [PASS] 금액 위조 요청 400 차단 (amount_mismatch)
+  [PASS] 정상 웹훅 서명 검증 통과
+  [PASS] 위조 웹훅 서명 검증 차단
+  [PASS] 브라우저 Playwright E2E 구매 페이지 실측 검증
+  [PASS] relay 라우트 POST /pay/complete 200 OK 응답 확인
+  [PASS] relay 라우트 POST /pay/webhook 200 OK 서명 통과 확인
+  전부 통과 (75건)
+
+3. npm test (34개 스위트 연쇄 전원 초록 통과):
+  34개 스위트 일괄 통과 (종료 코드 0, 단언 800+건).
+
+한 줄 판정:
+국내 출시 전제 10번(이용약관 ko 정본/en 참고 실문구), 11번(환불정책 구매화면 고지), 12번(PG 전환 문서 및 결제 전 구간 실측) 완수 및 34개 스위트 전원 통과.
+
+막힌 것:
+없음. 대표님 지시(22:09·23:00)에 따른 국내 필수 과제 완수 완료.
+배포 대기: 예 (relay/src/room.js 변경분 포함).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 강사 화면 4대 회수 사유 중 무음 회수(btnAskSilent) 단추 추가 및 34개 스위트 통과 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
