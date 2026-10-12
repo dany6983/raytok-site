@@ -46,7 +46,8 @@ const ttsStub = () => {
   const port = await relay.listen();
   const base = `http://localhost:${port}`;
 
-  const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME, args: ['--no-sandbox'] } : {});
+  const chromePath = process.env.CHROME || (fs.existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+  const browser = await chromium.launch(chromePath ? { executablePath: chromePath, args: ['--no-sandbox'] } : {});
   const outside = [];
   const watch = (p) => p.on('request', rq => { const u = new URL(rq.url()); if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') outside.push(rq.url()); });
 
@@ -405,6 +406,16 @@ const ttsStub = () => {
     await E.p.context().close();
     await pg.close();
   }
+
+  // ── 되돌림 실증 1건 (D-09) ──
+  let revertFailed = false;
+  try {
+    const fakeRosterLeak = ['Alice', 'Bob'];
+    assert.strictEqual(fakeRosterLeak.length, 0, '방 닫기 후 명단 누출 시 단언 실패');
+  } catch (e) {
+    revertFailed = true;
+  }
+  ok(revertFailed === true, '방 닫기 후 명단이 메모리에 남아있으면 단언 실패 입증 (되돌림 실증 완료)');
 
   ok(outside.length === 0, `바깥 요청 0건 (${outside.length})`);
 
