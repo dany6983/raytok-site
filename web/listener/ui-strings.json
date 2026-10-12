@@ -793,6 +793,48 @@
     "demo_notice": {
       "ko": "※ 이 화면의 대화는 앱 작동을 보여주는 예시이며, 실제 번역 품질과는 무관합니다.",
       "en": "※ The dialogue on this screen is an example showing how the app works, and is not related to actual translation quality."
+    },
+    "notice_no_retention": {
+      "ko": "기본: 폰에 기록을 남기지 않습니다",
+      "en": "Default: No records saved on phone",
+      "vi": "Mặc định: Không lưu bản ghi trên điện thoại",
+      "th": "ค่าเริ่มต้น: ไม่บันทึกข้อมูลในโทรศัพท์",
+      "id": "Default: Tidak menyimpan rekaman di ponsel",
+      "fil": "Default: Hindi nagse-save ng talaan sa telepono",
+      "si": "පෙරනිමිය: දුරකථනයේ වාර්තා සුරැකෙන්නේ නැත",
+      "uz": "Standart: Telefonda yozuvlar saqlanmaydi",
+      "ky": "Демейки: Телефондо жазуулар сакталбайт",
+      "tg": "Пешфарз: Дар телефон сабтҳо нигоҳ дошта намешаванд",
+      "tet": "Padraun: La rai rejistu iha telemovel",
+      "mn": "Үндсэн: Утсанд бичлэг хадгалагдахгүй",
+      "ne": "पूर्वनिর্ধারিত: फोनमा कुनै रेकर्ड राखिँदैन",
+      "km": "លំនាំដើម៖ មិនរក្សាទុកកំណត់ត្រានៅលើទូរសព្ទទេ",
+      "my": "မူလသတ်မှတ်ချက်- ဖုန်းထဲတွင် မှတ်တမ်းမသိမ်းဆည်းပါ",
+      "lo": "ຄ່າເລີ່ມຕົ້ນ: ບໍ່ບັນທຶກປະຫວັດໃນໂທລະສັບ",
+      "zh": "默认：手机上不保留记录",
+      "bn": "ডিফল্ট: ফোনে কোনো রেকর্ড রাখা হয় না",
+      "ur": "طے شدہ: فون پر کوئی ریکارڈ محفوظ نہیں ہوتا"
+    },
+    "btn_save_record": {
+      "ko": "내 기록 받기 (TXT)",
+      "en": "Download My Notes (TXT)",
+      "vi": "Tải bản ghi của tôi (TXT)",
+      "th": "ดาวน์โหลดบันทึกของฉัน (TXT)",
+      "id": "Unduh Catatan Saya (TXT)",
+      "fil": "I-download ang Aking Tala (TXT)",
+      "si": "මගේ සටහන් බාගන්න (TXT)",
+      "uz": "Mening qaydlarimni yuklab olish (TXT)",
+      "ky": "Менин жазуумду жүктөп алуу (TXT)",
+      "tg": "Сабти маро зеркашӣ кунед (TXT)",
+      "tet": "Download Ha'u-nia Rejistu (TXT)",
+      "mn": "Миний тэмдэглэлийг татах (TXT)",
+      "ne": "मेरो रेकर्ड डाउनलोड गर्नुहोस् (TXT)",
+      "km": "ទាញយកកំណត់ត្រារបស់ខ្ញុំ (TXT)",
+      "my": "ကျွန်ုပ်၏မှတ်တမ်း ဒေါင်းလုဒ်လုပ်ပါ (TXT)",
+      "lo": "ດາວໂຫຼດປະຫວັດຂອງຂ້ອຍ (TXT)",
+      "zh": "下载我的记录 (TXT)",
+      "bn": "আমার নোট ডাউনলোড করুন (TXT)",
+      "ur": "میرا ریکارڈ ڈاؤن لوڈ کریں (TXT)"
     }
   }
 }

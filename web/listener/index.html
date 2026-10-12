@@ -295,7 +295,7 @@
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
       <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
-      <button class="tool-btn" id="btn-save" aria-label="save transcript" title="Save transcript (TXT)">⬇ TXT</button>
+      <button class="tool-btn" id="btn-save" aria-label="save transcript" title="내 기록 받기 (TXT)">⬇ TXT</button>
       <button class="tool-btn tool-btn-screen" id="btn-fullscreen" aria-label="fullscreen">⛶</button>
     </div>
   </div>
@@ -346,7 +346,8 @@
           <span data-i18n="summary_joined_unit">명</span>
         </div>
       </div>
-      <button class="btn" id="btn-save-end" style="background: none; border: 1px solid var(--primary); color: var(--primary); margin-bottom: 10px;" aria-label="save transcript">⬇ TXT</button>
+      <div class="summary-note" style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;" data-i18n="notice_no_retention">기본: 폰에 기록을 남기지 않습니다</div>
+      <button class="btn" id="btn-save-end" style="background: none; border: 1px solid var(--primary); color: var(--primary); margin-bottom: 10px;" aria-label="save transcript" data-i18n="btn_save_record">내 기록 받기 (TXT)</button>
       <button class="btn" onclick="location.reload()" data-i18n="reload_button">새로고침</button>
     </div>
   </div>
@@ -366,6 +367,8 @@
     <span data-i18n="alert_invalid_code">세션 코드 6자리를 입력하세요.</span>
     <span data-i18n="alert_rejected">연결이 거부되었습니다: </span>
     <span data-i18n="unknown_reason">알 수 없는 이유</span>
+    <span data-i18n="notice_no_retention">기본: 폰에 기록을 남기지 않습니다</span>
+    <span data-i18n="btn_save_record">내 기록 받기 (TXT)</span>
   </div>
 
   <script>
@@ -1142,6 +1145,9 @@
 
     function showEnd(summary) {
       releaseWake();
+      if (roomCode) {
+        try { localStorage.removeItem(`raytok_last_seq_${roomCode}`); } catch (e) {}
+      }
       const s = summary || {};
       document.getElementById('sum-lines').textContent = s.lines || lastSeq;
       document.getElementById('sum-minutes').textContent = s.minutes || 0;

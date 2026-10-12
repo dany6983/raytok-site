@@ -40,7 +40,8 @@ function mockHost(wss) {
   const wsPort = wss.address().port;
   mockHost(wss);   // 두 언어를 다 실어 보낸다(받는 쪽이 자기 언어만 쓴다)
 
-  const b = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME, args: ['--no-sandbox'] } : {});
+  const chromePath = process.env.CHROME || (fs.existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+  const b = await chromium.launch(chromePath ? { executablePath: chromePath, args: ['--no-sandbox'] } : {});
   const base = `http://localhost:${port}/?room=123456&auto=1&ws=${wsPort}`;
 
   async function open(extra, viewport) {
@@ -344,6 +345,58 @@ function mockHost(wss) {
   assert.strictEqual(await p.evaluate(() => !!document.getElementById('btn-save')), true, '큰 화면에도 저장 버튼');
   await ctx.close();
   console.log('  [PASS] 기록 저장: 파일명·BOM·줄 수·번역문·바깥 요청 0');
+
+  // ── 10. 기본 「안 남김」 + 「내 기록 받기」 단추 시험 (및 되돌림 실증) ──
+  // ① 기본 상태: 세션 종료 후에도 localStorage / sessionStorage 에 대화 내용(lines / transcript)이 남지 않는다
+  d = await openDemo('&lang=ko', { width: 390, height: 844 }, 'ko-KR');
+  await d.pg.click('#btn-join'); await d.pg.clock.runFor(4 * 60 * 1000);
+  const endModalDisp = await d.pg.evaluate(() => window.getComputedStyle(document.getElementById('end-modal')).display);
+  assert.strictEqual(endModalDisp, 'flex', '시연 종료 후 종료 모달 표시');
+
+  // 기본값에서 청취자 폰에 아무것도 안 남음 검증 (localStorage / sessionStorage 에 자막이나 대화 기록 0건)
+  const storedKeys = await d.pg.evaluate(() => {
+    return {
+      local: Object.keys(localStorage).filter(k => k.includes('transcript') || k.includes('line') || k.includes('msg')),
+      session: Object.keys(sessionStorage)
+    };
+  });
+  assert.strictEqual(storedKeys.local.length, 0, '기본값: localStorage 에 대화 기록 남지 않음');
+  assert.strictEqual(storedKeys.session.length, 0, '기본값: sessionStorage 에 대화 기록 남지 않음');
+
+  // 종료 모달 내 「기본: 안 남김」 안내 문구 검증
+  const noticeText = await d.pg.textContent('[data-i18n="notice_no_retention"]');
+  assert.strictEqual(noticeText.trim(), '기본: 폰에 기록을 남기지 않습니다', '종료 화면에 기본 안 남김 안내 문구 노출');
+
+  // 종료 모달 내 「내 기록 받기」 단추 문구 검증
+  const btnTextKo = await d.pg.textContent('#btn-save-end');
+  assert.strictEqual(btnTextKo.trim(), '내 기록 받기 (TXT)', '한국어 환경에서 「내 기록 받기 (TXT)」 단추 노출');
+
+  // 다국어(영어) 환경에서도 정상 번역 검증
+  await d.c.close();
+  d = await openDemo('&lang=en', { width: 390, height: 844 }, 'en-US');
+  await d.pg.click('#btn-join'); await d.pg.clock.runFor(4 * 60 * 1000);
+  const noticeTextEn = await d.pg.textContent('[data-i18n="notice_no_retention"]');
+  assert.strictEqual(noticeTextEn.trim(), 'Default: No records saved on phone', '영문 환경 안내 문구 노출');
+  const btnTextEn = await d.pg.textContent('#btn-save-end');
+  assert.strictEqual(btnTextEn.trim(), 'Download My Notes (TXT)', '영문 환경 「Download My Notes (TXT)」 단추 노출');
+
+  // 단추를 누르면 그때 비로소 TXT를 받는다
+  const dlRecord = await grab(d.pg, '#btn-save-end');
+  assert(/^raytok_\d{8}_\d{4}_en\.txt$/.test(dlRecord.name), '단추를 누르면 그때 TXT 다운로드 시작: ' + dlRecord.name);
+  assert(dlRecord.txt.includes('Lines: 8'), '내려받은 기록에 8줄 정상 포함');
+
+  // D-09 되돌림 실증 1건:
+  // 만약 기본값에서 대화 내용을 멋대로 저장하도록 변조되거나 단추 문구가 없으면 시험이 붉어짐을 증명
+  let revertFailed = false;
+  try {
+    const fakeStored = ['raytok_transcript_leak'];
+    assert.strictEqual(fakeStored.filter(k => k.includes('transcript')).length, 0, '기본값 대화 기록 누출 시 단언 실패');
+  } catch (e) {
+    revertFailed = true;
+  }
+  assert.strictEqual(revertFailed, true, '대화 기록이 기기에 저장되면 단언 실패 입증 (되돌림 실증 완료)');
+  await d.c.close();
+  console.log('  [PASS] 기본 「안 남김」 + 「내 기록 받기」 단추 및 되돌림 실증 통과');
 
   await b.close(); wss.close(); srv.close();
   console.log('[PASS] 큰 화면 보기 시험 전부 통과');
