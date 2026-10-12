@@ -7,6 +7,75 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 릴레이 Cloudflare Worker 배포 결함(node:fs 누출) 해결 및 배포 준비 완료
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+wrangler deploy 에러 원인 규명 및 해결:
+1. 에러 원인:
+   - 대표님께서 `wrangler deploy` 실행 시 `400 Bad Request: Uncaught Error: No such module "node:fs" imported from "index.js" [code: 10021]` 발생.
+   - Cloudflare Worker 런타임은 `node:fs`를 지원하지 않는데, `relay/src/pay.js`가 CLI 발급 스크립트인 `relay/tools/mint-code.mjs`를 import하면서 CLI 전용 `node:fs` 모듈이 Worker 번들에 유입되었음.
+2. 조치 내용:
+   - Worker 런타임 호환 순수 암호화 모듈 `relay/src/mint-core.js` 신설 (`node:crypto`, `node:buffer`만 사용, `fs` 일절 없음).
+   - `relay/src/pay.js`가 `./mint-core.js`만 import하도록 수정하여 번들에서 `node:fs` 원천 제거.
+   - `relay/tools/mint-code.mjs`는 `mint-core.js`를 재수출하여 기존 CLI 및 `test:mint` 완벽 호환 유지.
+3. 검증 결과:
+   - `npm --prefix relay run test:mint` 8건 전원 통과.
+   - `node samples/pay_test.js` 75건 전원 통과.
+   - `npm test` 34개 스위트(800+건 단언) 전원 통과.
+4. 대표님 배포 재실행 명령어:
+   `cd C:\GitHub\raytok-site\relay && npx wrangler deploy`
+
+만든·바꾼 파일과 이유:
+- relay/src/mint-core.js: [신규] Worker 호환 순수 Ed25519 쿠폰 암호화 모듈.
+- relay/src/pay.js: mint-core.js 참조로 변경 (node:fs 제거).
+- relay/tools/mint-code.mjs: mint-core.js 재수출 리팩터링.
+- docs/REPORT.md: 보고 기록.
+
+한 줄 판정:
+Cloudflare Worker 400 배포 결함(node:fs 누출) 원인 규명 및 `mint-core.js` 분리로 번들 정제 완료, 대표님 배포 재실행 준비 완료.
+
+막힌 것:
+릴레이 Worker 배포 (보안 정책에 따라 에이전트 CLI 실행 금지, 대표님 직접 배포 대상):
+대표님 실행 명령어:
+`cd C:\GitHub\raytok-site\relay && npx wrangler deploy`
+배포 대기: 예
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 배포 현황 점검 및 릴레이 배포 대기 보고
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+배포 현황 점검 결과:
+1. 웹 프론트엔드 (GitHub Pages):
+   - 배포 완료 (origin/main 푸시를 통해 raytok.kr 에 자동 배포됨).
+   - 10번 약관 실문구 (`/web/terms/`, `/web/terms/en/`), 11번 환불 고지 (`/web/buy/`), N:1 웹 질의응답 UI, 아웃바운드 원문 방송 옵션, `robots.txt`, `sitemap.xml`, 전수 제품 영문 페이지 5종, 문의 폼(`contact/`, `contact/en/`) 전부 배포 반영 완료.
+2. 중계 서버 (relay / Cloudflare Workers):
+   - 보안 정책에 따라 에이전트의 직접 배포 실행 차단됨 (`Tool execution denied by policy. 릴레이 배포는 대표님 결정. REPORT 막힌 것에 적을 것.`).
+   - 대표님께서 아래 명령어로 릴레이 배포를 1회 실행하시면 운영 서버에 즉시 반영됩니다:
+     `cd C:\GitHub\raytok-site\relay && npx wrangler deploy`
+3. 자동화 테스트 검증:
+   - `npm test` 34개 스위트(800+건 단언) 전원 통과.
+
+만든·바꾼 파일과 이유:
+- docs/REPORT.md: 배포 현황 및 실행 안내 기록.
+
+한 줄 판정:
+웹 정적 사이트(GitHub Pages)는 main 푸시로 배포 완료되었으며, 릴레이(Cloudflare Worker)는 정책 자물쇠(대표님 직접 결정)에 따라 수동 배포 대기 상태입니다.
+
+막힌 것:
+릴레이 Worker 배포 (보안 정책에 따라 에이전트 CLI 실행 금지, 대표님 직접 배포 대상):
+실행 명령어:
+`cd C:\GitHub\raytok-site\relay && npx wrangler deploy`
+배포 대기: 예
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 국내 출시 전제(10.약관·11.환불·12.PG문서) 완수 및 전 구간 실측 검증 완료
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
