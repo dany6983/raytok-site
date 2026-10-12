@@ -83,6 +83,15 @@
   </url>
   <url>
     <loc>https://raytok.kr/download/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/download/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/download/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/download/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/download/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/download/en/"/>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

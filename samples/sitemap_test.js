@@ -44,6 +44,7 @@ const requiredPages = [
   'https://raytok.kr/contact/en/',
   'https://raytok.kr/desk/',
   'https://raytok.kr/download/',
+  'https://raytok.kr/download/en/',
   'https://raytok.kr/guide/',
   'https://raytok.kr/privacy/'
 ];
@@ -52,7 +53,7 @@ for (const page of requiredPages) {
 }
 
 // 8번 대기줄: 제품 페이지 전수 영문 URL 및 hreflang 상호 연결 검증
-const pagesToCheck = ['tour', 'museum', 'field', 'student', 'ows', 'contact'];
+const pagesToCheck = ['tour', 'museum', 'field', 'student', 'ows', 'contact', 'download'];
 for (const dir of pagesToCheck) {
   const enFile = path.join(ROOT, dir, 'en', 'index.html');
   const koFile = path.join(ROOT, dir, 'index.html');

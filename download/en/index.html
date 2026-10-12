@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install RayTok</title>
+<link rel="canonical" href="https://raytok.kr/download/en/">
+<link rel="alternate" hreflang="ko" href="https://raytok.kr/download/">
+<link rel="alternate" hreflang="en" href="https://raytok.kr/download/en/">
+<link rel="alternate" hreflang="x-default" href="https://raytok.kr/download/">
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 32px 20px 64px; color: #0A0F1F; background: #f3f2f2; max-width: 560px; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  p { font-size: 15px; line-height: 1.6; color: #444; }
+  a.btn { display: block; text-align: center; padding: 16px; border-radius: 12px; background: #0A0F1F; color: #fff; text-decoration: none; font-weight: 600; margin-top: 20px; }
+  .meta { font-size: 13px; color: #777; margin-top: 10px; text-align: center; }
+  .note { font-size: 13.5px; line-height: 1.6; color: #555; background: #fff; border-radius: 12px; padding: 14px 16px; margin-top: 24px; }
+  .note b { color: #0A0F1F; }
+  ol { margin: 8px 0 0; padding-left: 20px; }
+  li { font-size: 13.5px; line-height: 1.7; color: #555; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<script>
+  var STORE_LIVE = false;
+  var STABLE = {
+    tag:  'LANG-45',
+    date: '2026-09-23',
+    apk:  'https://expo.dev/artifacts/eas/3a9B6nSsAJ5yCcImrvik4E31Tp-en1OvI1umhfyZnoc.apk'
+  };
+  var BUILD = {
+    tag:  'LANG-62',
+    date: '2026-10-03',
+    apk:  'https://expo.dev/artifacts/eas/muqvOQ5cIAGDqlonKZsDC4mpsKYpbiC6YNTDolN_bWg.apk'
+  };
+  var PKG = 'com.raytok.ear';
+  var STORE = 'https://play.google.com/store/apps/details?id=' + PKG;
+</script>
+
+<h1>Install RayTok</h1>
+
+<div id="pre-store">
+  <p>Install RayTok directly before official store release. Once live on the app store, this link will direct to the store page.</p>
+  <p>Android only.</p>
+  <a class="btn" id="apk-btn" href="#">Download RayTok (LANG-62)</a>
+  <p class="meta" id="apk-meta"></p>
+  <p class="meta" style="margin-top:10px">Stable Release (Tested): <a id="stable-btn" href="#">Download RayTok</a> <span id="stable-meta"></span></p>
+
+  <div class="note">
+    <b>After downloading:</b>
+    <ol>
+      <li>Tap the downloaded file in your notification panel to begin installation.</li>
+      <li>If prompted about "Install unknown apps", allow Chrome / your browser to install apps.</li>
+      <li>Once installed, open the app or scan the host QR code again to start.</li>
+    </ol>
+  </div>
+</div>
+
+<div id="on-store" hidden>
+  <p>Redirecting to Google Play Store. If not opening automatically, tap below.</p>
+  <a class="btn" id="store-btn" href="#">Install from Play Store</a>
+</div>
+
+<p class="meta" style="margin-top:16px"><a href="/guide/en/">User Guide → raytok.kr/guide/en</a></p>
+
+<div class="note">
+  <b>Connection Requirement</b>
+  <p style="margin:6px 0 0">Both phones must be on the same Wi-Fi or one phone enables a personal hotspot. No external internet is required; conversations remain strictly between the two phones. — <a href="/privacy/en/">Privacy Policy</a></p>
+</div>
+
+<script>
+(function () {
+  document.getElementById('store-btn').href = STORE;
+  if (STORE_LIVE) {
+    document.getElementById('pre-store').hidden = true;
+    document.getElementById('on-store').hidden = false;
+    setTimeout(function () { location.href = STORE; }, 400);
+    return;
+  }
+  document.getElementById('apk-btn').href = BUILD.apk;
+  document.getElementById('apk-btn').textContent = 'Download RayTok (' + BUILD.tag + ')';
+  document.getElementById('stable-btn').href = STABLE.apk;
+  document.getElementById('stable-btn').textContent = 'Download RayTok ' + STABLE.tag;
+  document.getElementById('stable-meta').textContent = '· ' + STABLE.tag + ' · ' + STABLE.date;
+  document.getElementById('apk-meta').textContent =
+    BUILD.tag + ' · ' + BUILD.date + ' · For Earbuds';
+})();
+</script>
+</body>
+</html>
