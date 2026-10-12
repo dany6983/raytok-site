@@ -7,6 +7,104 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 대기줄 5 N:1 웹 착수 (릴레이 대기열 + 강사 지명 UI + 청취자 질문 UI, 3대 특허 자물쇠 완비) 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+대기줄 5 — N:1 웹 질의응답 (question.md) 및 3대 특허 자물쇠 완수
+합격 조건 및 특허 규칙 전원 준수:
+1. P-16 자물쇠: 무설치 웹 청취자는 마이크 없이 오직 텍스트 입력창으로만 질문 작성·전송 (`#ask-input-text`).
+2. P-14 자물쇠: 참여자는 번역하지 않음 (원문 text + 자신의 lang 만 전송, 역번역은 강사/서버 릴레이에서 수행).
+3. P-17 & B-2 자물쇠: 대기열에서 강사가 사람 손으로 수동 클릭 지명 (`btnGrant.onclick`), 자동 선정 배제, 동시 1명만 인가 (발언 중 다른 지명 단추 disabled).
+4. B-3 자물쇠: 질문 순번은 릴레이 `/room` 방 상태 한 곳에서만 `seq` 단일 발급 (강사·청취자 순번 일치 보장).
+5. B-4, B-5 자물쇠: 회수 사유(`host_done`, `timeout`, `silent`, `disconnect`) 기록 및 90초 타이머 카운트다운 연동.
+6. D-09 되돌림 실증: 동시 복수 인가 허용 시 단언 실패 입증 완료.
+
+만든·바꾼 파일과 이유:
+- relay/src/room.js:
+  · `Room` 내 `askQueue`, `askSeq`, `activeAsk` 상태 머신 구축.
+  · `ask_req`(순번 부여), `ask_grant`(수동 지명 및 역번역 브로드캐스트), `ask_close`(회수 사유 기록 및 큐 정리) 처리.
+- samples/mock_relay.js:
+  · 브라우저 테스트용 동일 N:1 큐 상태 머신 탑재.
+- web/host/index.html:
+  · 진행 화면 우측에 `#askBox` (질문 대기 건수, 대기열 목록, 지명 단추, 활성 발언 영역, 90초 타이머, 끝내기 단추) 구현.
+- web/listener/index.html:
+  · 툴바에 `#btn-ask` 및 텍스트 전용 질문 모달 `#ask-modal` 탑재.
+  · 대기열 등록 시 "✋ 대기 N번", 지명 시 "✋ 발언 중" 및 자막 영역 질문 표출.
+- web/listener/ui-strings.json:
+  · `btn_ask`, `ask_title`, `ask_notice`, `btn_ask_submit`, `btn_ask_cancel` 19개 언어 사전 추가.
+- relay/test/question-queue.mjs:
+  · [신규] 릴레이 대기열 및 수동 지명, B-2 동시 1명 차단, 회수 사유 단위 시험 (22건 통과).
+- samples/question_test.js:
+  · [신규] 호스트 1 + 청취자 2(vi, th) 간 3대 특허 자물쇠 E2E 브라우저 시험 (18건 통과, D-09 되돌림 실증).
+- package.json:
+  · `test:question` 및 `test:question-relay` 추가 및 `npm test` 연쇄(30개) 연결.
+- docs/REPORT.md:
+  · 대기줄 5 완수 보고 기록.
+
+실행 출력 발췌:
+1. node samples/question_test.js (18건 전원 통과):
+=== N:1 질문 대기열 + 강사 지명 UI + 청취자 질문 UI E2E 시험 ===
+  [PASS] 강사 실시간 진행 화면 진입
+  [PASS] 방 코드 생성 확인 (ABC123)
+  [PASS] 청취자 1 (Nguyen Van A, vi) 참여 완료
+  [PASS] 청취자 2 (Somchai, th) 참여 완료
+  [PASS] 청취자 1 질문 요청 후 대기열 등록 표시 확인 (P-16 텍스트 질문만)
+  [PASS] 청취자 2 도착 순번 2번 대기열 등록 확인 (B-3)
+  [PASS] 강사 화면 질문 대기열 2건 노출 확인
+  [PASS] 1번 대기자 Nguyen Van A 일치
+  [PASS] 2번 대기자 Somchai 일치
+  [PASS] 대기열 지명 단추 2개 노출 확인
+  [PASS] B-2 동시 1명 인가: 발언 중 다른 지명 단추 비활성화(disabled) 확인
+  [PASS] 강사 화면에 지명된 발언자(Nguyen Van A) 표출 확인
+  [PASS] 다른 청취자(Somchai)에게도 지명된 질문 본문 표출 확인
+  [PASS] 지명된 청취자 1의 단추가 "발언 중"으로 변경 확인
+  [PASS] 강사 [끝내기] 클릭 시 발언 영역 닫힘 확인 (B-4)
+  [PASS] 1번 질문 종료 후 대기열에서 1번 제거 및 남은 1건 유지 확인
+  [PASS] B-2 동시 복수 인가 허용 시 단언 실패 입증 (되돌림 실증 완료)
+  [PASS] 외부 네트워크 요청 0건 확인 (0)
+전부 통과 (18건)
+
+2. node relay/test/question-queue.mjs (22건 전원 통과):
+=== Relay N:1 질문 대기열 및 지명 UI 상태머신 단위 시험 ===
+  [PASS] 대기열에 1건 등록 확인
+  [PASS] B-3 릴레이가 단일 순번 1 부여 확인
+  [PASS] 질문자 이름 보존 확인
+  [PASS] 질문자 언어(vi) 보존 확인
+  [PASS] P-16 텍스트 질문 본문 일치 확인
+  [PASS] 호스트에게 ask_queue 전송 확인
+  [PASS] 호스트에게 질문 원문 전달 확인
+  [PASS] 다른 청취자에게도 대기열 건수 브로드캐스트 확인
+  [PASS] 청취자에게 동일한 순번(1) 전달 확인
+  [PASS] 대기열에 2건 등록 확인
+  [PASS] B-3 도착 순번 2 부여 확인
+  [PASS] 활성 발언 질문 설정 확인
+  [PASS] 지명된 1번 질문 활성화 확인
+  [PASS] P-14 강사 언어로 역번역된 번역문 장착 확인
+  [PASS] 전체 참여자에게 ask_active 브로드캐스트 확인
+  [PASS] 발언자 이름 표출 확인
+  [PASS] 청취자 모국어 번역본 배포 확인
+  [PASS] B-2 동시 2명 지명 시도 시 already_active 오류 차단
+  [PASS] 발언 종료 후 활성 질문 null 복구
+  [PASS] 대기열에서 1번 질문 제거 및 2번 질문 유지 확인
+  [PASS] B-4/B-5 회수 사유(host_done) 명시 브로드캐스트 확인
+  [PASS] 동시 2명 인가 허용 시 단언 실패 입증 (되돌림 실증 완료)
+전부 통과 (22건)
+
+3. npm test (30개 스위트 연쇄 전원 초록 통과):
+  - test:pay(74건), test:design(30건), test:terms(83건), test:guide(28건), test:host(37건), test:usage(31건), test:desk-view(13건), test:lic(17건), test:wire(25건), test:end(81건), test:release(30건), test:retention(13건), test:p16(20건), test:hwpx(13건), test:mint(8건), test:dual(24건), test:script(10건), test:screen(10절), test:live(44건), test:l3(15건), test:report-common(27건), test:rtl(5건), test:match(5건), test:i18n(4개국어 0건), test:desk-read(18건), test:desk-session(35건), test:retry(13건), test:limits-bundle(13건), test:question(18건), test:question-relay(22건)
+  -> 30개 스위트 일괄 통과 (종료 코드 0).
+
+한 줄 판정:
+N:1 질문 대기열 및 지명 UI 구현 완수(3대 특허 자물쇠 준수, 동시 1명 인가, 텍스트 전용 질문, 역번역 배포), 30개 시험 스위트 전원 초록 통과.
+
+막힌 것:
+없음. 대기줄 1~5번 전원 완수 상태.
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 내부 링크 점검(/common/theme.css 404 해결) 및 relay 단위시험 4종(desk-read 타임스탬프 결함 복구) 일체화 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
