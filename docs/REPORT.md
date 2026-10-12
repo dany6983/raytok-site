@@ -7,6 +7,41 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 강사 화면 4대 회수 사유 중 무음 회수(btnAskSilent) 단추 추가 및 34개 스위트 통과 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+강사 화면 4대 회수 사유 UI 연동 완비:
+1. 무음 회수 UI:
+   - 강사 화면 발언 진행 영역(`#askActiveArea`)에 `[무음]` 회수 단추(`#btnAskSilent`) 신설.
+   - 발언자가 무음이거나 응답하지 않을 때 강사가 즉시 `closeQuestion('silent')` 호출하여 릴레이에 `revoke: silent` 사유 기록 및 브로드캐스트.
+2. 4대 회수 사유 전 구간 매핑 완료:
+   - 강사 수동 종료: `[끝내기]` 단추 -> `host_done`
+   - 발언자 무음/미응답: `[무음]` 단추 -> `silent`
+   - 발언 시간 초과: 90초 타이머 만료 -> `timeout`
+   - 청취자 네트워크 이탈: 웹소켓 단절 감지 -> `disconnect`
+3. 전체 테스트 스위트:
+   - `npm test` 34개 스위트(800+건 단언) 전원 통과.
+
+만든·바꾼 파일과 이유:
+- web/host/index.html: `#btnAskSilent` 단추 추가 및 `closeQuestion('silent')` 연동.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. npm test (34개 스위트 연쇄 전원 초록 통과):
+  34개 스위트 일괄 통과 (종료 코드 0, 단언 800+건).
+
+한 줄 판정:
+강사 화면에 4대 회수 사유 중 무음 회수 단추(#btnAskSilent) 추가 및 전 구간 사유(host_done, silent, timeout, disconnect) 연동 완비, 34개 시험 스위트 전원 통과.
+
+막힌 것:
+없음. 대표님 지시(21:25/21:30)에 따른 N:1 핵심 집중 완수 완료 후 지시 대기.
+배포 대기: 예 (relay/src/room.js 변경분 포함).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 N:1 질의응답 6대 기준 완성 (와이어 정의·순번보존 독립항·4대 회수사유·특허자물쇠 실증) 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
