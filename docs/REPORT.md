@@ -6,6 +6,137 @@
 ---
 
 [B 보고]
+모델: flash (gemini-3.8-flash) · 인증: gemini-api-key (Windows 자격증명: LegacyGeneric:target=gemini-cli-api-key/default-api-key)
+2026-10-12 마스터 10-11 15:35 지시 (① 전환 확인 파일 실측 + ③ 대기줄 1 청취 페이지 기본 「안 남김」 + 「내 기록 받기」 단추) 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+① 가장 먼저 — 전환 확인 파일 실측 (코드 전 점검 결과)
+과금 원인 확인:
+10-10 에 대표님이 무료 전환을 진행하셨으나, 로컬 Gemini CLI 설정(%USERPROFILE%\.gemini\settings.json)의 security.auth.selectedType 이 "gemini-api-key"로 남아 있었고, 실제 API 키는 Windows 자격 증명 관리자(LegacyGeneric:target=gemini-cli-api-key/default-api-key)에 등록된 유료 Gemini API 키를 계속 읽어 호출하고 있었습니다.
+따라서 CLI는 개인 계정 OAuth가 아닌 기존 API 키로 동작하여 과금이 발생한 것이 확인되었습니다.
+
+실제 파일 및 명령어 출력:
+1. %USERPROFILE%\.gemini\settings.json 내용:
+{
+  "security": {
+    "auth": {
+      "selectedType": "gemini-api-key"
+    },
+    "folderTrust": {
+      "enabled": false
+    },
+    "disableYoloMode": false
+  },
+  "tools": {
+    "allowed": [
+      "run_shell_command", "replace", "write_file", "read_file", "read_many_files", "list_directory", "glob", "search_file_content", "web_fetch", "google_web_search"
+    ]
+  },
+  "model": {
+    "name": "flash"
+  }
+}
+
+2. 환경변수 출력:
+GEMINI_API_KEY=%GEMINI_API_KEY% (미설정)
+GOOGLE_API_KEY=%GOOGLE_API_KEY% (미설정)
+GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS% (미설정)
+
+3. gcloud 명령어 출력:
+gcloud : 'gcloud' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. (미설치)
+
+4. 현재 세션 모델:
+model.name: "flash" (Gemini CLI v0.63.0 에서 gemini-3.8-flash 로 확인)
+
+5. %USERPROFILE%\.gemini 파일 목록:
+google_accounts.json
+history
+installation_id
+policies
+projects.json
+settings.json
+settings.json.bak-1009
+state.json
+tmp
+trustedFolders.json
+
+6. Windows 자격 증명 관리자 (cmdkey /list):
+Target: LegacyGeneric:target=gemini-cli-api-key/default-api-key
+Type: Generic
+User: default-api-key
+(★ 실제 API 키 호출 원천)
+
+③ 대기줄 1: 청취 페이지 기본 「안 남김」 + 「내 기록 받기」 단추
+만든·바꾼 파일과 이유:
+- web/listener/index.html:
+  · 종료 모달(end-modal)에 notice_no_retention ("기본: 폰에 기록을 남기지 않습니다") 안내 문구 추가.
+  · 종료 모달의 다운로드 단추를 btn_save_record ("내 기록 받기 (TXT)")로 명확화.
+  · 툴바 저장 단추 툴팁을 "내 기록 받기 (TXT)"로 통일.
+  · 세션 종료(showEnd) 시 세션 잔여 seq 키(raytok_last_seq_${roomCode})를 localStorage에서 즉시 삭제하여 기기에 0건 보존 원칙 확립.
+- web/listener/ui-strings.json:
+  · notice_no_retention 및 btn_save_record 19개 전체 언어 사전 추가.
+- samples/screen_view_test.js:
+  · Chrome 실행 경로 fallback 추가.
+  · Section 10 신설: 세션 종료 후 기기 localStorage/sessionStorage 에 대화/자막 기록 0건 검증, 종료 화면 안내 문구 노출 검증, 「내 기록 받기 (TXT)」 단추 클릭 시에만 TXT 다운로드 개시 검증, D-09 되돌림 실증 1건(기록 누출 시 실패) 통과.
+- package.json:
+  · test:screen 스크립트 추가 및 npm test 연쇄에 연결하여 총 18개 스위트 전부 통과 보장.
+
+실행 출력 발췌:
+1. node samples/screen_view_test.js (10절 전부 통과):
+[screen 1920x1080] {"shown":4,"total":8,"cols":2,"font":58.32,"header":"none","srcRow":"none","barTop":1080,"spoken":0}
+  [PASS] 최근 4줄 · 두 칸 · 큰 글씨 · 머리줄/꼬리표 숨김 · 도구 막대 숨김→보임 · 음성 0 · 외부 요청 0
+  [PASS] 세로 화면: 한 칸, 위아래
+  [PASS] RTL: 번역 칸 dir=rtl, 칸 순서 뒤집힘
+[normal 390x844] {"shown":8,"total":8,"display":"block","font":15,"header":"flex","srcRow":"block","spoken":7}
+  [PASS] 보통 보기: 전 줄 · 15px · 머리줄 보임 · 확정 줄만 음성(pending 0)
+[normal 390x844 · 30줄] {"docH":844,"vh":844,"lastTop":681,"lastBottom":776,"barTop":792,"barBottom":844,"listScrolls":true,"atBottom":true}
+[normal 360x640 · 30줄] {"docH":640,"vh":640,"lastTop":477,"lastBottom":572,"barTop":588,"barBottom":640,"listScrolls":true,"atBottom":true}
+  [PASS] 보통 보기 30줄: 최신 줄 보임 · 목록만 구름 · 도구 막대 제자리 (390×844, 360×640)
+[screen 밝기] {"latest":1,"older":0.5,"pending":0.5,"n":1}
+  [PASS] 큰 화면: 최신 확정 줄만 또렷
+[줄바꿈 390x844] {"split":[],"longRight":338,"vw":390,"overflowX":false,"badge3":"none","badge4":"inline-block","badge4Text":"회의 (meeting)"}
+[줄바꿈 360x640] {"split":[],"longRight":311,"vw":360,"overflowX":false,"badge3":"none","badge4":"inline-block","badge4Text":"회의 (meeting)"}
+[줄바꿈 320x568] {"split":[],"longRight":275,"vw":320,"overflowX":false,"badge3":"none","badge4":"inline-block","badge4Text":"회의 (meeting)"}
+  [PASS] 낱말 안 끊김 · 긴 낱말 안 넘침 · 화자 꼬리표는 보낸 때만 (390, 360, 320)
+[시연 vi] {"n":8,"spoken":8,"end":"flex","sumLines":"8","ws":0,"first":"Xin chào. Chúng ta bắt đầu buổi huấn luyện an toàn trước khi làm việc hôm nay."}
+  [PASS] 시연: 서버 연결 0 · 임시는 안 읽음 · 8줄 · 언어 5개 · 종료 화면 · 큰 화면 자동 시작
+  [PASS] 기록 저장: 파일명·BOM·줄 수·번역문·바깥 요청 0
+  [PASS] 기본 「안 남김」 + 「내 기록 받기」 단추 및 되돌림 실증 통과
+[PASS] 큰 화면 보기 시험 전부 통과
+
+2. node samples/rtl_test.js:
+=== All 5 Real Lifecycle Tests Passed! ===
+
+3. npm test (전체 18개 스위트 연쇄 통과):
+- test:pay — 전부 통과 (74건)
+- test:design — 전부 통과 (30건)
+- test:terms — 전부 통과 (83건)
+- test:guide — 전부 통과 (28건)
+- test:host — 전부 통과 (37건)
+- test:usage — 전부 통과 (31건)
+- test:desk-view — 전부 통과 (13건)
+- test:lic — 전부 통과 (17건)
+- test:wire — 전부 통과 (24건)
+- test:end — 전부 통과 (80건)
+- test:release — 전부 통과 (30건)
+- test:retention — 전부 통과 (13건)
+- test:p16 — 전부 통과 (20건)
+- test:hwpx — 전부 통과 (13건)
+- test:mint — 전부 통과 (8건)
+- test:dual — 전부 통과 (24건)
+- test:script — 전부 통과 (10건)
+- test:screen — 전부 통과 (10절)
+
+한 줄 판정:
+전환 상태 실측 완료(Windows 자격증명 관리자의 API 키 호출 규명) 및 대기줄 1 기본 안 남김 + 내 기록 받기 단추 구현 완료, 18개 시험 전부 통과.
+
+막힌 것:
+없음. 대기줄 2(L4-2 진행 화면 ws script 송출 + 청취 수신)로 진행 가능.
+
+---
+
+[B 보고]
 2026-10-10 마스터 17:20 지시 (인증·모델 보고, npm test 묶음화) 완수 및 세션 종료
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0 고정)
