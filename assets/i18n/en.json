@@ -520,5 +520,8 @@
  "이 예산은 어느 항목에 있습니까? (운영비 · 전시비 · 교육비 · 없음)": "Which budget line does this sit under? (operations · exhibitions · education · none)",
  "도입을 결정하시는 부서는 어디입니까?": "Which department makes the decision to adopt it?",
  "일곱 가지 적어 보내기": "Send us the seven answers",
- "상시 운영을 전제로 냅니다. 분 단위나 회차 단위로 과금하지 않습니다 — 상설 전시는 분으로 계산할 수 없기 때문입니다.": "The figure assumes continuous operation. We do not bill by the minute or by the session — a permanent exhibition cannot be counted in minutes."
+ "상시 운영을 전제로 냅니다. 분 단위나 회차 단위로 과금하지 않습니다 — 상설 전시는 분으로 계산할 수 없기 때문입니다.": "The figure assumes continuous operation. We do not bill by the minute or by the session — a permanent exhibition cannot be counted in minutes.",
+ "상설 전시실 — 진열장 앞 소규모 해설": "Permanent gallery — a small group at the vitrine",
+ "야외 조각정원 — 걸으며 해설": "Outdoor sculpture garden — narration on the move",
+ "연출 영상입니다.": "A staged video."
 }
