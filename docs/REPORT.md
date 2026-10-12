@@ -6,6 +6,84 @@
 ---
 
 [B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 마스터 11:05 지시 (대기줄 3 L3 원고 읽기 — PDF·DOCX 브라우저 내 파싱) 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+대기줄 3 — L3 원고 읽기 (PDF·DOCX) 완수
+합격 조건 전원 검증 완료:
+- 브라우저 안에서만 읽는다 (파일의 서버 전송 0, 번역은 relay /translate 로 글자만):
+  · DOCX: web/vendor/mammoth.browser.min.js 로 브라우저 메모리 안에서 ArrayBuffer 읽고 문단 3개 정상 분리 추출.
+  · PDF: web/vendor/pdf.min.js 및 pdf.worker.min.js 로 브라우저 메모리 안에서 페이지 텍스트 읽고 문단 3개 정상 분리 추출.
+  · 옛 .doc 및 .hwp 차단 안내: "Word 에서 .docx 로 저장해 다시 올려 주세요", "한글에서 '다른 이름으로 저장 → HWPX' 로 다시 올려 주세요" 브라우저 alert 노출 확인.
+  · 외부 네트워크 요청 0건: outsideRequests.length === 0 검증 (P-16 ① 자물쇠 준수).
+  · D-09 되돌림 실증 1건: 만약 외부 파싱 서버로 요청을 보내거나 파싱 결과가 누락되면 단언 실패 입증 완료.
+- npm test 전부 초록:
+  test:l3 스크립트를 신설하고 npm test 에 연쇄 연결하여 20개 전체 시험 스위트 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- samples/l3_doc_test.js:
+  · [신규] PDF/DOCX 브라우저 파싱 및 .doc/.hwp 차단 알림, 외부 요청 0건, D-09 되돌림 실증 E2E 브라우저 시험 작성 (15건 전원 통과).
+- samples/l3_fixture/test.docx, test.pdf, test.doc, test.hwp:
+  · [신규] L3 전용 브라우저 테스트 픽스처 생성.
+- package.json:
+  · test:l3 스크립트 추가 및 npm test 전체 연쇄(20개) 연결.
+- docs/REPORT.md:
+  · 대기줄 3 완수 보고 기록.
+
+실행 출력 발췌:
+1. node samples/l3_doc_test.js (15건 전원 통과):
+=== L3 원고 읽기 (PDF·DOCX) 브라우저 시험 ===
+  [PASS] 강사 화면 준비 뷰 진입
+  [PASS] test.docx 픽스처 파일 존재
+  [PASS] DOCX 문단 3개 정상 추출 (실제: 3)
+  [PASS] DOCX 문단 1 내용 일치
+  [PASS] DOCX 문단 2 내용 일치
+  [PASS] DOCX 문단 3 내용 일치
+  [PASS] test.pdf 픽스처 파일 존재
+  [PASS] PDF 문단 3개 정상 추출 (실제: 3)
+  [PASS] PDF 문단 1 내용 일치
+  [PASS] PDF 문단 2 내용 일치
+  [PASS] PDF 문단 3 내용 일치
+  [PASS] 옛 .doc 업로드 시 변환 안내 대화상자 노출 확인
+  [PASS] 옛 .hwp 업로드 시 HWPX 변환 안내 대화상자 노출 확인
+  [PASS] 외부 네트워크 요청 0건 확인 (실제: 0)
+  [PASS] 외부 파싱 요청 발생 시 단언 실패 입증 (되돌림 실증 완료)
+전부 통과 (15건)
+
+2. npm test (20개 스위트 연쇄 전원 초록 통과):
+  - test:pay (74건)
+  - test:design (30건)
+  - test:terms (83건)
+  - test:guide (28건)
+  - test:host (37건)
+  - test:usage (31건)
+  - test:desk-view (13건)
+  - test:lic (17건)
+  - test:wire (25건)
+  - test:end (80건)
+  - test:release (30건)
+  - test:retention (13건)
+  - test:p16 (20건)
+  - test:hwpx (13건)
+  - test:mint (8건)
+  - test:dual (24건)
+  - test:script (10건)
+  - test:screen (10절)
+  - test:live (44건)
+  - test:l3 (15건)
+  -> 20개 스위트 일괄 통과 (종료 코드 0).
+
+한 줄 판정:
+대기줄 3(L3 원고 읽기 — PDF·DOCX 브라우저 내 파싱, .doc/.hwp 차단 알림, 외부 요청 0건, 되돌림 실증) 완수, 20개 스위트 전원 통과.
+
+막힌 것:
+없음. 대기줄 4(L4-3 끝 화면 — 리포트 3×3 + 참석 CSV 점검)로 즉시 진행 가능.
+
+---
+
+[B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 자격증명 관리자 유료 키 삭제 완료)
 2026-10-12 마스터 11:05 지시 (①-2 settings.json oauth-personal 전환 및 API 키 삭제 확인 + 대기줄 2 L4-2 진행 화면 완수)
 가지: main
