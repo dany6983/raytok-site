@@ -7,6 +7,68 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 아웃바운드: 번역 없이 방송 (원문 브로드캐스팅, question.md §12) 및 31개 스위트 통과 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+아웃바운드 — 번역 없이 방송 (question.md §12) 완수
+합격 조건 및 12-5 되돌림 4대 단언 전원 검증 완료:
+1. 번역 없이 방송: translate 가 한 번도 안 불린다 (세션 생성·강의 진행 전체에서 /translate 호출 횟수 === 0회 확인, 원가 0원).
+2. 번역 없이 방송: 한국어→한국어로 시작된다 (사전 번역 단계 없이 원고 분리 후 즉시 방 생성 및 강의 개설 성공).
+3. 번역 없이 방송: 청취자에게 언어 고르기가 없다 (청취자 접속 시 lang-select 드롭다운 숨김 확인, 도구 막대에 "원문 방송 (번역 없음)" 표출).
+4. 청취자 원문 직수신 (R-15 규칙대로 문단 원문 그대로 자막 표출 확인).
+5. 12-5 되돌림 실증: 번역 없이 방송 옵션 켜짐 상태에서 번역 호출이 발생하거나 언어 선택이 노출되면 단언 실패 입증 완료.
+
+만든·바꾼 파일과 이유:
+- web/host/index.html:
+  · 준비 화면에 `#chkBroadcastRaw` 체크박스 및 설명 추가 (`HOST_STR` ko/en 동기화).
+  · 체크 시 언어 선택 칩 비활성화 및 사전 번역 건너뛰기 (`readyArea` 즉시 활성화).
+  · 방 생성 시 `raw: 1` 전달 및 참여 주소에 `raw=1` 파라미터 자동 장착.
+- web/listener/index.html:
+  · `raw=1` 또는 `welcome.raw` 수신 시 언어 선택 드롭다운 숨김 (`display: none`).
+  · 도구 막대 언어 영역에 `원문 방송 (번역 없음)` 표출 및 원문 직수신.
+- samples/mock_relay.js:
+  · `POST /room` 에서 `raw` 플래그 보존 및 호스트/청취자 welcome 전달 지원.
+- samples/broadcast_raw_test.js:
+  · [신규] 아웃바운드 원문 브로드캐스팅 E2E 시험 (14건 전원 통과, D-09 되돌림 실증).
+- package.json:
+  · `test:broadcast-raw` 스크립트 추가 및 `npm test` 연쇄(31개) 연결.
+- docs/REPORT.md:
+  · 아웃바운드 완수 보고 기록.
+
+실행 출력 발췌:
+1. node samples/broadcast_raw_test.js (14건 전원 통과):
+=== 아웃바운드: 번역 없이 방송(원문 브로드캐스팅) E2E 시험 ===
+  [PASS] 원고 2개 문단 준비 완료
+  [PASS] 강사 화면에 「번역 없이 방송」 체크박스 존재 확인
+  [PASS] 체크 시 사전 번역 단추가 원문 방송 준비 모드로 전환
+  [PASS] 번역 없이 방송: translate 가 한 번도 안 불린다 (호출: 0회)
+  [PASS] 번역 없이 방송: 한국어→한국어로 강의 시작 성공
+  [PASS] 참여 주소에 raw=1 파라미터 자동 장착 확인
+  [PASS] 번역 없이 방송: 청취자 화면에 언어 고르기가 없다
+  [PASS] 청취 화면 도구 막대에 "원문 방송 (번역 없음)" 표출 확인
+  [PASS] 청취자가 원문 방송 1번 정상 수신
+  [PASS] 문단 송출 시에도 /translate 호출 0회 유지 (원가 0원)
+  [PASS] 청취자가 원문 방송 2번 연속 수신 확인
+  [PASS] 강의 전체 진행 동안 번역 API 호출 총 0회 확인
+  [PASS] 번역 없이 방송 켜짐 시 번역 호출 발생 단언 실패 입증 (되돌림 실증 완료)
+  [PASS] 외부 네트워크 요청 0건 확인 (0)
+전부 통과 (14건)
+
+2. npm test (31개 스위트 연쇄 전원 초록 통과):
+  - test:pay (74건), test:design (30건), test:terms (83건), test:guide (28건), test:host (37건), test:usage (31건), test:desk-view (13건), test:lic (17건), test:wire (25건), test:end (81건), test:release (30건), test:retention (13건), test:p16 (20건), test:hwpx (13건), test:mint (8건), test:dual (24건), test:script (10건), test:screen (10절), test:live (44건), test:l3 (15건), test:report-common (27건), test:rtl (5건), test:match (5건), test:i18n (4개국어 0건), test:desk-read (18건), test:desk-session (35건), test:retry (13건), test:limits-bundle (13건), test:question (18건), test:question-relay (22건), test:broadcast-raw (14건)
+  -> 31개 스위트 일괄 통과 (종료 코드 0).
+
+한 줄 판정:
+아웃바운드 가이드·강연 '번역 없이 방송' 옵션 구현(원가 0원, 번역 호출 0회, 청취자 언어 선택 숨김 및 원문 수신, 되돌림 실증) 완료, 31개 시험 스위트 전원 통과.
+
+막힌 것:
+없음.
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 대기줄 5 N:1 웹 착수 (릴레이 대기열 + 강사 지명 UI + 청취자 질문 UI, 3대 특허 자물쇠 완비) 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
