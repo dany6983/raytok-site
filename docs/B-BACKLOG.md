@@ -82,3 +82,38 @@ MASTER.md 는 **그날그날의 판정·급한 끼어들기**이고, 이 파일�
    (host, desk, usage AbortController 5초 타임아웃 및 빈 응답 예외 처리 + 시험 추가 완료)
 3. [끝] **접근성** — 네 화면의 색 대비·단추 최소 크기(44px)·키보드 이동.
 4. [끝] 그래도 없으면 REPORT "막힌 것"에 **"집을 것이 없다 — 내가 본 목록은 이것"** 과 목록을 적는다.
+
+## [끝] 10. 대기줄 5번 N:1 웹 질의응답 (P-16, P-14, P-17 3대 특허 자물쇠)
+- 릴레이 대기열 상태 머신 (`askQueue`, `seq` 단일 발급, 활성 발언 관리)
+- 강사 지명 UI (`#askBox`, 수동 지명 단추, 동시 1명 인가 B-2, 90초 타이머, 끝내기)
+- 청취자 텍스트 질문 UI (`#btn-ask`, `#ask-modal`, 텍스트 전용 P-16, 역번역 배포 P-14)
+- 스위치 뒤 기본 꺼짐 (`#chkEnableQuestion`)
+- 시험: `relay/test/question-queue.mjs` (22건), `samples/question_test.js` (19건, 되돌림 실증 2건).
+
+## [끝] 11. 대기줄 6번 robots.txt · sitemap.xml 신설
+- `robots.txt` 신설 (Allow: /, Disallow: /web/buy/, /lic/, /meet/, /web/terms/ 및 Sitemap 선언)
+- `sitemap.xml` 신설 (공개 페이지 17곳 등록, noindex 페이지 5종 제외)
+- 시험: `samples/sitemap_test.js` (52건).
+
+## [끝] 12. 대기줄 7번 결제 화면 도달길 (`/tour/` 에서 `/buy/`)
+- `/tour/` 가격 섹션에 "쿠폰 구매하기 →" 링크 개설 (세는 시험에서 `/tour/` 단독 허용)
+- `assets/i18n/*.json` 4개 국어 번역 동기화 (빠짐 0건)
+- 시험: `samples/pay_test.js` (75건, 되돌림 실증 완료).
+
+## [끝] 13. 대기줄 8번 제품 페이지 전수 영문 URL 및 hreflang (2027-01-01 D-82 전제)
+- 5대 글로벌 제품군 전수 영문 URL 생성 (`tour/en/`, `museum/en/`, `field/en/`, `student/en/`, `ows/en/`)
+- 국문/영문 상호 reciprocal `hreflang` (`ko`, `en`, `x-default`) 장착
+- `sitemap.xml` 동기화 및 `samples/sitemap_test.js` 전원 통과.
+
+## [끝] 14. 대기줄 9번 문의 폼 접점 (`contact/`, `contact/en/`, `POST /contact`)
+- 국문 및 영문 문의 폼 페이지 신설 (`contact/index.html`, `contact/en/index.html`)
+- 개인정보 최소 4대 항목(이름, 이메일, 국가, 용건)만 수집, 개인정보 처리방침 한 줄 안내 연동
+- 릴레이 `POST /contact` 엔드포인트 구현 (유효성 검사, 400 차단, 200 OK)
+- 시험: `samples/contact_test.js` (18건, 되돌림 실증 완료).
+
+## [끝] 15. 아웃바운드 '번역 없이 방송' 옵션 (question.md §12)
+- 강사 준비 화면에 「번역 없이 방송」 체크박스 추가
+- 릴레이 및 참여 URL에 `raw=1` 전달, 번역 API 호출 건너뛰기 (/translate 호출 0회, 원가 0원)
+- 청취자 화면 언어 선택 숨김 및 "원문 방송 (번역 없음)" 표출, 원문 직수신
+- 시험: `samples/broadcast_raw_test.js` (14건, 되돌림 실증 완료).
+

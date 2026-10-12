@@ -27,8 +27,9 @@ if (!fs.existsSync(SHOTS_DIR)) {
   const port = server.address().port;
   const baseUrl = `http://localhost:${port}`;
 
+  const chromePath = process.env.CHROME || (fs.existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
   const browser = await chromium.launch({
-    executablePath: process.env.CHROME || undefined,
+    executablePath: chromePath,
     headless: true
   });
 
@@ -39,7 +40,11 @@ if (!fs.existsSync(SHOTS_DIR)) {
     { name: 'listener', path: '/web/listener/' },
     { name: 'host', path: '/web/host/' },
     { name: 'desk', path: '/web/desk/' },
-    { name: 'verify', path: '/web/verify/' }
+    { name: 'verify', path: '/web/verify/' },
+    { name: 'contact', path: '/contact/' },
+    { name: 'contact-en', path: '/contact/en/' },
+    { name: 'tour-en', path: '/tour/en/' },
+    { name: 'museum-en', path: '/museum/en/' }
   ];
 
   const widths = [360, 420];
