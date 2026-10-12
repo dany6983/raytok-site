@@ -7,6 +7,65 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 내부 링크 점검(/common/theme.css 404 해결) 및 relay 단위시험 4종(desk-read 타임스탬프 결함 복구) 일체화 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+내부 링크 및 릴레이 검증 심층 점검 결과
+1. /common/theme.css 404 결함 해결:
+   - 전체 HTML 페이지 내부 링크 전수 점검 결과, 루트 `/common/theme.css` 가 누락되어 GitHub Pages 실서버 및 운영 테스트에서 404가 발생하던 것을 확인.
+   - `common/theme.css` 생성 및 배포하여 모든 대상 페이지의 `/common/theme.css` 및 `/web/common/theme.css` 링크가 200 OK로 서빙되도록 복구 (내부 깨진 링크 0건 완료).
+
+2. relay/test/desk-read.mjs 타임스탬프 결함 복구:
+   - `desk-read.mjs` 내 테스트 세션 생성 시각이 2025년 과거 시점(`1759885200000`)으로 고정되어 있어, 줄 14에서 도입된 "30일 보관 기한 자동 만료 필터"에 걸려 세션 목록이 0건으로 단언 실패하던 결함 발견.
+   - 세션 생성 시각을 현재 시각(`Date.now()`) 기준 동적 시간으로 갱신하여 18건 전원 통과 완료.
+
+3. 전체 테스트 스위트 28개 일체화:
+   - relay 핵심 단위 시험 4종(`test:desk-read`, `test:desk-session`, `test:retry`, `test:limits-bundle`)을 `package.json` 및 `npm test` 연쇄에 통합.
+   - `npm test` 한 줄로 총 28개 시험 스위트(700+건 단언) 전원 초록 완주 확인.
+
+실행 출력 발췌:
+1. node relay/test/desk-read.mjs (18건 전원 통과):
+=== Relay Desk 세션 꺼내 보기 (GET /desk/sessions, GET /desk/session/:id) 단위 시험 ===
+  [PASS] User A 세션 1 업로드 성공
+  [PASS] User A 세션 2 대형 세션 업로드 성공
+  [PASS] User B 세션 3 업로드 성공
+[Test 1] User A 세션 목록 조회 (주인 것만 2건)
+  [PASS] User A 목록 조회 200 OK
+  [PASS] User A 세션 수 2건 일치 (실제: 2)
+  [PASS] User A의 세션 id1, id2 모두 포함
+  [PASS] User B의 세션 id3은 목록에 일절 없음
+[Test 2] User B 세션 목록 조회 (1건)
+  [PASS] User B 목록 조회 200 OK
+  [PASS] User B 세션 수 1건 일치
+  [PASS] User B 세션 id3 일치
+[Test 3] 분할 저장된 세션 2 원형 복원 및 last 해시 일치 검증
+  [PASS] 세션 2 조회 200 OK
+  [PASS] ver 1 일치
+  [PASS] session.code 일치
+  [PASS] items 개수 복원 일치 (200)
+  [PASS] last 해시 일치
+  [PASS] 분할 저장된 items 원본과 글자 단위 100% 일치
+[Test 4] 남의 세션 조회 시 404 차단 (보안)
+  [PASS] 남의 세션 조회 시 404 Not Found 반환
+[Test 5] Desk 권한(0x08) 없는 토큰 차단 (403)
+  [PASS] 0x08 누락 토큰 목록 조회 시 403 Forbidden 반환
+전부 통과 (18건)
+
+2. npm test (28개 스위트 연쇄 전원 초록 통과):
+  - test:pay (74건), test:design (30건), test:terms (83건), test:guide (28건), test:host (37건), test:usage (31건), test:desk-view (13건), test:lic (17건), test:wire (25건), test:end (81건), test:release (30건), test:retention (13건), test:p16 (20건), test:hwpx (13건), test:mint (8건), test:dual (24건), test:script (10건), test:screen (10절), test:live (44건), test:l3 (15건), test:report-common (27건), test:rtl (5건), test:match (5건), test:i18n (4개 국어 빠짐 0건), test:desk-read (18건), test:desk-session (35건), test:retry (13건), test:limits-bundle (13건)
+  -> 28개 스위트 일괄 통과 (종료 코드 0).
+
+한 줄 판정:
+내부 링크 404 복구, 30일 보관 기한 연동에 따른 `desk-read` 타임스탬프 결함 해결 및 28개 스위트(700+건) 전원 초록 완수.
+
+막힌 것:
+대기줄 5(N:1 웹쪽 지명 UI 설계 발췌 전달 대기) 및 줄 18(PG 상점 MID 추가 대기).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 i18n_check 사전 누락 2건 전수 해결 및 test:i18n 전체 시험 연쇄 연결 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
