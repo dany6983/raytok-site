@@ -7,6 +7,81 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-12 N:1 질의응답 6대 기준 완성 (와이어 정의·순번보존 독립항·4대 회수사유·특허자물쇠 실증) 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+N:1 질의응답 시스템 6대 기준 완성 결과:
+1. 와이어 정의 완비:
+   - docs/samples/wire-messages.json 에 `ask`, `grant`, `revoke`, `question` 4대 메시지 상세 필드 사양 명시.
+   - `npm run test:wire` 56개 단언 전원 초록 통과 (와이어 일원화 준수).
+2. 릴레이 대기열 및 건너뛰기 순번 보존 (특허 독립항):
+   - 릴레이 Room 에 `askHistory` 상태를 구축하여, 강사가 대기열을 건너뛰어 지명하고 종료하더라도 앞선 요청 사실과 도착 순번(`seq`)이 변조되거나 삭제되지 않고 영구 보존됨을 실증.
+   - 순번 기록 삭제 시 실패하는 되돌림 단언 실증 완료.
+3. 4대 회수 사유 기록:
+   - `host_done`(강사 수동 종료), `silent`(무음 감지), `timeout`(90초 초과), `disconnect`(소켓 단절) 4개 사유가 각각 한 줄씩 `askHistory` 에 보존됨을 검증.
+4. 강사 수동 지명 UI (P-17, B-2):
+   - 강사 화면 `#askBox` 에서 사람 손으로 수동 지명 및 동시 1명 인가, 90초 타이머, 끝내기 회수 UI 완비.
+   - 자동 선정 개입 시 실패하는 되돌림 단언 실증 완료.
+5. 청취자 텍스트 질문 UI (P-16, P-14):
+   - 마이크 음성 입력 배제, 텍스트 입력창(`#ask-modal`) 전용 질문 요청.
+   - 지명 전 요청 사실만 등록, 청취자 번역문 전송 배제.
+   - 참여자 번역문 전송 시 릴레이에서 `p14_participant_translation_forbidden` 차단 실증 완료.
+6. 19언어 동기화 및 스위치 기본 꺼짐:
+   - `#chkEnableQuestion` 스위치 기본 꺼짐(`checked = false`) 유지.
+   - `npm run test:i18n` 빠짐 0건 초록 통과.
+7. 전체 시험 스위트:
+   - `npm test` 34개 스위트(800+건 단언) 전원 통과.
+
+만든·바꾼 파일과 이유:
+- docs/samples/wire-messages.json: N:1 4대 메시지(`ask`, `grant`, `revoke`, `question`) 사양 및 샘플 정의.
+- samples/wire_script_test.js: N:1 4대 메시지 및 필드 검증 추가.
+- relay/src/room.js, samples/mock_relay.js: `askHistory` 순번 보존 독립항 상태 머신, 4대 회수 사유, P-14 참여자 번역 차단 로직 동기화.
+- relay/test/question-queue.mjs: 순번 보존 독립항 단위 시험, 4대 사유 기록 시험, P-14 차단 및 되돌림 실증 2건 추가 (33건 통과).
+- samples/question_test.js: P-17 수동 지명, P-14 번역 차단, 건너뛰기 순번 보존 되돌림 실증 3건 강화 (21건 통과).
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. npm run test:wire:
+  ok ask 가 사양에 있다
+  ok grant 가 사양에 있다
+  ok revoke 가 사양에 있다
+  ok question 가 사양에 있다
+  ok revoke — host_done / timeout / silent / disconnect 회수 사유 보기 포함 확인
+  ok question — src 원문 텍스트 확인 (P-16)
+  ok question — trans 역번역 객체 확인 (P-14)
+  전부 통과 (56건)
+
+2. npm run test:question-relay:
+  [PASS] 3번 질문 수동 지명 활성화
+  [PASS] 호스트가 3번을 건너뛰어 지명해도 앞선 2번 순번은 변조되지 않고 유지됨 (독립항)
+  [PASS] 3번 종료 후에도 2번 질문과 순번 2 보존 확인
+  [PASS] 4대 회수 사유 중 host_done / timeout / silent / disconnect 사유 한 줄 기록 확인
+  [PASS] P-14 참여자 번역 포함 요청 차단 확인
+  [PASS] 건너뛰기 시 앞선 순번 삭제 변조 시 단언 실패 입증 (되돌림 실증 1)
+  [PASS] 참여자 번역 통과 시 단언 실패 입증 (되돌림 실증 2)
+  전부 통과 (33건)
+
+3. node samples/question_test.js:
+  [PASS] P-17 강사 수동 지명 원칙: 자동 선정 변경 시 단언 실패 입증
+  [PASS] P-14 참여자 번역 배제: 참여자 번역 통과 시 단언 실패 입증
+  [PASS] 특허 독립항: 건너뛰어 지명해도 앞선 순번 보존 실패 시 단언 실패 입증
+  전부 통과 (21건)
+
+4. npm test (34개 스위트 연쇄 전원 초록 통과):
+  34개 스위트 일괄 통과 (종료 코드 0, 단언 800+건).
+
+한 줄 판정:
+N:1 질의응답 6대 기준(와이어 정의·순번 보존 독립항·4대 회수 사유·수동 지명·텍스트 질문·19언어/기본 꺼짐) 전원 완성 및 34개 시험 스위트 전원 통과.
+
+막힌 것:
+없음. 대표님 지시(21:25)에 따른 N:1 핵심 집중 완수 완료.
+배포 대기: 예 (relay/src/room.js 변경분 포함).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-12 해외 손님용 앱 설치 영문 페이지(download/en) 신설 및 sitemap/hreflang 완비 (34개 스위트 통과)
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
