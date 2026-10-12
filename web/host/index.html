@@ -454,6 +454,27 @@
             <div><span class="att-now" id="attNow">0</span> <span style="color: var(--text-muted);">명 (최대 <span id="attMax">0</span>)</span></div>
             <div class="att-langs" id="attLangs">—</div>
           </div>
+          <!-- 질문 대기열 및 지명 UI (N:1, question.md) -->
+          <div class="ask-box" id="askBox" style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 600; font-size: 0.85rem;">질문 대기 (<span id="askQueueCount">0</span>)</span>
+            </div>
+            <!-- 활성 발언(답변) 영역 -->
+            <div id="askActiveArea" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-weight: 600; font-size: 0.85rem; color: #38bdf8;" id="askActiveSpeaker">말하는 중</span>
+                <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
+              </div>
+              <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
+              <button id="btnAskEnd" class="btn secondary" style="width: 100%; min-height: 36px; padding: 6px;">끝내기</button>
+            </div>
+            <!-- 대기열 목록 -->
+            <div id="askQueueList" style="max-height: 180px; overflow-y: auto;">
+              <div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText">
+                대기 중인 질문이 없습니다.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -1280,9 +1301,126 @@
         if (live.ended) renderEnd();
         return;
       }
+      if (msg.kind === 'ask_queue') {
+        renderAskQueue(msg.queue || []);
+        return;
+      }
+      if (msg.kind === 'ask_active') {
+        renderAskActive(msg);
+        return;
+      }
+      if (msg.kind === 'ask_ended') {
+        clearAskActive();
+        return;
+      }
       if (msg.warning === 'silence_warning') {
         liveStatus.textContent = '오래 넘기지 않아 곧 끊깁니다 — 문단을 넘기세요';
       }
+    }
+
+    // ── N:1 질문 대기열 및 지명 로직 (P-17 수동 지명, B-2 동시 1명 인가, P-14 역번역) ──
+    let liveAskQueue = [];
+    let liveActiveAsk = null;
+    let askTimerInterval = null;
+
+    function renderAskQueue(queue) {
+      liveAskQueue = queue;
+      const countEl = document.getElementById('askQueueCount');
+      if (countEl) countEl.textContent = queue.length;
+      const listEl = document.getElementById('askQueueList');
+      if (!listEl) return;
+      if (!queue.length) {
+        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText">대기 중인 질문이 없습니다.</div>';
+        return;
+      }
+      listEl.innerHTML = '';
+      queue.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.8rem;';
+        const info = document.createElement('div');
+        info.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px;';
+        info.textContent = `${item.seq}. ${item.name} (${item.lang}) - ${item.text}`;
+        const btnGrant = document.createElement('button');
+        btnGrant.className = 'btn';
+        btnGrant.style.cssText = 'padding:2px 8px; font-size:0.75rem; min-height:28px; white-space:nowrap;';
+        btnGrant.textContent = '지명';
+        btnGrant.disabled = !!liveActiveAsk;
+        btnGrant.onclick = () => grantQuestion(item.id);
+        row.appendChild(info);
+        row.appendChild(btnGrant);
+        listEl.appendChild(row);
+      });
+    }
+
+    async function grantQuestion(id) {
+      if (liveActiveAsk) return;
+      const item = liveAskQueue.find(q => q.id === id);
+      if (!item) return;
+      // P-14: 역번역(강사 언어로) 생성하여 함께 인가 메시지 송출
+      let trans = {};
+      try {
+        const targetLang = SRC_LANG || 'ko';
+        if (item.lang !== targetLang) {
+          const res = await fetch(`${RELAY_BASE}/translate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: item.text, target: targetLang, source: item.lang })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            trans[targetLang] = data.translatedText || item.text;
+          }
+        }
+      } catch (_) {}
+      wsSend({ kind: 'ask_grant', id, trans });
+    }
+
+    function renderAskActive(msg) {
+      liveActiveAsk = msg;
+      const area = document.getElementById('askActiveArea');
+      const speakerEl = document.getElementById('askActiveSpeaker');
+      const textEl = document.getElementById('askActiveText');
+      const timerEl = document.getElementById('askTimer');
+      if (area) area.style.display = 'block';
+      if (speakerEl) speakerEl.textContent = `말하는 중: ${msg.name} (${msg.lang})`;
+      if (textEl) {
+        const trText = (msg.trans && msg.trans[SRC_LANG || 'ko']) || msg.text;
+        textEl.textContent = trText !== msg.text ? `"${trText}" (원문: ${msg.text})` : `"${msg.text}"`;
+      }
+      renderAskQueue(liveAskQueue);
+
+      clearInterval(askTimerInterval);
+      let remain = 90; // 90초 타이머
+      if (timerEl) timerEl.textContent = '1:30';
+      askTimerInterval = setInterval(() => {
+        remain--;
+        if (remain <= 0) {
+          clearInterval(askTimerInterval);
+          closeQuestion('timeout');
+        } else {
+          const m = Math.floor(remain / 60);
+          const s = String(remain % 60).padStart(2, '0');
+          if (timerEl) timerEl.textContent = `${m}:${s}`;
+        }
+      }, 1000);
+
+      const btnAskEnd = document.getElementById('btnAskEnd');
+      if (btnAskEnd) btnAskEnd.onclick = () => closeQuestion('host_done');
+    }
+
+    function clearAskActive() {
+      liveActiveAsk = null;
+      clearInterval(askTimerInterval);
+      const area = document.getElementById('askActiveArea');
+      if (area) area.style.display = 'none';
+      renderAskQueue(liveAskQueue);
+    }
+
+    function closeQuestion(reason = 'host_done') {
+      if (!liveActiveAsk) return;
+      const id = liveActiveAsk.id;
+      wsSend({ kind: 'ask_close', id, reason });
+      clearAskActive();
     }
 
     function connectHostWs() {

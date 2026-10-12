@@ -295,8 +295,20 @@
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
       <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
+      <button class="tool-btn" id="btn-ask" aria-label="ask question" data-i18n="btn_ask">✋ 질문</button>
       <button class="tool-btn" id="btn-save" aria-label="save transcript" title="내 기록 받기 (TXT)">⬇ TXT</button>
       <button class="tool-btn tool-btn-screen" id="btn-fullscreen" aria-label="fullscreen">⛶</button>
+    </div>
+  </div>
+
+  <!-- 질문 모달 (N:1, question.md) -->
+  <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #cbd5e1; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
+    <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, #1e293b);" data-i18n="ask_title">✋ 질문하기</div>
+    <div id="ask-status-msg" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" data-i18n="ask_notice">질문 내용을 입력하세요 (마이크 없이 글자로 전송됩니다).</div>
+    <textarea id="ask-input-text" style="width:100%; height:64px; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:6px; padding:8px; font-size:13px; resize:none; margin-bottom:8px;" placeholder="질문 내용을 입력하세요..."></textarea>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button class="tool-btn" id="btn-ask-cancel" style="padding:4px 10px;" data-i18n="btn_ask_cancel">취소</button>
+      <button class="tool-btn" id="btn-ask-submit" style="padding:4px 12px; background:var(--primary, #38bdf8); color:#0f172a; font-weight:600;" data-i18n="btn_ask_submit">손들기 전송</button>
     </div>
   </div>
 
@@ -980,6 +992,52 @@
         return;
       }
 
+      // ── N:1 질문 대기열 및 수신 처리 (P-16, P-14) ──
+      if (msg.kind === 'ask_queue') {
+        const userName = myName || (nameInput && nameInput.value) || '';
+        const myItem = (msg.queue || []).find(q => (userName && q.name === userName) || (myAskId && q.id === myAskId));
+        const btnAsk = document.getElementById('btn-ask');
+        if (btnAsk) {
+          if (myItem) {
+            myAskId = myItem.id;
+            btnAsk.textContent = `✋ 대기 ${myItem.seq}번`;
+          } else if (!currentActiveAskId) {
+            btnAsk.textContent = t('btn_ask', currentUiLang) || '✋ 질문';
+          }
+        }
+        return;
+      }
+      if (msg.kind === 'ask_active') {
+        currentActiveAskId = msg.id;
+        const line = {
+          seq: null,
+          script: 1,
+          para: Number(msg.seq) || 1,
+          total: Number(msg.seq) || 1,
+          text: msg.text,
+          spk: null,
+          at: Date.now(),
+          tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
+          pending: false,
+          via: undefined
+        };
+        lines.push(line);
+        addLine(line);
+        const btnAsk = document.getElementById('btn-ask');
+        if (btnAsk && myAskId === msg.id) {
+          btnAsk.textContent = '✋ 발언 중';
+        }
+        if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
+        return;
+      }
+      if (msg.kind === 'ask_ended') {
+        if (currentActiveAskId === msg.id) currentActiveAskId = null;
+        if (myAskId === msg.id) myAskId = null;
+        const btnAsk = document.getElementById('btn-ask');
+        if (btnAsk) btnAsk.textContent = t('btn_ask', currentUiLang) || '✋ 질문';
+        return;
+      }
+
       if (msg.fix && msg.seq && msg.spk) {
         const line = lines.find(l => l.seq === msg.seq);
         if (line) {
@@ -1338,6 +1396,44 @@
       btnSaveClose.addEventListener('click', () => {
         const modal = document.getElementById('save-picker-modal');
         if (modal) modal.style.display = 'none';
+      });
+    }
+
+    // ── N:1 질문 손들기 및 전송 (P-16 텍스트 질문만, P-14 참여자 번역 배제) ──
+    let myAskId = null;
+    let currentActiveAskId = null;
+    const btnAsk = document.getElementById('btn-ask');
+    const askModal = document.getElementById('ask-modal');
+    const btnAskCancel = document.getElementById('btn-ask-cancel');
+    const btnAskSubmit = document.getElementById('btn-ask-submit');
+    const askInputText = document.getElementById('ask-input-text');
+
+    if (btnAsk) {
+      btnAsk.addEventListener('click', () => {
+        if (askModal) askModal.style.display = askModal.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+    if (btnAskCancel) {
+      btnAskCancel.addEventListener('click', () => {
+        if (askModal) askModal.style.display = 'none';
+      });
+    }
+    if (btnAskSubmit) {
+      btnAskSubmit.addEventListener('click', () => {
+        const text = (askInputText && askInputText.value || '').trim();
+        if (!text) return;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          const userName = myName || (nameInput && nameInput.value) || '익명';
+          ws.send(JSON.stringify({
+            kind: 'ask_req',
+            name: userName,
+            lang: selectedLang,
+            text
+          }));
+          if (askModal) askModal.style.display = 'none';
+          if (askInputText) askInputText.value = '';
+          btnAsk.textContent = '✋ 대기열 등록됨';
+        }
       });
     }
 

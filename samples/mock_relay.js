@@ -22,7 +22,11 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
   function newRoom(kind) {
     const code = 'ABC' + (123 + roomSeq++);
     const token = 'host_tok_' + Math.random().toString(36).slice(2);
-    const room = { code, token, kind, ring: [], received: [], hosts: new Set(), listeners: new Map(), att: null, ended: false };   // received = 이 방의 호스트가 보낸 메시지
+    const room = {
+      code, token, kind, ring: [], received: [],
+      hosts: new Set(), listeners: new Map(), att: null, ended: false,
+      askQueue: [], askSeq: 0, activeAsk: null
+    };   // received = 이 방의 호스트가 보낸 메시지
     rooms.set(code, room);
     return room;
   }
@@ -169,14 +173,53 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
       if (role === 'host') {
         room.hosts.add(ws);
         attSend(room, ws);
+        if (room.askQueue && room.askQueue.length) {
+          try { ws.send(JSON.stringify({ kind: 'ask_queue', queue: room.askQueue })); } catch (_) {}
+        }
+        if (room.activeAsk) {
+          try { ws.send(JSON.stringify({ kind: 'ask_active', ...room.activeAsk })); } catch (_) {}
+        }
         ws.on('message', (raw) => {
           const s = raw.toString();
           if (s.includes('__ping')) { ws.send(s); return; }
+          let parsed = null;
+          try { parsed = JSON.parse(s); } catch (_) {}
+          if (parsed && parsed.kind === 'ask_grant') {
+            if (room.activeAsk) {
+              try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'already_active' })); } catch (_) {}
+              return;
+            }
+            const target = (room.askQueue || []).find(q => q.id === parsed.id);
+            if (target) {
+              room.activeAsk = {
+                id: target.id, seq: target.seq, name: target.name, lang: target.lang,
+                text: target.text, trans: parsed.trans || {}, grantedAt: Date.now()
+              };
+              const activeMsg = JSON.stringify({ kind: 'ask_active', ...room.activeAsk });
+              for (const l of room.listeners.keys()) { try { l.send(activeMsg); } catch (_) {} }
+              for (const h of room.hosts) { try { h.send(activeMsg); } catch (_) {} }
+            }
+            return;
+          }
+          if (parsed && parsed.kind === 'ask_close') {
+            const askId = parsed.id || (room.activeAsk && room.activeAsk.id);
+            room.askQueue = (room.askQueue || []).filter(q => q.id !== askId);
+            room.activeAsk = null;
+            const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: parsed.reason || 'host_done' });
+            for (const l of room.listeners.keys()) { try { l.send(endMsg); } catch (_) {} }
+            for (const h of room.hosts) { try { h.send(endMsg); } catch (_) {} }
+            const qMsgHost = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue });
+            for (const h of room.hosts) { try { h.send(qMsgHost); } catch (_) {} }
+            const qMsgList = JSON.stringify({
+              kind: 'ask_queue', count: room.askQueue.length,
+              queue: room.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
+            });
+            for (const l of room.listeners.keys()) { try { l.send(qMsgList); } catch (_) {} }
+            return;
+          }
           room.ring.push(s);
           if (room.ring.length > 500) room.ring.shift();
           for (const l of room.listeners.keys()) { try { l.send(s); } catch (_) {} }
-          let parsed = null;
-          try { parsed = JSON.parse(s); } catch (_) {}
           if (parsed) { hostReceived.push(parsed); room.received.push(parsed); }
           if (parsed && parsed.end) endRoom(room, parsed.summary);
         });
@@ -185,13 +228,45 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
         for (const m of room.ring) { try { ws.send(m); } catch (_) {} }
         if (!room.ended) attJoin(room, ws);
         else room.listeners.set(ws, { lang: null, at: Date.now() });
+        if (room.askQueue && room.askQueue.length) {
+          try {
+            ws.send(JSON.stringify({
+              kind: 'ask_queue', count: room.askQueue.length,
+              queue: room.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
+            }));
+          } catch (_) {}
+        }
+        if (room.activeAsk) {
+          try { ws.send(JSON.stringify({ kind: 'ask_active', ...room.activeAsk })); } catch (_) {}
+        }
         ws.on('message', (raw) => {
           const s = raw.toString();
           if (s.includes('__ping')) { ws.send(s); return; }
+          let p = null;
           try {
-            const p = JSON.parse(s);
+            p = JSON.parse(s);
             if (p && p.hello && p.lang && room.att) attSetLang(room, ws, p.lang);
           } catch (_) {}
+          if (p && p.kind === 'ask_req') {
+            room.askSeq = (room.askSeq || 0) + 1;
+            const askItem = {
+              id: 'q_' + room.askSeq + '_' + Math.random().toString(36).slice(2, 6),
+              seq: room.askSeq,
+              name: p.name || '익명',
+              lang: p.lang || 'ko',
+              text: p.text || '',
+              at: Date.now()
+            };
+            room.askQueue.push(askItem);
+            const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue });
+            for (const h of room.hosts) { try { h.send(hostMsg); } catch (_) {} }
+            const listMsg = JSON.stringify({
+              kind: 'ask_queue', count: room.askQueue.length,
+              queue: room.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
+            });
+            for (const l of room.listeners.keys()) { try { l.send(listMsg); } catch (_) {} }
+            return;
+          }
           for (const h of room.hosts) { try { h.send(s); } catch (_) {} }
         });
         ws.on('close', () => attLeave(room, ws));

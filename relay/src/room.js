@@ -23,6 +23,11 @@ export class Room {
       } catch (e) {}
     }
 
+    // N:1 질문 대기열 상태 (FIX_QUESTION, question.md)
+    this.askQueue = [];
+    this.askSeq = 0;
+    this.activeAsk = null;
+
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
       const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'silenceWarnMs', 'silenceTimeoutMs', 'att']);
@@ -840,8 +845,28 @@ export class Room {
           } catch (e) {}
         }
         if (!this.attEnded()) await this.attJoin(server);
+        if (this.askQueue && this.askQueue.length) {
+          try {
+            server.send(JSON.stringify({
+              kind: 'ask_queue',
+              count: this.askQueue.length,
+              queue: this.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
+            }));
+          } catch (_) {}
+        }
+        if (this.activeAsk) {
+          try { server.send(JSON.stringify({ kind: 'ask_active', ...this.activeAsk })); } catch (_) {}
+        }
       } else {
         this.attSend(server);
+        if (this.askQueue && this.askQueue.length) {
+          try {
+            server.send(JSON.stringify({ kind: 'ask_queue', queue: this.askQueue }));
+          } catch (_) {}
+        }
+        if (this.activeAsk) {
+          try { server.send(JSON.stringify({ kind: 'ask_active', ...this.activeAsk })); } catch (_) {}
+        }
       }
 
       return new Response(null, { status: 101, webSocket: client });
@@ -915,8 +940,9 @@ export class Room {
       let isSubtitleLine = false;
       let isEnd = false;
       let endSummary = null;
+      let parsed = null;
       try {
-        const parsed = JSON.parse(msgStr);
+        parsed = JSON.parse(msgStr);
         if (parsed.end) { isEnd = true; endSummary = parsed.summary; }
         if (!isEnd && (parsed.text || parsed.kind === 'script') && (parsed.seq !== undefined || parsed.para !== undefined || !parsed.hello)) {
           isSubtitleLine = true;
@@ -927,6 +953,62 @@ export class Room {
       } catch (e) {
         if (/"end"\s*:\s*1/.test(msgStr)) isEnd = true;
         else if (/"text"\s*:/.test(msgStr) || /"kind"\s*:\s*"script"/.test(msgStr)) isSubtitleLine = true;
+      }
+
+      if (parsed) {
+        // N:1 질문 지명 및 종료 처리 (P-17 수동 지명, B-2 동시 1명 인가, B-4/B-5 회수 사유)
+        if (parsed.kind === 'ask_grant') {
+          if (this.activeAsk) {
+            try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'already_active' })); } catch (_) {}
+            return;
+          }
+          const target = (this.askQueue || []).find(q => q.id === parsed.id);
+          if (target) {
+            this.activeAsk = {
+              id: target.id,
+              seq: target.seq,
+              name: target.name,
+              lang: target.lang,
+              text: target.text,
+              trans: parsed.trans || {},
+              grantedAt: Date.now()
+            };
+            const activeMsg = JSON.stringify({ kind: 'ask_active', ...this.activeAsk });
+            for (const listenerWs of this.ctx.getWebSockets('listener')) {
+              try { listenerWs.send(activeMsg); } catch (_) {}
+            }
+            for (const hostWs of this.ctx.getWebSockets('host')) {
+              try { hostWs.send(activeMsg); } catch (_) {}
+            }
+          }
+          return;
+        }
+
+        if (parsed.kind === 'ask_close') {
+          const askId = parsed.id || (this.activeAsk && this.activeAsk.id);
+          this.askQueue = (this.askQueue || []).filter(q => q.id !== askId);
+          this.activeAsk = null;
+          const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: parsed.reason || 'host_done' });
+          for (const listenerWs of this.ctx.getWebSockets('listener')) {
+            try { listenerWs.send(endMsg); } catch (_) {}
+          }
+          for (const hostWs of this.ctx.getWebSockets('host')) {
+            try { hostWs.send(endMsg); } catch (_) {}
+          }
+          const queueHostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue });
+          for (const hostWs of this.ctx.getWebSockets('host')) {
+            try { hostWs.send(queueHostMsg); } catch (_) {}
+          }
+          const queueListMsg = JSON.stringify({
+            kind: 'ask_queue',
+            count: this.askQueue.length,
+            queue: this.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
+          });
+          for (const listenerWs of this.ctx.getWebSockets('listener')) {
+            try { listenerWs.send(queueListMsg); } catch (_) {}
+          }
+          return;
+        }
       }
 
       if (isSubtitleLine) {
@@ -961,11 +1043,43 @@ export class Room {
         );
       }
     } else if (isListener) {
-      // hello 의 lang 만 집계에 쓴다(이름·글은 읽지 않는다)
+      let parsed = null;
       try {
-        const p = JSON.parse(msgStr);
-        if (p && p.hello && p.lang) await this.attSetLang(ws, p.lang);
+        parsed = JSON.parse(msgStr);
+        if (parsed && parsed.hello && parsed.lang) await this.attSetLang(ws, parsed.lang);
       } catch (_) {}
+
+      // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번)
+      if (parsed && parsed.kind === 'ask_req') {
+        this.askSeq = (this.askSeq || 0) + 1;
+        const askItem = {
+          id: 'q_' + this.askSeq + '_' + Math.random().toString(36).slice(2, 6),
+          seq: this.askSeq,
+          name: parsed.name || '익명',
+          lang: parsed.lang || 'ko',
+          text: parsed.text || '',
+          at: Date.now()
+        };
+        if (!this.askQueue) this.askQueue = [];
+        this.askQueue.push(askItem);
+
+        // 강사에게는 원문 포함 전달
+        const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue });
+        for (const hostWs of this.ctx.getWebSockets('host')) {
+          try { hostWs.send(hostMsg); } catch (_) {}
+        }
+        // 청취자에게는 순번 및 대기 건수 전달
+        const listMsg = JSON.stringify({
+          kind: 'ask_queue',
+          count: this.askQueue.length,
+          queue: this.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
+        });
+        for (const listenerWs of this.ctx.getWebSockets('listener')) {
+          try { listenerWs.send(listMsg); } catch (_) {}
+        }
+        return;
+      }
+
       // 청취자 → 호스트에게만 전달
       for (const hostWs of this.ctx.getWebSockets('host')) {
         try {
