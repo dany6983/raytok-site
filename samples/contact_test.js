@@ -36,6 +36,13 @@ const contactFile = path.join(ROOT, 'contact', 'index.html');
   ok(!html.includes('id="contact-phone"'), '불필요한 개인정보(전화번호 등) 미수집 확인');
   ok(!html.includes('id="contact-ssn"'), '불필요한 개인정보(주민번호 등) 미수집 확인');
 
+  // contact/en/index.html 영문 문의 폼 검증
+  const enContactFile = path.join(ROOT, 'contact', 'en', 'index.html');
+  ok(fs.existsSync(enContactFile), 'contact/en/index.html 영문 파일 존재 확인');
+  const enHtml = fs.readFileSync(enContactFile, 'utf8');
+  ok(enHtml.includes('id="contact-name"') && enHtml.includes('lang="en"'), 'contact/en 영문 속성 및 입력 필드 확인');
+  ok(enHtml.includes('/privacy/en/'), 'contact/en 영문 개인정보 처리방침 링크 확인');
+
   // 2. relay/src/index.js POST /contact 단위 검증
   const validReq = new Request('http://localhost/contact', {
     method: 'POST',

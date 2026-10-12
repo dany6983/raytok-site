@@ -36,16 +36,43 @@
   </url>
   <url>
     <loc>https://raytok.kr/field/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/field/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/field/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/field/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/field/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/field/en/"/>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://raytok.kr/student/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/student/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/student/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/student/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/student/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/student/en/"/>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://raytok.kr/ows/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/ows/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/ows/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/ows/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/ows/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/ows/en/"/>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -61,6 +88,15 @@
   </url>
   <url>
     <loc>https://raytok.kr/contact/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/contact/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/contact/en/"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/contact/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/contact/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/contact/en/"/>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

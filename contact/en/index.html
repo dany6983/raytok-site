@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact RayTok — Implementation & Product Inquiries</title>
+<meta name="description" content="Contact RayTok. Consultation and inquiries for tour agencies, corporate safety training, universities, and museums worldwide.">
+<link rel="canonical" href="https://raytok.kr/contact/en/">
+<link rel="alternate" hreflang="ko" href="https://raytok.kr/contact/">
+<link rel="alternate" hreflang="en" href="https://raytok.kr/contact/en/">
+<link rel="alternate" hreflang="x-default" href="https://raytok.kr/contact/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Contact RayTok — Implementation & Product Inquiries">
+<meta property="og:description" content="Contact RayTok. Consultation and inquiries for tour agencies, corporate safety training, universities, and museums worldwide.">
+<meta property="og:url" content="https://raytok.kr/contact/en/">
+<meta property="og:image" content="https://raytok.kr/assets/og.jpg?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="theme-color" content="#0A0F1F">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/raytok-icon.png">
+<link rel="stylesheet" href="/assets/site.css?v=e6aac079">
+<style>
+.form-card { max-width: 580px; margin: 32px auto 60px; background: #131b2e; border: 1px solid #1e293b; border-radius: 12px; padding: 32px 28px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.form-field { margin-bottom: 20px; text-align: left; }
+.form-field label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: #e2e8f0; }
+.form-field input, .form-field textarea { width: 100%; box-sizing: border-box; padding: 12px 14px; background: #0b0f19; border: 1px solid #334155; border-radius: 8px; color: #fff; font-size: 0.95rem; font-family: inherit; }
+.form-field input:focus, .form-field textarea:focus { border-color: #38bdf8; outline: none; }
+.privacy-note { font-size: 0.8rem; color: #94a3b8; line-height: 1.5; margin: 20px 0 24px; text-align: left; }
+.privacy-note a { color: #38bdf8; text-decoration: underline; }
+.success-box { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 24px; text-align: center; color: #e2e8f0; font-size: 1rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="logo" href="/" aria-label="RayTok Home"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
+<nav class="nav" aria-label="Main Navigation"><a href="/field/en/">Field Training</a><a href="/tour/en/">Tour Guide</a><a href="/museum/en/">Docent</a><a href="/student/en/">Students</a><a href="/ows/en/">OWS Earbuds</a><a href="/guide/en/">User Guide</a></nav>
+<a class="get" href="/download/">Install App</a>
+</div></header>
+
+<div class="hero">
+<div class="wrap">
+<span class="tag">Implementation & Product Inquiries</span>
+<h1>Leave your questions<br>or consultation request</h1>
+<p class="lead">We assist global travel agencies, enterprises, schools, and cultural institutions with product consultation and inquiries.</p>
+</div></div>
+
+<div class="wrap">
+  <div class="form-card">
+    <form id="contact-form">
+      <div class="form-field">
+        <label for="contact-name">Name or Organization <span style="color:#ef4444">*</span></label>
+        <input type="text" id="contact-name" name="name" required placeholder="e.g. John Smith (Global Tours Inc.)">
+      </div>
+
+      <div class="form-field">
+        <label for="contact-email">Email Address <span style="color:#ef4444">*</span></label>
+        <input type="email" id="contact-email" name="email" required placeholder="e.g. john@example.com">
+      </div>
+
+      <div class="form-field">
+        <label for="contact-country">Country <span style="color:#ef4444">*</span></label>
+        <input type="text" id="contact-country" name="country" required placeholder="e.g. United States, Japan, Vietnam, Germany">
+      </div>
+
+      <div class="form-field">
+        <label for="contact-message">Inquiry / Message <span style="color:#ef4444">*</span></label>
+        <textarea id="contact-message" name="message" rows="5" required placeholder="Please describe your requirements, expected listener group size, and target languages..."></textarea>
+      </div>
+
+      <p class="privacy-note">
+        The collected information (name, email, country, message) is used solely to respond to your inquiry and is discarded immediately after. See our <a href="/privacy/en/">Privacy Policy</a>.
+      </p>
+
+      <button type="submit" id="btn-submit" class="btn p" style="width: 100%; padding: 14px; font-size: 1rem; cursor: pointer;">Submit Inquiry</button>
+    </form>
+
+    <div id="contact-success" class="success-box" style="display: none;">
+      <h3 style="color: #38bdf8; margin-top: 0; margin-bottom: 8px;">Inquiry Received</h3>
+      <p style="margin: 0;">We have received your message and will reply to your email address shortly. Thank you.</p>
+    </div>
+  </div>
+
+  <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 40px;">
+    To contact directly via email: <a href="mailto:raytok.dany@gmail.com" style="color: var(--primary);">raytok.dany@gmail.com</a>
+  </p>
+</div>
+
+<footer><div class="wrap">
+<div class="row"><a href="/field/en/">Field Training</a><a href="/tour/en/">Tour Guide</a><a href="/museum/en/">Docent</a><a href="/student/en/">Students</a><a href="/ows/en/">OWS Earbuds</a><a href="/guide/en/">User Guide</a><a href="/download/">Install App</a><a href="/privacy/en/">Privacy Policy</a><a href="/web/terms/en/">Terms of Service</a></div>
+<p>PNL ECO Co., Ltd. · CEO Yong-eum Park · Dongtan-daero 635, Hwaseong-si, Gyeonggi-do, Republic of Korea · Business Reg: 376-88-02280 · Inquiries: <a href="mailto:raytok.dany@gmail.com">raytok.dany@gmail.com</a></p>
+<p>Patent Pending (10-2026-0166695 and 5 others) · Photos and videos are staged simulations.</p>
+<p>RayTok is an interpretation tool. It does not replace educational institutions or certified interpreters; machine translation may contain inaccuracies.</p>
+</div></footer>
+
+<script>
+document.getElementById('contact-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const payload = {
+    name: document.getElementById('contact-name').value.trim(),
+    email: document.getElementById('contact-email').value.trim(),
+    country: document.getElementById('contact-country').value.trim(),
+    message: document.getElementById('contact-message').value.trim()
+  };
+
+  try {
+    const relayBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : 'https://relay.raytok.kr';
+    const res = await fetch(relayBase + '/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      document.getElementById('contact-form').style.display = 'none';
+      document.getElementById('contact-success').style.display = 'block';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert('Error sending inquiry: ' + (err.message || res.statusText));
+      btn.disabled = false;
+      btn.textContent = 'Submit Inquiry';
+    }
+  } catch (err) {
+    const mailtoUrl = `mailto:raytok.dany@gmail.com?subject=[RayTok Inquiry] ${encodeURIComponent(payload.name)} (${encodeURIComponent(payload.country)})&body=${encodeURIComponent(payload.message + '\n\nReply-To: ' + payload.email)}`;
+    window.location.href = mailtoUrl;
+    document.getElementById('contact-form').style.display = 'none';
+    document.getElementById('contact-success').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>

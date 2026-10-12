@@ -39,7 +39,10 @@ const server = http.createServer((req, res) => {
 
   const targets = [
     { dir: 'tour', path: '/tour/', canonical: 'https://raytok.kr/tour/en/' },
-    { dir: 'museum', path: '/museum/', canonical: 'https://raytok.kr/museum/en/' }
+    { dir: 'museum', path: '/museum/', canonical: 'https://raytok.kr/museum/en/' },
+    { dir: 'field', path: '/field/', canonical: 'https://raytok.kr/field/en/' },
+    { dir: 'student', path: '/student/', canonical: 'https://raytok.kr/student/en/' },
+    { dir: 'ows', path: '/ows/', canonical: 'https://raytok.kr/ows/en/' }
   ];
 
   for (const t of targets) {

@@ -35,8 +35,13 @@ const requiredPages = [
   'https://raytok.kr/museum/',
   'https://raytok.kr/museum/en/',
   'https://raytok.kr/field/',
+  'https://raytok.kr/field/en/',
   'https://raytok.kr/student/',
+  'https://raytok.kr/student/en/',
   'https://raytok.kr/ows/',
+  'https://raytok.kr/ows/en/',
+  'https://raytok.kr/contact/',
+  'https://raytok.kr/contact/en/',
   'https://raytok.kr/desk/',
   'https://raytok.kr/download/',
   'https://raytok.kr/guide/',
@@ -46,23 +51,19 @@ for (const page of requiredPages) {
   ok(sitemapXml.includes(`<loc>${page}</loc>`), `sitemap 내 공개 페이지 포함 확인: ${page}`);
 }
 
-// 8번 대기줄: 제품 페이지 영문 URL 및 hreflang 상호 연결 검증
-const tourEnFile = path.join(ROOT, 'tour', 'en', 'index.html');
-const museEnFile = path.join(ROOT, 'museum', 'en', 'index.html');
-ok(fs.existsSync(tourEnFile), '8번: tour/en/index.html 파일 존재 확인');
-ok(fs.existsSync(museEnFile), '8번: museum/en/index.html 파일 존재 확인');
+// 8번 대기줄: 제품 페이지 전수 영문 URL 및 hreflang 상호 연결 검증
+const pagesToCheck = ['tour', 'museum', 'field', 'student', 'ows', 'contact'];
+for (const dir of pagesToCheck) {
+  const enFile = path.join(ROOT, dir, 'en', 'index.html');
+  const koFile = path.join(ROOT, dir, 'index.html');
+  ok(fs.existsSync(enFile), `${dir}/en/index.html 영문 파일 존재 확인`);
+  const koHtml = fs.readFileSync(koFile, 'utf8');
+  const enHtml = fs.readFileSync(enFile, 'utf8');
 
-const tourKoHtml = fs.readFileSync(path.join(ROOT, 'tour', 'index.html'), 'utf8');
-const tourEnHtml = fs.readFileSync(tourEnFile, 'utf8');
-const museKoHtml = fs.readFileSync(path.join(ROOT, 'museum', 'index.html'), 'utf8');
-const museEnHtml = fs.readFileSync(museEnFile, 'utf8');
-
-ok(tourKoHtml.includes('hreflang="en" href="https://raytok.kr/tour/en/"'), 'tour/ 국문에 영문 hreflang 확인');
-ok(tourEnHtml.includes('hreflang="ko" href="https://raytok.kr/tour/"'), 'tour/en/ 영문에 국문 hreflang 확인');
-ok(tourEnHtml.includes('lang="en"'), 'tour/en/ html lang="en" 속성 확인');
-ok(museKoHtml.includes('hreflang="en" href="https://raytok.kr/museum/en/"'), 'museum/ 국문에 영문 hreflang 확인');
-ok(museEnHtml.includes('hreflang="ko" href="https://raytok.kr/museum/"'), 'museum/en/ 영문에 국문 hreflang 확인');
-ok(museEnHtml.includes('lang="en"'), 'museum/en/ html lang="en" 속성 확인');
+  ok(koHtml.includes(`hreflang="en" href="https://raytok.kr/${dir}/en/"`), `${dir}/ 국문에 영문 hreflang 확인`);
+  ok(enHtml.includes(`hreflang="ko" href="https://raytok.kr/${dir}/"`), `${dir}/en/ 영문에 국문 hreflang 확인`);
+  ok(enHtml.includes('lang="en"'), `${dir}/en/ html lang="en" 속성 확인`);
+}
 
 // noindex 대상 페이지 제외 확인
 const forbiddenPages = [
