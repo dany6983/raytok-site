@@ -54,6 +54,11 @@ const outsideRequests = [];
     await hostPage.click('#btnPreTranslate');
     await hostPage.waitForSelector('#readyArea', { state: 'visible', timeout: 10000 });
 
+    // 질문 받기 기본 꺼짐 확인 및 켜기 (question.md)
+    const isDefaultOff = await hostPage.isChecked('#chkEnableQuestion');
+    ok(!isDefaultOff, 'N:1 질문 대기열 스위치: 기본 꺼짐 확인 (question.md)');
+    await hostPage.check('#chkEnableQuestion');
+
     // 강의 시작
     await hostPage.click('#btnStartLecture');
     await hostPage.waitForSelector('#step-live', { state: 'visible' });

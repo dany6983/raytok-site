@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /web/buy/
+Disallow: /lic/
+Disallow: /meet/
+Disallow: /web/terms/
+
+Sitemap: https://raytok.kr/sitemap.xml

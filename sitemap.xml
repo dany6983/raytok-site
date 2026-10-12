@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://raytok.kr/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/tour/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/tour/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/tour/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/tour/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/tour/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/tour/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/museum/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/museum/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/museum/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/museum/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/museum/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/museum/en/"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/field/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/student/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/ows/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/desk/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/download/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/contact/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/guide/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/guide/en/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/privacy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/privacy/en/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>

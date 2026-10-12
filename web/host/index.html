@@ -390,6 +390,17 @@
         </div>
       </div>
 
+      <!-- ②-C N:1 질문 대기열 스위치 (FIX_QUESTION, 기본 꺼짐) -->
+      <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
+          <input type="checkbox" id="chkEnableQuestion" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+          <span data-t="enable_question_title">참여자 질문 받기 (N:1 손들기 대기열)</span>
+        </label>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4;" data-t="enable_question_desc">
+          청취자가 텍스트로 질문을 요청하고 강사가 수동으로 지명하여 답변할 수 있습니다 (기본 꺼짐).
+        </div>
+      </div>
+
       <!-- ③ 문단 미리보기 및 편집 -->
       <div class="form-group">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -1176,6 +1187,7 @@
       const u = new URL('../listener/', window.location.href);
       u.searchParams.set('room', code);
       if (live.raw) u.searchParams.set('raw', '1');
+      if (live.questionEnabled) u.searchParams.set('q', '1');
       if (urlParams.get('relay')) u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));
       return u.toString();
     }
@@ -1192,11 +1204,17 @@
 
     async function createRoom() {
       const isRaw = chkBroadcastRaw && chkBroadcastRaw.checked;
+      const chkQ = document.getElementById('chkEnableQuestion');
+      const isQuestion = chkQ && chkQ.checked;
       live.raw = isRaw;
+      live.questionEnabled = isQuestion;
+      const askBoxEl = document.getElementById('askBox');
+      if (askBoxEl) askBoxEl.style.display = isQuestion ? 'block' : 'none';
+
       const res = await fetch(`${RELAY_BASE}/room`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${hostToken}` },
-        body: JSON.stringify({ kind: 'script', raw: isRaw ? 1 : 0 })
+        body: JSON.stringify({ kind: 'script', raw: isRaw ? 1 : 0, q: isQuestion ? 1 : 0 })
       });
       if (!res.ok) {
         let msg = '';
@@ -1215,7 +1233,7 @@
     }
 
     function sendWelcome() {
-      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG, raw: live.raw ? 1 : 0 });
+      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG, raw: live.raw ? 1 : 0, q: live.questionEnabled ? 1 : 0 });
     }
 
     // 넘길 때 보내는 문단 — 와이어 정본 script 모양 그대로. trans 는 미리 번역된 것만.
@@ -1571,7 +1589,9 @@
         closed: '방을 닫았습니다. 참석 명단은 지웠습니다.',
         closed_nosend: '릴레이에 연결되어 있지 않아 종료 신호를 보내지 못했습니다 — 방은 10분 뒤 자동으로 닫힙니다. 참석 명단은 지웠습니다.',
         broadcast_raw_title: '번역 없이 방송 (원문 브로드캐스팅)',
-        broadcast_raw_desc: '한국인 가이드·강연 등 같은 언어로 방송할 때 번역 API를 부르지 않고 원문 그대로 청취자에게 전송합니다 (번역 비용 0원, 지연 없음).'
+        broadcast_raw_desc: '한국인 가이드·강연 등 같은 언어로 방송할 때 번역 API를 부르지 않고 원문 그대로 청취자에게 전송합니다 (번역 비용 0원, 지연 없음).',
+        enable_question_title: '참여자 질문 받기 (N:1 손들기 대기열)',
+        enable_question_desc: '청취자가 텍스트로 질문을 요청하고 강사가 수동으로 지명하여 답변할 수 있습니다 (기본 꺼짐).'
       },
       en: {
         btn_end: 'Finish',
@@ -1604,7 +1624,9 @@
         closed: 'Room closed. The attendance roster has been erased.',
         closed_nosend: 'Not connected to the relay, so the end signal could not be sent — the room closes by itself in 10 minutes. The attendance roster has been erased.',
         broadcast_raw_title: 'Broadcast without translation (Original broadcast)',
-        broadcast_raw_desc: 'Broadcast the original text directly to listeners without calling translation APIs when lecturing in the same language (Zero cost, no delay).'
+        broadcast_raw_desc: 'Broadcast the original text directly to listeners without calling translation APIs when lecturing in the same language (Zero cost, no delay).',
+        enable_question_title: 'Allow attendee questions (N:1 Queue)',
+        enable_question_desc: 'Listeners can request questions by text, and instructor manually grants speaking turn (Default OFF).'
       }
     };
     function T(key) {

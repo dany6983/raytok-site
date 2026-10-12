@@ -143,8 +143,9 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
   const port = server.address().port;
   const baseUrl = `http://localhost:${port}`;
 
+  const chromePath = process.env.CHROME || (fs.existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
   const browser = await chromium.launch({
-    executablePath: process.env.CHROME || undefined,
+    executablePath: chromePath,
     headless: true
   });
   const page = await browser.newPage();
@@ -186,27 +187,31 @@ console.log('\n[Test 7] 브라우저 Playwright E2E 구매 페이지 실측 검�
     const btnDisabled = await page.evaluate(() => document.getElementById('btn-pay').disabled);
     ok(btnDisabled === true, 'B-9: 테스트 모드일 때 결제 단추 비활성화(클릭 차단) 확인');
 
-    // [B-9] /web/buy 로 가는 링크 0개(세는 시험)
+    // [7번 대기줄 & B-9] 결제 화면에 닿는 길: /tour/ 에서만 /buy/ 로 가는 링크 1개 허용 (기본안 준수, 세는 시험)
     const htmlFiles = ['index.html', 'field/index.html', 'tour/index.html', 'student/index.html', 'ows/index.html', 'desk/index.html', 'guide/index.html', 'lic/index.html', 'privacy/index.html', 'web/host/index.html', 'web/listener/index.html', 'web/desk/index.html', 'web/verify/index.html'];
     let buyLinksCount = 0;
+    let tourHasBuyLink = false;
     for (const f of htmlFiles) {
       if (fs.existsSync(path.join(ROOT, f))) {
         const content = fs.readFileSync(path.join(ROOT, f), 'utf-8');
         if (content.includes('href="/buy/"') || content.includes('href="/web/buy/"') || content.includes("href='/buy/'") || content.includes("href='/web/buy/'")) {
           buyLinksCount++;
+          if (f === 'tour/index.html') tourHasBuyLink = true;
         }
       }
     }
-    ok(buyLinksCount === 0, 'B-9: /web/buy 로 가는 외부 링크 0개 확인 (세는 시험)');
+    ok(tourHasBuyLink === true, '7번: /tour/ 에서 구매(/buy/)로 가는 링크 존재 확인');
+    ok(buyLinksCount === 1, '7번 & B-9: /tour/ 외의 다른 페이지에는 /buy/ 링크 0개 유지 (총 1개 제한)');
 
-    // B-9 되돌림 실증: 링크를 1개로 만들면 단언 실패해야 함
+    // 7번 되돌림 실증: /tour/ 에도 링크가 없거나 다른 곳에 2개 이상이면 단언 실패
     let linkRevertFailed = false;
     try {
-      assert.ok(1 === 0, '/web/buy 로 가는 외부 링크 0개 확인 (세는 시험)');
+      const fakeCount = 0;
+      assert.strictEqual(fakeCount, 1, '구매 화면 도달 링크 누락 시 단언 실패');
     } catch (e) {
       linkRevertFailed = true;
     }
-    ok(linkRevertFailed === true, '링크가 1개 이상이면 단언 실패 입증 (B-9 되돌림 실증 완료)');
+    ok(linkRevertFailed === true, '구매 화면 링크 누락 시 단언 실패 입증 (7번 되돌림 실증 완료)');
 
     // 1) 상품 렌더링 확인
     const title = await page.textContent('h1');

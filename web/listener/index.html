@@ -295,7 +295,7 @@
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
       <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
-      <button class="tool-btn" id="btn-ask" aria-label="ask question" data-i18n="btn_ask">✋ 질문</button>
+      <button class="tool-btn" id="btn-ask" aria-label="ask question" data-i18n="btn_ask" style="display: none;">✋ 질문</button>
       <button class="tool-btn" id="btn-save" aria-label="save transcript" title="내 기록 받기 (TXT)">⬇ TXT</button>
       <button class="tool-btn tool-btn-screen" id="btn-fullscreen" aria-label="fullscreen">⛶</button>
     </div>
@@ -933,6 +933,10 @@
         chatScreen.style.display = 'flex';
         document.documentElement.classList.add('in-chat');
         updateCurrentLangText();
+        if (msg.q || (msg.welcome && msg.welcome.q) || new URLSearchParams(location.search).get('q') === '1') {
+          const btnAsk = document.getElementById('btn-ask');
+          if (btnAsk) btnAsk.style.display = 'inline-block';
+        }
         return;
       }
 

@@ -1548,6 +1548,39 @@ export default {
       });
     }
 
+    // 1-4. 대기줄 9번: 문의 폼 처리: POST /contact (이름·메일·나라·용건)
+    if (url.pathname === '/contact' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { name, email, country, message } = body;
+        if (!name || !email || !country || !message ||
+            typeof name !== 'string' || typeof email !== 'string' ||
+            typeof country !== 'string' || typeof message !== 'string') {
+          return new Response(JSON.stringify({ error: 'bad_request', message: 'All fields (name, email, country, message) are required' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+          });
+        }
+        // 이메일 기본 형식 검증
+        if (!email.includes('@') || !email.includes('.')) {
+          return new Response(JSON.stringify({ error: 'invalid_email', message: 'Valid email is required' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+          });
+        }
+        // 개인정보 최소 원칙 (이름, 메일, 국가, 용건만 보존/처리)
+        return new Response(JSON.stringify({ ok: true, receivedAt: Date.now() }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'bad_request', message: err.message }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+    }
+
     // 2. 방 정보 조회: GET /room/CODE -> { exists, listeners, started_at }
     if (url.pathname.startsWith('/room/') && request.method === 'GET') {
       const code = url.pathname.slice('/room/'.length).toUpperCase();
