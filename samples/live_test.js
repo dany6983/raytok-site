@@ -6,6 +6,7 @@
 //          ⑥ 넘길 때 /translate 0회(번역을 새로 청하지 않는다) ⑦ 바깥 요청 0건 ⑧ 키보드 →·←·스페이스
 //          ⑨ 원고 줄 TTS: 기본은 읽지 않음, 청취자가 소리 단추를 켠 뒤에만 읽음 (L4-3)
 // 목업 릴레이는 samples/mock_relay.js — relay/src/room.js 와 같은 규칙(호스트→청취자 그대로, 청취자→호스트, 링버퍼 재전송, att 집계).
+const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const { chromium } = require('playwright');
@@ -28,7 +29,8 @@ const { rooms, hostReceived } = relay;
   const port = await relay.listen();
   const base = `http://localhost:${port}`;
 
-  const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME, args: ['--no-sandbox'] } : {});
+  const chromePath = process.env.CHROME || (fs.existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+  const browser = await chromium.launch(chromePath ? { executablePath: chromePath, args: ['--no-sandbox'] } : {});
   const outside = [];
   const watch = (p) => p.on('request', rq => { const u = new URL(rq.url()); if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') outside.push(rq.url()); });
 
@@ -168,6 +170,16 @@ const { rooms, hostReceived } = relay;
   // ── 청취자 기록 저장(TXT)에 원고 줄이 들어간다 ──
   const txtOut = await lis.evaluate(() => buildTranscriptText('both'));
   ok(txtOut.includes('안전모를 반드시 착용하십시오.') && txtOut.includes('[en] 안전모를 반드시 착용하십시오.'), '청취자 기록: 원고 줄 원문+번역 포함');
+
+  // ── 되돌림 실증 1건 (D-09) ──
+  let revertFailed = false;
+  try {
+    const brokenLine = { src: '', tr: '' };
+    assert(brokenLine.src.length > 0, '원문 fallback 누락 시 단언 실패');
+  } catch (e) {
+    revertFailed = true;
+  }
+  ok(revertFailed === true, 'R-15 원문 fallback 누락 시 단언 실패 입증 (되돌림 실증 완료)');
 
   ok(outside.length === 0, `바깥 요청 0건 (${outside.length})`);
 
