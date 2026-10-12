@@ -20,7 +20,8 @@ const srv = http.createServer((q, r) => {
   const { chromium } = require('playwright');
   await new Promise(ok => srv.listen(0, ok));
   const base = 'http://localhost:' + srv.address().port;
-  const b = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME, args: ['--no-sandbox'] } : {});
+  const chromePath = process.env.CHROME || (fs.existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+  const b = await chromium.launch(chromePath ? { executablePath: chromePath, args: ['--no-sandbox'] } : {});
   const keys = [], seen = new Set();
   for (const u of PAGES) {
     const p = await b.newPage(); await p.goto(base + u, { waitUntil: 'load' });
