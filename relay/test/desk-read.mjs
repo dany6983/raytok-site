@@ -127,8 +127,10 @@ async function run() {
   const tokenUserB = mintLicenseToken({ sub: 'user_b', days: 30, flags: 0x08, secret });
   const tokenNoDesk = mintLicenseToken({ sub: 'user_no_desk', days: 30, flags: 0x02, secret });
 
+  const now = Date.now();
+
   // 1) 세션 1 (User A, 단일 조각)
-  const session1Data = { code: '111222', host: 'HOST_A_1', lang: 'ko', started: 1759885200000 };
+  const session1Data = { code: '111222', host: 'HOST_A_1', lang: 'ko', started: now - 3600 * 1000 };
   const chain1 = generateChain(session1Data, 5, '안전모 착용 확인');
   const upRes1 = await relayApp.fetch(new Request('http://localhost/desk/session', {
     method: 'POST',
@@ -139,7 +141,7 @@ async function run() {
   const { id: id1 } = await upRes1.json();
 
   // 2) 세션 2 (User A, 대형 세션 - 조각 분할)
-  const session2Data = { code: '333444', host: 'HOST_A_2', lang: 'ko', started: 1759885300000 };
+  const session2Data = { code: '333444', host: 'HOST_A_2', lang: 'ko', started: now - 1800 * 1000 };
   const chain2 = generateChain(session2Data, 200, '작업장 화재 대피 요령 안내 문단입니다. '.repeat(5));
   const upRes2 = await relayApp.fetch(new Request('http://localhost/desk/session', {
     method: 'POST',
@@ -150,7 +152,7 @@ async function run() {
   const { id: id2 } = await upRes2.json();
 
   // 3) 세션 3 (User B, 단일 조각)
-  const session3Data = { code: '555666', host: 'HOST_B', lang: 'en', started: 1759885400000 };
+  const session3Data = { code: '555666', host: 'HOST_B', lang: 'en', started: now - 900 * 1000 };
   const chain3 = generateChain(session3Data, 5, 'Safety First in Factory');
   const upRes3 = await relayApp.fetch(new Request('http://localhost/desk/session', {
     method: 'POST',
