@@ -12,7 +12,7 @@ import {
   testSeed,
   privateKeyFromSeed,
   FLAG
-} from '../tools/mint-code.mjs';
+} from './mint-core.js';
 
 // 지원 상품 카탈로그 (MASTER 및 tour/index.html 기준)
 export const PRODUCTS = {
