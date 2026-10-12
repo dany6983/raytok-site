@@ -488,7 +488,10 @@
                 <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
-              <button id="btnAskEnd" class="btn secondary" style="width: 100%; min-height: 36px; padding: 6px;">끝내기</button>
+              <div style="display: flex; gap: 6px;">
+                <button id="btnAskEnd" class="btn secondary" style="flex: 1; min-height: 36px; padding: 6px;">끝내기</button>
+                <button id="btnAskSilent" class="btn" style="min-height: 36px; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;" title="발언자가 무음이거나 응답하지 않을 때 회수">무음</button>
+              </div>
             </div>
             <!-- 대기열 목록 -->
             <div id="askQueueList" style="max-height: 180px; overflow-y: auto;">
@@ -1470,6 +1473,8 @@
 
       const btnAskEnd = document.getElementById('btnAskEnd');
       if (btnAskEnd) btnAskEnd.onclick = () => closeQuestion('host_done');
+      const btnAskSilent = document.getElementById('btnAskSilent');
+      if (btnAskSilent) btnAskSilent.onclick = () => closeQuestion('silent');
     }
 
     function clearAskActive() {
