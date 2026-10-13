@@ -22,6 +22,8 @@ export const LINK_BASE = 'https://raytok.kr/lic/';
 /* 시험 키 0 의 공개키 — 정본 §2 */
 export const PUBLIC_KEYS = {
   0: '182dd333afe8b85ba3c6539e2a3368cbe7295b41237d8c0eef45660483c72c01',
+  /* 1: 운영 키 — 2026-10-13 12:24 대표님이 PC 에서 생성, 개인키는 Worker 비밀값 MINT_PRIVATE_KEY 에만 */
+  1: '7c2f16c295a780459e2c86f8bbb3b4f4bf64059c3d62e6893408c93c9e07b575',
 };
 
 /* Crockford base32 */
