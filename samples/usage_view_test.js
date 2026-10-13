@@ -94,6 +94,8 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
         device_count: 3,
         max_devices: 10,
         total_calls: 320,
+        total_listener_bytes: 450000,
+        avg_listener_bytes: 15000,
         targets: {
           en: { chars: 800000, calls: 200 },
           ja: { chars: 450000, calls: 120 }
@@ -173,6 +175,8 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
     ok(deskSub.includes('3시간 5분'), 'Desk 회의 시간 환산(3시간 5분) 확인');
     ok(devText.includes('3대'), '등록 기기 수 3대 노출 확인');
     ok(subText.includes('cust_RT0001'), '고객 식별자 cust_RT0001 노출 확인');
+    const listenerBytesText = await page.textContent('#val-listener-bytes');
+    ok(listenerBytesText.includes('KB') || listenerBytesText.includes('15') || listenerBytesText.includes('B'), '청취자 평균 데이터량 카드 노출 확인 (19:20 실측)');
 
     // 언어별 현황 검증
     const langContent = await page.textContent('#lang-list');

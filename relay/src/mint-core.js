@@ -11,11 +11,12 @@ export const CODE_BYTES = PAYLOAD_LEN + SIG_LEN;      // 80
 export const CODE_CHARS = (CODE_BYTES * 8) / 5;       // 128
 export const TEST_KEY_ID = 0;
 export const TEST_SEED_TEXT = 'RayTok license test key 0 — 시험 전용';
-export const FLAG = { host: 0x01, private: 0x02, meet: 0x04, desk: 0x08 };
+export const FLAG = { host: 0x01, private: 0x02, meet: 0x04, desk: 0x08, bundle: 0x10 };
 export const FLAG_ALIAS = {
   host: 'host', guide: 'host', class: 'host', tour: 'host',
   private: 'private', camera: 'private', app: 'private', personal: 'private', box: 'private',
   meet: 'meet', desk: 'desk',
+  bundle: 'bundle', server_bundle: 'bundle', server: 'bundle'
 };
 export const LINK_BASE = 'https://raytok.kr/lic/';
 

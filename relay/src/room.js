@@ -33,6 +33,7 @@ export class Room {
     this.askSeq = 0;
     this.activeAsk = null;
     this.askHistory = [];
+    this.listenerBytesOut = 0;
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
@@ -195,6 +196,15 @@ export class Room {
         }));
       } catch (_) {}
     }
+  }
+
+  sendToListener(ws, msg) {
+    try {
+      const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
+      const byteLen = typeof Buffer !== 'undefined' ? Buffer.byteLength(str, 'utf8') : new TextEncoder().encode(str).length;
+      this.listenerBytesOut = (this.listenerBytesOut || 0) + byteLen;
+      ws.send(str);
+    } catch (_) {}
   }
 
   async fetch(request) {
@@ -513,7 +523,7 @@ export class Room {
     // 0-4. 내부 월별·코드별·언어별 사용량 기록 (/usage/record)
     // - 원가 감시용 · 과금 근거 아님
     if (url.pathname === '/usage/record' && request.method === 'POST') {
-      const { sub, target, chars = 0, sttKey = false, deskMinutes = 0 } = await request.json();
+      const { sub, target, chars = 0, sttKey = false, deskMinutes = 0, listenerBytes = 0, listenerCount = 0 } = await request.json();
       if (!sub) {
         return new Response(JSON.stringify({ error: 'sub required' }), { status: 400 });
       }
@@ -532,6 +542,9 @@ export class Room {
           targets: {}, // { [targetLang]: { chars, calls } }
           stt_keys_issued: 0,
           desk_minutes: 0,
+          total_listener_bytes: 0,
+          total_listener_sessions: 0,
+          avg_listener_bytes: 0,
           updated_at: now.toISOString()
         };
       }
@@ -555,6 +568,12 @@ export class Room {
 
       if (deskMinutes > 0) {
         record.desk_minutes = (record.desk_minutes || 0) + deskMinutes;
+      }
+
+      if (listenerBytes > 0) {
+        record.total_listener_bytes = (record.total_listener_bytes || 0) + listenerBytes;
+        record.total_listener_sessions = (record.total_listener_sessions || 0) + (listenerCount || 1);
+        record.avg_listener_bytes = Math.round(record.total_listener_bytes / Math.max(1, record.total_listener_sessions));
       }
 
       record.updated_at = now.toISOString();
@@ -1112,9 +1131,7 @@ export class Room {
       // 호스트 → 청취자 전원에 그대로 전달 (내용 해석 안 함)
       // L4-2 의 script·skip·break 도 여기로 그대로 간다 — 따로 저장하지 않는다(줄 보관은 위 링버퍼 규칙 그대로).
       for (const listenerWs of this.ctx.getWebSockets('listener')) {
-        try {
-          listenerWs.send(message);
-        } catch (e) {}
+        this.sendToListener(listenerWs, message);
       }
 
       // 호스트 둘(1:N 실시간 강사 컨트롤, W5): 다른 호스트(폰 마이크 / PC 컨트롤)에게도 중계 (자기 자신은 제외)

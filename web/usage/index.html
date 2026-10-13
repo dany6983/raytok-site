@@ -373,6 +373,21 @@
           <div id="bar-devices" class="progress-bar-fill" style="width: 0%; background: var(--success);"></div>
         </div>
       </div>
+
+      <!-- 4) 세션당 청취자 1명 평균 바이트 (19:20 청취자 데이터량 실측) -->
+      <div class="metric-card">
+        <div>
+          <div class="metric-title">
+            <span>청취자 평균 데이터량</span>
+            <span style="font-size:11px; color:#38bdf8;">실측</span>
+          </div>
+          <div class="metric-value" id="val-listener-bytes">0 B</div>
+          <div class="metric-sub" id="sub-listener-bytes">세션당 청취자 1명 평균 바이트</div>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="bar-listener-bytes" class="progress-bar-fill" style="width: 100%; background: #38bdf8;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- 언어별 번역 분포 (targets) -->
@@ -571,6 +586,21 @@
           badgeDevice.style.background = 'rgba(52,211,153,0.15)';
           badgeDevice.style.color = 'var(--success)';
         }
+      }
+
+      // 5) 세션당 청취자 1명 평균 바이트 (19:20 실측)
+      const valListenerBytes = document.getElementById('val-listener-bytes');
+      const subListenerBytes = document.getElementById('sub-listener-bytes');
+      if (valListenerBytes && subListenerBytes) {
+        const avgB = Number(data.avg_listener_bytes || data.listener_avg_bytes || 0);
+        if (avgB >= 1024 * 1024) {
+          valListenerBytes.textContent = (avgB / (1024 * 1024)).toFixed(2) + ' MB';
+        } else if (avgB >= 1024) {
+          valListenerBytes.textContent = (avgB / 1024).toFixed(1) + ' KB';
+        } else {
+          valListenerBytes.textContent = avgB.toLocaleString() + ' B';
+        }
+        subListenerBytes.textContent = `세션당 청취자 1명 평균 (누적 ${Number(data.total_listener_bytes || 0).toLocaleString()} B)`;
       }
 
       // 5) 언어별 번역 분포

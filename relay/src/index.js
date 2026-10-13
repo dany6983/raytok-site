@@ -829,8 +829,8 @@ export default {
     if (url.pathname === '/translate' && request.method === 'POST') {
       const capChars = parseInt(env.TRANSLATE_CAP_CHARS || '3000000', 10);
       let currentUsedChars = 0;
-      // 1) 라이선스 토큰 검증: 0x02 (camera) 또는 0x04 (meet) 필요
-      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x02 | 0x04);
+      // 1) 라이선스 토큰 검증: 0x02 (camera), 0x04 (meet), 0x10 (서버 번역 묶음) 필요 (MASTER 19:14)
+      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x02 | 0x04 | 0x10);
       if (!licenseRes.valid) {
         return jsonError(licenseRes.error, licenseRes.message, licenseRes.status);
       }

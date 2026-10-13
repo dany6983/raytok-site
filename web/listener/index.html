@@ -290,6 +290,7 @@
   </div>
 
   <div class="screen" id="chat-screen">
+    <div id="voice-notice" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
     <div id="chat-list"></div>
     <div class="tool-bar">
@@ -795,10 +796,31 @@
       }
     });
 
+    let hasWarnedVoiceAbsence = false;
+    function checkOsVoiceSupport(lang) {
+      if (hasWarnedVoiceAbsence) return;
+      if (typeof window.speechSynthesis === 'undefined') return;
+      const voices = speechSynthesis.getVoices() || [];
+      if (!voices.length) return;
+      const targetLang = (lang || selectedLang || '').toLowerCase();
+      const hasVoice = voices.some(v => v.lang && v.lang.toLowerCase().startsWith(targetLang));
+      const voiceNoticeEl = document.getElementById('voice-notice');
+      if (!hasVoice) {
+        hasWarnedVoiceAbsence = true;
+        if (voiceNoticeEl) {
+          voiceNoticeEl.textContent = `ℹ️ 현재 기기(OS)에 ${targetLang.toUpperCase()} 음성이 없어 자막으로만 표시됩니다.`;
+          voiceNoticeEl.style.display = 'block';
+        }
+      } else {
+        if (voiceNoticeEl) voiceNoticeEl.style.display = 'none';
+      }
+    }
+
     // TTS 설정
     function updateVoice() {
       const voices = speechSynthesis.getVoices();
       currentVoice = voices.find(v => v.lang.startsWith(selectedLang)) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+      checkOsVoiceSupport(selectedLang);
     }
     speechSynthesis.onvoiceschanged = updateVoice;
 
