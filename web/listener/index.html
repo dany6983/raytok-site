@@ -1024,16 +1024,16 @@
         }
         return;
       }
-      if (msg.kind === 'ask_active') {
+      if (msg.kind === 'question' || msg.kind === 'ask_active') {
         currentActiveAskId = msg.id;
         const line = {
           seq: null,
           script: 1,
           para: Number(msg.seq) || 1,
           total: Number(msg.seq) || 1,
-          text: msg.text,
+          text: msg.src || msg.text,
           spk: null,
-          at: Date.now(),
+          at: msg.at || Date.now(),
           tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
           pending: false,
           via: undefined
@@ -1047,7 +1047,7 @@
         if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
         return;
       }
-      if (msg.kind === 'ask_ended') {
+      if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
         if (currentActiveAskId === msg.id) currentActiveAskId = null;
         if (myAskId === msg.id) myAskId = null;
         const btnAsk = document.getElementById('btn-ask');
@@ -1442,10 +1442,12 @@
         if (ws && ws.readyState === WebSocket.OPEN) {
           const userName = myName || (nameInput && nameInput.value) || '익명';
           ws.send(JSON.stringify({
-            kind: 'ask_req',
+            kind: 'ask',
             name: userName,
             lang: selectedLang,
-            text
+            text,
+            src: text,
+            at: Date.now()
           }));
           if (askModal) askModal.style.display = 'none';
           if (askInputText) askInputText.value = '';

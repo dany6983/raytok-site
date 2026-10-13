@@ -1470,11 +1470,11 @@
         renderAskQueue(msg.queue || []);
         return;
       }
-      if (msg.kind === 'ask_active') {
+      if (msg.kind === 'grant' || msg.kind === 'ask_active') {
         renderAskActive(msg);
         return;
       }
-      if (msg.kind === 'ask_ended') {
+      if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
         clearAskActive();
         return;
       }
@@ -1537,7 +1537,7 @@
           }
         }
       } catch (_) {}
-      wsSend({ kind: 'ask_grant', id, trans });
+      wsSend({ kind: 'grant', id, trans });
     }
 
     function renderAskActive(msg) {
@@ -1586,7 +1586,7 @@
     function closeQuestion(reason = 'host_done') {
       if (!liveActiveAsk) return;
       const id = liveActiveAsk.id;
-      wsSend({ kind: 'ask_close', id, reason });
+      wsSend({ kind: 'revoke', id, reason });
       clearAskActive();
     }
 

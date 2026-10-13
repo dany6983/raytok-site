@@ -254,7 +254,7 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
           if (s.includes('__ping')) { ws.send(s); return; }
           let parsed = null;
           try { parsed = JSON.parse(s); } catch (_) {}
-          if (parsed && parsed.kind === 'ask_grant') {
+          if (parsed && (parsed.kind === 'grant' || parsed.kind === 'ask_grant')) {
             if (room.activeAsk) {
               try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'already_active' })); } catch (_) {}
               return;
@@ -263,21 +263,40 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
             if (target) {
               room.activeAsk = {
                 id: target.id, seq: target.seq, name: target.name, lang: target.lang,
-                text: target.text, trans: parsed.trans || {}, grantedAt: Date.now()
+                text: target.text, src: target.src || target.text, trans: parsed.trans || {}, grantedAt: Date.now()
               };
               if (room.askHistory) {
                 const hItem = room.askHistory.find(h => h.id === target.id);
                 if (hItem) hItem.status = 'granted';
               }
+              const grantWireMsg = JSON.stringify({
+                kind: 'grant', id: target.id, seq: target.seq, name: target.name, lang: target.lang, max_sec: parsed.max_sec || 90, at: room.activeAsk.grantedAt
+              });
+              const questionWireMsg = JSON.stringify({
+                kind: 'question', id: target.id, seq: target.seq, name: target.name, src: target.src || target.text, srcLang: target.lang, trans: parsed.trans || {}, at: room.activeAsk.grantedAt
+              });
               const activeMsg = JSON.stringify({ kind: 'ask_active', ...room.activeAsk });
-              for (const l of room.listeners.keys()) { try { l.send(activeMsg); } catch (_) {} }
-              for (const h of room.hosts) { try { h.send(activeMsg); } catch (_) {} }
+              for (const l of room.listeners.keys()) {
+                try {
+                  l.send(grantWireMsg);
+                  l.send(questionWireMsg);
+                  l.send(activeMsg);
+                } catch (_) {}
+              }
+              for (const h of room.hosts) {
+                try {
+                  h.send(grantWireMsg);
+                  h.send(questionWireMsg);
+                  h.send(activeMsg);
+                } catch (_) {}
+              }
             }
             return;
           }
-          if (parsed && parsed.kind === 'ask_close') {
+          if (parsed && (parsed.kind === 'revoke' || parsed.kind === 'ask_close')) {
             const askId = parsed.id || (room.activeAsk && room.activeAsk.id);
             const reason = parsed.reason || 'host_done';
+            let askSeq = undefined;
             room.askQueue = (room.askQueue || []).filter(q => q.id !== askId);
             if (room.askHistory) {
               const hItem = room.askHistory.find(h => h.id === askId);
@@ -285,12 +304,24 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
                 hItem.status = 'closed';
                 hItem.reason = reason;
                 hItem.closedAt = Date.now();
+                askSeq = hItem.seq;
               }
             }
             room.activeAsk = null;
-            const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: reason });
-            for (const l of room.listeners.keys()) { try { l.send(endMsg); } catch (_) {} }
-            for (const h of room.hosts) { try { h.send(endMsg); } catch (_) {} }
+            const revokeWireMsg = JSON.stringify({ kind: 'revoke', id: askId, seq: askSeq, reason: reason, at: Date.now() });
+            const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: reason, seq: askSeq });
+            for (const l of room.listeners.keys()) {
+              try {
+                l.send(revokeWireMsg);
+                l.send(endMsg);
+              } catch (_) {}
+            }
+            for (const h of room.hosts) {
+              try {
+                h.send(revokeWireMsg);
+                h.send(endMsg);
+              } catch (_) {}
+            }
             const qMsgHost = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue, history: room.askHistory });
             for (const h of room.hosts) { try { h.send(qMsgHost); } catch (_) {} }
             const qMsgList = JSON.stringify({
@@ -330,18 +361,19 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
             p = JSON.parse(s);
             if (p && p.hello && p.lang && room.att) attSetLang(room, ws, p.lang);
           } catch (_) {}
-          if (p && p.kind === 'ask_req') {
+          if (p && (p.kind === 'ask' || p.kind === 'ask_req')) {
             if (p.trans || p.tr) {
               try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}
               return;
             }
             room.askSeq = (room.askSeq || 0) + 1;
             const askItem = {
-              id: 'q_' + room.askSeq + '_' + Math.random().toString(36).slice(2, 6),
+              id: p.id || ('q_' + room.askSeq + '_' + Math.random().toString(36).slice(2, 6)),
               seq: room.askSeq,
               name: p.name || '익명',
               lang: p.lang || 'ko',
-              text: p.text || '',
+              text: p.text || p.src || '',
+              src: p.src || p.text || '',
               at: Date.now(),
               status: 'requested'
             };
@@ -349,13 +381,26 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
             if (!room.askHistory) room.askHistory = [];
             room.askQueue.push(askItem);
             room.askHistory.push({ ...askItem });
+            const wireAskMsg = JSON.stringify({
+              kind: 'ask', id: askItem.id, seq: askItem.seq, name: askItem.name, lang: askItem.lang, src: askItem.src, at: askItem.at
+            });
             const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: room.askQueue, history: room.askHistory });
-            for (const h of room.hosts) { try { h.send(hostMsg); } catch (_) {} }
+            for (const h of room.hosts) {
+              try {
+                h.send(wireAskMsg);
+                h.send(hostMsg);
+              } catch (_) {}
+            }
             const listMsg = JSON.stringify({
               kind: 'ask_queue', count: room.askQueue.length,
               queue: room.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
             });
-            for (const l of room.listeners.keys()) { try { l.send(listMsg); } catch (_) {} }
+            for (const l of room.listeners.keys()) {
+              try {
+                l.send(wireAskMsg);
+                l.send(listMsg);
+              } catch (_) {}
+            }
             return;
           }
           for (const h of room.hosts) { try { h.send(s); } catch (_) {} }

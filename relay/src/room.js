@@ -1147,8 +1147,8 @@ export class Room {
       }
 
       if (parsed) {
-        // N:1 질문 지명 및 종료 처리 (P-17 수동 지명, B-2 동시 1명 인가, B-4/B-5 회수 사유)
-        if (parsed.kind === 'ask_grant') {
+        // N:1 질문 지명 및 종료 처리 (정본 wire-messages.json: grant, revoke 규격 완비)
+        if (parsed.kind === 'grant' || parsed.kind === 'ask_grant') {
           if (this.activeAsk) {
             try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'already_active' })); } catch (_) {}
             return;
@@ -1161,6 +1161,7 @@ export class Room {
               name: target.name,
               lang: target.lang,
               text: target.text,
+              src: target.src || target.text,
               trans: parsed.trans || {},
               grantedAt: Date.now()
             };
@@ -1168,20 +1169,53 @@ export class Room {
               const hItem = this.askHistory.find(h => h.id === target.id);
               if (hItem) hItem.status = 'granted';
             }
+
+            // 정본 와이어 grant 메시지
+            const grantWireMsg = JSON.stringify({
+              kind: 'grant',
+              id: target.id,
+              seq: target.seq,
+              name: target.name,
+              lang: target.lang,
+              max_sec: parsed.max_sec || 90,
+              at: this.activeAsk.grantedAt
+            });
+
+            // 정본 와이어 question 메시지 (역번역 포함 배포)
+            const questionWireMsg = JSON.stringify({
+              kind: 'question',
+              id: target.id,
+              seq: target.seq,
+              name: target.name,
+              src: target.src || target.text,
+              srcLang: target.lang,
+              trans: parsed.trans || {},
+              at: this.activeAsk.grantedAt
+            });
+
             const activeMsg = JSON.stringify({ kind: 'ask_active', ...this.activeAsk });
             for (const listenerWs of this.ctx.getWebSockets('listener')) {
-              try { listenerWs.send(activeMsg); } catch (_) {}
+              try {
+                listenerWs.send(grantWireMsg);
+                listenerWs.send(questionWireMsg);
+                listenerWs.send(activeMsg);
+              } catch (_) {}
             }
             for (const hostWs of this.ctx.getWebSockets('host')) {
-              try { hostWs.send(activeMsg); } catch (_) {}
+              try {
+                hostWs.send(grantWireMsg);
+                hostWs.send(questionWireMsg);
+                hostWs.send(activeMsg);
+              } catch (_) {}
             }
           }
           return;
         }
 
-        if (parsed.kind === 'ask_close') {
+        if (parsed.kind === 'revoke' || parsed.kind === 'ask_close') {
           const askId = parsed.id || (this.activeAsk && this.activeAsk.id);
           const reason = parsed.reason || 'host_done';
+          let askSeq = undefined;
           // 특허 독립항 핵심: 호스트가 건너뛰어 지명하고 종료해도 다른 요청자의 요청 사실과 순번은 영구 보존
           this.askQueue = (this.askQueue || []).filter(q => q.id !== askId);
           if (this.askHistory) {
@@ -1190,15 +1224,32 @@ export class Room {
               hItem.status = 'closed';
               hItem.reason = reason;
               hItem.closedAt = Date.now();
+              askSeq = hItem.seq;
             }
           }
           this.activeAsk = null;
-          const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: reason });
+
+          // 정본 와이어 revoke 메시지
+          const revokeWireMsg = JSON.stringify({
+            kind: 'revoke',
+            id: askId,
+            seq: askSeq,
+            reason: reason,
+            at: Date.now()
+          });
+
+          const endMsg = JSON.stringify({ kind: 'ask_ended', id: askId, reason: reason, seq: askSeq });
           for (const listenerWs of this.ctx.getWebSockets('listener')) {
-            try { listenerWs.send(endMsg); } catch (_) {}
+            try {
+              listenerWs.send(revokeWireMsg);
+              listenerWs.send(endMsg);
+            } catch (_) {}
           }
           for (const hostWs of this.ctx.getWebSockets('host')) {
-            try { hostWs.send(endMsg); } catch (_) {}
+            try {
+              hostWs.send(revokeWireMsg);
+              hostWs.send(endMsg);
+            } catch (_) {}
           }
           const queueHostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue, history: this.askHistory });
           for (const hostWs of this.ctx.getWebSockets('host')) {
@@ -1254,8 +1305,8 @@ export class Room {
         if (parsed && parsed.hello && parsed.lang) await this.attSetLang(ws, parsed.lang);
       } catch (_) {}
 
-      // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번)
-      if (parsed && parsed.kind === 'ask_req') {
+      // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번, 정본 ask)
+      if (parsed && (parsed.kind === 'ask' || parsed.kind === 'ask_req')) {
         // P-14 자물쇠: 참여자는 번역하지 않는다 (trans 또는 tr 포함 시 거부)
         if (parsed.trans || parsed.tr) {
           try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}
@@ -1264,11 +1315,12 @@ export class Room {
 
         this.askSeq = (this.askSeq || 0) + 1;
         const askItem = {
-          id: 'q_' + this.askSeq + '_' + Math.random().toString(36).slice(2, 6),
+          id: parsed.id || ('q_' + this.askSeq + '_' + Math.random().toString(36).slice(2, 6)),
           seq: this.askSeq,
           name: parsed.name || '익명',
           lang: parsed.lang || 'ko',
-          text: parsed.text || '',
+          text: parsed.text || parsed.src || '',
+          src: parsed.src || parsed.text || '',
           at: Date.now(),
           status: 'requested'
         };
@@ -1277,19 +1329,37 @@ export class Room {
         this.askQueue.push(askItem);
         this.askHistory.push({ ...askItem });
 
-        // 강사에게는 원문 포함 전달
+        // 정본 와이어 ask 메시지 (docs/samples/wire-messages.json)
+        const wireAskMsg = JSON.stringify({
+          kind: 'ask',
+          id: askItem.id,
+          seq: askItem.seq,
+          name: askItem.name,
+          lang: askItem.lang,
+          src: askItem.src,
+          at: askItem.at
+        });
+
+        // 강사에게 전달 (정본 ask + 호환 ask_queue)
         const hostMsg = JSON.stringify({ kind: 'ask_queue', queue: this.askQueue, history: this.askHistory });
         for (const hostWs of this.ctx.getWebSockets('host')) {
-          try { hostWs.send(hostMsg); } catch (_) {}
+          try {
+            hostWs.send(wireAskMsg);
+            hostWs.send(hostMsg);
+          } catch (_) {}
         }
-        // 청취자에게는 순번 및 대기 건수 전달
+
+        // 청취자에게 전달 (정본 ask + 호환 ask_queue)
         const listMsg = JSON.stringify({
           kind: 'ask_queue',
           count: this.askQueue.length,
           queue: this.askQueue.map(q => ({ id: q.id, seq: q.seq, name: q.name, lang: q.lang }))
         });
         for (const listenerWs of this.ctx.getWebSockets('listener')) {
-          try { listenerWs.send(listMsg); } catch (_) {}
+          try {
+            listenerWs.send(wireAskMsg);
+            listenerWs.send(listMsg);
+          } catch (_) {}
         }
         return;
       }
