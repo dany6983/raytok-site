@@ -1095,21 +1095,29 @@
         const pendingDiv = document.getElementById('msg-pending');
         if (pendingDiv) pendingDiv.remove();
 
+        const isBroadcast = !!msg.broadcast;
         const line = {
           seq: msg.seq,
           text: msg.text,
           spk: msg.spk || null,   // 화자 표시는 진행자가 보낸 때만(Desk). 강의·가이드는 보내지 않는다
           at: Date.now(),         // 이 폰이 받은 시각 (기록 저장용)
           tr: msg.tr || {},
-          pending: !!msg.pending,
-          via: msg.via
+          pending: !isBroadcast && !!msg.pending,
+          via: msg.via,
+          broadcast: isBroadcast
         };
         lines.push(line);
         lastSeq = msg.seq;
         localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
         addLine(line);
         liveTtsDefault();   // 원고 줄 때문에 꺼 둔 소리는 들은 줄에서 도로 켠다(L4-3)
-        if (line.tr[selectedLang]) speak(line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
+        const isSameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+        if (isBroadcast || isSameLang) {
+          // 방송 줄 또는 호스트 언어와 같은 청취자: 원문을 그 자리에 보이고 그대로 읽는다 (번역 없음 표시 금지)
+          speak(line.text, srcLang, msg.audio_url || (msg.tr && msg.tr.audio_url));
+        } else if (line.tr[selectedLang]) {
+          speak(line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
+        }
       } else if ('tr' in msg && !('text' in msg)) {
         const line = lines.find(l => l.seq === msg.seq);
         if (line) {
@@ -1186,6 +1194,13 @@
       const div = document.getElementById(lineElId(line));
       if (!div) return;
       const trDiv = div.querySelector('.msg-tr');
+
+      if (line.broadcast || (srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang))) {
+        trDiv.textContent = '';
+        trDiv.style.display = 'none';
+        return;
+      }
+      trDiv.style.display = 'block';
 
       trDiv.setAttribute('dir', RTL.has(normalizeLangCode(selectedLang)) ? 'rtl' : 'ltr');
       trDiv.setAttribute('lang', selectedLang);

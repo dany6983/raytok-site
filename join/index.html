@@ -17,6 +17,7 @@
 <h1>RayTok 투폰 연결</h1>
 <p id="msg">앱을 여는 중입니다…</p>
 <a class="btn" id="open" href="#">앱으로 열기</a>
+<a class="btn" id="web-listen" href="#" style="display:none; background:#0284c7; margin-top:10px;">브라우저로 듣기</a>
 <a class="btn secondary" id="store" href="/download/">앱이 없으면 설치하기</a>
 <p class="hint">상대 폰의 RayTok 화면에 뜬 QR을 찍으면 이 페이지로 옵니다. 앱이 깔려 있으면 바로 열리고, 없으면 위 단추로 설치한 뒤 QR을 다시 찍으세요.<br>같은 Wi-Fi(또는 한쪽 핫스팟)에 있어야 연결됩니다. 인터넷은 필요 없습니다.<br>주소창에 실린 연결 정보는 그 폰의 <b>집 안 주소</b>와 그때만 쓰는 확인 코드입니다. 상대가 같은 Wi-Fi에 있지 않으면 아무 의미가 없고, 호스트가 화면을 닫으면 곧바로 못 쓰게 됩니다.</p>
 <script>
@@ -41,6 +42,18 @@
              + ';S.browser_fallback_url=' + encodeURIComponent(store) + ';end';
   var deep = 'raytok://join?' + qs;
   document.getElementById('store').href = store;
+  // 6번: QR에 room= 칸이 있으면 「브라우저로 듣기」 단추 노출 (앱 없으면 웹 청취로)
+  var room = q.room || '';
+  if (room && /^[A-Z0-9]{6}$/i.test(room)) {
+    var webListenBtn = document.getElementById('web-listen');
+    if (webListenBtn) {
+      var listenerUrl = '/web/listener/?room=' + encodeURIComponent(room.toUpperCase())
+                      + (q.lang ? '&lang=' + encodeURIComponent(q.lang) : '');
+      webListenBtn.href = listenerUrl;
+      webListenBtn.style.display = 'block';
+    }
+  }
+
   if (!ok) {
     document.getElementById('msg').textContent = '연결 정보가 없는 링크입니다. 상대 화면의 QR을 다시 찍어 주세요.';
     document.getElementById('open').style.display = 'none';

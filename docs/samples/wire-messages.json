@@ -89,7 +89,7 @@
     },
     "line": {
       "_dir": "가이드 → 청취자. 원문 한 줄. 청취자 언어마다 따로 잘라 보낸다(trimFor) — tr에는 그 청취자 언어 하나만. 번역이 아직이면 tr={} 이고, 곧 보낼 예정이면 pending:1.",
-      "_fields": "seq(1부터, 가이드 세션 안에서 늘기만), src_lang, text, tr{lang:text}, via?(D-162), pending?",
+      "_fields": "seq(1부터, 가이드 세션 안에서 늘기만), src_lang, text, tr{lang:text}, via?(D-162), pending?, broadcast?(원문 방송 여부)",
       "samples": [
         {
           "seq": 1,
@@ -120,10 +120,17 @@
             "ky": "Наденьте каску"
           },
           "via": "ru"
+        },
+        {
+          "seq": 5,
+          "src_lang": "ko",
+          "text": "현장 방송 안내입니다.",
+          "broadcast": true
         }
       ],
       "_note": "seq 3처럼 pending 없이 tr이 비었으면 가이드가 그 언어를 번역 못 한다(팩 없음 등) — 청취자가 자기 팩으로 번역하거나 원문만.",
-      "_note_via": "via가 있으면 tr의 글이 그 언어(대체어)로 된 것이다 — 인터넷 없는 가이드가 ky 모델이 없어 ru로 번역한 경우. 소리는 via 언어 음성으로 읽는다. 직접 번역이면 via 칸 자체가 없다."
+      "_note_via": "via가 있으면 tr의 글이 그 언어(대체어)로 된 것이다 — 인터넷 없는 가이드가 ky 모델이 없어 ru로 번역한 경우. 소리는 via 언어 음성으로 읽는다. 직접 번역이면 via 칸 자체가 없다.",
+      "_note_broadcast": "broadcast가 true면 번역 없이 원문만 전송된 방송 줄이다. 청취자는 번역 칸을 비우고 원문을 그 자리에 보이며 원문 언어로 그대로 읽는다 (번역 없음 표시 금지)."
     },
     "tr": {
       "_dir": "가이드 → 청취자. 늦게 온 번역. line에서 pending이던 것.",

@@ -588,19 +588,22 @@
         }
       }
 
-      // 5) 세션당 청취자 1명 평균 바이트 (19:20 실측)
+      // 5) 세션당 청취자 1명 평균 바이트 및 시간당 KB (22:15 2번)
       const valListenerBytes = document.getElementById('val-listener-bytes');
       const subListenerBytes = document.getElementById('sub-listener-bytes');
       if (valListenerBytes && subListenerBytes) {
         const avgB = Number(data.avg_listener_bytes || data.listener_avg_bytes || 0);
+        let bytesDisplay = '0 B';
         if (avgB >= 1024 * 1024) {
-          valListenerBytes.textContent = (avgB / (1024 * 1024)).toFixed(2) + ' MB';
+          bytesDisplay = (avgB / (1024 * 1024)).toFixed(2) + ' MB';
         } else if (avgB >= 1024) {
-          valListenerBytes.textContent = (avgB / 1024).toFixed(1) + ' KB';
+          bytesDisplay = (avgB / 1024).toFixed(1) + ' KB';
         } else {
-          valListenerBytes.textContent = avgB.toLocaleString() + ' B';
+          bytesDisplay = avgB.toLocaleString() + ' B';
         }
-        subListenerBytes.textContent = `세션당 청취자 1명 평균 (누적 ${Number(data.total_listener_bytes || 0).toLocaleString()} B)`;
+        const hourlyKb = (avgB / 1024).toFixed(1);
+        valListenerBytes.textContent = `${bytesDisplay}`;
+        subListenerBytes.textContent = `세션당 청취자 1명 평균 · 시간당 ~${hourlyKb} KB`;
       }
 
       // 5) 언어별 번역 분포
