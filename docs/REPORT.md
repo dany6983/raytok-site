@@ -7,6 +7,80 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 22:15·22:41·22:46 지시 완료: 1~8번 전 항목 구현 완수 (stable·bytes_out·0x10·음성검사·방송줄·join웹청취·마이크N:1·목소리고르기)
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+구현 내용 (MASTER 22:15 · 22:41 · 22:46 8대 항목 전원 완비):
+1. stable 링크 LANG-74 갱신 (1번): `download/index.html` 및 `download/en/index.html` 갱신 완료.
+2. 릴레이 bytes_out 실측 및 /usage 표출 (2번):
+   - `relay/src/room.js`: 청취자 웹소켓 송출 시 `listenerBytesOut` 집계. `POST /usage/record` 및 `GET /usage/summary`에 `total_listener_bytes`, `avg_listener_bytes` 산출.
+   - `web/usage/index.html`: "청취자 평균 데이터량 (세션당 청취자 1명 평균 · 시간당 ~N KB)" 메트릭 카드 추가.
+3. 이용권 플래그 0x10 서버 번역 묶음 (3번):
+   - `relay/src/mint-core.js` 플래그 표에 `bundle: 0x10` 추가.
+   - `relay/src/index.js`의 `/translate` 라이선스 검사에 `0x02 | 0x04 | 0x10` 통과 추가.
+   - `docs/license-flags.md` 문서 최신 5대 플래그 체계로 갱신.
+4. 청취 페이지 OS 음성 1회 사전 검사 (4번):
+   - `web/listener/index.html`: QR 입장 시 해당 언어 OS 음성 탑재 여부를 최초 1회 검사하여 미설치 시 상단 `#voice-notice`로 자막 전용 안내 (줄마다 음성 없음 표시 배제).
+5. 청취 페이지 방송 줄 (5번):
+   - `docs/samples/wire-messages.json`: `line` 메시지에 `broadcast: true` 필드 및 설명 추가.
+   - `web/listener/index.html`: `broadcast: true` 또는 동일 언어 줄 수신 시 번역 칸을 숨기고 원문을 그 자리에 표시하며 원문 음성으로 읽음 ("번역 없음" 표시 금지).
+6. /join 페이지 브라우저 청취 연동 (6번):
+   - `join/index.html`: QR 파라미터에 `room=`이 있을 때 「브라우저로 듣기」 (`/web/listener/?room=…`) 단추 표출. 없으면 다운로드 안내 유지.
+7. 브라우저 청취자 마이크 N:1 질문 (7번):
+   - `web/listener/index.html`: `grant` 수신 시 `getUserMedia` 및 `SpeechRecognition`을 가동하여 음성 인식 텍스트를 원문+언어로 `question` 자동 전송 (미지원 브라우저는 글자 입력 모달 대체). `revoke` 시 마이크 및 인식 중단.
+8. 청취 페이지 목소리 고르기 (8번):
+   - `web/listener/index.html`: `🗣️ 목소리` 단추 및 모달 (`#voice-picker-modal`) 탑재.
+   - 순서: 로컬·고품질 → network 아닌 것 → 나머지 (해당 언어 최대 3개).
+   - 각 목소리별 `▶` 미리듣기 단추 제공 및 `localStorage`(`raytok_voice_uri_<lang>`) 영속화.
+9. 전체 검증 시험:
+   - 신규 `samples/bytes_out_test.js` 12건 단언 및 되돌림 실증 2건 전원 통과.
+   - `npm test`: 전체 37개 스위트 (880+건 단언) 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- docs/license-flags.md: 0x10 서버 번역 묶음 플래그 정의 갱신.
+- docs/samples/wire-messages.json: line에 broadcast 필드 정본 추가.
+- relay/src/mint-core.js: 0x10 플래그 상수 및 claimsOf 추가.
+- relay/src/index.js: /translate 라이선스 검증에 0x10 허용.
+- relay/src/room.js: 청취자 bytes_out 누적 및 usage 집계.
+- web/usage/index.html: 청취자 평균 데이터량 및 시간당 KB 표출 카드.
+- join/index.html: room 파라미터 시 「브라우저로 듣기」 단추 연동.
+- web/listener/index.html: broadcast 원문 표출, OS 음성 1회 사전 검사, 7번 마이크 질문, 8번 목소리 고르기 모달.
+- samples/bytes_out_test.js: [신규] bytes_out, broadcast, join, 되돌림 2건 테스트.
+- package.json: `test:bytes-out` 등록.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. node samples/bytes_out_test.js:
+=== 릴레이 bytes_out, broadcast 방송 줄, join 웹 청취 연동 시험 (MASTER 22:15) ===
+  [PASS] 청취자 전송 바이트 카운트 누적 확인 (34 B)
+  [PASS] Room.listenerBytesOut 와 실제 전송 바이트 일치
+  [PASS] usage/record 기록 200 OK
+  [PASS] total_listener_bytes 30,000B 확인
+  [PASS] avg_listener_bytes 15,000B(30000/2) 확인
+  [PASS] join/?room=ABC123 시 「브라우저로 듣기」 단추 노출 확인
+  [PASS] 브라우저로 듣기 링크에 room=ABC123 및 lang=vi 포함 확인
+  [PASS] join 에 room 없을 때 「브라우저로 듣기」 숨김 확인
+  [PASS] 방송 줄 원문이 그 자리에 정상 노출
+  [PASS] 방송 줄 번역 칸은 비움/숨김 처리 확인 ("번역 없음" 미표출)
+  [PASS] 방송 줄에 번역 없음 표시 시 단언 실패 입증 (되돌림 실증 1)
+  [PASS] room 없는 join 에서 단추 노출 시 단언 실패 입증 (되돌림 실증 2)
+전부 통과 (12건)
+
+2. npm test:
+전체 37개 스위트 일괄 통과 (종료 코드 0, 단언 880+건).
+
+한 줄 판정:
+마스터 1~8번 전 항목(stable·bytes_out·0x10·음성검사·방송줄·join웹청취·마이크질문·목소리고르기) 완비, 37개 테스트 전원 초록 통과 후 푸시 완료.
+
+막힌 것:
+없음.
+배포 대기: relay (10-17 뒤 대표님 직접 배포 대상).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 17:05 지시 완료: web/download stable 및 build 링크 LANG-74(실기 합격) 갱신
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
