@@ -7,6 +7,60 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 11:45 마스터 지시 완료: 와이어 정본(ask, grant, revoke, question) 기준 일원화 및 하위 호환 완비
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+구현 내용 (site docs/samples/wire-messages.json 정본 기준 완벽 일치화):
+1. 와이어 정본 메시지 4종 일원화:
+   - `ask`: 청취자 질문 대기 요청 (`id, seq, name, lang, src, at`). 릴레이가 도착 순번 `seq` 부여 후 호스트 및 청취자에게 브로드캐스트.
+   - `grant`: 호스트의 수동 지명 (`id, seq, name, lang, max_sec: 90, at`).
+   - `question`: 지명된 질문 본문 및 역번역본 (`id, seq, name, src, srcLang, trans, at`) 전체 배포 (P-16, P-14).
+   - `revoke`: 4대 회수 사유(`host_done`, `silent`, `timeout`, `disconnect`) 기반 발언권 회수 (`id, seq, reason, at`).
+2. 하위 호환성 100% 보존:
+   - 릴레이(`relay/src/room.js`) 및 모의 릴레이(`samples/mock_relay.js`):
+     클라이언트가 `grant`/`ask_grant`, `revoke`/`ask_close`, `ask`/`ask_req` 중 어느 것을 보내도 수용.
+     브로드캐스트 시 정본 와이어(`grant`, `revoke`, `question`, `ask`)와 레거시 와이어(`ask_active`, `ask_ended`, `ask_queue`)를 동시 송출하여 앱과 웹 모두 단절 없이 연동.
+3. 웹 화면(강사 `web/host/`, 청취자 `web/listener/`) 송수신 정본 와이어 일치화:
+   - 강사 화면: `grant` 송출 및 `grant`/`revoke` 수신 완비.
+   - 청취자 화면: `ask` 송출 및 `question`/`revoke` 수신 완비.
+4. 시험 스위트 전원 통과:
+   - `test:wire` 및 `npm test` 35개 스위트(850+건 단언) 전원 통과.
+
+만든·바꾼 파일과 이유:
+- relay/src/room.js: 정본 와이어(ask, grant, revoke, question) 수신 및 브로드캐스트 구현.
+- samples/mock_relay.js: 모의 릴레이 정본 와이어 송수신 동기화.
+- web/host/index.html: 강사 화면 grant/revoke 정본 와이어 송출 및 수신.
+- web/listener/index.html: 청취자 화면 ask 송출 및 question/revoke 수신.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. npm run test:wire:
+와이어 원고 메시지 셋 (정본에서 옮긴 것)
+  ok   grant — max_sec 확인
+  ok   revoke — host_done 회수 사유 보기 포함 확인
+  ok   revoke — silent 회수 사유 보기 포함 확인
+  ok   revoke — timeout 회수 사유 보기 포함 확인
+  ok   revoke — disconnect 회수 사유 보기 포함 확인
+  ok   question — src 원문 텍스트 확인 (P-16)
+  ok   question — srcLang 확인
+  ok   question — trans 역번역 객체 확인 (P-14)
+전부 통과
+
+2. npm test:
+전체 35개 스위트 일괄 통과 (종료 코드 0, 단언 850+건).
+
+한 줄 판정:
+site 정본(wire-messages.json)에 맞추어 릴레이·웹 강사·청취자 화면을 ask·grant·revoke·question으로 일원화하고 하위 호환 완비, 35개 테스트 전원 초록 통과 후 푸시 완료.
+
+막힌 것:
+없음. 와이어 정본 일원화 완료.
+배포 대기: relay (대표님 직접 배포)
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 최신 릴레이 운영 배포 완료 확인(Version ID: 9c03e0bd) 및 이용권 1대 제한 라이브 실측 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
