@@ -7,6 +7,41 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 7번 대기줄 완료: 구매 완료 화면 묶음/개별 QR 및 가이드 화면 코드마다 QR 완비
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+구현 내용 (08:25 7번 및 08:50 주력 완료):
+1. 구매 완료 화면 (`web/buy/index.html`):
+   - 묶음 상품 구매 시: 인쇄용 대형 묶음 QR (`#batch-qr-box`) 한 장, 정원·기간 안내, 인쇄 단추 완비.
+   - 개별 코드 구매 시: 코드마다 QR 하나씩 (`#code-qr-${idx}`, `https://raytok.kr/lic/<code>`), 19언어 손님 안내 문구 완비.
+2. 가이드 실시간 화면 (`web/host/index.html`):
+   - `att-box` 내 "손님 이용권 QR" 섹션 탑재 (`#hostLicenseQrArea`).
+   - "QR 보기" 토글 및 코드 N개 넘김(◀, ▶) 탐색 기능 완비.
+   - `qrcode.js` 기반 로컬 SVG 생성으로 외부 요청 0건 보장.
+3. 전체 테스트 스위트:
+   - `npm test` 35개 스위트 (850+건 단언) 전원 통과.
+
+만든·바꾼 파일과 이유:
+- web/buy/index.html: 완료 화면 묶음 대형 QR 및 개별 코드마다 QR 하나씩 렌더링.
+- web/host/index.html: 가이드 화면에 손님 이용권 QR 토글 및 코드 넘김 UI 구현.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+npm test:
+전체 35개 스위트 일괄 통과 (종료 코드 0, 단언 850+건).
+
+한 줄 판정:
+08:25 7번(코드마다 QR) 및 08:50 묶음 QR UI 탑재 완비, 35개 테스트 전원 초록 통과 후 푸시 완료.
+
+막힌 것:
+없음. 릴레이 배포 준비 완료 상태이며, 배포는 대표님 직접 실행 규칙에 따릅니다.
+배포 대기: relay (대표님 직접 배포)
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 이용권 릴레이 등록 및 묶음 QR 주력 시스템(08:25·08:50 지시) 구현 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
