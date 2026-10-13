@@ -7,6 +7,37 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 17:05 지시 완료: web/download stable 및 build 링크 LANG-74(실기 합격) 갱신
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+구현 내용 (17:05 지시 완비):
+1. 앱 다운로드 페이지 (`download/index.html` 및 `download/en/index.html`):
+   - stable 및 build APK 링크를 대표님 실기 합격 빌드인 `LANG-74`(2026-10-13, `https://expo.dev/artifacts/eas/Xpe9SPgSJAo_bL8pIbXYUZiYKp1N1njHz_HRdEbvQXw.apk`)로 갱신.
+   - 시험 빌드 링크와 안정판 링크 나란히 정상 표출.
+2. 전체 테스트 스위트:
+   - `npm test` 36개 스위트 (870+건 단언) 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- download/index.html: 국문 다운로드 페이지 stable/build 링크 LANG-74로 갱신.
+- download/en/index.html: 영문 다운로드 페이지 stable/build 링크 LANG-74로 갱신.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+npm test:
+전체 36개 스위트 일괄 통과 (종료 코드 0, 단언 870+건).
+
+한 줄 판정:
+web/download 국문 및 영문 stable 링크를 LANG-74 실기 합격 APK로 갱신 완료, 36개 시험 스위트 전원 통과 후 푸시 완료.
+
+막힌 것:
+없음.
+배포 대기: relay (대표님 직접 배포 대상: `cd relay && npm run deploy` 실행 후 `MINT_PRIVATE_KEY` 재등록).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 12:35 긴급 지시 완료: 포트원 V2 실결제 단건 조회 검증 및 PORTONE_API_SECRET 비밀값 자물쇠 탑재
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
