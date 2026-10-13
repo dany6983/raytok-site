@@ -8,7 +8,9 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
+const { verifyCode } = require('../relay/src/mint-core.js');
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.js': 'application/javascript', '.png': 'image/png' };
 
@@ -17,6 +19,8 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
   const hostReceived = [];        // 호스트가 /ws 로 보낸 메시지(해석한 것, 방 구분 없이 시간 순)
   const httpLog = [];             // 릴레이 API 로 온 요청 "METHOD /path"
   const counters = { translate: 0 };
+  const licStore = new Map();
+  const batchStore = new Map();
   let roomSeq = 0;
 
   function newRoom(kind) {
@@ -142,6 +146,71 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
         const room = newRoom(data.kind);
         room.raw = !!data.raw;
         json(200, { code: room.code, host_token: room.token, raw: room.raw ? 1 : 0 });
+      });
+    }
+
+    if (url.pathname === '/license/redeem' && req.method === 'POST') {
+      httpLog.push('POST /license/redeem');
+      return readBody((data) => {
+        const { code, batch, deviceId } = data;
+        if (!deviceId) return json(400, { error: 'bad_request', message: 'deviceId is required' });
+
+        // A. 묶음 QR
+        if (batch) {
+          const rawId = String(batch).replace(/^b_/, '');
+          let b = batchStore.get(rawId);
+          if (!b) return json(404, { error: 'unknown_batch' });
+          if (Date.now() > b.validTo) return json(401, { error: 'expired' });
+          const existing = b.used.find(u => u.deviceId === deviceId);
+          if (existing) {
+            return json(200, { valid: true, activatedAt: existing.activatedAt, expiresAt: existing.expiresAt, seats: b.seats, used: b.used.length });
+          }
+          if (b.used.length >= b.seats) {
+            return json(401, { error: 'no_seats', message: 'All seats taken', seats: b.seats, used: b.used.length });
+          }
+          const activatedAt = Date.now();
+          const expiresAt = activatedAt + (b.days || 1) * 86400 * 1000;
+          b.used.push({ deviceId, activatedAt, expiresAt });
+          return json(200, { valid: true, activatedAt, expiresAt, seats: b.seats, used: b.used.length });
+        }
+
+        // B. 개별 코드
+        if (code) {
+          const v = verifyCode(code);
+          if (!v.ok) return json(401, { error: v.why || 'bad_sig' });
+          const codeHash = crypto.createHash('sha256').update(String(code).trim()).digest('hex');
+          let rec = licStore.get(codeHash);
+          if (rec) {
+            if (rec.deviceId === deviceId) {
+              return json(200, { valid: true, activatedAt: rec.activatedAt, expiresAt: rec.expiresAt, flags: rec.flags, devices: { count: 1, limit: 1 } });
+            }
+            return json(401, { error: 'too_many_devices', count: 1, limit: 1 });
+          }
+          const activatedAt = Date.now();
+          const days = v.claims.days || (v.claims.exp <= 365 ? v.claims.exp : 1);
+          const expiresAt = activatedAt + days * 86400 * 1000;
+          rec = { deviceId, activatedAt, expiresAt, flags: v.claims.flags || 0x01 };
+          licStore.set(codeHash, rec);
+          return json(200, { valid: true, activatedAt, expiresAt, flags: rec.flags, devices: { count: 1, limit: 1 } });
+        }
+        return json(400, { error: 'bad_request' });
+      });
+    }
+
+    if (url.pathname.startsWith('/license/batch') && req.method === 'GET') {
+      httpLog.push('GET /license/batch');
+      let rawId = url.pathname.slice('/license/batch/'.length);
+      if (!rawId || rawId === 'batch') rawId = url.searchParams.get('batch') || '';
+      const b = batchStore.get(rawId.replace(/^b_/, ''));
+      if (!b) return json(404, { error: 'unknown_batch' });
+      const now = Date.now();
+      const todayCount = (b.used || []).filter(u => u.activatedAt >= now - 86400 * 1000).length;
+      return json(200, {
+        batchId: b.batchId,
+        seats: b.seats,
+        usedCount: b.used.length,
+        todayCount,
+        summaryText: `오늘 ${todayCount}명 / 총 ${b.seats}명`
       });
     }
 

@@ -91,25 +91,26 @@ export function publicKeyHexOf(privateKey) {
 
 export const testSeed = () => crypto.createHash('sha256').update(TEST_SEED_TEXT, 'utf8').digest();
 
-export function buildPayload({ keyId, exp, flags, cust }) {
+export function buildPayload({ keyId, exp, days, shelfLife = 0, flags, cust }) {
   const p = Buffer.alloc(PAYLOAD_LEN, 0);
   const k = Number(keyId);
   if (!Number.isInteger(k) || k < 0 || k > 255) throw new Error('키 번호는 0..255');
-  const e = Number(exp);
-  if (!Number.isInteger(e) || e < 0 || e > 0xffffffff) throw new Error('만료는 uint32 초');
+  const val = Number(days !== undefined ? days : exp);
+  if (!Number.isInteger(val) || val < 0 || val > 0xffffffff) throw new Error('만료 또는 일수는 uint32');
   const f = Number(flags);
   if (!Number.isInteger(f) || f < 0 || f > 255) throw new Error('플래그는 0..255');
   const c = String(cust || '');
   if (c.length > 6 || /[^\x20-\x7e]/.test(c)) throw new Error('고객은 ASCII 6자 이내');
   p[0] = k;
-  p.writeUInt32BE(e, 5);
+  if (shelfLife) p.writeUInt32BE(Number(shelfLife), 1);
+  p.writeUInt32BE(val, 5);
   p[9] = f;
   for (let i = 0; i < c.length; i += 1) p[10 + i] = c.charCodeAt(i);
   return p;
 }
 
-export function mintCode({ keyId, exp, flags, cust, privateKey }) {
-  const payload = buildPayload({ keyId, exp, flags, cust });
+export function mintCode({ keyId, exp, days, shelfLife = 0, flags, cust, privateKey }) {
+  const payload = buildPayload({ keyId, exp, days, shelfLife, flags, cust });
   const sig = crypto.sign(null, payload, privateKey);
   if (sig.length !== SIG_LEN) throw new Error('서명 길이가 64가 아니다');
   const code = base32Encode(Buffer.concat([payload, sig]));
@@ -118,10 +119,14 @@ export function mintCode({ keyId, exp, flags, cust, privateKey }) {
 }
 
 export function claimsOf(payload) {
-  const exp = payload.readUInt32BE(5);
+  const val = payload.readUInt32BE(5);
+  const shelfLife = payload.readUInt32BE(1);
   let cust = '';
   for (let i = 10; i < 16; i += 1) if (payload[i]) cust += String.fromCharCode(payload[i]);
-  return { keyId: payload[0], exp, flags: payload[9], cust };
+  const claims = { keyId: payload[0], exp: val, flags: payload[9], cust };
+  if (val <= 365) claims.days = val;
+  if (shelfLife > 0) claims.shelfLife = shelfLife;
+  return claims;
 }
 
 export function verifyCode(code, { now = Date.now(), keys = PUBLIC_KEYS } = {}) {
@@ -139,7 +144,8 @@ export function verifyCode(code, { now = Date.now(), keys = PUBLIC_KEYS } = {}) 
   let good = false;
   try { good = crypto.verify(null, payload, publicKeyFromHex(hex), sig); } catch { good = false; }
   if (!good) return { ok: false, why: 'sig', claims };
-  if (now / 1000 > claims.exp) return { ok: false, why: 'expired', claims };
+  if (claims.exp >= 100000000 && now / 1000 > claims.exp) return { ok: false, why: 'expired', claims };
+  if (claims.shelfLife > 0 && now / 1000 > claims.shelfLife) return { ok: false, why: 'expired', claims };
   return { ok: true, why: '', claims };
 }
 

@@ -1,4 +1,6 @@
 import { verifyLicense } from './license.js';
+import { verifyCode } from './mint-core.js';
+import crypto from 'node:crypto';
 
 export class Room {
   constructor(ctx, env) {
@@ -13,6 +15,9 @@ export class Room {
     this.hostMsgCount = 0;
     this.lastLineAt = null;
     this.silenceWarningSent = false;
+    this.licStore = new Map();
+    this.batchStore = new Map();
+    this.issuedStore = new Map();
 
     // RULE: __ping 원문을 setWebSocketAutoResponse 로 같은 원문 되돌림
     if (typeof WebSocketRequestResponsePair !== 'undefined' && this.ctx.setWebSocketAutoResponse) {
@@ -233,6 +238,191 @@ export class Room {
       }
       return new Response(JSON.stringify({ ok: true, deleted, ip: targetIp }), {
         headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 0-1-A. 이용권 등록 및 검증: POST /internal/license/redeem ({ code, batch, deviceId })
+    if (url.pathname === '/internal/license/redeem' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { code, batch, deviceId } = body;
+        if (!deviceId || typeof deviceId !== 'string') {
+          return new Response(JSON.stringify({ error: 'bad_request', message: 'deviceId is required' }), {
+            status: 400, headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // A. 묶음 QR 분기 ({ batch, deviceId }) (대표님 08:46 주력 사양)
+        if (batch) {
+          const rawId = String(batch).replace(/^b_/, '');
+          let batchData = await this.ctx.storage.get('batch:' + rawId);
+          if (!batchData && this.batchStore) batchData = this.batchStore.get(rawId);
+          if (!batchData) {
+            return new Response(JSON.stringify({ error: 'unknown_batch', message: '존재하지 않는 묶음 QR입니다.' }), {
+              status: 404, headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          if (Date.now() > batchData.validTo) {
+            return new Response(JSON.stringify({ error: 'expired', message: '묶음 QR 유효기간이 만료되었습니다.' }), {
+              status: 401, headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          if (!Array.isArray(batchData.used)) batchData.used = [];
+
+          // 같은 deviceId 재요청: 200 OK (자리 안 씀)
+          const existing = batchData.used.find(u => u.deviceId === deviceId);
+          if (existing) {
+            return new Response(JSON.stringify({
+              valid: true,
+              activatedAt: existing.activatedAt,
+              expiresAt: existing.expiresAt,
+              seats: batchData.seats,
+              used: batchData.used.length
+            }), {
+              status: 200, headers: { 'Content-Type': 'application/json' }
+            });
+          }
+
+          // 자리 수 초과 시 no_seats
+          if (batchData.used.length >= batchData.seats) {
+            return new Response(JSON.stringify({
+              error: 'no_seats',
+              message: '정원이 모두 찼습니다.',
+              seats: batchData.seats,
+              used: batchData.used.length
+            }), {
+              status: 401, headers: { 'Content-Type': 'application/json' }
+            });
+          }
+
+          // 신규 자리 배정
+          const activatedAt = Date.now();
+          const expiresAt = activatedAt + (batchData.days || 1) * 86400 * 1000;
+          batchData.used.push({ deviceId, activatedAt, expiresAt });
+          await this.ctx.storage.put('batch:' + rawId, batchData);
+          if (this.batchStore) this.batchStore.set(rawId, batchData);
+
+          return new Response(JSON.stringify({
+            valid: true,
+            activatedAt,
+            expiresAt,
+            seats: batchData.seats,
+            used: batchData.used.length
+          }), {
+            status: 200, headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // B. 개별 코드 분기 ({ code, deviceId })
+        if (code) {
+          const v = verifyCode(code);
+          if (!v.ok) {
+            return new Response(JSON.stringify({ error: v.why || 'bad_sig', message: '코드 검증 실패' }), {
+              status: 401, headers: { 'Content-Type': 'application/json' }
+            });
+          }
+
+          const codeHash = crypto.createHash('sha256').update(String(code).trim()).digest('hex');
+          let licRecord = await this.ctx.storage.get('lic:' + codeHash);
+          if (!licRecord && this.licStore) licRecord = this.licStore.get(codeHash);
+
+          if (licRecord) {
+            // 같은 기기 재요청: 200 OK
+            if (licRecord.deviceId === deviceId) {
+              return new Response(JSON.stringify({
+                valid: true,
+                activatedAt: licRecord.activatedAt,
+                expiresAt: licRecord.expiresAt,
+                flags: licRecord.flags,
+                devices: { count: 1, limit: 1 }
+              }), {
+                status: 200, headers: { 'Content-Type': 'application/json' }
+              });
+            } else {
+              // 다른 기기: 401 too_many_devices (쿠폰 하나 = 기기 하나)
+              return new Response(JSON.stringify({
+                error: 'too_many_devices',
+                message: '다른 기기에 이미 등록된 이용권입니다 (쿠폰 하나 = 기기 하나).',
+                count: 1,
+                limit: 1
+              }), {
+                status: 401, headers: { 'Content-Type': 'application/json' }
+              });
+            }
+          }
+
+          // 첫 등록
+          const activatedAt = Date.now();
+          const days = v.claims.days || (v.claims.exp <= 365 ? v.claims.exp : 1);
+          const expiresAt = activatedAt + days * 86400 * 1000;
+          licRecord = {
+            deviceId,
+            activatedAt,
+            expiresAt,
+            flags: v.claims.flags || 0x01
+          };
+          await this.ctx.storage.put('lic:' + codeHash, licRecord);
+          if (this.licStore) this.licStore.set(codeHash, licRecord);
+
+          return new Response(JSON.stringify({
+            valid: true,
+            activatedAt,
+            expiresAt,
+            flags: licRecord.flags,
+            devices: { count: 1, limit: 1 }
+          }), {
+            status: 200, headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        return new Response(JSON.stringify({ error: 'bad_request', message: 'code 또는 batch 가 필요합니다.' }), {
+          status: 400, headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'server_error', message: err.message }), {
+          status: 500, headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // 0-1-B. 묶음 QR 상태 조회: GET /internal/license/batch?batch=...
+    if (url.pathname === '/internal/license/batch' && request.method === 'GET') {
+      const rawId = String(url.searchParams.get('batch') || '').replace(/^b_/, '');
+      let batchData = await this.ctx.storage.get('batch:' + rawId);
+      if (!batchData && this.batchStore) batchData = this.batchStore.get(rawId);
+      if (!batchData) {
+        return new Response(JSON.stringify({ error: 'unknown_batch' }), {
+          status: 404, headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const now = Date.now();
+      const oneDayAgo = now - 86400 * 1000;
+      const todayCount = (batchData.used || []).filter(u => u.activatedAt >= oneDayAgo).length;
+      return new Response(JSON.stringify({
+        batchId: batchData.batchId,
+        seats: batchData.seats,
+        usedCount: (batchData.used || []).length,
+        todayCount: todayCount,
+        summaryText: `오늘 ${todayCount}명 / 총 ${batchData.seats}명`
+      }), {
+        status: 200, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 0-1-C. 발급 기록 저장: POST /internal/license/issue_record
+    if (url.pathname === '/internal/license/issue_record' && request.method === 'POST') {
+      const body = await request.json();
+      if (body.batchId) {
+        const rawId = body.batchId.replace(/^b_/, '');
+        await this.ctx.storage.put('batch:' + rawId, body);
+        if (this.batchStore) this.batchStore.set(rawId, body);
+      }
+      if (body.codeHash) {
+        await this.ctx.storage.put('issued:' + body.codeHash, body);
+        if (this.issuedStore) this.issuedStore.set(body.codeHash, body);
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' }
       });
     }
 

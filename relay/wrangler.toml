@@ -4,7 +4,7 @@ compatibility_date = "2024-03-20"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-LICENSE_MAX_DEVICES = "10"
+LICENSE_MAX_DEVICES = "1"
 
 [durable_objects]
 bindings = [

@@ -382,6 +382,37 @@ export default {
 
     const url = new URL(request.url);
 
+    // 0-0-A. Ed25519 이용권 등록 (개별 코드 및 묶음 QR): POST /license/redeem
+    if (url.pathname === '/license/redeem' && request.method === 'POST') {
+      const licId = env.ROOM.idFromName('GLOBAL_LICENSE_MANAGER');
+      const licManager = env.ROOM.get(licId);
+      const bodyText = await request.text();
+      const res = await licManager.fetch(new Request('http://internal/internal/license/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyText
+      }));
+      const resBody = await res.text();
+      return new Response(resBody, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    }
+
+    // 0-0-B. 묶음 QR 현황 조회: GET /license/batch/:id 또는 /license/batch?batch=...
+    if (url.pathname.startsWith('/license/batch') && request.method === 'GET') {
+      let rawId = url.pathname.slice('/license/batch/'.length);
+      if (!rawId || rawId === 'batch') rawId = url.searchParams.get('batch') || '';
+      const licId = env.ROOM.idFromName('GLOBAL_LICENSE_MANAGER');
+      const licManager = env.ROOM.get(licId);
+      const res = await licManager.fetch(new Request(`http://internal/internal/license/batch?batch=${encodeURIComponent(rawId)}`));
+      const resBody = await res.text();
+      return new Response(resBody, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    }
+
     // 0. 토큰 발급 엔드포인트: POST /license/issue (부트스트랩 허용)
     if (url.pathname === '/license/issue' && request.method === 'POST') {
       let body;
@@ -1493,19 +1524,34 @@ export default {
       }
     }
 
-    // 1-2. 쿠폰 온라인 결제 P1: POST /pay/complete (포트원 V2 결제 승인 후 0x02 쿠폰 발급 - MASTER §18 B-2)
+    // 1-2. 쿠폰 온라인 결제 P1: POST /pay/complete (포트원 V2 결제 승인 후 관광권 발급 - MASTER 08:25·08:50)
     if (url.pathname === '/pay/complete' && request.method === 'POST') {
       try {
         const body = await request.json();
-        const privSeed = env.LIC_TEST_SEED || null;
-        const result = handlePaymentComplete({
+        const privSeed = env.MINT_PRIVATE_KEY || env.LIC_TEST_SEED || null;
+        const testKey = !env.MINT_PRIVATE_KEY;
+        const result = await handlePaymentComplete({
           paymentId: body.paymentId,
           productId: body.productId,
           amount: body.amount,
           customerName: body.customerName,
-          testKey: true,
+          testKey,
           privateKeySeed: privSeed
         });
+
+        // DO 저장소(GLOBAL_LICENSE_MANAGER)에 발급 기록 및 묶음 영속화
+        if (result.body && result.body.ok && env.ROOM) {
+          try {
+            const licId = env.ROOM.idFromName('GLOBAL_LICENSE_MANAGER');
+            const licManager = env.ROOM.get(licId);
+            await licManager.fetch(new Request('http://internal/internal/license/issue_record', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(result.body)
+            }));
+          } catch (_) {}
+        }
+
         return new Response(JSON.stringify(result.body), {
           status: result.status,
           headers: {

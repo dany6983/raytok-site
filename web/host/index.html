@@ -475,6 +475,9 @@
             <div style="color: var(--text-muted);">참석</div>
             <div><span class="att-now" id="attNow">0</span> <span style="color: var(--text-muted);">명 (최대 <span id="attMax">0</span>)</span></div>
             <div class="att-langs" id="attLangs">—</div>
+            <div id="batchStatsRow" style="font-size: 0.8rem; color: #38bdf8; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(148, 163, 184, 0.2); display: none;">
+              <span id="batchStatsText">오늘 0명 / 총 0명</span>
+            </div>
           </div>
           <!-- 질문 대기열 및 지명 UI (N:1, question.md) -->
           <div class="ask-box" id="askBox" style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
@@ -1348,6 +1351,15 @@
         rosterApplyAtt(msg, Date.now());
         renderAtt(msg);
         if (live.ended) renderEnd();
+        return;
+      }
+      if (msg.batch_stats) {
+        const row = document.getElementById('batchStatsRow');
+        const txt = document.getElementById('batchStatsText');
+        if (row && txt) {
+          row.style.display = 'block';
+          txt.textContent = msg.batch_stats.summaryText || `오늘 ${msg.batch_stats.today || 0}명 / 총 ${msg.batch_stats.total || 0}명`;
+        }
         return;
       }
       if (msg.hello) {
