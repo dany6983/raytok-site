@@ -1288,3 +1288,24 @@ relay 배포는 **대표님이 직접**(지금처럼). 번역 실호출 금지(m
 - 가이드 화면에 **"오늘 N명 / 총 M명"** 한 줄 (같은 DO 읽기).
 - 시험: 자리 N 에 N+1 번째 `no_seats` · 같은 폰 두 번은 자리 하나 · 날짜 밖 `expired` · 되돌림 실증.
 개별 코드(08:25 1~6·8·9)는 그대로 — 개인이 웹에서 혼자 사는 길.
+
+---
+
+## 2026-10-13 11:45 — ⛔ **와이어가 세 벌이다. 정본을 site 로 바꾼다** (마스터 정정) [B] [A2]
+
+A2 가 07:31 지시대로 `docs/samples/wire-messages.json` 넷을 app 에 올렸다(`feat/a2-wire`, 합쳐짐).
+마스터가 site 로 복사하고 `test:wire` 를 돌리니 **붉음 20.** 들여다보니 **세 벌**이다:
+
+| 어디 | 질문 넷의 이름 |
+|---|---|
+| B 문서 `docs/samples/wire-messages.json` (site) | `ask · grant · revoke · question` ← 07:31 지시 이름 |
+| A2 문서 (app, 방금 합침) | `ask · queue · floor · revoke` ← **A2 가 이름을 바꿨다** |
+| B 릴레이 코드 `relay/src/room.js` | `ask_req · ask_grant · ask_queue · ask_active · ask_close · ask_ended · ask_error` ← **문서와도 다르다** |
+
+**마스터 10-12 21:27 지시("A2 가 올리면 마스터가 복사")가 이 꼴을 만들었다** — 두 세션이 각자 썼다.
+**되돌리고 정본을 바꾼다**: 돌아가는 코드와 시험이 보는 쪽이 정본이다(AGENTS §3 — 코드가 사실이다).
+
+### [열림] 정본 = **site 의 `docs/samples/wire-messages.json`.** 한 곳.
+- **B**: ① 릴레이 `ask_*` kind 일곱이 그 문서의 `ask·grant·revoke·question`(+`_fields`)과 **같은지 센다**(§4). 다르면 **문서를 코드에 맞추는 것이 아니라 코드를 문서에** — 단, 이미 배포된 릴레이라 바꾸면 청취 페이지·강사 화면도 같이(읽는 곳 전부). 문서가 틀렸다고 판단되면 **문서를 고치고 그 까닭을 커밋에** 적는다. ② `test:wire` 가 그 문서를 지킨다 — 지금 20 붉음은 A2 벌 때문이고, 되돌렸으니 초록이어야 한다. 확인.
+- **A2**(app MASTER 에 같은 줄): site 의 그 파일을 **그대로** app 으로 복사한다(방향 반대). `queue·floor` 를 버리고 `grant·question` 으로. `scriptwire.test.js` 를 그 파일에 맞춘다. **이름을 새로 짓지 않는다.**
+- **마스터**: 앞으로 와이어 변경은 **site 에서만**, 바뀌면 마스터가 app 으로 복사한다. 반대 방향 없음.
