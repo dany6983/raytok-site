@@ -7,6 +7,44 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 최신 릴레이 운영 배포 완료 확인(Version ID: 9c03e0bd) 및 이용권 1대 제한 라이브 실측 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+운영 배포 및 라이브 실측 결과:
+1. 최신 Cloudflare Worker 배포 완료 확인:
+   - 트리거 도메인: `https://raytok-relay.raytok.workers.dev`
+   - 최신 버전 ID: `9c03e0bd-f41b-43d8-b061-3fcfaad089f3` (배포 소요: 0.69초)
+2. 운영 릴레이 엔드포인트 라이브 실측 전원 성공:
+   - `OPTIONS /license/redeem`: 200 OK (CORS 통과).
+   - `POST /license/redeem` 빈 본문: 400 Bad Request (`{ error: 'bad_request', message: 'deviceId is required' }`).
+   - `GET /license/batch/test_batch`: 404 (`{ error: 'unknown_batch' }`).
+   - 실측 발급 쿠폰(Ed25519) 기기 1 등록: 200 OK (`valid: true, devices: { count: 1, limit: 1 }`).
+   - 실측 기기 1 동일 기기 재요청: 200 OK (자리 차지 없이 통과).
+   - 실측 기기 2(다른 기기) 등록 시도: 401 Unauthorized (`{ error: 'too_many_devices', limit: 1 }`) 완벽 차단.
+3. 배포 대기: 없음 (모두 배포 완료).
+
+만든·바꾼 파일과 이유:
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+라이브 운영 릴레이(https://raytok-relay.raytok.workers.dev) 실측:
+Minted Code: 01NM8HBV000000819H4N...
+Live Device 1 등록 Status: 200 { valid: true, activatedAt: 1791860348281, expiresAt: 1791946748281, flags: 1, devices: { count: 1, limit: 1 } }
+Live Device 1 재요청 Status: 200 { valid: true, activatedAt: 1791860348281, expiresAt: 1791946748281, flags: 1, devices: { count: 1, limit: 1 } }
+Live Device 2 등록 차단 Status: 401 { error: 'too_many_devices', message: '다른 기기에 이미 등록된 이용권입니다 (쿠폰 하나 = 기기 하나).', count: 1, limit: 1 }
+
+한 줄 판정:
+최신 릴레이 Worker 운영 배포(9c03e0bd) 확인 및 라이브 /license/redeem 1기기 1쿠폰 자물쇠(기기 1 등록 200, 재요청 200, 둘째 기기 401 차단) 실측 완수.
+
+막힌 것:
+없음. 모든 프론트엔드와 릴레이 운영 배포 및 실측이 완료되었으며, A1 앱 연동 및 마스터의 지시를 대기합니다.
+배포 대기: 없음 (모두 배포 완료)
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 7번 대기줄 완료: 구매 완료 화면 묶음/개별 QR 및 가이드 화면 코드마다 QR 완비
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
