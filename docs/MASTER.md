@@ -1309,3 +1309,40 @@ A2 가 07:31 지시대로 `docs/samples/wire-messages.json` 넷을 app 에 올�
 - **B**: ① 릴레이 `ask_*` kind 일곱이 그 문서의 `ask·grant·revoke·question`(+`_fields`)과 **같은지 센다**(§4). 다르면 **문서를 코드에 맞추는 것이 아니라 코드를 문서에** — 단, 이미 배포된 릴레이라 바꾸면 청취 페이지·강사 화면도 같이(읽는 곳 전부). 문서가 틀렸다고 판단되면 **문서를 고치고 그 까닭을 커밋에** 적는다. ② `test:wire` 가 그 문서를 지킨다 — 지금 20 붉음은 A2 벌 때문이고, 되돌렸으니 초록이어야 한다. 확인.
 - **A2**(app MASTER 에 같은 줄): site 의 그 파일을 **그대로** app 으로 복사한다(방향 반대). `queue·floor` 를 버리고 `grant·question` 으로. `scriptwire.test.js` 를 그 파일에 맞춘다. **이름을 새로 짓지 않는다.**
 - **마스터**: 앞으로 와이어 변경은 **site 에서만**, 바뀌면 마스터가 app 으로 복사한다. 반대 방향 없음.
+
+---
+
+## 2026-10-13 12:35 — ⛔⛔ **[열림] B 긴급: `/pay/complete` 가 결제를 확인하지 않고 코드를 찍는다** (마스터, 대표님 12:35 "지움") [B]
+
+**다른 줄 전부 멈추고 이것부터.** 돈이다(§13 예외).
+
+### 무엇이
+`relay/src/pay.js` `handlePaymentComplete` 는 손님 브라우저가 보낸 `paymentId · productId · amount` 를
+**그대로 믿는다.** 포트원에 "이 결제가 실제로 됐나"를 **한 번도 묻지 않는다.** `PORTONE_API_SECRET` 은
+`pg-switchover.md` 에 적혀 있을 뿐 `relay/src/*.js` 어디에서도 읽지 않는다(grep 0건).
+상품표 금액만 맞춰 보내면 **누구나** 운영 키 코드를 받는다. 저장소가 공개라 상품 ID·가격이 다 보인다.
+묵힘 90일 — 지금 쌓아 11월에 쓸 수 있다.
+
+### 지금 상태
+대표님이 12:35 에 Worker 비밀값 `MINT_PRIVATE_KEY` 를 **지웠다.** 릴레이는 시험 키(0)로만 찍고,
+정식 앱은 키 0 을 거부한다 → **구멍은 닫혀 있다. 대신 운영 발급도 멈춰 있다.** 이 줄이 끝나야 다시 연다.
+
+### 고칠 것 — 코드 찍기 **전에** 서버가 포트원에 묻는다
+1. `handlePaymentComplete` 맨 앞(멱등성 검사 뒤, 상품 검증 앞)에 **포트원 V2 결제 단건 조회**:
+   `GET https://api.portone.io/payments/{paymentId}` · 헤더 `Authorization: PortOne {env.PORTONE_API_SECRET}`.
+   응답에서 **`status === 'PAID'`** · **`amount.total === product.price`** · **`orderName`(또는 customData) 의 productId == body.productId**
+   셋이 다 맞을 때만 찍는다. 하나라도 아니면 `402 payment_not_verified` (무엇이 틀렸는지 한 줄).
+   포트원이 답을 안 주면(시간 초과·5xx) **찍지 않고** `503 pg_unavailable` — 모름은 됨이 아니다(§20).
+2. `env.PORTONE_API_SECRET` 이 **없으면** `/pay/complete` 는 `503 pg_secret_missing` 으로 **아예 서지 않는다.**
+   시험은 `samples/mock_relay.js` 가 포트원을 흉내 낸다(`PORTONE_MOCK` 같은 환경변수로 mock 주소를 받는다 —
+   운영에서는 그 변수가 없으니 실주소만 간다).
+3. `/pay/webhook` 은 서명만 보고 `{ok:true}` 다 — 그대로 둔다. **발급은 `/pay/complete` 한 곳**(두 곳이면 두 번 찍힌다).
+4. 시험(`samples/license_redeem_test.js` 또는 새 파일): ① PAID 가 아니면 안 찍힘 ② 금액 다르면 안 찍힘 ③ 상품 다르면 안 찍힘
+   ④ 포트원 무응답이면 안 찍힘 ⑤ 비밀값 없으면 503. **되돌림 실증 2건**(조회를 빼면 ①이 붉다 · 비밀값 검사를 빼면 ⑤가 붉다).
+5. 끝났다고 보는 기준: 위 다섯 초록 · `npm test` 전부 초록 · REPORT 에 "포트원 조회가 들어간 줄 번호".
+   **배포는 대표님.** 배포 뒤 마스터가 대표님께 `MINT_PRIVATE_KEY` 다시 넣으시라고 한다.
+
+### 왜 놓쳤나 (적어 둔다)
+`samples/pay_test.js` 1~9 는 **모의 릴레이** 안에서 돈다 — 포트원을 흉내 내는 쪽도, 묻는 쪽도 없이 통과했다.
+"결제 완료 → 코드" 만 봤고 "**결제가 진짜인가**"를 묻는 시험이 없었다. §20 의 반대 얼굴 — 답이 **오지 않는**
+경우가 아니라 **묻지도 않는** 경우. 이번 시험 ④·⑤가 그 자리다.
