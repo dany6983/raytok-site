@@ -7,6 +7,94 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 이용권 릴레이 등록 및 묶음 QR 주력 시스템(08:25·08:50 지시) 구현 완수
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+구현 내용 (MASTER 08:25 · 08:50 사양 완비):
+1. 관광권 0x01 통일 및 기간형(일수) 구조 개편 (08:25 ①, ②):
+   - `relay/src/pay.js`: 상품 플래그를 `0x02`에서 `FLAG.host` (`0x01`)로 전면 통일, 상품명을 "관광 1일권 (1장)", "관광 7일권 (1장)"으로 변경.
+   - `relay/src/mint-core.js`: payload `[5..8]`에 발급 시각 대신 일수(`days`: 1, 7) + 묵힘 한도(`shelfLife`: 90일) 지원, Crockford Base32 및 Ed25519 서명 정본 벡터 호환 유지.
+2. 묶음 QR 주력 시스템 탑재 (08:50 대표님 08:46 "기본안"):
+   - 상품 카탈로그에 묶음 상품(`bus_1d_20`: 버스 1대 당일 투어 20명 묶음 QR 등) 추가.
+   - 결제 완료 시 `batch:${batchId}` = {seats: 20, days: 1, validFrom, validTo, used: []} DO 저장소 기록 및 `https://raytok.kr/lic/b/<batch>` 묶음 QR 생성.
+   - `POST /license/redeem`의 `{batch, deviceId}` 분기: 정원 내 신규 기기는 200 OK (자리 배정), 동일 기기 재스캔은 200 OK (기존 자리 유지, 자리 차지 없음), 정원 초과 시 401 `no_seats` 차단, 유효기간 초과 시 401 `expired` 차단.
+3. 개별 코드 등록 자물쇠 (08:25 ③, ④, ⑤, ⑥):
+   - `POST /license/redeem`의 `{code, deviceId}` 분기: Ed25519 서명 검증 -> DO `lic:${sha256(code)}` 등록. 동일 기기는 200 OK, 다른 기기는 401 `too_many_devices` (쿠폰 하나 = 기기 하나, LICENSE_MAX_DEVICES=1).
+   - 발급 기록 `issued:${sha256(code)}` DO 저장소 연동 지원.
+   - 키 1 분기: `env.MINT_PRIVATE_KEY`가 있으면 키 1, 없으면 키 0(시험).
+   - `wrangler.toml`의 `LICENSE_MAX_DEVICES`를 `"1"`로 통일.
+4. 가이드 화면 현황 표출 (08:50):
+   - `web/host/index.html`: `att-box`에 `#batchStatsRow` ("오늘 N명 / 총 M명") 추가 및 `batch_stats` 수신 시 실시간 연동.
+   - `GET /license/batch/:id` 엔드포인트 제공.
+5. 검증 시험 및 되돌림 실증:
+   - 신규 `samples/license_redeem_test.js` (27건 단언 전원 통과).
+   - 되돌림 실증 2건: 정원 초과 손님 `no_seats` 누락 시 실패 입증, 2번째 기기 `too_many_devices` 누락 시 실패 입증.
+   - `npm test`: 전체 35개 스위트 (850+건 단언) 전원 통과.
+
+만든·바꾼 파일과 이유:
+- relay/src/mint-core.js: 일수(days) + 묵힘 한도(shelfLife: 90일) 페이로드 및 검증 로직 반영.
+- relay/src/pay.js: 0x01 관광권 플래그 통일, 묶음 상품(bus_1d_20 등) 추가, DO 저장소 지원.
+- relay/src/room.js: DO 내부 `/internal/license/redeem`, `/internal/license/batch`, issue_record 핸들러 구현.
+- relay/src/index.js: `POST /license/redeem`, `GET /license/batch/:id` 엔드포인트 라우팅 및 `GLOBAL_LICENSE_MANAGER` DO 연동.
+- relay/wrangler.toml: LICENSE_MAX_DEVICES = "1" 설정.
+- samples/mock_relay.js: 모의 릴레이에 `/license/redeem` 및 `/license/batch` 핸들러 동기화.
+- samples/pay_test.js: 0x01 플래그 통일 및 비동기 handlePaymentComplete 대응.
+- samples/license_redeem_test.js: [신규] 개별/묶음 redeem, N+1번째 no_seats, 1기기 1쿠폰 자물쇠, 되돌림 실증 2건 테스트.
+- web/host/index.html: 가이드 화면 "오늘 N명 / 총 M명" 한 줄 표출 UI 및 핸들러 연동.
+- package.json: `test:license-redeem` 스크립트 등록 및 `npm test` 연쇄 체인 추가.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. node samples/license_redeem_test.js:
+[Test 1] 관광 1일권(0x01, days: 1) 발급 및 Ed25519 유효성
+  [PASS] 코드 128자 일치
+[Test 2] 개별 코드 등록 (/license/redeem): 기기 1대 제한 자물쇠
+  [PASS] 기기 1 최초 등록 200 OK
+  [PASS] valid: true 응답 확인
+  [PASS] activatedAt 및 expiresAt 타임스탬프 부여
+  [PASS] LICENSE_MAX_DEVICES=1 (기기 1대 제한)
+  [PASS] 동일 기기 재요청 200 OK (자리 차지 없음)
+  [PASS] 다른 기기(2번째 기기) 등록 시 401 차단
+  [PASS] error: too_many_devices 확인
+  [PASS] 잘못된 코드(서명 오류) 401 차단
+[Test 3] 08:50 주력 사양: 묶음 QR 발급 및 N+1번째 no_seats 차단
+  [PASS] 묶음 상품 결제 승인 200 OK
+  [PASS] isBatch: true 확인
+  [PASS] 묶음 QR 링크 형식 확인 (/lic/b/<batch>)
+  [PASS] 묶음 손님 1 등록 200 OK
+  [PASS] 손님 1 등록 후 used=1 확인
+  [PASS] 손님 1 재스캔 200 OK (자리 보존)
+  [PASS] 재스캔 시 used=1 유지 (자리 증가 없음)
+  [PASS] 묶음 손님 2 등록 200 OK (used=2)
+  [PASS] 묶음 손님 3 등록 200 OK (used=3 만석)
+  [PASS] 자리 N(3)에 N+1번째 손님 4 등록 시 401 차단
+  [PASS] error: no_seats 확인
+  [PASS] 유효기간 지난 묶음 QR 401 차단
+  [PASS] error: expired 확인
+[Test 4] 가이드 화면 현황 조회: 오늘 N명 / 총 M명
+  [PASS] 가이드 batch 현황 조회 200 OK
+  [PASS] 정원 3명, 사용 3명 확인
+  [PASS] 요약 문구 "오늘 3명 / 총 3명" 확인
+[Test 5] 특허/비즈니스 자물쇠 되돌림 실증 2건
+  [PASS] 정원 초과 손님 no_seats 차단 누락 시 단언 실패 입증 (되돌림 실증 1)
+  [PASS] 2번째 기기 too_many_devices 차단 누락 시 단언 실패 입증 (되돌림 실증 2)
+전부 통과 (27건)
+
+2. npm test:
+전체 35개 스위트 일괄 통과 (종료 코드 0, 단언 850+건).
+
+한 줄 판정:
+이용권 0x01 관광권 통일, POST /license/redeem(기기 1대 제한) 및 묶음 QR 주력 시스템(정원 초과 no_seats, 가이드 오늘 N명/총 M명) 완비, 35개 테스트 전원 초록 통과.
+
+막힌 것:
+없음. 릴레이 배포 준비 완료 상태이며, 배포는 대표님 직접 실행 규칙에 따릅니다.
+배포 대기: relay (대표님 직접 배포)
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 릴레이 운영 배포 완료 확인(Version ID: c2c6cd03) 및 라이브 엔드포인트 실측 완수
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
