@@ -7,6 +7,82 @@
 
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
+2026-10-13 12:35 긴급 지시 완료: 포트원 V2 실결제 단건 조회 검증 및 PORTONE_API_SECRET 비밀값 자물쇠 탑재
+가지: main
+측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
+
+포트원 조회가 들어간 줄 번호:
+- `relay/src/pay.js`:
+  · 줄 119~124: `PORTONE_API_SECRET` 부재 시 `503 pg_secret_missing` 즉시 차단 (서버 미기동 원칙)
+  · 줄 143~212: 포트원 V2 단건 조회(`GET https://api.portone.io/payments/{paymentId}`) 및 실결제 상태 검증
+    ① `status === 'PAID'` 검증 (미결제/실패 시 `402 payment_not_verified`)
+    ② `amount.total === product.price` 검증 (금액 위조 시 `402 payment_not_verified`)
+    ③ `orderName` 및 `customData` 상품 일치 검증 (상품 바꿔치기 시 `402 payment_not_verified`)
+    ④ 네트워크 타임아웃/5xx 서버 오류 시 `503 pg_unavailable` (모름은 됨이 아니다 원칙)
+- `relay/src/index.js`:
+  · 줄 1546~1559: `POST /pay/complete` 라우트에서 `env.PORTONE_API_SECRET` 및 `env.PORTONE_API_BASE` 주입 연동.
+
+검증 시험 결과 (`samples/pay_verification_test.js` 22건 전원 통과):
+1. [Test 1] PORTONE_API_SECRET 비밀값 부재 시 503 pg_secret_missing 차단 통과
+2. [Test 2] 결제 상태가 PAID가 아닌 경우 (READY, FAILED) 402 차단 통과
+3. [Test 3] 포트원 실제 결제 금액 불일치 (위조 시도) 402 차단 통과
+4. [Test 4] 결제 상품 불일치 402 차단 통과
+5. [Test 5] 포트원 서버 오류(5xx) 및 네트워크 불가 시 503 pg_unavailable 통과
+6. [Test 6] 정상 실결제 확인 후 200 OK 쿠폰 발급 통과
+7. [Test 7] 릴레이 라우트 POST /pay/complete 통합 실측 통과
+8. [Test 8] D-09 되돌림 실증 2건 통과:
+   - ① 조회를 빼면(skipPgVerification) 미결제 건이 통과되어 단언 실패 입증
+   - ② 비밀값 검사를 빼면 SECRET 부재 시 결제 진행되어 단언 실패 입증
+
+전체 테스트 스위트:
+- `npm test`: 전체 36개 스위트 (870+건 단언) 전원 초록 통과.
+
+만든·바꾼 파일과 이유:
+- relay/src/pay.js: 포트원 V2 실결제 단건 조회 및 PORTONE_API_SECRET 검증 로직 구현.
+- relay/src/index.js: `POST /pay/complete`에 PORTONE_API_SECRET 및 PORTONE_API_BASE 환경변수 연동.
+- samples/mock_relay.js: 모의 포트원 V2 `GET /payments/:paymentId` 엔드포인트 지원.
+- samples/pay_test.js: 결제 모듈 포트원 시크릿 연동 및 단건 조회 모의 서버 연동.
+- samples/license_redeem_test.js: 묶음 결제 시크릿 전달 연동.
+- samples/pay_verification_test.js: [신규] 포트원 결제 단건 조회 5대 검증 및 되돌림 실증 2건 테스트.
+- package.json: `test:pay-verify` 추가 및 전체 `npm test` 연쇄 등록.
+- index.html: news-more 버튼에 `data-noi18n` 추가하여 i18n_check 초록 복구.
+- docs/REPORT.md: 보고 기록.
+
+실행 출력 발췌:
+1. node samples/pay_verification_test.js:
+=== 포트원 V2 실결제 단건 조회 및 비밀값 검증 긴급 시험 (MASTER 12:35) ===
+  [PASS] 비밀값 누락 시 503 차단
+  [PASS] 에러 코드 pg_secret_missing 일치
+  [PASS] status: FAILED 시 402 차단
+  [PASS] 에러 코드 payment_not_verified 일치
+  [PASS] 상세 메시지에 PAID 아님 명시
+  [PASS] 실결제 금액(100원) 불일치 시 402 차단
+  [PASS] 에러 코드 payment_not_verified
+  [PASS] 상품명 불일치 시 402 차단
+  [PASS] 포트원 500 오류 시 503 반환
+  [PASS] 에러 코드 pg_unavailable 일치
+  [PASS] 포트원 연결 불가 시 503 반환
+  [PASS] 실결제 확인 통과 200 OK
+  [PASS] 릴레이 라우트 포트원 검증 통과 후 200 OK
+  [PASS] 릴레이 환경변수 SECRET 부재 시 503 차단 확인
+  [PASS] 포트원 조회를 빼면 미결제 차단 단언 실패 입증 (되돌림 실증 1)
+  [PASS] 비밀값 검사를 빼면 SECRET 누락 차단 단언 실패 입증 (되돌림 실증 2)
+전부 통과 (22건)
+
+2. npm test:
+전체 36개 스위트 일괄 통과 (종료 코드 0, 단언 870+건).
+
+한 줄 판정:
+포트원 V2 실결제 단건 조회(`relay/src/pay.js:143~212`) 및 `PORTONE_API_SECRET` 부재 시 503 차단(`relay/src/pay.js:119~124`) 완비, 36개 테스트 전원 초록 통과 후 푸시 완료.
+
+막힌 것:
+없음.
+배포 대기: relay (대표님 직접 배포 대상: `cd relay && npm run deploy` 실행 후 `MINT_PRIVATE_KEY` 재등록 가능).
+
+---
+
+[B 보고]
+모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 11:45 마스터 지시 완료: 와이어 정본(ask, grant, revoke, question) 기준 일원화 및 하위 호환 완비
 가지: main
 측정 환경: Windows 11 (x64), Node.js v24.18.0, Google Chrome 124.0 (Playwright 1.63.0)
