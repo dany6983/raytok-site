@@ -296,10 +296,20 @@
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
       <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
+      <button class="tool-btn" id="btn-open-voice-picker" title="목소리 고르기">🗣️ 목소리</button>
       <button class="tool-btn" id="btn-ask" aria-label="ask question" data-i18n="btn_ask" style="display: none;">✋ 질문</button>
       <button class="tool-btn" id="btn-save" aria-label="save transcript" title="내 기록 받기 (TXT)">⬇ TXT</button>
       <button class="tool-btn tool-btn-screen" id="btn-fullscreen" aria-label="fullscreen">⛶</button>
     </div>
+  </div>
+
+  <!-- 목소리 선택 모달 (8번: 그 언어 음성 최대 3개 + 미리보기 + localStorage) -->
+  <div id="voice-picker-modal" style="display:none; position:fixed; bottom:70px; left:16px; z-index:60; width:280px; background:var(--card-bg, #1e293b); border:1px solid var(--border); border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="font-weight:bold; font-size:14px; color:var(--text);">목소리 선택</div>
+      <button class="tool-btn" id="btn-close-voice-picker" style="padding:2px 8px;">✕</button>
+    </div>
+    <div id="voice-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 
   <!-- 질문 모달 (N:1, question.md) -->
@@ -816,13 +826,169 @@
       }
     }
 
+    // 8번: 청취 페이지 「목소리」 — 그 언어 음성 최대 3개 + ▶ 미리듣기, localStorage 기억
+    function getRankedVoicesForLang(lang) {
+      if (typeof window.speechSynthesis === 'undefined') return [];
+      const voices = speechSynthesis.getVoices() || [];
+      const norm = (lang || selectedLang || '').toLowerCase().split('-')[0];
+      const matching = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(norm));
+      matching.sort((a, b) => {
+        const score = (v) => {
+          let s = 0;
+          if (v.localService) s += 10;
+          const n = (v.name || '').toLowerCase();
+          if (n.includes('premium') || n.includes('enhanced') || n.includes('natural')) s += 5;
+          if (!n.includes('network')) s += 3;
+          return s;
+        };
+        return score(b) - score(a);
+      });
+      return matching.slice(0, 3);
+    }
+
     // TTS 설정
     function updateVoice() {
-      const voices = speechSynthesis.getVoices();
-      currentVoice = voices.find(v => v.lang.startsWith(selectedLang)) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+      const ranked = getRankedVoicesForLang(selectedLang);
+      const savedUri = localStorage.getItem('raytok_voice_uri_' + selectedLang);
+      if (savedUri) {
+        currentVoice = ranked.find(v => v.voiceURI === savedUri) || ranked[0] || null;
+      } else {
+        currentVoice = ranked[0] || null;
+      }
       checkOsVoiceSupport(selectedLang);
     }
     speechSynthesis.onvoiceschanged = updateVoice;
+
+    function renderVoicePicker() {
+      const container = document.getElementById('voice-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const ranked = getRankedVoicesForLang(selectedLang);
+      if (!ranked.length) {
+        container.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:4px;">사용 가능한 목소리가 없습니다.</div>';
+        return;
+      }
+      ranked.forEach(v => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#0f172a; padding:8px 10px; border-radius:6px; font-size:12px; cursor:pointer;';
+        const isCur = currentVoice && currentVoice.voiceURI === v.voiceURI;
+        if (isCur) row.style.border = '1px solid var(--primary)';
+
+        const nameEl = document.createElement('div');
+        nameEl.style.cssText = `overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; color:${isCur ? 'var(--primary)' : 'var(--text)'}; font-weight:${isCur ? 'bold' : 'normal'};`;
+        nameEl.textContent = (isCur ? '✓ ' : '') + v.name;
+
+        const playBtn = document.createElement('button');
+        playBtn.className = 'tool-btn';
+        playBtn.style.cssText = 'padding:2px 8px; font-size:11px;';
+        playBtn.textContent = '▶';
+        playBtn.onclick = (e) => {
+          e.stopPropagation();
+          const uttr = new SpeechSynthesisUtterance('안녕하세요');
+          uttr.voice = v;
+          uttr.lang = v.lang;
+          speechSynthesis.speak(uttr);
+        };
+
+        row.appendChild(nameEl);
+        row.appendChild(playBtn);
+        row.onclick = () => {
+          currentVoice = v;
+          localStorage.setItem('raytok_voice_uri_' + selectedLang, v.voiceURI);
+          renderVoicePicker();
+        };
+        container.appendChild(row);
+      });
+    }
+
+    const btnOpenVoicePicker = document.getElementById('btn-open-voice-picker');
+    const voicePickerModal = document.getElementById('voice-picker-modal');
+    const btnCloseVoicePicker = document.getElementById('btn-close-voice-picker');
+    if (btnOpenVoicePicker && voicePickerModal) {
+      btnOpenVoicePicker.onclick = () => {
+        voicePickerModal.style.display = voicePickerModal.style.display === 'block' ? 'none' : 'block';
+        if (voicePickerModal.style.display === 'block') renderVoicePicker();
+      };
+    }
+    if (btnCloseVoicePicker && voicePickerModal) {
+      btnCloseVoicePicker.onclick = () => { voicePickerModal.style.display = 'none'; };
+    }
+
+    // 7번: 브라우저 청취자 마이크 — N:1 질문
+    let activeSpeechRec = null;
+    let activeMediaStream = null;
+
+    async function startListenerMicQuestion(askId, askSeq) {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRec) {
+        try {
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            activeMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+          }
+          activeSpeechRec = new SpeechRec();
+          activeSpeechRec.lang = selectedLang || 'ko';
+          activeSpeechRec.continuous = true;
+          activeSpeechRec.interimResults = false;
+          activeSpeechRec.onresult = (e) => {
+            const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
+            if (transcript && ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                kind: 'question',
+                id: askId,
+                seq: askSeq,
+                name: myName || '익명',
+                src: transcript,
+                srcLang: selectedLang || 'ko',
+                at: Date.now()
+              }));
+            }
+          };
+          activeSpeechRec.start();
+        } catch (_) {
+          showAskModalFallback(askId, askSeq);
+        }
+      } else {
+        showAskModalFallback(askId, askSeq);
+      }
+    }
+
+    function stopListenerMicQuestion() {
+      if (activeSpeechRec) {
+        try { activeSpeechRec.stop(); } catch (_) {}
+        activeSpeechRec = null;
+      }
+      if (activeMediaStream) {
+        try { activeMediaStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+        activeMediaStream = null;
+      }
+      const askModal = document.getElementById('ask-modal');
+      if (askModal) askModal.style.display = 'none';
+    }
+
+    function showAskModalFallback(askId, askSeq) {
+      const askModal = document.getElementById('ask-modal');
+      const askInput = document.getElementById('ask-input-text');
+      const submitBtn = document.getElementById('btn-ask-submit');
+      if (askModal && askInput && submitBtn) {
+        askModal.style.display = 'block';
+        askInput.focus();
+        submitBtn.onclick = () => {
+          const text = askInput.value.trim();
+          if (text && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              kind: 'question',
+              id: askId,
+              seq: askSeq,
+              name: myName || '익명',
+              src: text,
+              srcLang: selectedLang || 'ko',
+              at: Date.now()
+            }));
+            askModal.style.display = 'none';
+          }
+        };
+      }
+    }
 
     // 소리 단추 — 켜고 끄는 곳은 여기 하나(단추 글·모양이 늘 상태와 같게).
     let ttsTouched = false;   // 청취자가 단추를 직접 눌렀나 (L4-3: 원고 줄 기본 끔을 가를 때 본다)
