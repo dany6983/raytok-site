@@ -478,6 +478,20 @@
             <div id="batchStatsRow" style="font-size: 0.8rem; color: #38bdf8; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(148, 163, 184, 0.2); display: none;">
               <span id="batchStatsText">오늘 0명 / 총 0명</span>
             </div>
+            <!-- 산 코드 N개 또는 묶음 QR 보기 (08:25 7번: 가이드 화면에 코드마다 QR) -->
+            <div id="hostLicenseQrArea" style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; text-align: center;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: #38bdf8;">손님 이용권 QR</span>
+                <button id="btnToggleLicQr" class="btn-action" style="font-size: 0.75rem;">QR 보기</button>
+              </div>
+              <div id="hostLicQrBox" style="display: none; background: #fff; padding: 8px; border-radius: 6px; margin: 8px auto; width: 180px; height: 180px; align-items: center; justify-content: center;"></div>
+              <div id="hostLicQrDesc" style="font-size: 0.75rem; color: var(--text-muted); display: none;">손님이 찍으면 즉시 이용권이 활성화됩니다.</div>
+              <div id="hostLicNav" style="display: none; justify-content: center; gap: 8px; align-items: center; margin-top: 6px;">
+                <button id="btnLicPrev" class="btn-action">◀</button>
+                <span id="hostLicIndexText" style="font-size: 0.75rem; color: var(--text-muted);">1 / 1</span>
+                <button id="btnLicNext" class="btn-action">▶</button>
+              </div>
+            </div>
           </div>
           <!-- 질문 대기열 및 지명 UI (N:1, question.md) -->
           <div class="ask-box" id="askBox" style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
@@ -1206,6 +1220,78 @@
       q.addData(text);
       q.make();
       box.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    }
+
+    let hostLicCodes = [];
+    let hostLicIndex = 0;
+
+    function renderHostLicQr() {
+      const box = document.getElementById('hostLicQrBox');
+      const desc = document.getElementById('hostLicQrDesc');
+      const nav = document.getElementById('hostLicNav');
+      const idxTxt = document.getElementById('hostLicIndexText');
+      if (!box) return;
+      if (!hostLicCodes.length) {
+        const defaultLink = `https://raytok.kr/lic/b/${live.code || 'default'}`;
+        hostLicCodes = [defaultLink];
+      }
+      const curLink = hostLicCodes[hostLicIndex];
+      box.innerHTML = '';
+      if (typeof qrcode === 'function') {
+        const q = qrcode(0, 'M');
+        q.addData(curLink);
+        q.make();
+        box.innerHTML = q.createSvgTag({ cellSize: 3, margin: 1, scalable: true });
+      } else {
+        box.textContent = curLink;
+      }
+      box.style.display = 'flex';
+      if (desc) desc.style.display = 'block';
+      if (nav && idxTxt) {
+        if (hostLicCodes.length > 1) {
+          nav.style.display = 'flex';
+          idxTxt.textContent = `${hostLicIndex + 1} / ${hostLicCodes.length}`;
+        } else {
+          nav.style.display = 'none';
+        }
+      }
+    }
+
+    const btnToggleLicQr = document.getElementById('btnToggleLicQr');
+    if (btnToggleLicQr) {
+      btnToggleLicQr.addEventListener('click', () => {
+        const box = document.getElementById('hostLicQrBox');
+        if (box && box.style.display === 'flex') {
+          box.style.display = 'none';
+          const desc = document.getElementById('hostLicQrDesc');
+          const nav = document.getElementById('hostLicNav');
+          if (desc) desc.style.display = 'none';
+          if (nav) nav.style.display = 'none';
+          btnToggleLicQr.textContent = 'QR 보기';
+        } else {
+          renderHostLicQr();
+          btnToggleLicQr.textContent = 'QR 닫기';
+        }
+      });
+    }
+
+    const btnLicPrev = document.getElementById('btnLicPrev');
+    if (btnLicPrev) {
+      btnLicPrev.addEventListener('click', () => {
+        if (hostLicIndex > 0) {
+          hostLicIndex--;
+          renderHostLicQr();
+        }
+      });
+    }
+    const btnLicNext = document.getElementById('btnLicNext');
+    if (btnLicNext) {
+      btnLicNext.addEventListener('click', () => {
+        if (hostLicIndex < hostLicCodes.length - 1) {
+          hostLicIndex++;
+          renderHostLicQr();
+        }
+      });
     }
 
     async function createRoom() {

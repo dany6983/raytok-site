@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/web/common/theme.css">
   <!-- 포트원 V2 결제 SDK -->
   <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+  <script src="/web/vendor/qrcode.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -336,6 +337,39 @@
     function renderResult(data) {
       document.getElementById('view-buy').style.display = 'none';
       document.getElementById('view-result').style.display = 'block';
+
+      if (data.isBatch) {
+        document.getElementById('result-desc').textContent = `${data.productName} 결제가 완료되었습니다.`;
+        const listEl = document.getElementById('code-list');
+        listEl.innerHTML = `
+          <div class="code-card" style="display:block; text-align:center; padding: 24px;">
+            <div style="font-size: 16px; font-weight: bold; color: var(--primary-color); margin-bottom: 8px;">🚌 버스 1대 묶음 QR (인쇄 및 부착용)</div>
+            <div style="font-size: 13px; color: var(--ink-mid); margin-bottom: 16px;">
+              정원: <b>${data.seats}명</b> · 이용 기간: <b>${data.days}일</b><br>
+              가이드 또는 인솔자가 이 QR 한 장을 버스 앞좌석에 부착하거나 인쇄하여 손님들이 스캔하도록 안내합니다.
+            </div>
+            <div id="batch-qr-box" style="margin: 16px auto; width: 220px; height: 220px; background: #fff; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center;"></div>
+            <div style="font-family: monospace; font-size: 13px; color: var(--ink-high); margin-top: 12px; word-break: break-all;">${data.link}</div>
+            <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;">
+              <button class="btn-pay" style="width: auto; padding: 10px 20px; font-size: 13px;" onclick="window.print()">🖨️ 묶음 QR 인쇄하기</button>
+            </div>
+          </div>
+        `;
+        if (typeof qrcode === 'function') {
+          const q = qrcode(0, 'M');
+          q.addData(data.link);
+          q.make();
+          document.getElementById('batch-qr-box').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+        } else {
+          document.getElementById('batch-qr-box').textContent = data.link;
+        }
+        document.getElementById('btn-copy-all').onclick = () => {
+          navigator.clipboard.writeText(data.link);
+          alert('묶음 QR 링크가 복사되었습니다.');
+        };
+        return;
+      }
+
       document.getElementById('result-desc').textContent = `${data.productName} (${data.quantity}장) 결제가 완료되었습니다.`;
 
       const listEl = document.getElementById('code-list');
@@ -346,17 +380,37 @@
         allLinks.push(item.link);
         const card = document.createElement('div');
         card.className = 'code-card';
+        card.style.display = 'block';
         card.innerHTML = `
-          <div>
-            <div style="font-size:11px; color:#94a3b8; margin-bottom:2px;">쿠폰 #${idx + 1} (${item.days}일권)</div>
-            <div class="code-text">${item.grouped}</div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
+            <div>
+              <div style="font-size:11px; color:#94a3b8; margin-bottom:2px;">쿠폰 #${idx + 1} (${item.days}일권 · 관광 0x01)</div>
+              <div class="code-text" style="font-size: 15px; letter-spacing: 0.05em;">${item.grouped}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="code-btn" onclick="navigator.clipboard.writeText('${item.link}'); alert('입장 링크가 복사되었습니다.')">링크 복사</button>
+              <a class="code-btn" href="${item.link}" target="_blank" style="text-decoration:none; display:inline-block; line-height:20px;">입장</a>
+            </div>
           </div>
-          <div style="display:flex; gap:6px;">
-            <button class="code-btn" onclick="navigator.clipboard.writeText('${item.link}'); alert('입장 링크가 복사되었습니다.')">링크 복사</button>
-            <a class="code-btn" href="${item.link}" target="_blank" style="text-decoration:none; display:inline-block; line-height:20px;">입장</a>
+          <!-- 08:25 7번: 코드마다 QR 하나씩 (https://raytok.kr/lic/<code>) -->
+          <div style="display:flex; gap:16px; align-items:center; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
+            <div id="code-qr-${idx}" style="background:#fff; padding:6px; border-radius:6px; width:92px; height:92px; display:flex; align-items:center; justify-content:center;"></div>
+            <div style="font-size:12px; color:var(--ink-mid); line-height:1.4;">
+              <span style="color:var(--primary-color); font-weight:600;">📱 손님 안내 (스캔 시 1일권 활성화)</span><br>
+              RayTok 앱 카메라로 QR을 스캔하거나 위 128자 코드를 입력하세요.<br>
+              <span style="font-size:11px; color:#64748b;">(스캔한 순간부터 ${item.days}일간 유효하며, 쿠폰 하나당 기기 1대만 등록됩니다)</span>
+            </div>
           </div>
         `;
         listEl.appendChild(card);
+
+        if (typeof qrcode === 'function') {
+          const q = qrcode(0, 'M');
+          q.addData(item.link);
+          q.make();
+          const qrContainer = card.querySelector(`#code-qr-${idx}`);
+          if (qrContainer) qrContainer.innerHTML = q.createSvgTag({ cellSize: 2, margin: 1, scalable: true });
+        }
       });
 
       document.getElementById('btn-copy-all').onclick = () => {
