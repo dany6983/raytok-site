@@ -34,6 +34,7 @@ export class Room {
     this.activeAsk = null;
     this.askHistory = [];
     this.listenerBytesOut = 0;
+    this.hostBytesIn = 0;
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
@@ -1110,6 +1111,9 @@ export class Room {
     const isListener = tags.includes('listener');
 
     if (isHost) {
+      const inBytes = typeof Buffer !== 'undefined' ? Buffer.byteLength(msgStr, 'utf8') : new TextEncoder().encode(msgStr).length;
+      this.hostBytesIn = (this.hostBytesIn || 0) + inBytes;
+
       // 상한: 호스트 20msg/s (넘으면 무시)
       const nowSec = Math.floor(Date.now() / 1000);
       if (this.hostMsgSec !== nowSec) {
@@ -1302,6 +1306,23 @@ export class Room {
         await this.attEnd();
         await this.dropLines(null, endSummary);
         await this.recordDeskSessionMinutes();
+        if ((this.listenerBytesOut > 0 || this.hostBytesIn > 0) && this.env && this.env.ROOM) {
+          try {
+            const limiterId = this.env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+            const limiter = this.env.ROOM.get(limiterId);
+            const lisCount = (this.att && this.att.max) || this.ctx.getWebSockets('listener').length || 1;
+            await limiter.fetch(new Request('http://internal/usage/record', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sub: this.sub || 'default',
+                listenerBytes: this.listenerBytesOut || 0,
+                hostBytes: this.hostBytesIn || 0,
+                listenerCount: lisCount
+              })
+            }));
+          } catch (_) {}
+        }
         this.ctx.waitUntil(
           new Promise((resolve) => {
             setTimeout(() => {
