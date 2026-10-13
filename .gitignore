@@ -2,6 +2,7 @@
 relay/dev.log
 relay/dev.err
 .wrangler/
+.gemini/
 .dev.vars
 *.dev.vars
 relay/.dev.vars
