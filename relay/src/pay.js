@@ -92,6 +92,10 @@ export { paymentStore, batchStore, issuedStore };
 
 /**
  * 결제 완료 및 쿠폰 발급 처리
+ * MASTER 12:35 긴급:
+ *   - env.PORTONE_API_SECRET 없으면 503 pg_secret_missing 으로 아예 서지 않는다
+ *   - 포트원 V2 결제 단건 조회: status === 'PAID', amount.total === product.price, 상품 일치 확인 필수
+ *   - 불일치 시 402 payment_not_verified, PG 장애 시 503 pg_unavailable
  */
 export async function handlePaymentComplete({
   paymentId,
@@ -100,10 +104,21 @@ export async function handlePaymentComplete({
   customerName = 'Guest',
   testKey = true,
   privateKeySeed = null,
-  storage = null
+  storage = null,
+  portoneSecret = null,
+  portoneApiBase = 'https://api.portone.io',
+  skipPgVerification = false
 }) {
   if (!paymentId || typeof paymentId !== 'string') {
     return { status: 400, body: { error: 'invalid_payment_id', message: 'paymentId가 필요합니다.' } };
+  }
+
+  // 0. 포트원 비밀값 검사 (MASTER 12:35 ②: 없으면 503 pg_secret_missing)
+  if (!portoneSecret) {
+    return {
+      status: 503,
+      body: { error: 'pg_secret_missing', message: 'PORTONE_API_SECRET 환경변수가 누락되었습니다.' }
+    };
   }
 
   // 1. 멱등성 검사: 이미 처리된 paymentId는 기존 발급 데이터 그대로 반환
@@ -125,7 +140,82 @@ export async function handlePaymentComplete({
     return { status: 400, body: { error: 'amount_mismatch', message: '결제 금액이 일치하지 않습니다.' } };
   }
 
-  // 4. 서명용 Ed25519 개인키 준비 (08:25 ⑤: privateKeySeed 가 있으면 키 1, 없으면 키 0)
+  // 4. 포트원 V2 결제 단건 조회 및 실결제 상태 검증 (MASTER 12:35 ①)
+  if (!skipPgVerification) {
+    let pgRes;
+    try {
+      const url = `${portoneApiBase.replace(/\/+$/, '')}/payments/${encodeURIComponent(paymentId)}`;
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 5000);
+      pgRes = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `PortOne ${portoneSecret}`,
+          'Content-Type': 'application/json'
+        },
+        signal: ctrl.signal
+      });
+      clearTimeout(timeout);
+    } catch (err) {
+      return {
+        status: 503,
+        body: { error: 'pg_unavailable', message: `포트원 조회 실패(네트워크/타임아웃): ${err.message}` }
+      };
+    }
+
+    if (!pgRes.ok) {
+      if (pgRes.status >= 500) {
+        return {
+          status: 503,
+          body: { error: 'pg_unavailable', message: `포트원 서버 오류 (${pgRes.status})` }
+        };
+      }
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `포트원 결제 내역 조회 실패 (${pgRes.status})` }
+      };
+    }
+
+    let pgData;
+    try {
+      pgData = await pgRes.json();
+    } catch (_) {
+      return {
+        status: 503,
+        body: { error: 'pg_unavailable', message: '포트원 응답 JSON 파싱 실패' }
+      };
+    }
+
+    // ① status === 'PAID'
+    if (pgData.status !== 'PAID') {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `결제 상태가 PAID가 아닙니다 (현재: ${pgData.status})` }
+      };
+    }
+
+    // ② amount.total === product.price
+    const paidTotal = pgData.amount ? pgData.amount.total : null;
+    if (paidTotal !== product.price) {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `결제 금액 불일치 (실제: ${paidTotal}, 예상: ${product.price})` }
+      };
+    }
+
+    // ③ orderName 또는 customData의 productId 일치
+    const customProdId = pgData.customData ? (typeof pgData.customData === 'string' ? (JSON.parse(pgData.customData).productId || pgData.customData) : pgData.customData.productId) : null;
+    const orderName = pgData.orderName || '';
+    const prodMatch = (customProdId === productId) || orderName.includes(product.name) || orderName.includes(productId);
+    if (!prodMatch) {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `결제 상품 불일치 (주문명: ${orderName}, 대상: ${product.name})` }
+      };
+    }
+  }
+
+  // 5. 서명용 Ed25519 개인키 준비 (08:25 ⑤: privateKeySeed 가 있으면 키 1, 없으면 키 0)
   const keyId = (privateKeySeed && !testKey) ? 1 : 0;
   const seed = privateKeySeed ? Buffer.from(privateKeySeed, 'hex') : testSeed();
   const privateKey = privateKeyFromSeed(seed);

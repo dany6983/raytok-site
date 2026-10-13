@@ -125,7 +125,9 @@ const env = {
     paymentId: 'pay_batch_bus_001',
     productId: 'bus_1d_20',
     amount: 66000,
-    customerName: 'TourBus'
+    customerName: 'TourBus',
+    portoneSecret: 'test_portone_secret_999',
+    skipPgVerification: true
   });
   ok(payBatch.status === 200, '묶음 상품 결제 승인 200 OK');
   ok(payBatch.body.isBatch === true, 'isBatch: true 확인');

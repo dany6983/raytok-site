@@ -21,6 +21,7 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
   const counters = { translate: 0 };
   const licStore = new Map();
   const batchStore = new Map();
+  const mockPortonePayments = new Map();
   let roomSeq = 0;
 
   function newRoom(kind) {
@@ -219,6 +220,20 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
       return json(200, [
         { id: 'desk_sess_1', code: '889900', host: 'Desk-PC-Host', started: Date.now() - 3600000, count: 2 }
       ]);
+    }
+
+    if (url.pathname.startsWith('/payments/') && req.method === 'GET') {
+      httpLog.push('GET ' + url.pathname);
+      const pId = url.pathname.slice('/payments/'.length);
+      const auth = req.headers.authorization || '';
+      if (!auth.startsWith('PortOne ')) {
+        return json(401, { message: 'Unauthorized: missing PortOne secret' });
+      }
+      const paymentRecord = mockPortonePayments.get(pId);
+      if (!paymentRecord) {
+        return json(404, { message: 'Payment not found' });
+      }
+      return json(200, paymentRecord);
     }
 
     // 정적 파일: /web/... , /assets/...

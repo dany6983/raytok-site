@@ -17,6 +17,7 @@ import { verifyCode, FLAG } from '../relay/tools/mint-code.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
+const TEST_SECRET = 'test_portone_secret_999';
 
 let checks = 0;
 function ok(cond, msg) {
@@ -43,7 +44,9 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     paymentId: 'pay_test_001',
     productId: 'pass_1d',
     amount: 3300,
-    customerName: 'Alice'
+    customerName: 'Alice',
+    portoneSecret: TEST_SECRET,
+    skipPgVerification: true
   });
   ok(pay1.status === 200, '결제 완료 처리 200 OK');
   ok(pay1.body.ok === true, '응답 ok: true 확인');
@@ -62,7 +65,9 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     paymentId: 'pay_test_group_002',
     productId: 'group_7d_10',
     amount: 99000,
-    customerName: 'TourAgency'
+    customerName: 'TourAgency',
+    portoneSecret: TEST_SECRET,
+    skipPgVerification: true
   });
   ok(payGroup.status === 200, '단체 결제 완료 처리 200 OK');
   ok(payGroup.body.codes.length === 10, '쿠폰 10개 발급 확인');
@@ -79,7 +84,9 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
   const payDupe = await handlePaymentComplete({
     paymentId: 'pay_test_001', // 동일 ID
     productId: 'pass_1d',
-    amount: 3300
+    amount: 3300,
+    portoneSecret: TEST_SECRET,
+    skipPgVerification: true
   });
   ok(payDupe.status === 200, '중복 요청 200 OK');
   ok(payDupe.body.codes[0].code === code1.code, '중복 요청 시 기존 발급 코드와 100% 동일한 코드 반환 (멱등)');
@@ -89,7 +96,9 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
   const payForged = await handlePaymentComplete({
     paymentId: 'pay_forged_003',
     productId: 'pass_1d', // 원래 3,300원
-    amount: 100 // 100원으로 위조
+    amount: 100, // 100원으로 위조
+    portoneSecret: TEST_SECRET,
+    skipPgVerification: true
   });
   ok(payForged.status === 400, '금액 위조 요청 400 차단');
   ok(payForged.body.error === 'amount_mismatch', '에러 사유 amount_mismatch 확인');
@@ -114,7 +123,11 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
       req.on('end', async () => {
         try {
           const body = JSON.parse(raw);
-          const result = await handlePaymentComplete(body);
+          const result = await handlePaymentComplete({
+            ...body,
+            portoneSecret: TEST_SECRET,
+            skipPgVerification: true
+          });
           res.writeHead(result.status, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result.body));
         } catch (e) {
@@ -124,6 +137,20 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
         }
       });
       return;
+    }
+
+    if (url.pathname.startsWith('/payments/')) {
+      const auth = req.headers['authorization'] || '';
+      if (!auth.startsWith('PortOne ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ message: 'Unauthorized' }));
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        status: 'PAID',
+        amount: { total: 3300 },
+        orderName: '관광 1일권 (1장)'
+      }));
     }
 
     let filePath = path.join(ROOT, url.pathname);
@@ -325,14 +352,15 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     ok(isBadgeVisible === true, '테스트 키 사용 시 테스트 모드 배지 노출 확인');
 
     await browser.close();
-    server.close();
 
     // [Test 8] 되돌림 실증 1건 (D-09)
     console.log('\n[Test 8] 되돌림 실증 1건 (D-09)');
     const payRevert = await handlePaymentComplete({
       paymentId: 'pay_revert_check',
       productId: 'pass_1d',
-      amount: 3300
+      amount: 3300,
+      portoneSecret: TEST_SECRET,
+      skipPgVerification: true
     });
     const vRevert = verifyCode(payRevert.body.codes[0].code);
     let revertedFail = false;
@@ -343,9 +371,12 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     }
     ok(revertedFail === true, '플래그가 0x02(손님)로 변조 시 단언 실패 입증 (되돌림 실증 완료)');
 
-    // [Test 9] relay/src/index.js 라우트 실제 fetch 검증 (MASTER 03:35 B-2)
+    // [Test 9] relay/src/index.js 라우트 실제 fetch 검증 (포트원 V2 단건 조회 연동)
     console.log('\n[Test 9] relay/src/index.js 라우트 실제 fetch 검증 (B-2)');
-    const mockEnv = {};
+    const mockEnv = {
+      PORTONE_API_SECRET: TEST_SECRET,
+      PORTONE_API_BASE: baseUrl
+    };
     const httpReq = new Request('http://localhost/pay/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -382,6 +413,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     const notFoundRes = await relayWorker.fetch(notFoundReq, mockEnv, {});
     ok(notFoundRes.status === 404, '라우트 미존재 시 404 반환 실증 (되돌림 실증)');
 
+    server.close();
     console.log(`\n전부 통과 (${checks}건)`);
   } catch (err) {
     await browser.close();

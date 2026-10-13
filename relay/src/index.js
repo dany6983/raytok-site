@@ -1530,13 +1530,18 @@ export default {
         const body = await request.json();
         const privSeed = env.MINT_PRIVATE_KEY || env.LIC_TEST_SEED || null;
         const testKey = !env.MINT_PRIVATE_KEY;
+        const portoneSecret = env.PORTONE_API_SECRET;
+        const portoneApiBase = env.PORTONE_API_BASE || 'https://api.portone.io';
+
         const result = await handlePaymentComplete({
           paymentId: body.paymentId,
           productId: body.productId,
           amount: body.amount,
           customerName: body.customerName,
           testKey,
-          privateKeySeed: privSeed
+          privateKeySeed: privSeed,
+          portoneSecret,
+          portoneApiBase
         });
 
         // DO 저장소(GLOBAL_LICENSE_MANAGER)에 발급 기록 및 묶음 영속화
