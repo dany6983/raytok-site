@@ -76,7 +76,8 @@ const outsideRequests = [];
     ok(joinUrl.includes('raw=1'), '참여 주소에 raw=1 파라미터 자동 장착 확인');
 
     // ── 2. 청취자 탭 접속 ──
-    const lisContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    // 청취 화면의 '원문 방송 (번역 없음)' 글은 UI 언어가 ko 일 때만 — 헤드리스 로케일(en)에서도 같게 돌게 ko-KR 로 고정 (10-14 B)
+    const lisContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR' });
     const lisPage = await lisContext.newPage();
     watch(lisPage);
 
