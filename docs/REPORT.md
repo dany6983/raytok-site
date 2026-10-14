@@ -5,10 +5,28 @@
 
 ---
 
-진행 중: MASTER 11:10 ② /usage 패키지 글자 칸 — 시작 12:36
+진행 중: MASTER 11:10 ③ 묶음 QR 인쇄 페이지 web/tools/qr-sheet/ — 시작 12:39
+
+[B] MASTER 11:10 ② `/usage` 패키지 글자 칸
+2026-10-14 13:02 · 세션: claude-code · 가지: main · 커밋 `0e01da8` · 시작 12:36
+
+- `relay/src/index.js` `/usage`: **토큰으로 인증한 경우에만** `package` 칸. 0x10 토큰 → `{flag:16, month, chars}`(이번 달 `/translate` 글자 수 = 기존 `total_chars`), 0x10 없는 토큰 → `null`. 관리자(비밀값) 조회에는 칸 없음. 감시선(`TRANSLATE_CAP_CHARS` 300만)은 **싣지 않는다**(손님 비공개 — 전부터 `cap_chars` 를 안 보내던 것 그대로).
+- `web/usage/index.html`: 카드 하나 「인터넷 번역 패키지」 — 객체면 글자 수, null 이면 "패키지 없음". 상한 숫자 없음.
+- 정본 `docs/samples/wire-messages.json` 에 `http_usage_package` 한 줄(응답 모양 + null 보기). `test:wire` 통과.
+- 시험: `relay/test/usage-package.mjs`(`npm --prefix relay run test:usage-package`, wrangler dev) 4건 — 0x10 글자 증가 · 0x02/0x01 null · cap 없음 · 관리자 칸 없음. `usage_view_test` 32→36건.
+
+실행 출력 발췌:
+```
+[PASS] 1 0x10 token → package {flag:16, month, chars=18} · [PASS] 2 tokens without 0x10 → package: null · [PASS] 3 no cap · [PASS] 4 admin no package
+되돌림 실증: index.js packageCell 블록을 치우면 → "[1] package 칸이 있어야 한다: undefined" 붉음. 복구 후 all PASS.
+usage_view_test: 전부 통과 (36건) · test:wire 전부 통과
+```
+한 줄 판정: ② 끝. 막힌 것: 이 PC 는 `cdn.playwright.dev` 가 막혀 Playwright 크롬을 못 받는다 → `CHROME=/opt/google/chrome/chrome` 으로 돌렸다(시험 코드는 이미 `CHROME` 환경변수를 본다). 배포 안 함.
+
+---
 
 [B] MASTER 11:10 ① 끝에서 끝 시험 틀 `scripts/e2e-room.mjs`
-2026-10-14 12:45 · 세션: claude-code · 가지: main · 커밋 `329b7ad` · 시작 12:34
+2026-10-14 12:36 · 세션: claude-code · 가지: main · 커밋 `329b7ad` · 시작 12:34
 
 - `scripts/e2e-room.mjs` 신규 + `npm run e2e:room`. 발급(`mint-license.mjs`, 0x01 가이드 토큰) → `POST /room {kind:'guide'}` →
   `/ws?room=&role=listener` 둘(en·vi) → `/ws?role=host&token=host_token` → `{seq:1, text, broadcast:true}` 한 줄 → 둘 다 `text`·`broadcast:true`·`tr` 없음 →
