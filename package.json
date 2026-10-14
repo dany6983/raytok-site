@@ -3,7 +3,7 @@
   "version": "1.0.5",
   "description": "RayTok static website and local server mockup",
   "scripts": {
-    "test": "npm run test:pay && npm run test:pay-verify && npm run test:design && npm run test:terms && npm run test:guide && npm run test:host && npm run test:usage && npm run test:desk-view && npm run test:lic && npm run test:wire && npm run test:end && npm run test:release && npm run test:retention && npm run test:p16 && npm run test:hwpx && npm run test:mint && npm run test:dual && npm run test:script && npm run test:screen && npm run test:live && npm run test:l3 && npm run test:report-common && npm run test:rtl && npm run test:match && npm run test:i18n && npm run test:desk-read && npm run test:desk-session && npm run test:retry && npm run test:limits-bundle && npm run test:question && npm run test:question-relay && npm run test:broadcast-raw && npm run test:sitemap && npm run test:contact && npm run test:links && npm run test:license-redeem && npm run test:bytes-out",
+    "test": "npm run test:pay && npm run test:pay-verify && npm run test:design && npm run test:terms && npm run test:guide && npm run test:host && npm run test:usage && npm run test:desk-view && npm run test:lic && npm run test:wire && npm run test:end && npm run test:release && npm run test:retention && npm run test:p16 && npm run test:hwpx && npm run test:mint && npm run test:dual && npm run test:script && npm run test:screen && npm run test:live && npm run test:l3 && npm run test:report-common && npm run test:rtl && npm run test:match && npm run test:i18n && npm run test:desk-read && npm run test:desk-session && npm run test:retry && npm run test:limits-bundle && npm run test:question && npm run test:question-relay && npm run test:broadcast-raw && npm run test:sitemap && npm run test:contact && npm run test:links && npm run test:license-redeem && npm run test:bytes-out && npm run test:listener-i18n",
     "test:pay-verify": "node samples/pay_verification_test.js",
     "test:bytes-out": "node samples/bytes_out_test.js",
     "test:l3": "node samples/l3_doc_test.js",
@@ -44,7 +44,8 @@
     "test:retention": "node relay/test/desk-retention.mjs",
     "test:pay": "node samples/pay_test.js",
     "test:prod": "node samples/prod_e2e_test.js",
-    "test:w-t": "node samples/w_t_test.js"
+    "test:w-t": "node samples/w_t_test.js",
+    "test:listener-i18n": "node samples/listener_i18n_test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"

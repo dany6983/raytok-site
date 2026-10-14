@@ -296,7 +296,7 @@
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
       <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
-      <button class="tool-btn" id="btn-open-voice-picker" title="목소리 고르기">🗣️ 목소리</button>
+      <button class="tool-btn" id="btn-open-voice-picker" data-i18n="voice_button">🗣️ 목소리</button>
       <button class="tool-btn" id="btn-ask" aria-label="ask question" data-i18n="btn_ask" style="display: none;">✋ 질문</button>
       <button class="tool-btn" id="btn-save" aria-label="save transcript" title="내 기록 받기 (TXT)">⬇ TXT</button>
       <button class="tool-btn tool-btn-screen" id="btn-fullscreen" aria-label="fullscreen">⛶</button>
@@ -306,7 +306,7 @@
   <!-- 목소리 선택 모달 (8번: 그 언어 음성 최대 3개 + 미리보기 + localStorage) -->
   <div id="voice-picker-modal" style="display:none; position:fixed; bottom:70px; left:16px; z-index:60; width:280px; background:var(--card-bg, #1e293b); border:1px solid var(--border); border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <div style="font-weight:bold; font-size:14px; color:var(--text);">목소리 선택</div>
+      <div style="font-weight:bold; font-size:14px; color:var(--text);" data-i18n="voice_pick_title">목소리 선택</div>
       <button class="tool-btn" id="btn-close-voice-picker" style="padding:2px 8px;">✕</button>
     </div>
     <div id="voice-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
@@ -818,7 +818,8 @@
       if (!hasVoice) {
         hasWarnedVoiceAbsence = true;
         if (voiceNoticeEl) {
-          voiceNoticeEl.textContent = `ℹ️ 현재 기기(OS)에 ${targetLang.toUpperCase()} 음성이 없어 자막으로만 표시됩니다.`;
+          /* 4번: 첫 화면에서 한 번. 글자는 **자막 언어**로 — 그 언어를 고른 사람이 읽는다 (81개 언어 사전) */
+          voiceNoticeEl.textContent = 'ℹ️ ' + (t('voice_absent_notice', normalizeLangCode(selectedLang)) || t('voice_absent_notice'));
           voiceNoticeEl.style.display = 'block';
         }
       } else {
@@ -865,7 +866,10 @@
       container.innerHTML = '';
       const ranked = getRankedVoicesForLang(selectedLang);
       if (!ranked.length) {
-        container.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:4px;">사용 가능한 목소리가 없습니다.</div>';
+        const none = document.createElement('div');
+        none.style.cssText = 'font-size:12px; color:var(--text-muted); padding:4px;';
+        none.textContent = t('voice_none');
+        container.appendChild(none);
         return;
       }
       ranked.forEach(v => {
@@ -884,7 +888,8 @@
         playBtn.textContent = '▶';
         playBtn.onclick = (e) => {
           e.stopPropagation();
-          const uttr = new SpeechSynthesisUtterance('안녕하세요');
+          /* 미리듣기는 **그 언어의 인사말**로 — 한국어 글자를 영어 음성에 넣으면 아무것도 못 듣는다 */
+          const uttr = new SpeechSynthesisUtterance(t('voice_preview_text', normalizeLangCode(selectedLang)) || 'Hello');
           uttr.voice = v;
           uttr.lang = v.lang;
           speechSynthesis.speak(uttr);
@@ -936,7 +941,7 @@
                 kind: 'question',
                 id: askId,
                 seq: askSeq,
-                name: myName || '익명',
+                name: myName || t('anon_name') || 'Anonymous',
                 src: transcript,
                 srcLang: selectedLang || 'ko',
                 at: Date.now()
@@ -979,7 +984,7 @@
               kind: 'question',
               id: askId,
               seq: askSeq,
-              name: myName || '익명',
+              name: myName || t('anon_name') || 'Anonymous',
               src: text,
               srcLang: selectedLang || 'ko',
               at: Date.now()
