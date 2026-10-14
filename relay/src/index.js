@@ -156,6 +156,9 @@ function checkIssueLimit(sub) {
 
 // 이 플래그가 있는 토큰의 번역은 캐시에 두지 않는다 (0x04 meet · 0x08 desktop)
 const NO_STORE_FLAGS = 0x04 | 0x08;
+// /translate 를 여는 비트 (B-3): 인터넷 번역 패키지 0x10, 또는 Desk 시간 묶음 0x04|0x08. 그 밖은 403.
+const TRANSLATE_PKG_FLAG = 0x10;
+const TRANSLATE_DESK_FLAGS = 0x04 | 0x08;
 
 // In-memory fallback cache if Cache API is unavailable
 const memoryCache = new Map();
@@ -850,10 +853,17 @@ export default {
     if (url.pathname === '/translate' && request.method === 'POST') {
       const capChars = parseInt(env.TRANSLATE_CAP_CHARS || '3000000', 10);
       let currentUsedChars = 0;
-      // 1) 라이선스 토큰 검증: 0x02 (camera), 0x04 (meet), 0x10 (서버 번역 묶음) 필요 (MASTER 19:14)
-      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, 0x02 | 0x04 | 0x10);
+      // 1) 라이선스 토큰 검증 — B-3 정정판 (대표님 10-14 08:39·08:41, MASTER 09:50·09:52):
+      //    인터넷 번역은 **0x10(인터넷 번역 패키지)** 를 산 토큰만. 없으면 403. 무료 한도 없음.
+      //    호스트 코드(0x01)에 0x10 자동 포함 없음 — 별도 구매. 0x02(camera) 만으로는 못 쓴다.
+      //    Desk(0x04|0x08) 는 시간 묶음 상품이라 지금처럼 그대로 지나간다.
+      //    글자 세기(TRANSLATE_CAP_CHARS)는 이 문을 지난 뒤, 즉 패키지 안에서만 센다(4-2).
+      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, TRANSLATE_PKG_FLAG | TRANSLATE_DESK_FLAGS);
       if (!licenseRes.valid) {
-        return jsonError(licenseRes.error, licenseRes.message, licenseRes.status);
+        const extra = licenseRes.error === 'not_allowed' ? { why: 'no_package', need: '0x10' } : {};
+        return jsonError(licenseRes.error,
+          licenseRes.error === 'not_allowed' ? 'Internet translation package (0x10) required' : licenseRes.message,
+          licenseRes.status, extra);
       }
 
       // RULE: P-16 - 청취자 토큰 차단

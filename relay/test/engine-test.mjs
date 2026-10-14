@@ -27,7 +27,7 @@ async function run() {
   console.log('Target URL:', BASE_URL);
 
   // 캐시 격리를 보는 시험이라 캐시를 쓰는 토큰(0x02)으로 돈다. Desk 토큰(0x04·0x08)은 캐시를 건너뛴다 — test/no-store.mjs
-  const token = mintLicenseToken({ sub: 'engine-test-user', days: 1, flags: 0x02, secret });
+  const token = mintLicenseToken({ sub: 'engine-test-user', days: 1, flags: 0x10, secret });   // B-3: /translate 는 0x10 패키지
   const testText = '동일 문장 엔진 격리 검증 ' + Date.now();
 
   // ─────────────────────────────────────────────────────────────

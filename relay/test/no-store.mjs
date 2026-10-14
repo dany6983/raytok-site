@@ -163,7 +163,7 @@ async function tr(token, text) {
 async function cachePaths() {
   console.log('\n[번역 캐시]');
   const rnd = Math.random().toString(36).slice(2);
-  const cam = mintLicenseToken({ sub: 'nostore-cam-' + rnd, days: 1, flags: 0x02, secret });
+  const cam = mintLicenseToken({ sub: 'nostore-cam-' + rnd, days: 1, flags: 0x10, secret });   // B-3: /translate 는 0x10 패키지
   const deskTokens = [
     ['0x04', mintLicenseToken({ sub: 'nostore-meet-' + rnd, days: 1, flags: 0x04, secret })],
     ['0x08|0x04', mintLicenseToken({ sub: 'nostore-desk-' + rnd, days: 1, flags: 0x04 | 0x08, secret })]

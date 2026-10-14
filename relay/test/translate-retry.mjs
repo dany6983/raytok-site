@@ -96,7 +96,7 @@ async function run() {
   const token = mintLicenseToken({
     sub: 'translate_user_001',
     days: 30,
-    flags: 0x02, // camera / translate
+    flags: 0x10, // 인터넷 번역 패키지 (B-3: /translate 는 0x10)
     secret
   });
 
