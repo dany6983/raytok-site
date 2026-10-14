@@ -115,11 +115,13 @@ const outsideRequests = [];
     ok(relay.counters.translate === 0, '강의 전체 진행 동안 번역 API 호출 총 0회 확인');
 
     // ── 5. D-09 되돌림 실증 1건 (question.md 12-5) ──
+    // ⚠ 되돌림은 **그 시험이 실제로 읽은 값**으로 해야 한다. 시험 안에서 만든 상수로
+    //   하면 제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
     let revertFailed = false;
     try {
-      // 만약 번역 없이 방송 옵션을 켰는데 /translate 호출 카운터가 증가하면 단언 실패
-      const fakeTranslateCalls = 1;
-      assert.strictEqual(fakeTranslateCalls, 0, '번역 없이 방송 옵션 켜짐 상태에서 translate 호출 시 실패');
+      // 이 방의 **진짜** /translate 호출 수를 읽는다. 지금 0 이라서 아래 단언이 던진다.
+      // raw 방송이 번역을 부르도록 되돌리면 이 수가 0 이 아니게 되고 → 던지지 않아 ok 가 붉는다.
+      assert.notStrictEqual(relay.counters.translate, 0, '번역 없이 방송인데 /translate 가 불렸다');
     } catch (e) {
       revertFailed = true;
     }

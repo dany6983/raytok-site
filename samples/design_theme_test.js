@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const assert = require('assert');
 const http = require('http');
 const { chromium } = require('playwright');
 
@@ -98,6 +99,7 @@ TARGET_FILES.forEach(t => {
   });
 
   try {
+    let worstOverflow = 0;   // 아래 되돌림 실증이 이 **진짜 값**을 쓴다
     for (const t of TARGET_FILES) {
       const page = await browser.newPage({
         viewport: { width: 390, height: 844 } // 모바일 390px 표준 뷰포트
@@ -158,8 +160,21 @@ TARGET_FILES.forEach(t => {
         ok(styles.fontLg === '17px', 'listener 화면 번역 17px 토큰 확인');
       }
 
+      worstOverflow = Math.max(worstOverflow, overflowData.diff);
       await page.close();
     }
+
+    // ── 되돌림 실증 1건 (D-09) ──
+    // 머리말에 "4. 되돌림 실증 1건" 이라 적혀 있었는데 **코드가 없었다**(10-14 ⑨-1 점검).
+    // 되돌림은 이 시험이 실제로 잰 값(네 화면 중 가장 큰 넘침)으로 한다. 지금 1px 이하라
+    // 아래 단언이 던진다. 1.3배 확대에서 넘치도록 되돌리면 던지지 않고 ok 가 붉는다.
+    let revertOverflowFailed = false;
+    try {
+      assert.ok(worstOverflow > 1, `1.3배 확대에서 가로 넘침 ${worstOverflow}px`);
+    } catch (e) {
+      revertOverflowFailed = true;
+    }
+    ok(revertOverflowFailed === true, `1.3배 확대에서 넘치면 붉어진다 — 지금 가장 큰 넘침 ${worstOverflow}px (되돌림 실증)`);
 
     console.log(`\n전부 통과 (${checks}건)`);
   } finally {

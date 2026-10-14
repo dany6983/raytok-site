@@ -145,11 +145,13 @@ const contactFile = path.join(ROOT, 'contact', 'index.html');
     ok(successText.includes('문의가 접수되었습니다'), '접수 완료 안내 문구 확인');
 
     // 4. D-09 되돌림 실증 1건
+    // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**(missingRes)으로 한다. 시험 안에서 만든 상수로 하면
+    //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
     let revertFailed = false;
     try {
-      // 필수 항목 누락인데도 성공(200)으로 처리되면 실패
-      const fakeStatus = 400;
-      assert.strictEqual(fakeStatus, 200, '필수 항목 누락 시 200 성공 처리되면 단언 실패');
+      // 필수 항목을 뺀 진짜 요청의 답을 본다. 지금 400 이라서 아래 단언이 던진다.
+      // 유효성 검사를 빼면 200 이 되어 던지지 않고 ok 가 붉는다.
+      assert.strictEqual(missingRes.status, 200, '필수 항목이 빠졌는데 200 으로 접수됐다');
     } catch (e) {
       revertFailed = true;
     }

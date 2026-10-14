@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const assert = require('assert');
 const { chromium } = require('playwright');
 const { createMockRelay } = require('./mock_relay.js');
 
@@ -226,6 +227,21 @@ console.log('=== 줄 23 출시 전 끝까지 시험 (웹 강사 경로 포함) =
     // ── STEP 10: 외부 네트워크 요청 0건 검증 ──
     console.log('\n[STEP 10] 외부 네트워크 요청 0건 검증');
     ok(outsideRequests.length === 0, `외부 요청 0건 확인 (실제: ${outsideRequests.length})`);
+
+    // ── STEP 11: 되돌림 실증 1건 (D-09) ──
+    // 머리말에 "10. 되돌림 실증 1건" 이라 적혀 있었는데 **코드가 없었다**(10-14 ⑨-1 점검).
+    // 되돌림은 이 시험이 실제로 읽은 값으로 한다 — 끝 화면 요약 셋(참석·읽은·건너뛴).
+    // 지금 3·3·1 이라 아래 단언이 던진다. 건너뜀을 읽은 문단으로 세도록 되돌리면
+    // summarySkip 이 0 이 되어 던지지 않고 ok 가 붉는다.
+    console.log('\n[STEP 11] 되돌림 실증 1건');
+    let revertSummaryFailed = false;
+    try {
+      assert.strictEqual(summarySkip, '0',
+        `건너뛴 문단을 세지 않았다 (참석 ${summaryAtt} · 읽은 ${summaryRead} · 건너뛴 ${summarySkip})`);
+    } catch (e) {
+      revertSummaryFailed = true;
+    }
+    ok(revertSummaryFailed === true, '건너뛴 문단 집계를 빼면 끝 화면 요약 단언이 붉어진다 (되돌림 실증)');
 
     // 리소스 정리
     for (const l of listeners) await l.context.close();

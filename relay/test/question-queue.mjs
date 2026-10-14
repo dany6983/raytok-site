@@ -240,10 +240,14 @@ class MockContext {
   ok(revert1Failed === true, '건너뛰기 시 앞선 순번 삭제 변조 시 단언 실패 입증 (되돌림 실증 1)');
 
   // ② 참여자 번역 허용 시 단언 실패 입증
+  // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**으로 한다. 시험 안에서 만든 상수로 하면
+  //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
   let revert2Failed = false;
   try {
-    const fakeAllowTranslation = true;
-    assert.strictEqual(fakeAllowTranslation, false, '참여자 번역 허용 시 단언 실패');
+    // 릴레이가 실제로 돌려준 답을 본다. 지금 P-14 로 막혀서 아래 단언이 던진다.
+    // 참여자 번역을 통과시키면 why 가 달라져 던지지 않고 ok 가 붉는다.
+    assert.notStrictEqual(p14Err.why, 'p14_participant_translation_forbidden',
+                          '참여자 번역(trans)이 P-14 로 막히지 않았다');
   } catch (e) {
     revert2Failed = true;
   }

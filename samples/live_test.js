@@ -172,10 +172,13 @@ const { rooms, hostReceived } = relay;
   ok(txtOut.includes('안전모를 반드시 착용하십시오.') && txtOut.includes('[en] 안전모를 반드시 착용하십시오.'), '청취자 기록: 원고 줄 원문+번역 포함');
 
   // ── 되돌림 실증 1건 (D-09) ──
+  // ⚠ 되돌림은 **그 시험이 실제로 읽은 값**(vi[0])으로 한다. 시험 안에서 만든 상수로 하면
+  //   제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
   let revertFailed = false;
   try {
-    const brokenLine = { src: '', tr: '' };
-    assert(brokenLine.src.length > 0, '원문 fallback 누락 시 단언 실패');
+    // 번역 없는 vi 청취자가 실제로 받은 줄을 본다. R-15 대로 원문이 있어서 아래 단언이 던진다.
+    // 원문 fallback 을 빼 줄을 비우면 던지지 않아 ok 가 붉는다.
+    assert.strictEqual(vi[0].src.length, 0, '번역 없는 줄에 원문 fallback 이 없다 (R-15)');
   } catch (e) {
     revertFailed = true;
   }

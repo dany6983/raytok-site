@@ -70,6 +70,16 @@ const outsideRequests = [];
 
     // ── 2. 청취자 1 (Nguyen Van A, vi) 접속 ──
     const lis1Context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    // P-14 를 **말이 아니라 전선에서** 본다: 청취 페이지가 실제로 보낸 프레임을 그대로 모은다.
+    // (릴레이가 받은 뒤의 모양을 보면 안 된다 — 릴레이가 칸을 떨어뜨리면 무엇을 보냈든 깨끗해 보인다.)
+    await lis1Context.addInitScript(() => {
+      window.__sentFrames = [];
+      const origSend = WebSocket.prototype.send;
+      WebSocket.prototype.send = function (data) {
+        try { if (typeof data === 'string') window.__sentFrames.push(data); } catch (_) {}
+        return origSend.call(this, data);
+      };
+    });
     const lis1Page = await lis1Context.newPage();
     watch(lis1Page);
 
@@ -135,6 +145,12 @@ const outsideRequests = [];
     // ── 7. 강사 수동 지명 (P-17 사람 손으로 지명) ──
     const btnGrants = await hostPage.$$('#askQueueList button');
     ok(btnGrants.length === 2, '대기열 지명 단추 2개 노출 확인');
+
+    // P-17 의 진짜 증거: **사람이 누르기 전에는 아무도 발언자가 아니다.**
+    // 둘이 기다리고 있는데도 자동으로 고르지 않았다는 것을 여기서 잰다(아래 되돌림 ①이 쓴다).
+    const activeBeforeHumanClick = await hostPage.isVisible('#askActiveArea');
+    ok(activeBeforeHumanClick === false, 'P-17: 둘이 기다려도 사람이 누르기 전엔 발언자 없음 (자동 선정 아님)');
+
     await btnGrants[0].click(); // 1번 지명 클릭
 
     // B-2 동시 1명 인가: 지명 후 다른 단추 비활성화 및 활성 영역 노출
@@ -172,35 +188,53 @@ const outsideRequests = [];
     ok(true, '1번 질문 종료 후 대기열에서 1번 제거 및 남은 1건 유지 확인');
 
     // ── 10. 특허 자물쇠 되돌림 실증 3건 (D-09) ──
-    // ① P-17: 수동 지명 자물쇠 — 자동 선정 개입 시 단언 실패 입증
+    //
+    // ⚠ 되돌림은 **제품이 실제로 만든 값**으로 해야 한다. 시험 안에서 만든 상수로 하면
+    //   제품을 되돌려도 그대로 통과한다 — 증거가 아니다. 셋 다 그 꼴이었다(10-14 ⑨-1 점검).
+    //   여기 셋은 특허 자물쇠라 더더욱 빈 증거로 둘 수 없다.
+    const askRoom = relay.rooms.get(roomCode.trim());
+    ok(!!askRoom, '되돌림용: 릴레이 방 상태를 읽을 수 있다');
+
+    // ① P-17: 사람이 누르기 전엔 발언자가 없었다 — 위에서 실제로 잰 값
+    //    자동 선정으로 되돌리면 그 값이 true 가 되어 아래 단언이 던지지 않고 ok 가 붉는다.
     let revertAutoFailed = false;
     try {
-      const isAutoSelection = false;
-      assert.strictEqual(isAutoSelection, true, '자동 선정으로 바꾸면 실패 (P-17)');
+      assert.strictEqual(activeBeforeHumanClick, true, '사람이 누르기 전에 이미 발언자가 정해져 있었다 (자동 선정, P-17 위반)');
     } catch (e) {
       revertAutoFailed = true;
     }
-    ok(revertAutoFailed === true, 'P-17 강사 수동 지명 원칙: 자동 선정 변경 시 단언 실패 입증');
+    ok(revertAutoFailed === true, 'P-17 강사 수동 지명: 자동 선정으로 바꾸면 붉어진다 (되돌림 실증 1)');
 
-    // ② P-14: 참여자 번역 배제 — 참여자가 번역문 전송 시 단언 실패 입증
+    // ② P-14: 청취 페이지가 **전선에 실제로 올린 프레임**에 번역문이 없다
+    //    릴레이가 받은 뒤의 모양을 보면 안 된다 — 릴레이가 trans 칸을 안 담으면 무엇을 보냈든
+    //    깨끗해 보여서, 페이지를 되돌려도 초록이다(10-14 ⑨-1 에서 실제로 되돌려 보고 잡은 것).
+    const askedItems = askRoom.askHistory || [];
+    ok(askedItems.length === 2, `되돌림용: 릴레이가 받은 질문 ${askedItems.length}건`);
+    const sentAsk = (await lis1Page.evaluate(() => window.__sentFrames || []))
+      .map(f => { try { return JSON.parse(f); } catch (_) { return null; } })
+      .find(m => m && (m.kind === 'ask' || m.kind === 'ask_req' || m.kind === 'question'));
+    ok(!!sentAsk, `되돌림용: 청취 페이지가 전선에 올린 질문 프레임을 잡았다 (kind=${sentAsk && sentAsk.kind})`);
+    ok(!sentAsk.trans && !sentAsk.tr, 'P-14: 청취 페이지가 보낸 프레임에 번역 칸이 없다 (원문+언어만)');
     let revertTransFailed = false;
     try {
-      const participantTranslationAllowed = false;
-      assert.strictEqual(participantTranslationAllowed, true, '참여자가 번역해 보내면 실패 (P-14)');
+      assert.ok(sentAsk.trans || sentAsk.tr, '청취 페이지가 번역문을 실어 보냈다 (P-14 위반)');
     } catch (e) {
       revertTransFailed = true;
     }
-    ok(revertTransFailed === true, 'P-14 참여자 번역 배제: 참여자 번역 통과 시 단언 실패 입증');
+    ok(revertTransFailed === true, 'P-14 참여자 번역 배제: 페이지가 번역을 실으면 붉어진다 (되돌림 실증 2)');
 
-    // ③ 특허 독립항: 건너뛰기 지명 시 앞선 순번 삭제 변조 시 단언 실패 입증
+    // ③ 특허 독립항: 1번을 끝낸 뒤에도 **요청 사실과 순번**이 기록에 남아 있다
+    //    (대기열에서는 빠지지만 askHistory 의 seq 1 은 지워지지 않는다)
+    //    순번 기록을 지우도록 되돌리면 seq 1 이 사라져 던지지 않고 ok 가 붉는다.
+    const seq1Kept = askedItems.filter(q => q.seq === 1);
+    ok(seq1Kept.length === 1, '독립항: 1번을 끝낸 뒤에도 순번 1 의 요청 사실이 남아 있다');
     let revertSeqFailed = false;
     try {
-      const fakeErasedSeqCount = 0;
-      assert.strictEqual(fakeErasedSeqCount, 1, '건너뛰기 지명 시 앞선 순번 기록 삭제 시 실패');
+      assert.strictEqual(seq1Kept.length, 0, '끝난 질문의 순번 기록이 지워졌다 (독립항 위반)');
     } catch (e) {
       revertSeqFailed = true;
     }
-    ok(revertSeqFailed === true, '특허 독립항: 건너뛰어 지명해도 앞선 순번 보존 실패 시 단언 실패 입증');
+    ok(revertSeqFailed === true, '독립항 순번 보존: 순번 기록을 지우면 붉어진다 (되돌림 실증 3)');
 
     ok(outsideRequests.length === 0, `외부 네트워크 요청 0건 확인 (${outsideRequests.length})`);
 

@@ -223,10 +223,13 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     ok(buyLinksCount === 1, '7번 & B-9: /tour/ 외의 다른 페이지에는 /buy/ 링크 0개 유지 (총 1개 제한)');
 
     // 7번 되돌림 실증
+    // ⚠ 되돌림은 **그 시험이 실제로 읽은 값**으로 해야 한다. 시험 안에서 만든 상수로
+    //   하면 제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
     let linkRevertFailed = false;
     try {
-      const fakeCount = 0;
-      assert.strictEqual(fakeCount, 1, '구매 화면 도달 링크 누락 시 단언 실패');
+      // 진짜로 센 링크 수를 본다. 지금 1 이라서 아래 단언이 던진다.
+      // /tour/ 의 링크를 지우면 0 이 되어 던지지 않고 ok 가 붉는다.
+      assert.notStrictEqual(buyLinksCount, 1, '구매 화면 도달 링크가 1개가 아니다');
     } catch (e) {
       linkRevertFailed = true;
     }

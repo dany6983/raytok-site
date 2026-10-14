@@ -379,6 +379,7 @@ const ttsStub = () => {
   }
 
   // ── 릴레이가 먼저 끝낸 방(무음 정지 등): 끝내기 → 요약·리포트는 그대로, 방 닫기는 end 를 또 보내지 않고 명단만 지운다 ──
+  let rosterAfterClose = -1;   // 아래 되돌림 실증이 이 **진짜 값**을 쓴다
   {
     const pg = await hostCtx.newPage();
     watch(pg);
@@ -402,16 +403,20 @@ const ttsStub = () => {
     await pg.click('#btnCloseRoom');
     ok((await pg.textContent('#endStatus')).includes('방을 닫았습니다'), '릴레이가 먼저 끝낸 방: 방 닫기 → 닫힘 표시');
     ok(hostReceived.filter(m => m.end).length === endsBefore, '릴레이가 먼저 끝낸 방: end 를 또 보내지 않는다');
-    ok((await pg.evaluate(() => Object.keys(live.roster).length)) === 0, '릴레이가 먼저 끝낸 방: 명단을 지운다');
+    rosterAfterClose = await pg.evaluate(() => Object.keys(live.roster).length);
+    ok(rosterAfterClose === 0, '릴레이가 먼저 끝낸 방: 명단을 지운다');
     await E.p.context().close();
     await pg.close();
   }
 
   // ── 되돌림 실증 1건 (D-09) ──
+  // ⚠ 되돌림은 **그 시험이 실제로 읽은 값**(rosterAfterClose)으로 한다. 시험 안에서 만든 상수로
+  //   하면 제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
   let revertFailed = false;
   try {
-    const fakeRosterLeak = ['Alice', 'Bob'];
-    assert.strictEqual(fakeRosterLeak.length, 0, '방 닫기 후 명단 누출 시 단언 실패');
+    // 방을 닫은 뒤 호스트 화면에 실제로 남은 명단 수를 본다. 지금 0 이라서 아래 단언이 던진다.
+    // 방 닫기가 명단을 안 지우도록 되돌리면 0 이 아니게 되어 던지지 않고 ok 가 붉는다.
+    assert.notStrictEqual(rosterAfterClose, 0, `방을 닫았는데 명단이 ${rosterAfterClose}명 남아 있다`);
   } catch (e) {
     revertFailed = true;
   }

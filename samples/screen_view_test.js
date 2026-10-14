@@ -386,11 +386,14 @@ function mockHost(wss) {
   assert(dlRecord.txt.includes('Lines: 8'), '내려받은 기록에 8줄 정상 포함');
 
   // D-09 되돌림 실증 1건:
-  // 만약 기본값에서 대화 내용을 멋대로 저장하도록 변조되거나 단추 문구가 없으면 시험이 붉어짐을 증명
+  // ⚠ 되돌림은 **그 폰에서 실제로 읽은 값**(storedKeys)으로 한다. 시험 안에서 만든 상수로 하면
+  //   제품이 기록을 남기도록 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
+  //   지금 local·session 둘 다 0건이라 아래 단언이 던진다. 청취 페이지가 자막을 저장하도록
+  //   되돌리면 0건이 아니게 되어 던지지 않고 아래 단언이 붉는다.
   let revertFailed = false;
   try {
-    const fakeStored = ['raytok_transcript_leak'];
-    assert.strictEqual(fakeStored.filter(k => k.includes('transcript')).length, 0, '기본값 대화 기록 누출 시 단언 실패');
+    assert.notStrictEqual(storedKeys.local.length + storedKeys.session.length, 0,
+      `기본값인데 폰에 기록이 남았다 (local ${storedKeys.local.length} · session ${storedKeys.session.length})`);
   } catch (e) {
     revertFailed = true;
   }

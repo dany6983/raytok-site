@@ -80,10 +80,13 @@ for (const bad of forbiddenPages) {
 
 // 3. D-09 되돌림 실증 1건:
 // noindex 대상인 /web/buy/ 가 사이트맵에 누출되면 실패 입증
+// ⚠ 되돌림은 **그 시험이 실제로 읽은 값**(sitemapXml)으로 한다. 시험 안에서 만든 상수로 하면
+//   제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
 let revertFailed = false;
 try {
-  const fakeSitemap = '<loc>https://raytok.kr/web/buy/</loc>';
-  assert.strictEqual(fakeSitemap.includes('/web/buy/'), false, 'noindex 페이지 누출 시 단언 실패');
+  // 진짜 sitemap 을 본다. 지금 /web/buy/ 가 없어서 아래 단언이 던진다.
+  // sitemap 에 /web/buy/ 가 새면 던지지 않아 ok 가 붉는다.
+  assert.ok(sitemapXml.includes('/web/buy/'), 'sitemap 에 noindex 페이지 /web/buy/ 가 들어 있다');
 } catch (e) {
   revertFailed = true;
 }

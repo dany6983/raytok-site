@@ -158,10 +158,13 @@ function ok(cond, msg) {
     /* ── 3. D-09 되돌림 실증 2건 ── */
     console.log('\n[Test 3] D-09 되돌림 실증 2건');
     // ① 방송 줄인데 번역 없음이 노출되거나 tr 칸이 활성화되면 단언 실패 입증
+    // ⚠ 되돌림은 **그 시험이 실제로 읽은 값**으로 해야 한다. 시험 안에서 만든 상수로
+    //   하면 제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
     let revertBroadcastFailed = false;
     try {
-      const fakeShowNoTr = '번역 없음';
-      assert.strictEqual(fakeShowNoTr, '', '방송 줄에 번역 없음 표시 시 단언 실패');
+      // 진짜 번역 칸의 display 를 본다. 지금 'none' 이라서 아래 단언이 던진다.
+      // 방송 줄에 번역 칸('번역 없음' 포함)이 살아나면 던지지 않아 ok 가 붉는다.
+      assert.notStrictEqual(trDisplay, 'none', '방송 줄인데 번역 칸이 보인다');
     } catch (e) {
       revertBroadcastFailed = true;
     }

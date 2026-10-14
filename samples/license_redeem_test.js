@@ -227,25 +227,28 @@ const env = {
 
   /* ── 5. D-09 되돌림 실증 2건 ── */
   console.log('\n[Test 5] 특허/비즈니스 자물쇠 되돌림 실증 2건');
-  // ① 만석 초과 손님이 승인되면 실패
+  // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**으로 한다. 시험 안에서 만든 상수로 하면
+  //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
+
+  // ① 정원 3명에 4번째 손님이 받은 **진짜** 답을 본다. 지금 401 이라서 아래 단언이 던진다.
+  //    자리 검사를 빼면 200 이 되어 던지지 않고 ok 가 붉는다.
   let revertSeatsFailed = false;
   try {
-    const fakeAllowExtraGuest = false;
-    assert.strictEqual(fakeAllowExtraGuest, true, '정원 초과 손님 승인 시 단언 실패');
+    assert.strictEqual(bRes4.status, 200, `정원 3명인데 4번째 손님이 ${bRes4.status} 로 승인됐다`);
   } catch (e) {
     revertSeatsFailed = true;
   }
-  ok(revertSeatsFailed === true, '정원 초과 손님 no_seats 차단 누락 시 단언 실패 입증 (되돌림 실증 1)');
+  ok(revertSeatsFailed === true, '정원 초과 손님 no_seats 차단을 빼면 붉어진다 (되돌림 실증 1)');
 
-  // ② 1기기 1쿠폰 원칙: 2번째 기기 등록 허용 시 실패
+  // ② 2번째 기기가 받은 **진짜** 오류를 본다. 지금 too_many_devices 라서 아래 단언이 던진다.
+  //    기기 수 검사를 빼면 그 오류가 사라져 던지지 않고 ok 가 붉는다.
   let revertDevLimitFailed = false;
   try {
-    const fakeAllowSecondDevice = false;
-    assert.strictEqual(fakeAllowSecondDevice, true, '2번째 기기 등록 허용 시 단언 실패');
+    assert.notStrictEqual(data2.error, 'too_many_devices', '2번째 기기가 too_many_devices 로 막히지 않았다');
   } catch (e) {
     revertDevLimitFailed = true;
   }
-  ok(revertDevLimitFailed === true, '2번째 기기 too_many_devices 차단 누락 시 단언 실패 입증 (되돌림 실증 2)');
+  ok(revertDevLimitFailed === true, '2번째 기기 too_many_devices 차단을 빼면 붉어진다 (되돌림 실증 2)');
 
   console.log(`\n전부 통과 (${checks}건)`);
 })().catch(err => {

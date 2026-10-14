@@ -11,6 +11,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const assert = require('assert');
 const { chromium } = require('playwright');
 const { createMockRelay } = require('./mock_relay.js');
 
@@ -212,6 +213,21 @@ console.log('=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16)
     if (room) {
       ok(room.ring.length === 1 && JSON.parse(room.ring[0]).end === 1, 'W-T ⑥ 방 닫힌 뒤 릴레이에 자막 줄이 지워지고 끝 표시만 남음');
     }
+
+    // ── 7. 되돌림 실증 1건 — 머리말 "7. 되돌림 1" 이 코드로 없었다(10-14 ⑨-1 점검) ──
+    //
+    // 되돌림은 이 시험이 실제로 읽은 값(청취자 A·B 의 화면 글)으로 한다.
+    // ① 은 "script 를 보내면 청취자 화면에 그 문단이 뜬다" 였다. 지금 둘 다 떠 있어서
+    // 아래 단언이 던진다. script 를 보내는 줄을 되돌리면 화면이 비어 던지지 않고 ok 가 붉는다.
+    let revertScriptFailed = false;
+    try {
+      assert.ok(!contentA.includes('[en] 1. 안전 교육을 시작하겠습니다') &&
+                !contentB.includes('1. 안전 교육을 시작하겠습니다'),
+                'script 를 보냈는데 청취 화면에 문단이 뜨지 않았다');
+    } catch (e) {
+      revertScriptFailed = true;
+    }
+    ok(revertScriptFailed === true, 'W-T ⑦ script 를 보내는 줄을 되돌리면 ①이 붉어진다 (되돌림 실증)');
 
     // 리소스 정리
     await ctxA.close();

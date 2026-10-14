@@ -172,10 +172,13 @@ const srv = http.createServer(async (req, res) => {
 
     // 7. D-09 되돌림 실증 1건:
     // 만약 파싱 결과가 비어 있거나 외부 요청이 발생하면 단언 실패 입증
+    // ⚠ 되돌림은 **그 시험이 실제로 읽은 값**으로 해야 한다. 시험 안에서 만든 상수로
+    //   하면 제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
     let revertFailed = false;
     try {
-      const fakeOutside = ['https://external-leak.com/parse'];
-      assert.strictEqual(fakeOutside.length, 0, '외부 파싱 요청 시 단언 실패');
+      // 진짜로 잡은 바깥 요청 목록을 본다. 지금 0건이라서 아래 단언이 던진다.
+      // 원고 파싱이 바깥으로 나가면 0건이 아니게 되어 던지지 않고 ok 가 붉는다.
+      assert.notStrictEqual(outsideRequests.length, 0, `원고 파싱이 바깥으로 나갔다 (${outsideRequests.length}건)`);
     } catch (e) {
       revertFailed = true;
     }

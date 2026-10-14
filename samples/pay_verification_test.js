@@ -219,10 +219,13 @@ let server;
   ok(revertSkipQueryFailed === true, '포트원 조회를 빼면 미결제 차단 단언 실패 입증 (되돌림 실증 1)');
 
   // ② 비밀값 검사를 빼면 SECRET이 없어도 결제 진행되므로 단언 실패 입증
+  // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**(httpResNoSec)으로 한다. 시험 안에서 만든 상수로
+  //   하면 릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 점검).
   let revertSecretCheckFailed = false;
   try {
-    const fakeNoSecretCheck = false; // 비밀값 검사가 빠진 플래그
-    assert.strictEqual(fakeNoSecretCheck, true, '비밀값 검사가 빠지면 단언 실패해야 함');
+    // PORTONE_API_SECRET 없이 보낸 진짜 요청의 답을 본다. 지금 503 pg_secret_missing 이라서
+    // 아래 단언이 던진다. 비밀값 검사를 빼면 503 이 아니게 되어 던지지 않고 ok 가 붉는다.
+    assert.notStrictEqual(httpResNoSec.status, 503, `비밀값 없이도 /pay/complete 가 ${httpResNoSec.status} 로 섰다`);
   } catch (e) {
     revertSecretCheckFailed = true;
   }
