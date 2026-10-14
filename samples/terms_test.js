@@ -64,6 +64,19 @@ ok(enTerms.includes('October 12, 2026'), 'Effective Date');
 ok(enTerms.includes('/web/terms/'), '국문 전환 링크');
 ok(enTerms.includes('/privacy/en/'), '영문 개인정보 처리방침 링크');
 
+/* ── 2-1. 개인정보 처리방침 ↔ 사실 넷 (MASTER 10-14 11:10 ⑤) ──
+ * 사실: 청취 전송은 암호화(wss/TLS) · 투폰 LAN 은 평문. 2항 표의 청취 줄이 암호화를 적고, 투폰 줄은 "암호화 없음" 그대로.
+ * 되돌려서 실패 확인: 청취 줄의 "암호화 전송(wss/TLS)" 을 지우면 아래가 붉다. */
+console.log('\n[Test 2-1] 개인정보 처리방침 2항 — 청취 암호화 · 투폰 평문 (사실표 넷)');
+for (const rel of ['web/privacy/index.html', 'privacy/index.html']) {
+  const pv = fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+  const row = pv.split('\n').find((l) => l.includes('강의 한 줄(원문+번역, 글자)')) || '';
+  ok(row.includes('암호화 전송(wss/TLS)'), `${rel}: 청취(QR) 줄에 암호화 전송(wss/TLS)`);
+  const twophone = pv.split('\n').find((l) => l.includes('대화·강연 한 줄(원문+번역)')) || '';
+  ok(twophone.includes('암호화 없음'), `${rel}: 투폰·가이드 앱 참석자 줄은 "암호화 없음"(평문 LAN) 그대로`);
+}
+ok(fs.readFileSync(path.join(ROOT, 'web/privacy/index.html'), 'utf-8') === fs.readFileSync(path.join(ROOT, 'privacy/index.html'), 'utf-8'), '/privacy 와 /web/privacy 사본이 같다');
+
 /* ── 3. 11번 대기줄: 구매 화면(/web/buy/) 환불 고지 실측 검증 ── */
 console.log('\n[Test 3] 11번 환불·청약철회 정책 — /web/buy/ 구매 화면 사전 고지 검증');
 const buyPath = path.join(ROOT, 'web', 'buy', 'index.html');
