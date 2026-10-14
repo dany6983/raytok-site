@@ -5,6 +5,49 @@
 
 ---
 
+[B] B-1 — `/license/issue` 토큰에 등록한 이용권 플래그(0x01) 실기 (마스터 10-14 09:00)
+2026-10-14 10:30 · 세션: claude-code · 가지: main · 커밋 `ef77662`
+
+확인한 사실(코드): `/license/issue` 는 `mintLicense(sub, 30, 0x02, secret)` 로 **0x02 만** 찍었고
+(`index.js:488`), `/license/redeem` 은 HMAC 토큰을 **돌려주지 않는다**(`room.js` 0-1-A — `{valid, activatedAt,
+expiresAt, flags}` 뿐). 앱은 issue 토큰으로 `POST /room {kind:'guide'}` 를 열고(`webwire.js:11`), `/room` 은
+0x01 을 본다(`index.js:1296`) → **401**. 안 실렸다.
+
+고친 것:
+- `relay/src/room.js` — redeem 의 네 길(개별 첫 등록·개별 재요청·묶음 첫 자리·묶음 재요청)이 기기 색인
+  `dev:<sha256(deviceId)>` = `[{flags, activatedAt, expiresAt}]` 을 적는다. 묶음은 `batchData.flags || 0x01`.
+  새 내부 끝점 `GET /internal/license/device?deviceId=` → `{flags: OR(살아 있는 것), until: 가장 이른 끝, count}`.
+- `relay/src/index.js` `/license/issue` — 그 기기의 살아 있는 이용권 플래그를 OR 해 싣고, 만료는
+  `min(30일, 이용권 끝)`. 0x10 은 **덧붙이지 않는다**(코드에 실려 있을 때만 따라온다, MASTER 09:52).
+  DO 조회가 실패하면 전과 같이 0x02·30일(try/catch).
+- `relay/test/issue-flags.mjs` 신규, `npm run test:issue-flags`.
+
+실행 출력 발췌 (wrangler dev 8787, `.dev.vars` 는 시험용 LICENSE_SECRET/SALT 만):
+```
+[PASS] 1 before redeem: flags=0x2, /room=401
+[PASS] 2 redeem ok: flags=0x1 expiresAt=2026-10-15T01:27:16.081Z
+[PASS] 3 after redeem: flags=0x3 exp=2026-10-15T01:27:15.000Z
+[PASS] 4 /room guide opened: code=KN4ZMT
+[PASS] 5 other device untouched
+=== B-1 issue-flags: 5/5 PASS ===
+```
+되돌림 확인(D-09): `flags |= licFlags` 한 줄을 주석 처리하면 `[3]` 에서 붉다(`401 !== 200`). 복구 뒤 초록.
+`node test/room-auth.mjs` 1~9 PASS (10 은 DEEPGRAM 키 없어 503 — 전과 같음). `npm run test:mint` 8/8.
+
+한 줄 판정: 이용권을 등록한 기기의 issue 토큰에 0x01 이 실리고 `/room guide` 가 열린다. 배포는 10-17 뒤 대표님.
+
+막힌 것:
+- 묶음 QR 길은 시험이 못 돈다 — 묶음 기록을 만드는 공개 길이 결제(`/pay/complete`, 포트원 비밀값) 뿐이다.
+  코드 길과 같은 `noteDevice` 를 지나므로 같은 색인에 들어간다(코드로 확인, 실행은 못 함). 기본안: 그대로 둔다.
+- `/license/issue` 토큰 만료가 이용권 끝(1일권이면 1일)으로 짧아진다 — 앱은 `issue_failed`/만료 때 재발급하므로
+  문제 없다고 봤다. 앱이 토큰 만료를 **미리** 안 보면 1일 뒤 `/translate` 401 한 번 → 재발급. A1 에 한 줄 알림.
+
+건드린 파일과 이유: `relay/src/room.js`(색인·내부 끝점) · `relay/src/index.js`(issue 플래그 OR) ·
+`relay/test/issue-flags.mjs`(신규) · `relay/package.json`(스크립트 한 줄).
+
+---
+
+
 [B 보고]
 모델: flash (gemini-3.8-flash) · 인증: oauth-personal (개인 구글 계정 OAuth 로그인, 유료 키 삭제 확인)
 2026-10-13 청취자 데이터량 정밀 실측 확정 보고 (DevTools Network + 릴레이 카운터)
