@@ -5,6 +5,53 @@
 
 ---
 
+[B] 10-13 22:15 여섯 + 7·8 — git 대조 결과: **여덟 다 이미 커밋돼 있다**(10-13 23:16~00:27 KST). 빈 곳 하나(손님 글자 사전)만 채움
+2026-10-14 11:40 · 세션: claude-code · 가지: main · 커밋 `f8a392a`
+
+**사실(git)**: MASTER 10-14 09:00 "어젯밤 B 커밋 0" 은 git 과 다르다. 지난 B 세션(gemini)이 `3cce80b`(23:16) ·
+`100a1cf`(00:19) · `e1859ff`(00:27) · 보고 `6caf96e` 로 1~8 을 전부 밀었다(REPORT 에 "[B 보고] … 1~8번 전 항목" 있음).
+AGENTS §23-1(끝났는지는 git 이 답한다)대로 **다시 만들지 않고 항목마다 대조**했다:
+
+| # | 지시 | git | 대조 | 빈 곳 |
+|---|---|---|---|---|
+| 1 | stable → LANG-74 | `100a1cf` | `download/index.html`·`download/en/index.html` STABLE·BUILD 둘 다 LANG-74 | 없음 |
+| 2 | bytes_out → `/usage` | `3cce80b`·`6bdaeea` | `samples/bytes_out_test.js` 12/12 (listenerBytesOut·total/avg_listener_bytes) | 없음 |
+| 3 | 0x10 플래그 | `3cce80b` | **오늘 B-3 정정판(`493da37`)이 덮었다** — 0x10 필수·403 | 없음 |
+| 4 | 진입 때 음성 검사 한 번 | `3cce80b` | `checkOsVoiceSupport` 한 번(`hasWarnedVoiceAbsence`) · `#voice-notice` | **한국어 하드코딩** → 사전 |
+| 5 | 방송 줄 `broadcast` | `100a1cf` | `wire-messages.json` line 에 `broadcast?` + `_note_broadcast`(이름 그대로) · 청취 페이지 원문 그 자리·번역 칸 비움 · `npm run test:wire` 통과 · bytes_out 시험의 "번역 없음 미표출" 2건 | 없음 |
+| 6 | `/join` → 브라우저로 듣기 | `100a1cf` | `room=` 있을 때만 단추, `web/listener/?room=&lang=` · 시험 3건 | 없음(아래 사실 하나) |
+| 7 | 브라우저 마이크 N:1 | `e1859ff` | `grant`→getUserMedia+SpeechRecognition→`question`(원문+lang, 번역 없음) · 없으면 글자 칸 · `revoke`→끔 | '익명' 하드코딩 → 사전 |
+| 8 | 목소리 고르기 | `e1859ff` | 그 언어 최대 3 · 순서 local(+10)·premium/enhanced/natural(+5)·non-network(+3) · ▶ 미리듣기 · `raytok_voice_uri_<lang>` | 단추·제목·없음·**미리듣기 인사말 '안녕하세요' 고정** → 사전 |
+
+고친 것(`f8a392a`):
+- `web/listener/ui-strings.json` — 키 여섯(`voice_absent_notice`·`voice_button`·`voice_pick_title`·`voice_none`·
+  `voice_preview_text`·`anon_name`) × **81개 언어**(`langs.json` 82 중 zh-CN/zh-TW 는 사전 규칙대로 `zh` 하나).
+  **기계 번역 스크립트는 이 저장소에 없다**(`web/common` 엔 report.js·theme.css 뿐 · 앱 `scripts/i18n-fill.js` 는
+  `/translate` 를 쓰는 길이라 B-3 뒤엔 0x10 토큰이 필요하다). 그래서 **직접 번역해 넣었다 — 원어민 검수 없음.**
+- `web/listener/index.html` — 음성 없음 안내·미리듣기 인사말은 **자막 언어**(`selectedLang`)로, 단추·제목·없음은 UI 언어로.
+  미리듣기가 '안녕하세요' 고정이던 것은 영어 음성에 한국어를 넣는 꼴이라 그 언어 인사말로 바꿨다.
+- `samples/listener_i18n_test.js`(`npm run test:listener-i18n`, `npm test` 에 추가) 17건.
+
+실행 출력 발췌 (CHROME=/opt/pw-browsers/chromium-1194 로 Playwright):
+```
+listener_i18n_test   전부 통과 (17건)   — 키 6 × 언어 81, index.html 사용 여부, 하드코딩 0
+bytes_out_test       전부 통과 (12건)   question_test 전부 통과 (21건)   test:wire 전부 통과
+```
+
+막힌 것(사실만):
+- 청취 페이지 UI 사전(`ui-strings.json`)은 **19개 언어**다(`langs` 19). 기존 키 47개는 나머지 62개 언어에서 영어로
+  떨어진다(`t()` 의 en fallback). 새 키 여섯만 81개다. 47×62 ≈ 2,900 문장 — 기본안: 따로 줄을 받으면 채운다(돈 0, 시간만).
+- `/join` 페이지는 **전체가 한국어**다(기존). 6번의 「브라우저로 듣기」만 사전에 넣으면 한 단추만 바뀌어 더 이상하다 —
+  그대로 둔다. 페이지째 번역은 별도 줄.
+- `samples/broadcast_raw_test.js` 1건이 이 환경에서 붉다 — `#current-lang-text` 를 UI 언어가 ko 일 때만 '원문 방송'
+  으로 쓰는데 헤드리스 브라우저 로케일이 en 이라 'Original Broadcast' 가 나온다. 코드 문제가 아니라 시험의 로케일 가정.
+  지난 세션 Windows(ko)에선 초록이었다. 손대지 않았다(기본안: 시험에 `locale:'ko-KR'` 한 줄 — 다음에).
+- Playwright 1.63 이 요구하는 chromium 1243 은 이 환경에서 못 받는다(cdn.playwright.dev 차단) — 1194 로 돌렸다. 시험 결과엔 영향 없음.
+
+남은 것: MASTER [열림]·[대기]에서 B 몫으로 남은 줄 없음(§15 — 마스터가 다음 줄을 준다). 배포 안 함.
+
+---
+
 [B] B-3 정정판 — `/translate` 는 0x10 인터넷 번역 패키지만 (대표님 10-14 08:39·08:41, MASTER 09:50·09:52)
 2026-10-14 11:05 · 세션: claude-code · 가지: main · 커밋 `493da37`
 
