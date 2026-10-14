@@ -189,7 +189,13 @@ assert.strictEqual(pageVi.uiElements.join_title, 'Tham gia phiên', 'UI 글자�
 console.log('[PASS] vi-VN 환경에서 베트남어 UI 정상 검증!');
 
 // ────────────────────────────────────────────────────────────────
-// [TEST 3] ar-SA 로 접속했을 때 검증 (ar은 19개 UI 언어 부재, 82개 자막 목록엔 존재)
+// [TEST 3] ar-SA 로 접속했을 때 검증
+//
+// 10-14 12:30(c60c78f) 에 UI 사전 langs 가 19 → 81 로 늘었다. 그래서 **ar 은 이제 UI 언어다** —
+// 전에는 "ar 은 사전에 없으니 UI 는 en 으로 떨어진다"가 참이었고 이 시험이 그것을 지켰는데,
+// 사전이 커진 뒤로는 코드가 맞고 **시험의 가정이 낡았다**(10-14 13:25 broadcast_raw 로케일과 같은 꼴).
+// 지금 참인 것: ar 접속 → UI 도 아랍어, UI dir 도 rtl. 바뀌지 않은 것: **원문은 원문 방향,
+// 번역문은 그 언어 방향** — 줄 안에서 둘이 따로 간다(아래 arLine).
 // ────────────────────────────────────────────────────────────────
 console.log('\n[TEST 3] navigator.language = "ar-SA" 접속');
 const pageAr = simulatePageLoad({ navLang: 'ar-SA' });
@@ -200,9 +206,9 @@ console.log('- 화면 UI 글자 (join_title):', pageAr.uiElements.join_title);
 console.log('- 줄 목록 칸 (chatList.dir):', pageAr.chatList.dir);
 
 assert.strictEqual(pageAr.getSelectedLang(), 'ar', '자막 언어는 ar이어야 함');
-assert.strictEqual(pageAr.doc.lang, 'en', 'ar은 19개 UI 언어에 없으므로 UI는 en으로 fallback');
-assert.strictEqual(pageAr.doc.dir, 'ltr', 'UI는 영문이므로 documentElement.dir은 ltr 유지');
-assert.strictEqual(pageAr.uiElements.join_title, 'Join Session', 'UI 글자는 영어("Join Session")여야 함');
+assert.strictEqual(pageAr.doc.lang, 'ar', 'ar 은 81개 UI 언어에 있으므로 UI 도 아랍어');
+assert.strictEqual(pageAr.doc.dir, 'rtl', 'UI 가 아랍어이므로 documentElement.dir 은 rtl');
+assert.strictEqual(pageAr.uiElements.join_title, 'الانضمام إلى الجلسة', 'UI 글자는 아랍어여야 함');
 assert.strictEqual(pageAr.chatList.dir, 'rtl', '줄 목록 칸(chatList)의 dir은 반드시 rtl이어야 함');
 
 // 자막 줄 원문/번역문 검증
@@ -210,7 +216,7 @@ const arLine = pageAr.addLine(1, '안전모를 착용하세요.', { ar: 'ارت�
 assert.strictEqual(arLine.textEl.dir, 'ltr', '원문(한국어)은 ltr이어야 함');
 assert.strictEqual(arLine.trEl.dir, 'rtl', '번역문(아랍어)은 rtl이어야 함');
 console.log('- 원문 dir:', arLine.textEl.dir, '/ 번역문 dir:', arLine.trEl.dir);
-console.log('[PASS] ar-SA 환경에서 UI 영문 LTR + 자막 아랍어 RTL 완벽 분리 검증!');
+console.log('[PASS] ar-SA 환경에서 UI 아랍어 RTL + 줄 안 원문 LTR/번역문 RTL 분리 검증!');
 
 // ────────────────────────────────────────────────────────────────
 // [TEST 4] ko-KR 로 접속했을 때만 한국어로 나와야 함
@@ -247,22 +253,33 @@ assert.strictEqual(pageKo.doc.dir, 'ltr');
 assert.strictEqual(pageKo.chatList.dir, 'ltr');
 assert.strictEqual(pageKo.uiElements.join_title, 'เข้าร่วมเซสชัน');
 
-// th -> ar (아랍어: 19개 UI에 없고 82개 목록에 있음, RTL임)
-// 사용자가 19개 외 언어(ar)를 선택하면 UI는 영어('en')로 fallback, 자막은 'rtl'이어야 함!
+// th -> ar (아랍어: 81개 UI 사전에 있고, RTL임)
 pageKo.onSelectChange('ar');
 console.log('- [pageKo] ar 선택: UI lang =', pageKo.doc.lang, ', UI dir =', pageKo.doc.dir, ', chatList.dir =', pageKo.chatList.dir, ', UI 글자 =', pageKo.uiElements.join_title);
-assert.strictEqual(pageKo.doc.lang, 'en', '19개 목록에 없는 ar 선택 시 UI는 반드시 en으로 fallback해야 함');
-assert.strictEqual(pageKo.uiElements.join_title, 'Join Session', 'UI 글자는 영어("Join Session")여야 함 (한국어 고정 버그 방지)');
-assert.strictEqual(pageKo.doc.dir, 'ltr', 'UI 방향은 ltr');
+assert.strictEqual(pageKo.doc.lang, 'ar', 'ar 선택 시 UI 도 아랍어');
+assert.strictEqual(pageKo.uiElements.join_title, 'الانضمام إلى الجلسة', 'UI 글자는 아랍어여야 함 (한국어 고정 버그 방지)');
+assert.strictEqual(pageKo.doc.dir, 'rtl', 'UI 방향은 rtl');
 assert.strictEqual(pageKo.chatList.dir, 'rtl', '자막 방향은 rtl이어야 함');
 
-// ar -> fa (페르시아어: 19개 UI에 없고 82개 목록에 있음, RTL임)
+// ar -> fa (페르시아어: 81개 UI 사전에 있고, RTL임)
 pageKo.onSelectChange('fa');
 console.log('- [pageKo] fa 선택: UI lang =', pageKo.doc.lang, ', UI dir =', pageKo.doc.dir, ', chatList.dir =', pageKo.chatList.dir, ', UI 글자 =', pageKo.uiElements.join_title);
-assert.strictEqual(pageKo.doc.lang, 'en', '19개 목록에 없는 fa 선택 시 UI는 반드시 en으로 fallback해야 함');
+assert.strictEqual(pageKo.doc.lang, 'fa', 'fa 선택 시 UI 도 페르시아어');
+assert.strictEqual(pageKo.uiElements.join_title, 'پیوستن به جلسه', 'UI 글자는 페르시아어여야 함');
+assert.strictEqual(pageKo.doc.dir, 'rtl', 'UI 방향은 rtl');
+assert.strictEqual(pageKo.chatList.dir, 'rtl', '자막 방향은 rtl이어야 함');
+
+// ── 사전에 없는 코드는 여전히 en 으로 떨어져야 한다 (이 시험이 원래 잡던 버그) ──
+//
+// 사전이 81개가 된 뒤 **자막 목록 82개 중 UI 사전에 없는 코드는 하나도 없다**
+// (zh-CN·zh-TW 는 normalizeLangCode 가 zh 로 접는다). 그래서 "en 으로 떨어진다"를
+// 지키려면 사전에 없는 코드로 눌러 봐야 한다 — 그것이 R-15 의 자리다.
+// ⛔ 여기서 ko 가 나오면 그때의 버그(한국어 고정)가 돌아온 것이다.
+pageKo.onSelectChange('zz');
+console.log('- [pageKo] 사전에 없는 zz 선택: UI lang =', pageKo.doc.lang, ', UI dir =', pageKo.doc.dir, ', UI 글자 =', pageKo.uiElements.join_title);
+assert.strictEqual(pageKo.doc.lang, 'en', '사전에 없는 코드는 UI 를 en 으로 떨어뜨려야 한다 (ko 고정 금지)');
 assert.strictEqual(pageKo.uiElements.join_title, 'Join Session', 'UI 글자는 영어("Join Session")여야 함');
 assert.strictEqual(pageKo.doc.dir, 'ltr', 'UI 방향은 ltr');
-assert.strictEqual(pageKo.chatList.dir, 'rtl', '자막 방향은 rtl이어야 함');
 
 console.log('[PASS] 드롭다운 선택 변경에 따른 UI 언어 및 자막 dir 동적 갱신 완벽 통과!');
 
@@ -275,6 +292,6 @@ console.log('   한 줄 늦게 실행되어 드롭다운 값도 항상 ko로 먼
 console.log('3. 이로 인해 en-US, vi-VN 등으로 접속해도 UI가 항상 한국어로 표시되었음.');
 console.log('4. 해결: selectedLang 먼저 결정 -> langSelect.value 할당 ->');
 console.log('   determineLanguage에서 langSelect.value 검사 제거 및 selectedLang 우선 적용 ->');
-console.log('   en-US(en UI), vi-VN(vi UI), ar-SA(en UI + ar RTL) 정상 동작 확인.');
+console.log('   en-US(en UI), vi-VN(vi UI), ar-SA(ar UI + RTL) 정상 동작 확인.');
 console.log('============================================================');
 console.log('=== All 5 Real Lifecycle Tests Passed! ===\n');
