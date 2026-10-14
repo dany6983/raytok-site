@@ -5,10 +5,33 @@
 
 ---
 
-진행 중: MASTER 11:10 ④ /join 대기·끊김·끝남 문구 + 자막 크기 소·중·대 + wakeLock (81언어) — 시작 12:41
+진행 중: MASTER 11:10 ⑤ 약관·개인정보 사실 갱신 (사실표 넷과 다른 줄만) — 시작 12:47
+
+[B] MASTER 11:10 ④ 청취 페이지 — 빈 방 문구 셋 · 자막 글자 크기 소·중·대 · wakeLock (81언어)
+2026-10-14 12:47 · 세션: claude-code · 가지: main · 커밋 `9f4fa70` · 시작 12:41
+
+- **어디서 보나**: `/web/listener/?room=…` 참여 뒤 자막 칸. `/join` 은 앱을 열거나 「브라우저로 듣기」로 이 페이지에 보내는 길목이라 자막이 없다 — 셋 다 **자막이 있는 청취 페이지**에 넣었다(기본안, 아래 막힌 것).
+- **빈 방 문구** `#room-state`: 줄이 0 이고 말하는 중도 없을 때만. 연결됨·연결 중 → "강사의 말을 기다리는 중입니다" / 재연결 중 → "연결이 끊겼습니다. 다시 연결 중…" / 종료·거부 → "안내가 끝났습니다". 줄이 하나라도 오면 치운다. 참여 전(join 화면)엔 없다.
+- **글자 크기** 도구 막대 「작게·보통·크게」: 13 / 15(기본) / 20px, `localStorage raytok_font` 로 새로고침 뒤에도 기억. 큰 화면 보기(`?view=screen`)는 제 크기 그대로.
+- **wakeLock**: 청취 페이지에 **이미 있었다**(`keepAwake` — 참여 때 `navigator.wakeLock.request`, 없으면 무음 영상). 새로 넣지 않았고 시험이 호출을 센다(사실).
+- **새 글자 7키 × 81언어 = 567칸** 같은 커밋(`web/listener/ui-strings.json`: `empty_waiting·empty_disconnected·empty_ended·font_size_label·font_small·font_medium·font_large`). 직접 번역, 원어민 검수 없음. 모양 검사(빈칸·꺾쇠·따옴표·앞뒤 빈칸) 0건.
+- 시험: `samples/listener_state_test.js` 14건(`npm test` 에 `test:listener-state` 추가; mock 릴레이, UI 언어 vi 로 돌려 사전이 실제로 쓰이는지) · `listener_i18n_test` 21→35건.
+- 청취자 브라우저 자체 번역 안내 문구는 **넣지 않았다**(특허 답 대기).
+
+실행 출력 발췌:
+```
+[PASS] [대기] welcome 뒤 줄 0 → "Đang chờ người nói…" (vi) · [PASS] [wakeLock] 참여하면 navigator.wakeLock.request 를 부른다
+[PASS] [끊김] 소켓이 끊기면 → "Mất kết nối. Đang kết nối lại…" · [PASS] [끊김→대기] · [PASS] [줄 도착] 띠 치움
+[PASS] [글자] 크게 → 20px · 작게 → 13px · 새로고침 뒤 기억(font-s) · [PASS] [끝남] end → "Phiên đã kết thúc" · 전부 통과 (14건)
+되돌림 실증: reconnecting 분기 지움 → [끊김] 시간 초과 붉음 · setItem 지움 → "[글자] localStorage raytok_font=s" 붉음. 복구 후 14건.
+listener_i18n 35건 · broadcast_raw 14건(회귀 없음)
+```
+한 줄 판정: ④ 끝. 막힌 것(기본안으로 진행): 지시의 "/join 에서 방이 비었을 때" — `/join` 에는 자막 칸이 없어 **청취 페이지(`web/listener`)에 넣었다.** `/join` 자체에 넣으라는 뜻이면 뒤집어 달라. 배포 안 함.
+
+---
 
 [B] MASTER 11:10 ③ 묶음 QR 인쇄 페이지 `web/tools/qr-sheet/`
-2026-10-14 12:46 · 세션: claude-code · 가지: main · 커밋 `9d212c9` · 시작 12:39
+2026-10-14 12:41 · 세션: claude-code · 가지: main · 커밋 `9d212c9` · 시작 12:39
 
 - **어디서 보나**: `raytok.kr/web/tools/qr-sheet/` (noindex). 코드 128자 또는 `/lic/<code>` 링크를 한 줄에 하나씩 → 「격자 만들기」 → 「인쇄」.
 - A4 세로 한 장 **2열 × 4행 = 8칸**, 9장째부터 다음 장(`@page A4`, `break-after:page`). 칸마다 **QR**(`https://raytok.kr/lic/<code>`) · **코드 글자**(4자 묶음) · **기간(일)**(`N일권`, 0 이면 "기간 없음"). 장 머리글(선택) + 쪽 번호.
