@@ -5,6 +5,49 @@
 
 ---
 
+[B] B-2 — `mint-core` 페이로드 `[3..4]` = 기간(일, uint16 BE), 앱 정본과 바이트 단위로 맞춤 (마스터 10-14 09:00)
+2026-10-14 10:45 · 세션: claude-code · 가지: main · 커밋 `8ce3a70`
+
+있던 모양(relay): `[1..4]` shelfLife uint32 · `[5..8]` 에 "days 또는 exp" 를 **같은 칸**에 섞어 넣고 `val <= 365` 면
+기간으로 읽었다. 앱 정본(`b9c0678`)은 `[3..4]` 기간 uint16 BE · `[5..8]` 만료(기간 있으면 묵힘 한도)다 — 달랐다.
+
+고친 것:
+- `relay/src/mint-core.js` — `buildPayload/claimsOf` 를 앱 `src/license.js claimsOf` 와 같은 자리·같은 값으로.
+  `claims.days` 가 항상 있다. `verifyCode` 는 기간이 있어도 `exp`(묵힘 한도)를 본다. `shelfLife` 는 `exp` 의 별칭(옛 호출 호환).
+- `relay/src/room.js` redeem · `samples/mock_relay.js` — 기간 0 이면 끝 = `exp`, 있으면 `min(등록+기간, exp)`
+  (앱 `effectiveExp` 와 같은 셈). 전에는 기간이 없으면 **1일로 가정**했다 — 절대 만료 코드가 하루 만에 죽었을 것.
+- `relay/src/pay.js` — `mintCode({days, exp: shelfLife})`.
+- `relay/tools/mint-code.mjs` — `--days N`(기간 칸, 0 이면 절대 만료만 = 전과 같음) · `--exp`(묵힘 한도/절대 만료,
+  생략하면 오늘+90일, `--shelf` 로 바꿈) · `--count N`(묶음 — 같은 칸, 고객 `<앞3자><001..>` pay.js 6-B 와 같은 모양) ·
+  `--verify` 가 기간/묵힘 한도를 보여 준다. 묶음 **QR**(batchId) 의 기간은 서버 기록 `batchData.days`(pay.js) 로
+  이미 같은 수·같은 단위다 — QR 에는 자리 수·기간을 싣지 않는다(설계 §3-4).
+- `docs/samples/license-code.md` — 앱 정본의 **거울 사본**(이 저장소엔 없었다). 시험이 벡터 넷이 글자까지 같은지 센다.
+- `relay/test/mint-code.mjs` — ⑤ 기간 벡터(payload hex `00 0000 0007 70dbd880 01 "RT0007"`) · 묵힘 한도 ·
+  0/65535 경계 · 사본=정본 · 도구 풀기(`resolvePeriod`/`custsFor`).
+
+실행 출력 발췌:
+```
+$ npm run test:mint          # tests 11 / pass 11 / fail 0
+$ (writeUInt16BE → LE 되돌림) not ok 7 ⑤ 기간(일) · not ok 9 도구 풀기 → 복구 뒤 11/11   (D-09)
+$ node samples/license_redeem_test.js   전부 통과 (27건)
+$ npm run test:issue-flags   === B-1 issue-flags: 5/5 PASS ===   (새 칸으로 1일권 등록 → 토큰 exp = 등록+1일)
+앱 교차 확인(스크래치, 앱 src/license.js 로 relay 가 찍은 7일권 읽기):
+  payload 000000000770dbd88001525430303037
+  app claims   {"keyId":0,"exp":1893456000,"days":7,"flags":1,"cust":"RT0007"}
+  relay claims {"keyId":0,"exp":1893456000,"days":7,"flags":1,"cust":"RT0007"}
+  app verify day6 true | day8 false expired
+```
+기존 벡터 넷: **깨지지 않았다** — 넷 다 기간 0 이라 바이트가 같다. 정본을 고칠 일 없음.
+
+한 줄 판정: relay 발급·검증·redeem 이 앱 정본 `[3..4]` 기간 칸을 바이트 단위로 같이 쓴다.
+
+막힌 것: 없음.
+건드린 파일과 이유: `relay/src/mint-core.js`(칸 모양) · `relay/src/room.js`·`samples/mock_relay.js`(기간 셈) ·
+`relay/src/pay.js`(호출 칸 이름) · `relay/tools/mint-code.mjs`(옵션) · `relay/test/mint-code.mjs`(시험) ·
+`docs/samples/license-code.md`(거울 사본 신규).
+
+---
+
 [B] B-1 — `/license/issue` 토큰에 등록한 이용권 플래그(0x01) 실기 (마스터 10-14 09:00)
 2026-10-14 10:30 · 세션: claude-code · 가지: main · 커밋 `ef77662`
 
