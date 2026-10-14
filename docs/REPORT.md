@@ -5,10 +5,29 @@
 
 ---
 
-진행 중: MASTER 11:10 ③ 묶음 QR 인쇄 페이지 web/tools/qr-sheet/ — 시작 12:39
+진행 중: MASTER 11:10 ④ /join 대기·끊김·끝남 문구 + 자막 크기 소·중·대 + wakeLock (81언어) — 시작 12:41
+
+[B] MASTER 11:10 ③ 묶음 QR 인쇄 페이지 `web/tools/qr-sheet/`
+2026-10-14 12:46 · 세션: claude-code · 가지: main · 커밋 `9d212c9` · 시작 12:39
+
+- **어디서 보나**: `raytok.kr/web/tools/qr-sheet/` (noindex). 코드 128자 또는 `/lic/<code>` 링크를 한 줄에 하나씩 → 「격자 만들기」 → 「인쇄」.
+- A4 세로 한 장 **2열 × 4행 = 8칸**, 9장째부터 다음 장(`@page A4`, `break-after:page`). 칸마다 **QR**(`https://raytok.kr/lic/<code>`) · **코드 글자**(4자 묶음) · **기간(일)**(`N일권`, 0 이면 "기간 없음"). 장 머리글(선택) + 쪽 번호.
+- 기간은 정본 `[3..4]`(uint16 BE) 를 브라우저에서 base32 풀어 읽는다 — **서명은 검사하지 않는다**(인쇄 보조; 유효성은 앱·릴레이). 하이픈·빈칸·소문자·I/L/O 교정은 정본 글자 표 그대로.
+- **서버 호출 0건**: fetch/XHR 코드가 없고 QR 은 `/web/vendor/qrcode.js`(로컬). 시험이 요청 목록을 세어 페이지·qrcode.js 밖 0건을 확인.
+- 시험 `samples/qr_sheet_test.js` 17건(`npm test` 에 `test:qr-sheet` 추가) — 시험 키 0 으로 1일권 8 + 7일권 2 발급 → 2장(8+2) · svg 10 · 읽을 수 없는 줄은 붉은 칸.
+
+실행 출력 발췌:
+```
+[PASS] 10칸 → A4 2장 (8 + 2) · [PASS] 기간(일) = payload [3..4] (1일권 ×8, 7일권 ×2) · [PASS] 페이지·qrcode.js 밖의 요청 0건 · 전부 통과 (17건)
+되돌림 실증: daysOf 를 [5..6] 으로 바꾸면 → "[FAIL] 기간(일) = payload [3..4]". 복구 후 17건.
+check_links 572/0
+```
+한 줄 판정: ③ 끝. 막힌 것: 없음. 배포 안 함.
+
+---
 
 [B] MASTER 11:10 ② `/usage` 패키지 글자 칸
-2026-10-14 13:02 · 세션: claude-code · 가지: main · 커밋 `0e01da8` · 시작 12:36
+2026-10-14 12:39 · 세션: claude-code · 가지: main · 커밋 `0e01da8` · 시작 12:36
 
 - `relay/src/index.js` `/usage`: **토큰으로 인증한 경우에만** `package` 칸. 0x10 토큰 → `{flag:16, month, chars}`(이번 달 `/translate` 글자 수 = 기존 `total_chars`), 0x10 없는 토큰 → `null`. 관리자(비밀값) 조회에는 칸 없음. 감시선(`TRANSLATE_CAP_CHARS` 300만)은 **싣지 않는다**(손님 비공개 — 전부터 `cap_chars` 를 안 보내던 것 그대로).
 - `web/usage/index.html`: 카드 하나 「인터넷 번역 패키지」 — 객체면 글자 수, null 이면 "패키지 없음". 상한 숫자 없음.
