@@ -77,10 +77,10 @@ for (const rel of ['web/privacy/index.html', 'privacy/index.html']) {
 }
 ok(fs.readFileSync(path.join(ROOT, 'web/privacy/index.html'), 'utf-8') === fs.readFileSync(path.join(ROOT, 'privacy/index.html'), 'utf-8'), '/privacy 와 /web/privacy 사본이 같다');
 
-/* ── 3. 11번 대기줄: 구매 화면(/web/buy/) 환불 고지 실측 검증 ── */
-console.log('\n[Test 3] 11번 환불·청약철회 정책 — /web/buy/ 구매 화면 사전 고지 검증');
-const buyPath = path.join(ROOT, 'web', 'buy', 'index.html');
-ok(fs.existsSync(buyPath), 'web/buy/index.html 파일 존재');
+/* ── 3. 11번 대기줄: 구매 화면(/buy/) 환불 고지 실측 검증 ── */
+console.log('\n[Test 3] 11번 환불·청약철회 정책 — /buy/ 구매 화면 사전 고지 검증');
+const buyPath = path.join(ROOT, 'buy', 'index.html');
+ok(fs.existsSync(buyPath), 'buy/index.html 파일 존재');
 const buyHtml = fs.readFileSync(buyPath, 'utf-8');
 ok(buyHtml.includes('id="refund-notice"'), '구매 화면에 refund-notice 영역 존재 확인');
 ok(buyHtml.includes('7일 이내 전액 환불'), '구매 화면에 미사용 7일 이내 전액 환불 고지 확인');
@@ -174,7 +174,7 @@ const pgFooterPages = [
   'ows/index.html',
   'desk/index.html',
   'guide/index.html',
-  'web/buy/index.html',
+  'buy/index.html',
   'web/terms/index.html',
   'web/terms/en/index.html',
   'privacy/index.html',

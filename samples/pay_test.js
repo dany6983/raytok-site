@@ -154,8 +154,10 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     }
 
     let filePath = path.join(ROOT, url.pathname);
-    if (url.pathname === '/' || url.pathname === '/web/buy/') {
-      filePath = path.join(ROOT, 'web', 'buy', 'index.html');
+    if (url.pathname === '/') {
+      filePath = path.join(ROOT, 'index.html');
+    } else if (url.pathname.endsWith('/')) {
+      filePath = path.join(ROOT, url.pathname, 'index.html');
     }
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       res.writeHead(200);
@@ -188,53 +190,66 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
   });
 
   try {
-    await page.goto(`${baseUrl}/web/buy/`);
+    // ── MASTER 10-14 13:20 구매 페이지 전부 열기 (PG 심사 "판매 상품 없음" 회신) ──
+    // ② /buy/ 자체가 본 페이지 — 넘김 없음. /web/buy/ 는 /buy/ 로 넘긴다.
+    const buyHtml = fs.readFileSync(path.join(ROOT, 'buy', 'index.html'), 'utf-8');
+    ok(!buyHtml.includes('http-equiv="refresh"') && buyHtml.includes('id="btn-pay"'), '13:20 ②: /buy/index.html 이 넘김 없는 본 페이지(결제 단추 포함)');
+    const webBuyHtml = fs.readFileSync(path.join(ROOT, 'web', 'buy', 'index.html'), 'utf-8');
+    ok(webBuyHtml.includes('url=/buy/') && !webBuyHtml.includes('id="btn-pay"'), '13:20 ②: /web/buy/ 는 /buy/ 로 넘기는 짧은 페이지');
 
-    // [B-9] 테스트 구매 페이지 공개 차단 확인
-    const hasNoIndex = await page.evaluate(() => {
-      const meta = document.querySelector('meta[name="robots"]');
-      return meta && meta.getAttribute('content').includes('noindex') && meta.getAttribute('content').includes('nofollow');
-    });
-    ok(hasNoIndex === true, 'B-9: meta robots noindex,nofollow 적용 확인');
+    await page.goto(`${baseUrl}/buy/`);
+    ok(page.url().endsWith('/buy/'), '13:20 ②: /buy/ 로 열면 주소가 바뀌지 않는다');
 
-    const bannerVisible = await page.evaluate(() => {
-      const banner = document.getElementById('test-banner');
-      return window.getComputedStyle(banner).display !== 'none';
-    });
-    ok(bannerVisible === true, 'B-9: 테스트 모드일 때 준비 중 배너 노출 확인');
-
+    // ① 띠 없음 · 단추 활성
+    const bannerExists = await page.evaluate(() => !!document.getElementById('test-banner') || document.body.classList.contains('is-test-mode'));
+    ok(bannerExists === false, '13:20 ①: "준비 중" 띠·is-test-mode 분기 없음');
+    ok(!buyHtml.includes('준비 중입니다') && !buyHtml.includes('not yet accepted'), '13:20 ①: "준비 중" 글자가 페이지에 없다');
     const btnDisabled = await page.evaluate(() => document.getElementById('btn-pay').disabled);
-    ok(btnDisabled === true, 'B-9: 테스트 모드일 때 결제 단추 비활성화(클릭 차단) 확인');
+    ok(btnDisabled === false, '13:20 ①: 결제 단추 활성 (테스트 키여도 결제창이 뜬다)');
+    ok(buyHtml.includes("const STORE_ID = '") && buyHtml.includes("const CHANNEL_KEY = '"), '13:20 ①: 실키 전환 자리 STORE_ID·CHANNEL_KEY 두 상수 유지');
 
-    // [7번 대기줄 & B-9] 결제 화면에 닿는 길: /tour/ 에서만 /buy/ 로 가는 링크 1개 허용
-    const htmlFiles = ['index.html', 'field/index.html', 'tour/index.html', 'student/index.html', 'ows/index.html', 'desk/index.html', 'guide/index.html', 'lic/index.html', 'privacy/index.html', 'web/host/index.html', 'web/listener/index.html', 'web/desk/index.html', 'web/verify/index.html'];
-    let buyLinksCount = 0;
-    let tourHasBuyLink = false;
-    for (const f of htmlFiles) {
-      if (fs.existsSync(path.join(ROOT, f))) {
-        const content = fs.readFileSync(path.join(ROOT, f), 'utf-8');
-        if (content.includes('href="/buy/"') || content.includes('href="/web/buy/"') || content.includes("href='/buy/'") || content.includes("href='/web/buy/'")) {
-          buyLinksCount++;
-          if (f === 'tour/index.html') tourHasBuyLink = true;
-        }
-      }
+    // ② 홈 → /buy/ 링크 (메뉴·첫 화면) · /tour/ 링크 유지
+    const homeHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf-8');
+    const navPart = homeHtml.slice(homeHtml.indexOf('<nav class="nav"'), homeHtml.indexOf('</nav>'));
+    const heroPart = homeHtml.slice(homeHtml.indexOf('<div class="hero">'), homeHtml.indexOf('<section'));
+    ok(navPart.includes('href="/buy/"'), '13:20 ②: 홈 메뉴에 /buy/ 「이용권 구매」 링크');
+    ok(heroPart.includes('href="/buy/"'), '13:20 ②: 홈 첫 화면 단추에 /buy/ 링크');
+    const tourHtml = fs.readFileSync(path.join(ROOT, 'tour', 'index.html'), 'utf-8');
+    ok(tourHtml.includes('href="/buy/"'), '7번: /tour/ 에서 구매(/buy/)로 가는 링크 유지');
+    for (const l of ['en', 'zh', 'ja', 'vi']) {
+      const dict = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets', 'i18n', l + '.json'), 'utf-8'));
+      ok(typeof dict['이용권 구매'] === 'string' && dict['이용권 구매'].length > 0, `홈 사전 ${l}: 「이용권 구매」 번역 있음`);
     }
-    ok(tourHasBuyLink === true, '7번: /tour/ 에서 구매(/buy/)로 가는 링크 존재 확인');
-    ok(buyLinksCount === 1, '7번 & B-9: /tour/ 외의 다른 페이지에는 /buy/ 링크 0개 유지 (총 1개 제한)');
 
-    // 7번 되돌림 실증
-    let linkRevertFailed = false;
+    // ③·⑤ 우리 제품 표 네 줄 · 지어낸 숫자 없음 (3,300·9,900·66,000·99,000·198,000 외 금지)
+    const ALLOWED = new Set(['3,300', '9,900', '66,000', '99,000', '198,000']);
+    const priceLike = buyHtml.match(/\d{1,3}(?:,\d{3})+/g) || [];
+    const strange = priceLike.filter(n => !ALLOWED.has(n));
+    ok(priceLike.length > 0 && strange.length === 0, `13:20 ⑤: 페이지의 쉼표 숫자 ${priceLike.length}개 전부 허용 목록 안 (낯선 것: ${strange.join(',') || '없음'})`);
+    const dataPrices = [...buyHtml.matchAll(/data-price="(\d+)"/g)].map(m => Number(m[1]).toLocaleString('en-US'));
+    ok(dataPrices.every(n => ALLOWED.has(n)), '13:20 ⑤: data-price 값도 허용 목록 안');
+    const rowCount = await page.locator('#products tr[id^="prod-row-"]').count();
+    ok(rowCount === 4, '13:20 ③: 우리 제품 표 네 줄(손님·호스트·번역 패키지·단체)');
+    for (const id of ['prod-row-host', 'prod-row-pkg', 'prod-row-org']) {
+      const t = await page.textContent('#' + id);
+      ok(t.includes('문의') && !/\d{1,3}(?:,\d{3})+/.test(t), `13:20 ③: ${id} 는 가격 미정 → "문의", 숫자 없음`);
+    }
+    const guestRow = await page.textContent('#prod-row-guest');
+    ok(guestRow.includes('3,300') && guestRow.includes('9,900'), '13:20 ③: 손님 이용권 줄에 1일권 3,300 · 7일권 9,900');
+    const productsVisible = await page.locator('#products:visible').count();
+    ok(productsVisible === 1, '13:20 ③: 제품 표가 /buy/ 위쪽에 보인다');
+
+    // ⑤ 되돌림 실증: 지어낸 숫자가 끼면 붉다
+    let fakeNumFailed = false;
     try {
-      const fakeCount = 0;
-      assert.strictEqual(fakeCount, 1, '구매 화면 도달 링크 누락 시 단언 실패');
-    } catch (e) {
-      linkRevertFailed = true;
-    }
-    ok(linkRevertFailed === true, '구매 화면 링크 누락 시 단언 실패 입증 (7번 되돌림 실증 완료)');
+      const fake = ['3,300', '12,000'].filter(n => !ALLOWED.has(n));
+      assert.strictEqual(fake.length, 0, '낯선 숫자 12,000');
+    } catch (e) { fakeNumFailed = true; }
+    ok(fakeNumFailed === true, '13:20 ⑤: 허용 밖 숫자가 끼면 단언 실패 입증 (되돌림 실증)');
 
     // 1) 상품 렌더링 확인
     const title = await page.textContent('h1');
-    ok(title.includes('RayTok 손님 쿠폰 구매'), '구매 페이지 헤더 확인');
+    ok(title.includes('RayTok 이용권 구매'), '구매 페이지 헤더 확인');
 
     const cardCount = await page.locator('.product-card').count();
     ok(cardCount === 5, '전체 5개 상품 카드 보존 확인 (시험용)');
@@ -256,12 +271,11 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     await page.click('#btn-lang-en');
     const enInquiryText = await page.textContent('#group-inquiry');
     ok(enInquiryText.includes('For groups of 10 or more, please contact us'), '영문 단체 문의 문구 렌더링 확인 (ko·en)');
-    const enBannerText = await page.textContent('#test-banner');
-    ok(enBannerText.includes('Payments are not yet accepted'), 'B-9: 영문 준비 중 배너 렌더링 확인');
+    const enProducts = await page.textContent('#products');
+    ok(enProducts.includes('Our products') && enProducts.includes('Contact us') && enProducts.includes('3,300'), '13:20 ④: 제품 표 영문(ko·en) 렌더링 확인');
     await page.click('#btn-lang-ko');
-
-    // 테스트 진행을 위해 버튼 활성화 강제 해제 (B-9)
-    await page.evaluate(() => { document.getElementById('btn-pay').disabled = false; });
+    const koProducts = await page.textContent('#products');
+    ok(koProducts.includes('우리 제품') && koProducts.includes('문의'), '13:20 ④: 제품 표 국문 복귀 확인');
 
     let groupCardRevertFailed = false;
     try {
@@ -293,7 +307,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     const mobileWidths = [420, 360];
     for (const w of mobileWidths) {
       await page.setViewportSize({ width: w, height: 800 });
-      await page.goto(`${baseUrl}/web/buy/`);
+      await page.goto(`${baseUrl}/buy/`);
       await page.waitForTimeout(300);
 
       const overflowData = await page.evaluate(() => {
@@ -345,11 +359,8 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     }
     ok(btnRevertFailed === true, '결제 단추 배경을 투명으로 되돌리면 단언 실패 입증 (B-8 되돌림 실증 완료)');
 
-    const isBadgeVisible = await page.evaluate(() => {
-      const badge = document.querySelector('.test-badge');
-      return window.getComputedStyle(badge).display !== 'none';
-    });
-    ok(isBadgeVisible === true, '테스트 키 사용 시 테스트 모드 배지 노출 확인');
+    const badgeCount = await page.locator('.test-badge').count();
+    ok(badgeCount === 0, '13:20 ①: 테스트 모드 배지 없음');
 
     await browser.close();
 
