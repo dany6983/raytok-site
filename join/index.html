@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RayTok 연결</title>
+<title data-i18n="page_title">RayTok 연결</title>
 <style>
   body { font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif; margin: 0; padding: 32px 20px; color: #0A0F1F; background: #f3f2f2; }
   h1 { font-size: 22px; margin: 0 0 12px; }
@@ -14,12 +14,46 @@
 </style>
 </head>
 <body>
-<h1>RayTok 투폰 연결</h1>
-<p id="msg">앱을 여는 중입니다…</p>
-<a class="btn" id="open" href="#">앱으로 열기</a>
-<a class="btn" id="web-listen" href="#" style="display:none; background:#0284c7; margin-top:10px;">브라우저로 듣기</a>
-<a class="btn secondary" id="store" href="/download/">앱이 없으면 설치하기</a>
-<p class="hint">상대 폰의 RayTok 화면에 뜬 QR을 찍으면 이 페이지로 옵니다. 앱이 깔려 있으면 바로 열리고, 없으면 위 단추로 설치한 뒤 QR을 다시 찍으세요.<br>같은 Wi-Fi(또는 한쪽 핫스팟)에 있어야 연결됩니다. 인터넷은 필요 없습니다.<br>주소창에 실린 연결 정보는 그 폰의 <b>집 안 주소</b>와 그때만 쓰는 확인 코드입니다. 상대가 같은 Wi-Fi에 있지 않으면 아무 의미가 없고, 호스트가 화면을 닫으면 곧바로 못 쓰게 됩니다.</p>
+<h1 data-i18n="heading">RayTok 투폰 연결</h1>
+<p id="msg" data-i18n="msg_opening">앱을 여는 중입니다…</p>
+<a class="btn" id="open" href="#" data-i18n="btn_open">앱으로 열기</a>
+<a class="btn" id="web-listen" href="#" style="display:none; background:#0284c7; margin-top:10px;" data-i18n="btn_web_listen">브라우저로 듣기</a>
+<a class="btn secondary" id="store" href="/download/" data-i18n="btn_install">앱이 없으면 설치하기</a>
+<p class="hint"><span data-i18n="hint_1">상대 폰의 RayTok 화면에 뜬 QR을 찍으면 이 페이지로 옵니다. 앱이 깔려 있으면 바로 열리고, 없으면 위 단추로 설치한 뒤 QR을 다시 찍으세요.</span><br><span data-i18n="hint_2">같은 Wi-Fi(또는 한쪽 핫스팟)에 있어야 연결됩니다. 인터넷은 필요 없습니다.</span><br><span data-i18n="hint_3">주소창에 실린 연결 정보는 그 폰의 집 안 주소와 그때만 쓰는 확인 코드입니다. 상대가 같은 Wi-Fi에 있지 않으면 아무 의미가 없고, 호스트가 화면을 닫으면 곧바로 못 쓰게 됩니다.</span></p>
+<script>
+// 손님 글자 — ./ui-strings.json (web/listener 과 같은 모양, 81개 언어). 순서: ?lang= → navigator.language → ko.
+// 사전을 못 받아도 페이지는 한국어 그대로 돈다 (아래 본문이 ko 원문이다).
+var RT_I18N = { dict: null, lang: 'ko' };
+function rtNorm(code) {
+  var l = String(code || '').trim().toLowerCase();
+  if (!l) return '';
+  if (l.indexOf('zh') === 0) return 'zh';
+  if (l === 'tl' || l.indexOf('tl-') === 0 || l === 'fil' || l.indexOf('fil-') === 0) return 'fil';
+  if (l === 'in' || l.indexOf('in-') === 0) return 'id';
+  if (l === 'iw' || l.indexOf('iw-') === 0) return 'he';
+  if (l === 'nb' || l === 'no' || l.indexOf('no-') === 0 || l === 'nn') return 'nb';
+  return l.split('-')[0];
+}
+function rtT(key, lang) {
+  var d = RT_I18N.dict; if (!d || !d.strings || !d.strings[key]) return '';
+  var it = d.strings[key]; return it[lang || RT_I18N.lang] || it.en || it.ko || '';
+}
+function rtApply(lang) {
+  RT_I18N.lang = lang;
+  document.documentElement.lang = lang;
+  document.documentElement.setAttribute('dir', /^(ar|he|fa|ur)$/.test(lang) ? 'rtl' : 'ltr');
+  var els = document.querySelectorAll('[data-i18n]');
+  for (var i = 0; i < els.length; i++) { var v = rtT(els[i].getAttribute('data-i18n'), lang); if (v) els[i].textContent = v; }
+}
+function rtLoadStrings(qLang) {
+  var want = rtNorm(qLang) || rtNorm(navigator.language) || 'ko';
+  return fetch('./ui-strings.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d || !d.langs) return;
+    RT_I18N.dict = d;
+    rtApply(d.langs.indexOf(want) >= 0 ? want : 'ko');
+  }).catch(function () {});
+}
+</script>
 <script>
 (function () {
   // 초대는 질의(?ip=…&code=…&name=…&lang=…&pkg=…)에 실린다 — App Links가
@@ -42,6 +76,10 @@
              + ';S.browser_fallback_url=' + encodeURIComponent(store) + ';end';
   var deep = 'raytok://join?' + qs;
   document.getElementById('store').href = store;
+  // 글자 사전을 먼저 받고(없어도 간다) 안내 글을 그 언어로 적는다 — 머리글·단추는 data-i18n 이 맡는다.
+  var done = rtLoadStrings(q.lang);
+  var msgEl = document.getElementById('msg');
+  var setMsg = function (key, koText) { done.then(function () { msgEl.textContent = rtT(key) || koText; }); };
   // 6번: QR에 room= 칸이 있으면 「브라우저로 듣기」 단추 노출 (앱 없으면 웹 청취로)
   var room = q.room || '';
   if (room && /^[A-Z0-9]{6}$/i.test(room)) {
@@ -55,15 +93,14 @@
   }
 
   if (!ok) {
-    document.getElementById('msg').textContent = '연결 정보가 없는 링크입니다. 상대 화면의 QR을 다시 찍어 주세요.';
+    setMsg('msg_no_info', '연결 정보가 없는 링크입니다. 상대 화면의 QR을 다시 찍어 주세요.');
     document.getElementById('open').style.display = 'none';
     return;
   }
   var android = /Android/i.test(navigator.userAgent);
   document.getElementById('open').href = android ? intent : deep;
-  document.getElementById('msg').textContent = android
-    ? '앱이 있으면 바로 열립니다. 열리지 않으면 아래 단추를 누르세요.'
-    : '이 링크는 안드로이드 RayTok 앱용입니다. 아이폰용 앱은 아직 없습니다.';
+  if (android) setMsg('msg_android', '앱이 있으면 바로 열립니다. 열리지 않으면 아래 단추를 누르세요.');
+  else setMsg('msg_ios', '이 링크는 안드로이드 RayTok 앱용입니다. 아이폰용 앱은 아직 없습니다.');
   if (android) { setTimeout(function () { location.href = intent; }, 300); }
 })();
 </script>
