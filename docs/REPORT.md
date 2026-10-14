@@ -5,6 +5,53 @@
 
 ---
 
+[B] B-3 정정판 — `/translate` 는 0x10 인터넷 번역 패키지만 (대표님 10-14 08:39·08:41, MASTER 09:50·09:52)
+2026-10-14 11:05 · 세션: claude-code · 가지: main · 커밋 `493da37`
+
+있던 것: `/translate` 가 `0x02 | 0x04 | 0x10` **아무거나** 받았다(`index.js:854`) — `/license/issue` 가 모든 기기에 주는
+0x02 토큰으로 인터넷 번역이 됐다. 무료였다.
+
+고친 것:
+- `relay/src/index.js` — 여는 비트 `TRANSLATE_PKG_FLAG(0x10) | TRANSLATE_DESK_FLAGS(0x04|0x08)`. 0x02·0x01 만이면
+  **403** `not_allowed`, `why=no_package`, `need="0x10"`. 무료 한도 없음. 호스트 코드(0x01)에 0x10 자동 포함 없음 —
+  B-1 의 issue 토큰도 코드에 0x10 이 실려 있을 때만 따라온다(별도 구매). Desk(0x04|0x08)는 그대로 지나간다.
+  글자 세기(`TRANSLATE_CAP_CHARS`, 기본 300만)는 문 뒤 4-2 그대로 — 패키지 안에서만 센다. 숫자는 wrangler 변수.
+- `docs/license-flags.md` — 0x10 줄을 "인터넷 번역 패키지" 로.
+- `relay/test/translate-pkg.mjs` 신규(`npm run test:translate-pkg`). 기존 시험 셋(no-store·engine-test·translate-retry)의
+  "앱 토큰" 을 0x02→0x10 으로(캐시를 쓰는 토큰이라는 뜻은 같다).
+
+실행 출력 발췌:
+```
+=== B-3 /translate requires 0x10 package (Desk 0x04|0x08 kept) ===
+[PASS] 1 0x02 camera-only → 403 no_package
+[PASS] 2 host 0x01|0x02 → 403 (0x10 은 별도 구매)
+[PASS] 3 no token → 401
+[PASS] 4 0x10 package → 200
+[PASS] 5 Desk 0x04/0x08 → 200 (kept)
+[PASS] 6 chars counted only inside the package (cam=0, pkg=22)
+```
+되돌림(D-09): 옛 `0x02 | 0x04 | 0x10` 으로 돌리면 `[1]` 에서 붉다(`200 !== 403`). 복구 뒤 초록.
+같이 돈 것: `test/no-store.mjs` 47건 통과 · `test/translate-retry.mjs` 13건 통과 · `test/issue-flags.mjs` 5/5 ·
+`npm run test:mint` 11/11. `test/license.mjs`·`test/engine-test.mjs` 는 **내 변경 전에도** 같은 자리에서 멈춘다
+(mock 엔진에 admin 헤더가 없음 / 실제 Google 키 필요) — B-3 와 무관, 손대지 않았다.
+
+한 줄 판정: 인터넷 번역은 0x10 을 산 토큰과 Desk 만. 나머지는 403.
+
+막힌 것:
+- **앱 쪽 읽는 곳(§4)**: 앱 `src/relay.js` 가 `/translate` 403 `why=no_package` 를 받으면 어떻게 하나 — 지금 앱은
+  `offlineTag == null` 언어를 ㉢ 서버 번역으로 보낸다. 0x10 없는 폰에서 그 언어는 **"대체어"** 로 가야 한다(MASTER 09:45).
+  릴레이 몫은 끝. A1 에 한 줄: `403 not_allowed why=no_package` 를 "패키지 없음" 으로 읽고 대체어.
+- 0x10 을 **파는 길**(pay.js 상품표에 0x10 상품 없음 · `--flags host,bundle` 로 손 발급은 됨)은 가격 결정 뒤 —
+  MASTER 에 없어서 안 만들었다(§23: 무엇을 팔지는 대표님).
+
+건드린 파일과 이유: `relay/src/index.js`(문) · `docs/license-flags.md`(한 줄) · `relay/test/translate-pkg.mjs`(신규) ·
+`relay/test/{no-store,engine-test,translate-retry}.mjs`(토큰 비트) · `relay/package.json`(스크립트).
+
+남은 것: MASTER 10-13 22:15 여섯 + 7·8 (B 7번 브라우저 청취자 마이크 N:1, 8번 목소리 고르기) — 다음 세션이 집는다.
+배포(wrangler deploy)는 하지 않았다 — 10-17 뒤 대표님.
+
+---
+
 [B] B-2 — `mint-core` 페이로드 `[3..4]` = 기간(일, uint16 BE), 앱 정본과 바이트 단위로 맞춤 (마스터 10-14 09:00)
 2026-10-14 10:45 · 세션: claude-code · 가지: main · 커밋 `8ce3a70`
 
