@@ -94,25 +94,37 @@ export function publicKeyHexOf(privateKey) {
 
 export const testSeed = () => crypto.createHash('sha256').update(TEST_SEED_TEXT, 'utf8').digest();
 
-export function buildPayload({ keyId, exp, days, shelfLife = 0, flags, cust }) {
+/**
+ * payload 16바이트 — 앱 정본 `raytok-native1/docs/samples/license-code.md` §1 과 **바이트 단위로 같다**
+ * (B-2, 마스터 10-14 09:00 · 앱 `b9c0678`):
+ *   [0] 키 번호 · [1..2] 예비(0) · [3..4] **기간(일) uint16 BE** · [5..8] 만료 uint32 BE(초) ·
+ *   [9] 플래그 · [10..15] 고객 ASCII 6
+ * 기간이 0 이면 전과 같이 절대 만료(`exp`)만 본다. 기간이 있으면 `exp` 는 **묵힘 한도**
+ * (발급 → 첫 찍기, 보통 90일)이고 실제 끝은 등록 시각 + 기간일 — 셈은 앱 `effectiveExp` ·
+ * 릴레이 `room.js` redeem 이 한다. `shelfLife` 는 `exp` 의 다른 이름(옛 호출 호환).
+ */
+export const DAYS_MAX = 0xffff;
+export function buildPayload({ keyId, exp, days = 0, shelfLife, flags, cust }) {
   const p = Buffer.alloc(PAYLOAD_LEN, 0);
   const k = Number(keyId);
   if (!Number.isInteger(k) || k < 0 || k > 255) throw new Error('키 번호는 0..255');
-  const val = Number(days !== undefined ? days : exp);
-  if (!Number.isInteger(val) || val < 0 || val > 0xffffffff) throw new Error('만료 또는 일수는 uint32');
+  const d = Number(days || 0);
+  if (!Number.isInteger(d) || d < 0 || d > DAYS_MAX) throw new Error('기간(일)은 0..65535');
+  const e = Number(exp !== undefined ? exp : shelfLife);
+  if (!Number.isInteger(e) || e < 0 || e > 0xffffffff) throw new Error('만료는 uint32 초');
   const f = Number(flags);
   if (!Number.isInteger(f) || f < 0 || f > 255) throw new Error('플래그는 0..255');
   const c = String(cust || '');
   if (c.length > 6 || /[^\x20-\x7e]/.test(c)) throw new Error('고객은 ASCII 6자 이내');
   p[0] = k;
-  if (shelfLife) p.writeUInt32BE(Number(shelfLife), 1);
-  p.writeUInt32BE(val, 5);
+  p.writeUInt16BE(d, 3);
+  p.writeUInt32BE(e, 5);
   p[9] = f;
   for (let i = 0; i < c.length; i += 1) p[10 + i] = c.charCodeAt(i);
   return p;
 }
 
-export function mintCode({ keyId, exp, days, shelfLife = 0, flags, cust, privateKey }) {
+export function mintCode({ keyId, exp, days = 0, shelfLife, flags, cust, privateKey }) {
   const payload = buildPayload({ keyId, exp, days, shelfLife, flags, cust });
   const sig = crypto.sign(null, payload, privateKey);
   if (sig.length !== SIG_LEN) throw new Error('서명 길이가 64가 아니다');
@@ -121,15 +133,13 @@ export function mintCode({ keyId, exp, days, shelfLife = 0, flags, cust, private
   return { code, grouped: groupCode(code), link: LINK_BASE + code, payload, sig };
 }
 
+/** payload → 주장. 앱 `src/license.js claimsOf` 와 같은 자리에서 같은 값을 읽는다 */
 export function claimsOf(payload) {
-  const val = payload.readUInt32BE(5);
-  const shelfLife = payload.readUInt32BE(1);
+  const days = payload.readUInt16BE(3);
+  const exp = payload.readUInt32BE(5);
   let cust = '';
   for (let i = 10; i < 16; i += 1) if (payload[i]) cust += String.fromCharCode(payload[i]);
-  const claims = { keyId: payload[0], exp: val, flags: payload[9], cust };
-  if (val <= 365) claims.days = val;
-  if (shelfLife > 0) claims.shelfLife = shelfLife;
-  return claims;
+  return { keyId: payload[0], exp, days, flags: payload[9], cust };
 }
 
 export function verifyCode(code, { now = Date.now(), keys = PUBLIC_KEYS } = {}) {
@@ -147,8 +157,8 @@ export function verifyCode(code, { now = Date.now(), keys = PUBLIC_KEYS } = {}) 
   let good = false;
   try { good = crypto.verify(null, payload, publicKeyFromHex(hex), sig); } catch { good = false; }
   if (!good) return { ok: false, why: 'sig', claims };
-  if (claims.exp >= 100000000 && now / 1000 > claims.exp) return { ok: false, why: 'expired', claims };
-  if (claims.shelfLife > 0 && now / 1000 > claims.shelfLife) return { ok: false, why: 'expired', claims };
+  /* 기간이 있어도 `exp`(묵힘 한도)는 본다 — 90일 묵힌 1일권이 91일째 열리면 안 된다(정본 §4-1) */
+  if (now / 1000 > claims.exp) return { ok: false, why: 'expired', claims };
   return { ok: true, why: '', claims };
 }
 

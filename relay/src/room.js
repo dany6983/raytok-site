@@ -382,8 +382,9 @@ export class Room {
 
           // 첫 등록
           const activatedAt = Date.now();
-          const days = v.claims.days || (v.claims.exp <= 365 ? v.claims.exp : 1);
-          const expiresAt = activatedAt + days * 86400 * 1000;
+          /* 정본 [3..4] 기간(일): 있으면 등록 시각부터 센다, 0 이면 절대 만료(exp)만 (앱 effectiveExp 와 같은 셈) */
+          const days = Number(v.claims.days) || 0;
+          const expiresAt = days ? Math.min(activatedAt + days * 86400 * 1000, v.claims.exp * 1000) : v.claims.exp * 1000;
           licRecord = {
             deviceId,
             activatedAt,

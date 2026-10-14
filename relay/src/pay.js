@@ -285,8 +285,8 @@ export async function handlePaymentComplete({
 
     const minted = mintCode({
       keyId,
-      days: product.days,
-      shelfLife,
+      days: product.days,          // 정본 [3..4] 기간(일)
+      exp: shelfLife,              // 정본 [5..8] 묵힘 한도 (발급 → 첫 찍기 90일)
       flags: product.flags, // 0x01
       cust: custTag,
       privateKey
