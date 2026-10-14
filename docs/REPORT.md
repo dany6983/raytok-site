@@ -5,6 +5,29 @@
 
 ---
 
+[B] ② `/join` 페이지 손님 글자 → 81개 언어 사전 (마스터 10-14 승인)
+2026-10-14 13:10 · 세션: claude-code · 가지: main · 커밋 `ea36e18`
+
+- `join/ui-strings.json` 신규 — 청취 페이지와 **같은 모양**(`{ver, langs, strings:{키:{언어:글}}}`), `langs` 는 청취 사전과
+  같은 81. 키 12(`page_title`·`heading`·`msg_opening`·`btn_open`·`btn_web_listen`·`btn_install`·`hint_1~3`·`msg_no_info`·
+  `msg_android`·`msg_ios`) × 81 = **972칸**. **직접 번역, 원어민 검수 없음.**
+- `join/index.html` — `data-i18n` + 작은 로더(`rtLoadStrings`): 언어 순서 `?lang=`(QR 에 실린 값) → `navigator.language` → ko.
+  RTL(ar·he·fa·ur) `dir`. 안내 글 셋은 사전을 받은 뒤 그 언어로(`setMsg`). **사전을 못 받아도(404) 한국어 원문 그대로 선다** —
+  본문이 ko 원문이라 글자 사전이 페이지를 막지 않는다(R-15). 긴 안내문의 `<b>집 안 주소</b>` 굵기는 뺐다(키에 HTML 안 넣음).
+- `samples/join_i18n_test.js`(`npm run test:join-i18n`, `npm test` 에 추가) 24건 — 모양 검사(빈칸·꺾쇠·자리표·따옴표·앞뒤 빈칸·
+  `RayTok`/`QR` 글자 유지) + Playwright(vi 머리글·단추·안내 / ar rtl / de 안내 / 모르는 lang / 사전 404 → ko).
+
+실행 출력 발췌:
+```
+첫 돌림 — 붉음 2건: hint_1.zh / msg_no_info.zh 에 'QR' 이 없다(二维码 → QR 码 로 고침)
+[PASS] 12 × 81 = 972 칸 모양 검사 0건 · lang=vi → 머리글/단추/안내 베트남어 · lang=ar → dir=rtl · 사전 404 → 한국어 원문
+전부 통과 (24건)   bytes_out_test 12건(join 단추 시험 포함) · check_links 571 links 0 broken
+```
+한 줄 판정: `/join` 이 QR 의 `lang=` 대로 81개 언어로 뜬다. 검수는 없다.
+막힌 것: 없음. 건드린 파일: `join/index.html` · `join/ui-strings.json`(신규) · `samples/join_i18n_test.js`(신규) · `package.json`.
+
+---
+
 [B] ① 청취 페이지 사전 — 기존 47키 × 62언어 채움, langs 19→81 (마스터 10-14 승인)
 2026-10-14 12:30 · 세션: claude-code · 가지: main · 커밋 `c60c78f`
 
