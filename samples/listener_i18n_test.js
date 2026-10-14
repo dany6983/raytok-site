@@ -35,6 +35,37 @@ ok(!/myName \|\| '익명'/.test(html), "'익명' 하드코딩 없음 (anon_name)
 ok(!/SpeechSynthesisUtterance\('안녕하세요'\)/.test(html), "미리듣기 인사말 하드코딩 없음 (voice_preview_text — 그 언어로)");
 ok(!/음성이 없어 자막으로만/.test(html), '음성 없음 안내 하드코딩 없음 (voice_absent_notice)');
 ok(!/>사용 가능한 목소리가 없습니다/.test(html), "'사용 가능한 목소리가 없습니다' 하드코딩 없음 (voice_none)");
+// ⑤ 모든 키 × 모든 언어 (마스터 10-14 ①: 기존 47키를 62언어에 채움) + 모양 검사
+const EMO = /^(?:[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B50}\uFE0F]|•|※)+/u;
+const shape = (s) => ({
+  lead: (s.match(/^\s*/) || [''])[0], trail: (s.match(/\s*$/) || [''])[0],
+  emo: (s.match(EMO) || [''])[0].replace(/\uFE0F/g, ''),
+  txt: /\(TXT\)/.test(s), six: /6/.test(s), colon: /[:：៖]\s*$/.test(s),
+});
+const allKeys = Object.keys(dict.strings);
+let bad = [];
+for (const k of allKeys) {
+  const en = dict.strings[k].en; const se = shape(en);
+  for (const l of dict.langs) {
+    const v = dict.strings[k][l];
+    if (v == null || !String(v).trim()) { bad.push(`${k}.${l}: 비었다`); continue; }
+    if (/[<>]/.test(v)) bad.push(`${k}.${l}: HTML 꺾쇠`);
+    if (/\$\{|\{\d\}/.test(v)) bad.push(`${k}.${l}: 자리표가 생겼다`);
+    if ((v.match(/"/g) || []).length % 2) bad.push(`${k}.${l}: 따옴표 홀수`);
+    const sv = shape(v);
+    if (sv.lead !== se.lead || sv.trail !== se.trail) bad.push(`${k}.${l}: 앞뒤 빈칸이 en 과 다르다`);
+    if (sv.emo !== se.emo) bad.push(`${k}.${l}: 머리 기호(🔊✋•※)가 en 과 다르다`);
+    if (sv.txt !== se.txt) bad.push(`${k}.${l}: (TXT) 유무가 en 과 다르다`);
+    if (se.six && !sv.six && !/[६৬૬୬௬౬೬൬๖໖၆۶٦៦]/.test(v)) bad.push(`${k}.${l}: 숫자 6 이 빠졌다`);
+    if (se.colon && !sv.colon) bad.push(`${k}.${l}: 끝 콜론이 빠졌다`);
+  }
+}
+ok(dict.langs.length >= 80, `사전 langs 가 ${dict.langs.length}개 (80 이상)`);
+ok(allKeys.length * dict.langs.length > 4000, `키 ${allKeys.length} × 언어 ${dict.langs.length} = ${allKeys.length * dict.langs.length} 칸이 다 찼다`);
+ok(bad.length === 0, '모양 검사(빈칸·꺾쇠·자리표·따옴표·앞뒤 빈칸·머리 기호·(TXT)·6·콜론) 0건' + (bad.length ? '\n    ' + bad.slice(0, 20).join('\n    ') : ''));
+// 되돌림 실증: 끝 빈칸을 지운 값은 걸린다
+ok(shape('Connection rejected:').trail !== shape(dict.strings.alert_rejected.en).trail, '되돌림 실증: alert_rejected 의 끝 빈칸을 지우면 모양 검사가 붉다');
+
 // ④ 되돌림 실증: 한 언어를 지우면 ① 이 붉는다
 const copy = JSON.parse(JSON.stringify(dict.strings.voice_none)); delete copy.sw;
 ok(want.some(l => !copy[l]), '되돌림 실증: voice_none.sw 를 지우면 ① 의 단언이 거짓이 된다');
