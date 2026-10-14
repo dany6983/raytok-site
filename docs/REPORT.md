@@ -5,7 +5,92 @@
 
 ---
 
-진행 중: B-BACKLOG 5 [절반] 줄 15 약관 — 바닥 사업자 정보가 ko/en 어긋나고 손님 페이지 여섯에 빠져 있다 (MASTER 10-12 23:00 줄 10·11 국내 · 10-10 08:01 "신고번호가 오면 B 가 바닥을 바꾼다") — 11:30
+[B] B-BACKLOG 5 [절반] → [끝] — 바닥 사업자 정보가 **ko 만** 채워져 있었다 + `npm test` 가 붉던 한 건
+2026-10-14 12:25 · 세션: claude-code · 가지: `ccr-5e763034-zo0m63` · 커밋 `c33ba27`(바닥) · `27cf5ac`(rtl 시험)
+
+### 왜 이 줄을 집었나
+MASTER [대기] 는 전부 바깥(대표님·A2·마스터)을 기다리는 줄이라 집을 수 없었다(앞 보고 둘과 같다).
+B 의 할 일 목록인 `docs/B-BACKLOG.md` 에서 `[끝]`·`[대기]` 가 아닌 줄은 **5번 [절반] 하나**였다.
+AGENTS §23-1(끝났는지는 git 이 답한다)대로 코드를 보니 — **[절반] 표시가 낡았고, 대신 다른 구멍이 있었다.**
+
+| 본 것 | 결과 |
+|---|---|
+| 약관 본문이 "준비 중"인가 | ❌ 아니다. 10-12 에 ko·en 둘 다 실문구로 올라갔다 |
+| 바닥 `[신고 준비 중]` 자리표가 남았나 | ❌ 아니다. `grep` 0건, 신고번호 2025-화성동탄-2002 들어와 있다 |
+| **ko·en 이 같은가** | ⛔ **아니다 — 이것이 남은 구멍이었다** |
+
+### ① 구멍 — 전자상거래법 제13조 필수 표시가 **영문 쪽에 없다**
+10-10 08:01 "신고번호가 오면 B 가 바닥을 바꾼다" 를 **국문만 하고 끝냈다.**
+토스 심사(11/02~)와 해외 손님이 실제로 여는 쪽은 영문 페이지다.
+
+| 페이지 | 그 전 | 고친 것 |
+|---|---|---|
+| `guide/en` | 바닥에 링크 둘만 — 사업자 정보 **0** (`guide/` 국문엔 있다) | 영문 한 줄 추가 |
+| `contact/en` | 상호·대표·주소·사업자등록번호만. **신고번호·호스팅·전화 빠짐**, 주소도 짧고 대표 표기도 달랐다 | 다섯 영문 제품 페이지와 **같은 한 줄**로 통일 |
+| `download/` · `download/en` | 바닥 **없음**. 제품 포장에 인쇄되는 주소다(파일 주석 "바뀌지 않는다") | 이용약관·처리방침 링크 + 사업자 한 줄 |
+| `web/usage` · `web/verify` | 바닥에 링크만 | 사업자 한 줄 (어두운 화면 색에 맞춤) |
+| `web/listener` | 한 줄은 있으나 **문의 메일 빠짐** | 메일 추가 |
+
+면제로 **둔** 것과 까닭(시험의 면제 목록에 적어 뒀다): 넘기는 쪽 여덟(`terms/`·`terms/en/`·`buy/`·`usage/`·
+`meet/`·`web/guide/`·`privacy/en/`·`web/privacy/en/` — meta refresh + `location.replace`, 글자를 읽을 틈이 없다) ·
+`404.html`(noindex) · `web/listener/selftest.html`(개발용) ·
+**`join/index.html`** — QR 진입 페이지는 본문이 **81개 언어 사전**으로 뜬다(10-14 13:10 줄). 거기에 국문 한 줄을
+박으면 그 설계가 깨진다. **이것 하나는 마스터 판정을 청한다**(기본안: 지금처럼 면제, §4 50초 규칙대로 기본안으로 진행).
+
+### ② `npm test` 가 **붉었다** — `rtl_test`, 앞 보고가 못 본 것
+앞 보고(13:25)는 "오늘 B 전체(`npm test` 범위)" 라며 suite 를 열거했는데 **`rtl_test` 가 그 목록에 없었고, 실제로 붉었다.**
+까닭: 10-14 12:30(`c60c78f`)에 청취 페이지 UI 사전 `langs` 가 **19 → 81** 로 늘어 `ar`·`fa` 가 UI 언어가 됐는데,
+시험은 "`ar` 은 사전에 없으니 UI 는 `en` 으로 떨어진다" 를 그대로 지키고 있었다. **코드가 아니라 시험의 가정이 낡았다**
+— 10-13 `broadcast_raw` 로케일과 **같은 꼴, 같은 원인**(사전·환경이 바뀌었는데 시험이 옛 세상에 남음).
+고친 뒤: `ar` 접속 → UI 도 아랍어·`dir=rtl`. 줄 안의 **원문 ltr / 번역문 rtl 분리**(이 시험이 본래 지키던 것)는 그대로.
+자막 82개 중 UI 사전에 없는 코드는 이제 **하나도 없다**(`zh-CN`·`zh-TW` 는 `normalizeLangCode` 가 `zh` 로 접는다) —
+그래서 "`en` 으로 떨어진다"(= **ko 고정 버그 금지**, R-15)를 지키려면 사전 밖 코드로 눌러야 한다. `zz` 한 칸을 넣었다.
+
+### ③ 시험 — `samples/terms_test.js` **88 → 245건**
+- **Test 7**: ko 20쪽 · en 8쪽 을 **여섯 칸**(상호·대표자·주소·사업자등록번호·신고번호·연락처)으로 **같은 잣대로** 센다.
+  전엔 상호·신고번호 **둘만**, 그것도 ko 목록 16쪽뿐이었다. 약관 두 쪽은 본문이 표 꼴이라 그 표에서 센다.
+- **Test 8 (새것)**: 저장소 html **40개 전수 훑기** — 면제 목록에 없으면 바닥을 요구한다.
+  **사람이 적는 목록은 다음에 또 빠진다(이번이 그 사고다).** 새 페이지를 만들면 바닥을 넣든가 면제 까닭을 적든가 둘 중 하나다.
+  면제 목록의 파일이 실제로 있는지도 센다(목록이 썩지 않게).
+- **Test 9 (새것)**: 되돌림 실증 2건.
+
+### 실행 출력 발췌
+```
+$ node samples/terms_test.js
+[Test 8] 전수 훑기 — 면제 목록에 없는 html 은 바닥 사업자 정보가 있어야 한다
+  [PASS] 저장소 html 40개를 훑었다
+  [PASS] 면제 목록 밖의 html 전부에 상호 + 통신판매업 신고번호가 있다
+[Test 9] 되돌림 실증
+  [PASS] guide/en 에서 신고번호를 빼면 Test 7 단언이 깨진다 (되돌림 실증 ①)
+  [PASS] join/index.html 를 면제 목록에서 지우면 Test 8 이 잡는다 (되돌림 실증 ②)
+전부 통과 (245건)
+
+— 되돌림을 **실제로** 해 봤다 (말이 아니라) —
+① guide/en 에서 신고번호 삭제 → [FAIL] guide/en/index.html footer mail-order report no.
+② join 을 면제 목록에서 삭제 → [FAIL] 바닥 사업자 정보가 없는 html: join/index.html
+   되돌린 뒤 → 전부 통과 (245건)
+
+$ CHROME=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm test
+exit=0  — 전부 초록
+  pay 74 · pay-verify 22 · design 30 · terms 245 · guide 28 · host · usage · desk-view ·
+  lic · wire · end · release 30 · retention · p16 · hwpx · mint 11 · dual · script 10 ·
+  screen · live 44 · l3 15 · report-common 27 · rtl(5 묶음, 고친 뒤 초록) · match · i18n ·
+  desk-read 18 · desk-session 35 · retry 13 · limits-bundle 13 · question 21 ·
+  question-relay 33 · broadcast-raw 14 · sitemap 57 · contact 18 · links 0 broken ·
+  license-redeem 27 · bytes-out 12 · listener-i18n 21 · join-i18n 24
+```
+※ `node_modules` 가 빈 새 체크아웃이라 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` 을 먼저 했다.
+Playwright 1.63.0 못 박힌 그대로. 이 통 브라우저 경로는 **`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`**
+(디렉터리가 아니라 그 안의 실행 파일이다 — `chromium-1194` 를 그대로 주면 `EACCES` 로 죽는다. 다음 세션이 또 밟지 말라고 적어 둔다.)
+
+### 스크린샷 (B-7 상시)
+`docs/shots/footer-{download,download-en,guide-en,contact-en,usage,verify}-{360,420}.png` **12장** — 바닥이 보이게 끝까지 내린 화면.
+360 에서 넘침 없음, 어두운 두 화면(usage·verify)은 색 대비 유지.
+
+한 줄 판정: 영문·설치·도구 화면 여섯에 법정 표시가 들어갔고, **사람 기억이 아니라 전수 훑기가** 다음 페이지를 지킨다. B-BACKLOG 5 → `[끝]`.
+막힌 것: **`join/index.html` 면제 하나만 마스터 판정** (위 ①. 기본안 = 면제 유지로 진행했다).
+남은 것: B-BACKLOG 는 5 가 닫히면서 `[대기]` 둘(7 줄 18 운영 전환 — 대표님 PG · 8 줄 24 Desk 요약 — 마스터)만 남는다.
+MASTER `[대기]` 도 전부 바깥을 기다리는 줄이다. **배포 안 함**(relay 안 건드림 — 배포 대기: 아니오).
 
 [B] 10-14 셋 — ① 시험 빌드 LANG-76 · ② 개인정보 처리방침 2항 사실 반영 · ③ 홈페이지 ↔ 사실표 어긋난 줄 **목록만**
 2026-10-14 14:10 · 세션: claude-code · 가지: main · 커밋 ① `cf0e68e` · ② `a29c914` · ③ 이 보고(고치지 않음)
