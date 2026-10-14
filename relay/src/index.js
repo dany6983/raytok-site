@@ -486,7 +486,28 @@ export default {
       }
 
       // 발급 토큰: exp = 30일, flags = 0x02 (camera)
-      const { token, exp } = await mintLicense(sub, 30, 0x02, secret);
+      //
+      // B-1 (MASTER 10-14 09:00): 이 기기가 이용권(가이드 코드·관광 쿠폰, 0x01)을 `/license/redeem`
+      // 으로 등록했으면 그 플래그를 **같이 싣는다** — 앱은 이 토큰으로 `POST /room {kind:'guide'}`
+      // 를 열고, `/room` 은 0x01 을 본다. 만료는 둘 중 이른 쪽(30일 vs 이용권 끝) — 1일권 토큰이
+      // 30일을 살면 이용권이 아니다. 0x10(인터넷 번역 패키지)은 따로 사는 것이라 **여기서 덧붙이지 않는다** —
+      // 코드에 실려 있을 때만 그대로 따라온다 (MASTER 10-14 09:52).
+      let days = 30;
+      let flags = 0x02;
+      try {
+        const licId = env.ROOM.idFromName('GLOBAL_LICENSE_MANAGER');
+        const licManager = env.ROOM.get(licId);
+        const devRes = await licManager.fetch(new Request(`http://internal/internal/license/device?deviceId=${encodeURIComponent(device.trim())}`));
+        if (devRes.ok) {
+          const dev = await devRes.json();
+          const licFlags = Number(dev.flags) || 0;
+          if (licFlags && dev.until > Date.now()) {
+            flags |= licFlags;
+            days = Math.min(days, (dev.until - Date.now()) / 86400000);
+          }
+        }
+      } catch (_) {}
+      const { token, exp } = await mintLicense(sub, days, flags, secret);
 
       return new Response(JSON.stringify({ token, exp }), {
         status: 200,

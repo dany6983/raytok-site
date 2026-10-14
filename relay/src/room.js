@@ -263,6 +263,21 @@ export class Room {
           });
         }
 
+        /*
+         * B-1 (MASTER 10-14 09:00): 등록한 기기 → 이용권 플래그 색인.
+         * 앱은 `/room` 에 `/license/issue` 의 HMAC 토큰을 쓴다. 그 토큰에 0x01 이 실리려면
+         * 발급 때 "이 기기가 어떤 이용권을 등록했나"를 알아야 한다 — 그 자리가 이 색인이다.
+         * 키는 `dev:<sha256(deviceId)>`, 값은 `[{flags, activatedAt, expiresAt}]`.
+         */
+        const deviceKey = 'dev:' + crypto.createHash('sha256').update(deviceId).digest('hex');
+        const noteDevice = async (flags, activatedAt, expiresAt) => {
+          const list = (await this.ctx.storage.get(deviceKey)) || [];
+          const now = Date.now();
+          const kept = list.filter(e => e && e.expiresAt > now && !(e.activatedAt === activatedAt && e.flags === flags));
+          kept.push({ flags: Number(flags) || 0, activatedAt, expiresAt });
+          await this.ctx.storage.put(deviceKey, kept);
+        };
+
         // A. 묶음 QR 분기 ({ batch, deviceId }) (대표님 08:46 주력 사양)
         if (batch) {
           const rawId = String(batch).replace(/^b_/, '');
@@ -283,6 +298,7 @@ export class Room {
           // 같은 deviceId 재요청: 200 OK (자리 안 씀)
           const existing = batchData.used.find(u => u.deviceId === deviceId);
           if (existing) {
+            await noteDevice(batchData.flags || 0x01, existing.activatedAt, existing.expiresAt);
             return new Response(JSON.stringify({
               valid: true,
               activatedAt: existing.activatedAt,
@@ -312,6 +328,7 @@ export class Room {
           batchData.used.push({ deviceId, activatedAt, expiresAt });
           await this.ctx.storage.put('batch:' + rawId, batchData);
           if (this.batchStore) this.batchStore.set(rawId, batchData);
+          await noteDevice(batchData.flags || 0x01, activatedAt, expiresAt);   // 묶음(관광) = 호스트 0x01
 
           return new Response(JSON.stringify({
             valid: true,
@@ -340,6 +357,7 @@ export class Room {
           if (licRecord) {
             // 같은 기기 재요청: 200 OK
             if (licRecord.deviceId === deviceId) {
+              await noteDevice(licRecord.flags, licRecord.activatedAt, licRecord.expiresAt);
               return new Response(JSON.stringify({
                 valid: true,
                 activatedAt: licRecord.activatedAt,
@@ -374,6 +392,7 @@ export class Room {
           };
           await this.ctx.storage.put('lic:' + codeHash, licRecord);
           if (this.licStore) this.licStore.set(codeHash, licRecord);
+          await noteDevice(licRecord.flags, activatedAt, expiresAt);
 
           return new Response(JSON.stringify({
             valid: true,
@@ -394,6 +413,28 @@ export class Room {
           status: 500, headers: { 'Content-Type': 'application/json' }
         });
       }
+    }
+
+    // 0-1-A2. 기기의 살아 있는 이용권 플래그: GET /internal/license/device?deviceId=... (B-1)
+    //   → { flags: OR(살아 있는 것), until: 그중 가장 이른 expiresAt(ms), count }. 없으면 flags 0.
+    if (url.pathname === '/internal/license/device' && request.method === 'GET') {
+      const deviceId = String(url.searchParams.get('deviceId') || '');
+      if (!deviceId) {
+        return new Response(JSON.stringify({ error: 'bad_request', message: 'deviceId is required' }), {
+          status: 400, headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const deviceKey = 'dev:' + crypto.createHash('sha256').update(deviceId).digest('hex');
+      const now = Date.now();
+      const list = ((await this.ctx.storage.get(deviceKey)) || []).filter(e => e && e.expiresAt > now);
+      let flags = 0, until = 0;
+      for (const e of list) {
+        flags |= Number(e.flags) || 0;
+        until = until ? Math.min(until, e.expiresAt) : e.expiresAt;
+      }
+      return new Response(JSON.stringify({ flags, until, count: list.length }), {
+        status: 200, headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // 0-1-B. 묶음 QR 상태 조회: GET /internal/license/batch?batch=...
