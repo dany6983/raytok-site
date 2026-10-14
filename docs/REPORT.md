@@ -5,7 +5,96 @@
 
 ---
 
-진행 중: B-BACKLOG ⑨-1 되돌림 실증 점검 — `samples/`·`relay/test/` 의 되돌림 주장 60건을 **실제로 되돌려** 붉은지 본다. 빈 사례(되돌려도 통과)를 찾는다 — ⑨ 가 "우리가 가장 자주 당한 사고"라 적은 것 — 20:23
+[B] B-BACKLOG ⑨-1 되돌림 실증 **전수 점검** — 주장 60건 중 **16건이 빈 증거**였다 (특허 자물쇠 셋 포함)
+2026-10-14 20:37 · 세션: claude-code · 가지: `ccr-5e763034-zo0m63` · 커밋 `c055433`
+
+### 무엇이
+⑨-1 은 "되돌림 사례를 **실제로 되돌려 붉은지** 하나씩 확인하고 빈 사례를 찾는다 — **이것이 우리가 가장 자주
+당한 사고다**" 였고 `[끝]` 으로 적혀 있었다. 전수로 다시 하니 **그 점검 자체가 안 되어 있었다.**
+`samples/`·`relay/test/` 의 되돌림 주장 **60건 중 16건이 빈 증거**다. 전부 같은 꼴이다:
+
+```js
+let revertFailed = false;
+try {
+  const fakeStatus = 400;                        // ← 시험 안에서 지어낸 상수
+  assert.strictEqual(fakeStatus, 200, '...');    // ← 400 !== 200, 늘 던진다
+} catch (e) { revertFailed = true; }
+ok(revertFailed === true, '... (되돌림 실증 완료)');
+```
+
+**`400 !== 200` 을 증명할 뿐이다.** 제품을 어떻게 되돌려도 늘 초록이다. 그리고 그중 셋이
+**P-17 · P-14 · 특허 독립항** 자물쇠였다 — 본출원 재료로 쓰려던 바로 그 증거다.
+
+### 고친 것 — try 안의 단언이 **제품이 만든 값**을 보게
+
+| 시험 | 전 (지어낸 상수) | 후 (제품이 만든 값) |
+|---|---|---|
+| `question_test` ① **P-17** | `isAutoSelection = false` | **사람이 누르기 전** 발언자 유무를 실제로 잰다 |
+| `question_test` ② **P-14** | `participantTranslationAllowed = false` | 청취 페이지가 **전선에 올린 날 프레임** |
+| `question_test` ③ **독립항** | `fakeErasedSeqCount = 0` | 릴레이 `askHistory` 의 seq 1 보존 |
+| `license_redeem` ①② | `fakeAllowExtraGuest` · `fakeAllowSecondDevice` | 4번째 손님 응답 코드 · 2번째 기기 오류 |
+| `pay_verification` ② | `fakeNoSecretCheck = false` | 비밀값 없이 보낸 요청의 응답 코드 |
+| `broadcast_raw` | `fakeTranslateCalls = 1` | `relay.counters.translate` |
+| `sitemap` | `fakeSitemap = '<loc>…'` | `sitemap.xml` 본문 |
+| `pay_test` 7번 | `fakeCount = 0` | 실제로 센 `/buy/` 링크 수 |
+| `bytes_out` ① | `fakeShowNoTr = '번역 없음'` | 번역 칸의 `display` |
+| `l3_doc` | `fakeOutside = ['https://…']` | 잡아 둔 바깥 요청 목록 |
+| `live_test` | `brokenLine = {src:'',tr:''}` | vi 청취자가 실제로 받은 줄 |
+| `contact` | `fakeStatus = 400` | 필수 항목 뺀 진짜 요청의 응답 |
+| `end_test` | `fakeRosterLeak = ['Alice','Bob']` | 방 닫은 뒤 호스트 화면의 명단 수 |
+| `screen_view` | `fakeStored = ['…leak']` | 그 폰에서 실제로 읽은 저장 키 |
+| `question-queue` ② | `fakeAllowTranslation = true` | 릴레이가 돌려준 `why` |
+
+**머리말에 "되돌림 실증 N건" 이라 적고 코드가 아예 없던 셋**도 채웠다 —
+`release_e2e`(끝 요약 집계) · `w_t`(script 송출) · `design_theme`(1.3배 확대 넘침).
+
+### ⚠ P-14 는 한 번 더 걸러야 했다 — 겉으로만 진짜 값
+처음 고칠 때 릴레이가 받은 `askHistory` 를 봤다. 그런데 **모의 릴레이가 `trans` 칸을 애초에 담지 않아서**
+청취 페이지를 되돌려도(번역을 실어 보내게 해도) 그대로 초록이었다. **실제로 되돌려 보고서야 잡혔다.**
+지금은 청취 페이지가 WebSocket 에 올린 **날 프레임**을 가로채 본다. 읽은 값이 제품에서 왔다고 해서
+증거가 되는 것이 아니라, **되돌렸을 때 그 값이 실제로 달라져야** 증거다.
+
+### 다시 들어오지 못하게 — `samples/revert_audit_test.js` 신규 (`npm test` 맨 앞, 8건)
+사람 눈으로 60건을 다시 훑는 일은 다음에 또 빠진다. 그래서 센다:
+1. try 안에서 **지어낸 상수로만** 단언하는 되돌림을 잡는다. 값의 **출처를 따라간다** — `await`·함수 호출·
+   바깥 이름이 섞이면 제품 값일 수 있으니 잡지 않는다(헛짚음 0 확인: 진짜였던 `desk_view`·`pay_verification` ①·
+   `question-queue` ① 셋을 처음엔 잘못 잡아서 판정기를 고쳤다).
+2. 머리말로만 있는 되돌림을 잡는다.
+3. 되돌림을 가진 시험이 `npm test` 밖에 있으면 잡는다(일부러 뺀 `prod_e2e`·`w_t` 는 까닭과 함께).
+4. **이 점검 자신의 되돌림 실증** — 10-14 에 실제로 있던 빈 꼴을 넣으면 1 이 잡는지.
+
+### 실행 출력 발췌 — 제품을 **실제로** 되돌려 봤다 (말이 아니라)
+```
+① 청취 페이지가 trans 를 실어 보내게 되돌림
+   → [FAIL] P-14: 청취 페이지가 보낸 프레임에 번역 칸이 없다 (원문+언어만)
+② 릴레이가 첫 질문을 자동 지명하게 되돌림
+   → [FAIL] P-17: 둘이 기다려도 사람이 누르기 전엔 발언자 없음 (자동 선정 아님)
+③ 끝낸 질문을 askHistory 에서 지우게 되돌림
+   → [FAIL] 되돌림용: 릴레이가 받은 질문 1건   (독립항 순번 보존)
+④ sitemap.xml 에 noindex 인 /web/buy/ 넣음        → ERR_ASSERTION
+⑤ relay/src/room.js 의 자리(no_seats) 검사 제거   → [FAIL] 4번째 손님 401 차단
+   다섯 다 되돌린 뒤 원상 — git status 에 흔적 0
+
+$ node samples/revert_audit_test.js
+  [PASS] 시험 파일 67개를 훑었다
+  [PASS] 시험 안에서 만든 상수로만 단언하는 되돌림 0건
+  [PASS] 되돌림을 말만 하고 코드가 없는 파일 0건
+  [PASS] 되돌림을 가진 시험 20개가 전부 npm test 안에 있다
+  [PASS] 제품 값을 보는 되돌림은 잡지 않는다 (헛짚음 0)
+  [PASS] 10-14 에 실제로 있던 빈 되돌림을 넣으면 [1] 이 잡는다 (되돌림 실증)
+전부 통과 (8건)
+
+$ npm test            exit=0   (35개 묶음 전부 초록, question 21 → 27건)
+$ npm run test:w-t    exit=0   (23건, ⑦ 되돌림 추가)
+```
+
+한 줄 판정: **우리가 가장 자주 당한 사고를 실제로 당하고 있었다** — 특허 자물쇠 셋을 포함해 16건이 빈 증거였다.
+이제 되돌리면 붉고, 빈 꼴이 다시 들어오면 `npm test` 가 먼저 잡는다.
+막힌 것: 없음. **배포 안 함**(relay 운영 코드 안 건드림 — 되돌림 실험은 전부 원상, `배포 대기: 아니오`).
+남은 것: B-BACKLOG 는 `[대기]` 둘(7 줄 18 운영 전환 — 대표님 PG · 8 줄 24 Desk 요약 — 마스터)만.
+MASTER `[대기]` 도 전부 바깥을 기다리는 줄이다.
+**마스터께**: ⑨-1 은 `[끝]` 으로 적혀 있었지만 점검이 실제로 돌지 않았다. 앞으로 "되돌림 실증 완료" 라는
+말은 `revert_audit_test` 가 초록일 때만 믿을 수 있다.
 
 [B] B-BACKLOG 5 [절반] → [끝] — 바닥 사업자 정보가 **ko 만** 채워져 있었다 + `npm test` 가 붉던 한 건
 2026-10-14 12:25 · 세션: claude-code · 가지: `ccr-5e763034-zo0m63` · 커밋 `c33ba27`(바닥) · `27cf5ac`(rtl 시험)
