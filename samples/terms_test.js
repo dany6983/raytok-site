@@ -151,34 +151,191 @@ targetPages.forEach((relPath) => {
      `${relPath} 바닥에 이용약관 링크 포함 확인`);
 });
 
-/* ── 7. PG 결제 심사 필수 — 사업자 정보 및 통신판매업 신고번호 자리 (MASTER 03:35) ── */
-console.log('\n[Test 7] PG 결제 심사 필수 — 바닥 사업자 정보 및 통신판매업 신고번호 자리');
-const pgFooterPages = [
+/* ── 7. PG 결제 심사 필수 — 사업자 정보 및 통신판매업 신고번호 (MASTER 03:35 · 10-10 08:01) ──
+ *
+ * 10-10 08:01 "신고번호가 오면 B 가 바닥의 [신고 준비 중] 을 그 번호로 바꾼다" 는 끝났다.
+ * 남아 있던 구멍은 **ko 만 고쳤고 en 은 안 고친** 것이었다 — 토스 심사와 해외 손님이 보는
+ * 쪽은 영문 페이지다. 그래서 여기서는 **ko·en 을 같은 잣대로** 센다(B-BACKLOG "손님이 보는
+ * 글자를 넣으면 ko·en 둘 다").
+ *
+ * 전자상거래법 제13조 필수 표시 여섯: 상호 · 대표자 · 주소 · 사업자등록번호 ·
+ * 통신판매업 신고번호 · 연락처. 하나라도 빠지면 붉다.
+ */
+console.log('\n[Test 7] PG 결제 심사 필수 — 바닥 사업자 정보 여섯 칸 (ko·en 같은 잣대)');
+
+const KO_FOOTER_FIELDS = [
+  ['주식회사 피엔엘에코', '상호'],
+  ['대표 박용음', '대표자'],
+  ['화성시 동탄대로 635', '주소'],
+  ['376-88-02280', '사업자등록번호'],
+  ['통신판매업 신고번호 2025-화성동탄-2002', '통신판매업 신고번호'],
+  ['raytok.dany@gmail.com', '연락처'],
+];
+const EN_FOOTER_FIELDS = [
+  ['PNL ECO Co., Ltd.', 'company name'],
+  ['CEO Park Yong-eum', 'representative'],
+  ['635 Dongtan-daero', 'address'],
+  ['376-88-02280', 'business registration no.'],
+  ['Mail-order Business Registration No. 2025-화성동탄-2002', 'mail-order report no.'],
+  ['raytok.dany@gmail.com', 'contact'],
+];
+
+/* 국문 — 손님이 보는 페이지 전부 */
+const koFooterPages = [
   'index.html',
   'field/index.html',
   'tour/index.html',
+  'museum/index.html',
   'student/index.html',
   'ows/index.html',
   'desk/index.html',
   'guide/index.html',
+  'contact/index.html',
+  'download/index.html',          // 제품 포장에 인쇄되는 주소 — 바닥이 없었다
   'web/buy/index.html',
-  'web/terms/index.html',
-  'web/terms/en/index.html',
   'privacy/index.html',
   'web/privacy/index.html',
   'web/host/index.html',
   'web/desk/index.html',
   'web/listener/index.html',
+  'web/usage/index.html',         // 고객 사용량 조회 — 바닥이 없었다
+  'web/verify/index.html',        // 기록 검증 — 바닥이 없었다
   'lic/index.html',
 ];
 
-pgFooterPages.forEach((relPath) => {
-  const filePath = path.join(ROOT, relPath);
-  const content = fs.readFileSync(filePath, 'utf-8');
-  ok(content.includes('주식회사 피엔엘에코') || content.includes('PNL ECO Co., Ltd.'),
-     `${relPath} 바닥에 상호명 포함 확인`);
-  ok(content.includes('통신판매업 신고번호') || content.includes('Mail-order Business Report'),
-     `${relPath} 바닥에 통신판매업 신고번호 자리 포함 확인`);
+/* 영문 — 같은 잣대. 토스 심사·해외 손님이 보는 쪽 */
+const enFooterPages = [
+  'field/en/index.html',
+  'tour/en/index.html',
+  'museum/en/index.html',
+  'student/en/index.html',
+  'ows/en/index.html',
+  'guide/en/index.html',          // 바닥에 링크만 있었다
+  'contact/en/index.html',        // 신고번호·호스팅·전화가 빠져 있었다
+  'download/en/index.html',       // 바닥이 없었다
+];
+
+koFooterPages.forEach((relPath) => {
+  const content = fs.readFileSync(path.join(ROOT, relPath), 'utf-8');
+  KO_FOOTER_FIELDS.forEach(([needle, label]) => {
+    ok(content.includes(needle), `${relPath} 바닥 ${label}`);
+  });
 });
+
+enFooterPages.forEach((relPath) => {
+  const content = fs.readFileSync(path.join(ROOT, relPath), 'utf-8');
+  EN_FOOTER_FIELDS.forEach(([needle, label]) => {
+    ok(content.includes(needle), `${relPath} footer ${label}`);
+  });
+});
+
+/* 약관 두 쪽은 본문이 사업자 정보 표다 — 바닥 한 줄이 아니라 그 표에서 같은 여섯을 센다 */
+{
+  const relPath = 'web/terms/index.html';
+  const content = fs.readFileSync(path.join(ROOT, relPath), 'utf-8');
+  [
+    ['상호: 주식회사 피엔엘에코', '상호'],
+    ['대표자: 박용음', '대표자'],
+    ['화성시 동탄대로 635', '주소'],
+    ['376-88-02280', '사업자등록번호'],
+    ['2025-화성동탄-2002', '통신판매업 신고번호'],
+    ['raytok.dany@gmail.com', '연락처'],
+  ].forEach(([needle, label]) => {
+    ok(content.includes(needle), `${relPath} 본문 ${label}`);
+  });
+}
+
+{
+  const relPath = 'web/terms/en/index.html';
+  const content = fs.readFileSync(path.join(ROOT, relPath), 'utf-8');
+  [
+    ['PNL ECO Co., Ltd.', 'company name'],
+    ['Yong-eum Park', 'representative'],
+    ['635 Dongtan-daero', 'address'],
+    ['376-88-02280', 'business registration no.'],
+    ['2025-HwaseongDongtan-2002', 'mail-order report no.'],
+    ['raytok.dany@gmail.com', 'contact'],
+  ].forEach(([needle, label]) => {
+    ok(content.includes(needle), `${relPath} 본문 ${label}`);
+  });
+}
+
+/* ── 8. 새 페이지가 몰래 빠져나가지 못하게 — 전수 훑기 ──
+ *
+ * 위 두 목록은 사람이 적는다. 사람이 적는 목록은 다음에 또 빠진다(이번이 그 사고였다).
+ * 그래서 저장소의 **모든 html 을 훑고**, 아래 면제 목록에 없으면 바닥 사업자 정보를
+ * 요구한다. 새 페이지를 만들면 둘 중 하나를 해야 한다: 바닥을 넣든가, 왜 면제인지
+ * 여기 적든가.
+ */
+console.log('\n[Test 8] 전수 훑기 — 면제 목록에 없는 html 은 바닥 사업자 정보가 있어야 한다');
+
+const FOOTER_EXEMPT = {
+  // 넘기는 쪽(meta refresh + location.replace) — 손님이 글자를 읽을 틈이 없다
+  'terms/index.html': '넘기는 쪽 → /web/terms/',
+  'terms/en/index.html': '넘기는 쪽 → /web/terms/en/',
+  'buy/index.html': '넘기는 쪽 → /web/buy/',
+  'usage/index.html': '넘기는 쪽 → /web/usage/',
+  'meet/index.html': '넘기는 쪽 → /desk/',
+  'web/guide/index.html': '넘기는 쪽 → /guide/',
+  'privacy/en/index.html': '넘기는 쪽 → /privacy/ (국문 하나)',
+  'web/privacy/en/index.html': '넘기는 쪽 → /web/privacy/ (국문 하나)',
+  // 그 밖
+  '404.html': 'noindex, 없는 주소 안내 + /lic/ 되돌리기만',
+  'join/index.html': 'QR 진입 — 본문이 81개 언어 사전으로 뜬다. 국문 한 줄을 박으면 그 설계가 깨진다(ui-strings.json)',
+  'web/listener/selftest.html': '개발용 자체 점검, 공개 링크 0개',
+};
+
+function walkHtml(dir, acc) {
+  for (const name of fs.readdirSync(dir)) {
+    if (name === 'node_modules' || name === '.git') continue;
+    const full = path.join(dir, name);
+    const st = fs.statSync(full);
+    if (st.isDirectory()) walkHtml(full, acc);
+    else if (name.endsWith('.html')) acc.push(path.relative(ROOT, full).split(path.sep).join('/'));
+  }
+  return acc;
+}
+
+const allHtml = walkHtml(ROOT, []).sort();
+ok(allHtml.length > 30, `저장소 html ${allHtml.length}개를 훑었다`);
+
+const missing = [];
+for (const rel of allHtml) {
+  if (FOOTER_EXEMPT[rel]) continue;
+  const content = fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+  const hasName = content.includes('주식회사 피엔엘에코') || content.includes('PNL ECO Co., Ltd.');
+  const hasReport = content.includes('2025-화성동탄-2002') || content.includes('2025-HwaseongDongtan-2002');
+  if (!hasName || !hasReport) missing.push(rel);
+}
+ok(missing.length === 0,
+   missing.length === 0
+     ? '면제 목록 밖의 html 전부에 상호 + 통신판매업 신고번호가 있다'
+     : `바닥 사업자 정보가 없는 html: ${missing.join(', ')}`);
+
+/* 면제 목록이 썩지 않게 — 적어 둔 파일이 실제로 있어야 한다 */
+Object.keys(FOOTER_EXEMPT).forEach((rel) => {
+  ok(fs.existsSync(path.join(ROOT, rel)), `면제 목록의 ${rel} 가 실제로 있다 (${FOOTER_EXEMPT[rel]})`);
+});
+
+/* ── 9. 되돌림 실증 2건 — 되돌려서 붉지 않으면 위 둘은 증거가 아니다 ── */
+console.log('\n[Test 9] 되돌림 실증');
+
+{
+  // ① en 바닥에서 신고번호를 빼면 Test 7 이 붉어야 한다
+  const content = fs.readFileSync(path.join(ROOT, 'guide/en/index.html'), 'utf-8');
+  const reverted = content.replace('Mail-order Business Registration No. 2025-화성동탄-2002', '');
+  ok(!reverted.includes('Mail-order Business Registration No. 2025-화성동탄-2002'),
+     'guide/en 에서 신고번호를 빼면 Test 7 단언이 깨진다 (되돌림 실증 ①)');
+}
+
+{
+  // ② 바닥 없는 페이지를 면제 목록에서 지우면 Test 8 이 그것을 잡아야 한다
+  const probe = 'join/index.html';
+  const content = fs.readFileSync(path.join(ROOT, probe), 'utf-8');
+  const wouldBeCaught =
+    !(content.includes('주식회사 피엔엘에코') || content.includes('PNL ECO Co., Ltd.'));
+  ok(wouldBeCaught,
+     `${probe} 를 면제 목록에서 지우면 Test 8 이 잡는다 — 훑기가 비어 있지 않다 (되돌림 실증 ②)`);
+}
 
 console.log(`\n전부 통과 (${checks}건)`);
