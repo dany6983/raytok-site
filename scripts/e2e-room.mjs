@@ -1,0 +1,179 @@
+#!/usr/bin/env node
+/**
+ * scripts/e2e-room.mjs — 릴레이 끝에서 끝 시험 틀 (MASTER 2026-10-14 11:10 ①)
+ *
+ *   발급(mint) → POST /room 열기 → /ws?room= 청취자 둘 접속 → 호스트가 broadcast 원문 한 줄
+ *   → 둘 다 받는지 → /translate 에 0x10 없는 토큰이면 403(no_package) 확인.
+ *
+ * 돌리기 (저장소 뿌리에서):
+ *   npm run e2e:room                 # 8787 에 wrangler dev 가 없으면 직접 띄우고 끝나면 내린다
+ *   RELAY_URL=http://127.0.0.1:8787 node scripts/e2e-room.mjs   # 이미 떠 있는 릴레이에 붙는다
+ *
+ * 비밀은 `relay/.dev.vars` 에서만 읽는다(LICENSE_SECRET). 값은 어디에도 찍지 않는다.
+ * 운영 주소로는 돌리지 않는다 — 이 틀은 wrangler dev 기준이다(배포는 대표님).
+ *
+ * 되돌려서 실패 확인(D-09):
+ *   · relay/src/index.js `/translate` 의 허용 플래그에 0x02 를 더하면 [6] 이 붉다.
+ *   · relay/src/room.js 호스트 → 청취자 전달 for 문을 지우면 [5] 가 붉다.
+ */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import WebSocket from 'ws';
+import { mintLicenseToken } from '../relay/tools/mint-license.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const RELAY_DIR = path.resolve(__dirname, '../relay');
+const BASE = (process.env.RELAY_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
+const WS_BASE = BASE.replace(/^http/, 'ws');
+const J = { 'Content-Type': 'application/json' };
+
+if (/raytok\.kr|workers\.dev/.test(BASE)) {
+  console.error('이 틀은 wrangler dev 전용이다 — 운영 주소로는 돌리지 않는다:', BASE);
+  process.exit(2);
+}
+
+// ── 비밀: .dev.vars 만, 찍지 않는다 ──────────────────────────────────────────
+function readDevVars() {
+  const p = path.join(RELAY_DIR, '.dev.vars');
+  const o = {};
+  if (!fs.existsSync(p)) return o;
+  for (const l of fs.readFileSync(p, 'utf8').split('\n')) {
+    const m = l.match(/^([A-Z_]+)=(.*)$/);
+    if (m) o[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+  }
+  return o;
+}
+const devVars = readDevVars();
+const SECRET = process.env.LICENSE_SECRET || devVars.LICENSE_SECRET;
+if (!SECRET) {
+  console.error('LICENSE_SECRET 이 없다 — relay/.dev.vars 에 적는다(저장소에 넣지 않는다).');
+  process.exit(2);
+}
+
+// ── wrangler dev: 없으면 띄우고, 띄웠으면 끝에 내린다 ─────────────────────────
+let devProc = null;
+async function relayUp(ms = 1500) {
+  try {
+    const r = await fetch(`${BASE}/room`, { method: 'POST', headers: J, body: '{}', signal: AbortSignal.timeout(ms) });
+    return r.status === 401 || r.ok;
+  } catch (_) { return false; }
+}
+async function ensureRelay() {
+  if (await relayUp()) { console.log(`[relay] 이미 떠 있다: ${BASE}`); return; }
+  if (process.env.RELAY_URL) throw new Error(`RELAY_URL 에 릴레이가 없다: ${BASE}`);
+  const port = new URL(BASE).port || '8787';
+  console.log(`[relay] wrangler dev 를 띄운다 (port ${port})…`);
+  const bin = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  devProc = spawn(bin, ['wrangler', 'dev', '--port', port, '--local'], {
+    cwd: RELAY_DIR, stdio: ['ignore', 'ignore', 'ignore'], detached: process.platform !== 'win32'
+  });
+  const t0 = Date.now();
+  while (Date.now() - t0 < 60000) {
+    if (await relayUp()) { console.log(`[relay] 준비 (${Date.now() - t0}ms)`); return; }
+    await sleep(500);
+  }
+  throw new Error('wrangler dev 가 60초 안에 뜨지 않았다');
+}
+function stopRelay() {
+  if (!devProc) return;
+  try {
+    if (process.platform === 'win32') devProc.kill();
+    else process.kill(-devProc.pid, 'SIGTERM');
+  } catch (_) {}
+  devProc = null;
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ── 청취자: 접속해서 받은 글을 모은다 ──────────────────────────────────────────
+function openListener(code, name) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(`${WS_BASE}/ws?room=${code}&role=listener`);
+    const got = [];
+    ws.on('message', (d) => { try { got.push(JSON.parse(String(d))); } catch (_) { got.push({ _raw: String(d) }); } });
+    ws.on('open', () => resolve({ name, ws, got }));
+    ws.on('error', reject);
+  });
+}
+function openHost(code, token) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(`${WS_BASE}/ws?room=${code}&role=host&token=${encodeURIComponent(token)}`);
+    ws.on('open', () => resolve(ws));
+    ws.on('error', reject);
+    ws.on('unexpected-response', (_req, res) => reject(new Error(`host ws ${res.statusCode}`)));
+  });
+}
+async function waitFor(pred, ms = 5000, step = 100) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (pred()) return true; await sleep(step); }
+  return pred();
+}
+
+let n = 0;
+const pass = (msg) => { n++; console.log(`[PASS] ${n} ${msg}`); };
+
+async function main() {
+  console.log(`=== e2e-room: mint → /room → 청취자 2 → broadcast 원문 → /translate 403 (${BASE}) ===`);
+  await ensureRelay();
+  const tag = Date.now().toString(36);
+
+  // [1] 발급 — 가이드 이용권(0x01) 토큰. 0x10 은 일부러 없다.
+  const hostLic = mintLicenseToken({ sub: `e2e-host-${tag}`, days: 1, flags: 0x01, secret: SECRET });
+  assert.ok(hostLic.split('.').length === 2, '토큰 모양 payload.sig');
+  pass('발급: 가이드 토큰(0x01, 0x10 없음)');
+
+  // [2] /room 열기
+  const rr = await fetch(`${BASE}/room`, { method: 'POST', headers: { ...J, Authorization: `Bearer ${hostLic}` }, body: JSON.stringify({ kind: 'guide' }) });
+  assert.equal(rr.status, 200, `/room → 200, got ${rr.status}`);
+  const { code, host_token } = await rr.json();
+  assert.match(code, /^[0-9A-Z]{6}$/, '방 코드 6자');
+  assert.ok(host_token, 'host_token');
+  pass(`/room 열림: ${code}`);
+
+  // [3] 청취자 둘 접속
+  const [L1, L2] = await Promise.all([openListener(code, 'L1'), openListener(code, 'L2')]);
+  L1.ws.send(JSON.stringify({ hello: 1, lang: 'en' }));
+  L2.ws.send(JSON.stringify({ hello: 1, lang: 'vi' }));
+  pass('청취자 둘 접속 (en, vi)');
+
+  // [4] 호스트 접속
+  const host = await openHost(code, host_token);
+  pass('호스트 접속 (host_token)');
+
+  // [5] broadcast 원문 한 줄 → 둘 다 받는가 (정본 line.broadcast — 번역 없이 원문만)
+  const text = `현장 방송 안내입니다 ${tag}`;
+  host.send(JSON.stringify({ seq: 1, src_lang: 'ko', text, broadcast: true }));
+  const both = await waitFor(() => [L1, L2].every((L) => L.got.some((m) => m.text === text && m.broadcast === true)));
+  assert.ok(both, `둘 다 받아야 한다 — L1:${JSON.stringify(L1.got)} L2:${JSON.stringify(L2.got)}`);
+  for (const L of [L1, L2]) {
+    const m = L.got.find((x) => x.text === text);
+    assert.equal(m.tr, undefined, `${L.name}: 방송 줄에 번역 칸이 없어야 한다`);
+  }
+  pass('broadcast 원문 한 줄 → 청취자 둘 다 받음(tr 없음)');
+
+  // [6] /translate — 0x10 없는 토큰은 403 no_package (B-3). 호스트 토큰(0x01)도 마찬가지.
+  const tr = await fetch(`${BASE}/translate`, {
+    method: 'POST', headers: { ...J, Authorization: `Bearer ${hostLic}` },
+    body: JSON.stringify({ q: [text], source: 'ko', target: 'en' })
+  });
+  let trBody = null; try { trBody = await tr.json(); } catch (_) {}
+  assert.equal(tr.status, 403, `/translate 0x10 없음 → 403, got ${tr.status} ${JSON.stringify(trBody)}`);
+  assert.equal(trBody && trBody.why, 'no_package');
+  pass('/translate 0x10 없는 토큰 → 403 no_package');
+
+  // [7] 토큰 없이 /translate → 401 (403 보다 먼저)
+  const tr0 = await fetch(`${BASE}/translate`, { method: 'POST', headers: J, body: JSON.stringify({ q: ['x'], target: 'en' }) });
+  assert.equal(tr0.status, 401);
+  pass('/translate 토큰 없음 → 401');
+
+  host.send(JSON.stringify({ end: 1 }));
+  await sleep(200);
+  for (const w of [host, L1.ws, L2.ws]) { try { w.close(); } catch (_) {} }
+  console.log(`\n=== e2e-room: ${n}/${n} PASS ===`);
+}
+
+main()
+  .then(() => { stopRelay(); process.exit(0); })
+  .catch((e) => { console.error('\n*** e2e-room FAILED ***', e && e.message ? e.message : e); stopRelay(); process.exit(1); });

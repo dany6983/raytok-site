@@ -32,6 +32,7 @@
     "test:mint": "npm --prefix relay run test:mint",
     "test:lic": "node samples/lic_page_test.js",
     "mail": "node scripts/mailcheck.js --force",
+    "e2e:room": "node scripts/e2e-room.mjs",
     "test:hwpx": "node samples/hwpx_test.js",
     "test:desk-view": "node samples/desk_view_test.js",
     "test:dual": "npm --prefix relay run test:dual",
