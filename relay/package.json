@@ -16,7 +16,8 @@
     "test:desk-read": "node test/desk-read.mjs",
     "test:dual": "node test/w5-dual-host.mjs",
     "test:issue-flags": "node test/issue-flags.mjs",
-    "test:translate-pkg": "node test/translate-pkg.mjs"
+    "test:translate-pkg": "node test/translate-pkg.mjs",
+    "test:usage-package": "node test/usage-package.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.143.0",
