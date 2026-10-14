@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>RayTok 묶음 QR 인쇄</title>
+<meta name="description" content="이용권 코드 N개를 A4 한 장 2×4 격자로 인쇄 — 각 칸에 QR · 코드 글자 · 기간(일). 서버 호출 없음.">
+<!--
+  MASTER 2026-10-14 11:10 ③ — 묶음 QR 인쇄 페이지 (단체: 학교·박물관 배포용).
+  · 코드(128자 Crockford base32, 하이픈·빈칸 무시)나 https://raytok.kr/lic/<code> 링크를 한 줄에 하나씩 붙여 넣는다.
+  · QR 은 /web/vendor/qrcode.js (로컬) 로 그린다. 서버 호출 0건 — 코드가 이 페이지 밖으로 나가지 않는다.
+  · 기간(일)은 코드 payload [3..4](uint16 BE, 정본 docs/samples/license-code.md) 를 브라우저에서 읽는다. 0 = 기간 없음(절대 만료만).
+    서명은 검사하지 않는다 — 인쇄 보조일 뿐, 유효성은 앱·릴레이가 본다.
+  · 인쇄: @page A4, 한 장 2열 × 4행 = 8칸. 9장째부터 다음 장.
+-->
+<style>
+  :root { --ink:#0f172a; --mute:#64748b; --line:#cbd5e1; --bg:#f8fafc; --pri:#0284c7; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .tool { max-width:860px; margin:0 auto; padding:20px 16px; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  .sub { color:var(--mute); font-size:13px; margin:0 0 14px; line-height:1.5; }
+  textarea { width:100%; min-height:140px; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:12px; padding:10px; border:1px solid var(--line); border-radius:8px; resize:vertical; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+  input[type=text] { flex:1 1 200px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:14px; }
+  button { padding:9px 16px; border:0; border-radius:8px; background:var(--pri); color:#fff; font-size:14px; cursor:pointer; }
+  button.secondary { background:#e2e8f0; color:var(--ink); }
+  button:disabled { opacity:.5; cursor:default; }
+  #status { font-size:13px; color:var(--mute); margin-top:8px; min-height:18px; }
+  #status .bad { color:#b91c1c; }
+
+  /* 격자 — 화면에서도 A4 비율로 미리 보인다 */
+  .sheet { width:210mm; min-height:297mm; margin:16px auto; background:#fff; padding:10mm; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:repeat(4, 1fr); gap:4mm; box-shadow:0 2px 12px rgba(0,0,0,.08); page-break-after:always; break-after:page; }
+  .sheet:last-child { page-break-after:auto; break-after:auto; }
+  .sheet-title { grid-column:1 / -1; align-self:start; font-size:12pt; font-weight:600; margin:0; min-height:0; }
+  .sheet.has-title { grid-template-rows:auto repeat(4, 1fr); }
+  .cell { border:1px dashed var(--line); border-radius:3mm; padding:4mm; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; overflow:hidden; }
+  .cell .qr { width:42mm; height:42mm; }
+  .cell .qr svg { width:100%; height:100%; display:block; }
+  .cell .code { font-family:ui-monospace, Menlo, Consolas, monospace; font-size:7pt; line-height:1.35; word-break:break-all; margin-top:2mm; color:var(--ink); }
+  .cell .days { font-size:10pt; font-weight:700; margin-top:1.5mm; }
+  .cell .n { font-size:7pt; color:var(--mute); margin-top:1mm; }
+  .cell.bad { border-color:#fca5a5; color:#b91c1c; }
+
+  @media print {
+    @page { size:A4 portrait; margin:0; }
+    html, body { background:#fff; }
+    .tool { display:none; }
+    .sheet { margin:0; box-shadow:none; width:210mm; height:297mm; min-height:0; }
+  }
+  @media (max-width:900px) {
+    .sheet { width:100%; min-height:0; padding:4mm; }
+    .cell .qr { width:34mm; height:34mm; }
+  }
+</style>
+</head>
+<body>
+<div class="tool">
+  <h1>묶음 QR 인쇄 (A4 · 2×4)</h1>
+  <p class="sub">이용권 코드나 <code>https://raytok.kr/lic/&lt;코드&gt;</code> 링크를 한 줄에 하나씩 붙여 넣고 「격자 만들기」 → 「인쇄」.
+  한 장에 8칸, 각 칸에 QR · 코드 글자 · 기간(일). 이 페이지는 서버를 부르지 않는다 — 코드는 이 화면 밖으로 나가지 않는다.</p>
+  <textarea id="codes" placeholder="0000-0000-E3DX-… (128자, 하이픈·빈칸 있어도 됨)
+https://raytok.kr/lic/0000…" spellcheck="false"></textarea>
+  <div class="row">
+    <input type="text" id="title" placeholder="장 머리글 (선택 — 예: ○○박물관 10월 도슨트)" maxlength="60">
+    <button type="button" id="btn-make">격자 만들기</button>
+    <button type="button" id="btn-print" class="secondary" disabled>인쇄</button>
+  </div>
+  <div id="status"></div>
+</div>
+<div id="sheets"></div>
+
+<script src="/web/vendor/qrcode.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LINK_BASE = 'https://raytok.kr/lic/';
+  var CODE_CHARS = 128, CODE_BYTES = 80, PER_SHEET = 8;
+  // Crockford — 정본 §1 글자 표. 받을 때 I·L→1, O→0. U 는 거절.
+  var C32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  var MAP = {};
+  for (var i = 0; i < 32; i++) MAP[C32[i]] = i;
+  MAP.I = 1; MAP.L = 1; MAP.O = 0;
+
+  function normalize(line) {
+    var s = String(line || '').trim();
+    if (!s) return '';
+    var m = s.match(/\/lic\/([^\/?#]+)/i);
+    if (m) s = m[1];
+    s = s.replace(/^#/, '').replace(/^\?c=/, '');
+    return s.replace(/[-\s]/g, '').toUpperCase();
+  }
+  function b32decode(s) {
+    var out = new Uint8Array(Math.floor(s.length * 5 / 8));
+    var bits = 0, acc = 0, n = 0;
+    for (var i = 0; i < s.length; i++) {
+      var v = MAP[s[i]];
+      if (v === undefined) return null;
+      acc = ((acc << 5) | v) & 0xffff; bits += 5;
+      if (bits >= 8) { bits -= 8; out[n++] = (acc >> bits) & 0xff; }
+    }
+    return n === out.length ? out : null;
+  }
+  function group(code) { return code.replace(/(.{4})/g, '$1-').replace(/-$/, ''); }
+  // payload [3..4] = 기간(일) uint16 BE (정본). 0 = 기간 없음.
+  function daysOf(bytes) { return (bytes[3] << 8) | bytes[4]; }
+
+  function parse(raw) {
+    var code = normalize(raw);
+    if (!code) return null;
+    if (code.length !== CODE_CHARS) return { raw: raw, bad: '128자가 아님 (' + code.length + '자)' };
+    var bytes = b32decode(code);
+    if (!bytes || bytes.length !== CODE_BYTES) return { raw: raw, bad: '글자 표에 없는 글자' };
+    return { code: code, grouped: group(code), days: daysOf(bytes), link: LINK_BASE + code };
+  }
+
+  function qrSvg(text) {
+    if (typeof qrcode !== 'function') return null;
+    var q = qrcode(0, 'M');
+    q.addData(text);
+    q.make();
+    return q.createSvgTag({ cellSize: 2, margin: 0, scalable: true });
+  }
+
+  function build() {
+    var lines = document.getElementById('codes').value.split(/\r?\n/);
+    var title = document.getElementById('title').value.trim();
+    var items = [];
+    for (var i = 0; i < lines.length; i++) { var p = parse(lines[i]); if (p) items.push(p); }
+    var root = document.getElementById('sheets');
+    root.innerHTML = '';
+    var bad = 0;
+    for (var s = 0; s < items.length; s += PER_SHEET) {
+      var sheet = document.createElement('section');
+      sheet.className = 'sheet' + (title ? ' has-title' : '');
+      if (title) {
+        var h = document.createElement('h2');
+        h.className = 'sheet-title';
+        h.textContent = title + ' · ' + (Math.floor(s / PER_SHEET) + 1) + '/' + Math.ceil(items.length / PER_SHEET) + '장';
+        sheet.appendChild(h);
+      }
+      for (var k = s; k < Math.min(s + PER_SHEET, items.length); k++) {
+        var it = items[k];
+        var cell = document.createElement('div');
+        cell.className = 'cell' + (it.bad ? ' bad' : '');
+        if (it.bad) {
+          bad++;
+          cell.innerHTML = '<div class="code"></div><div class="days">읽을 수 없는 줄</div><div class="n"></div>';
+          cell.querySelector('.code').textContent = String(it.raw).slice(0, 48);
+          cell.querySelector('.n').textContent = it.bad;
+        } else {
+          var qr = document.createElement('div'); qr.className = 'qr';
+          var svg = qrSvg(it.link);
+          if (svg) qr.innerHTML = svg; else qr.textContent = it.link;
+          var code = document.createElement('div'); code.className = 'code'; code.textContent = it.grouped;
+          var days = document.createElement('div'); days.className = 'days';
+          days.textContent = it.days > 0 ? it.days + '일권' : '기간 없음';
+          var n = document.createElement('div'); n.className = 'n'; n.textContent = '#' + (k + 1) + ' · RayTok 앱으로 QR 을 찍으세요';
+          cell.appendChild(qr); cell.appendChild(code); cell.appendChild(days); cell.appendChild(n);
+        }
+        sheet.appendChild(cell);
+      }
+      root.appendChild(sheet);
+    }
+    var st = document.getElementById('status');
+    var good = items.length - bad;
+    st.innerHTML = '';
+    st.textContent = items.length ? (good + '칸 · ' + Math.ceil(items.length / PER_SHEET) + '장') : '코드가 없습니다';
+    if (bad) { var b = document.createElement('span'); b.className = 'bad'; b.textContent = ' · 읽을 수 없는 줄 ' + bad; st.appendChild(b); }
+    document.getElementById('btn-print').disabled = good === 0;
+    return { total: items.length, good: good, bad: bad };
+  }
+
+  document.getElementById('btn-make').addEventListener('click', build);
+  document.getElementById('btn-print').addEventListener('click', function () { window.print(); });
+  window.rtQrSheetBuild = build; // 시험용
+})();
+</script>
+</body>
+</html>
