@@ -5,7 +5,27 @@
 
 ---
 
-진행 중: MASTER 11:10 ① 끝에서 끝 시험 틀 scripts/e2e-room.mjs — 시작 03:34
+진행 중: MASTER 11:10 ② /usage 패키지 글자 칸 — 시작 12:36
+
+[B] MASTER 11:10 ① 끝에서 끝 시험 틀 `scripts/e2e-room.mjs`
+2026-10-14 12:45 · 세션: claude-code · 가지: main · 커밋 `329b7ad` · 시작 12:34
+
+- `scripts/e2e-room.mjs` 신규 + `npm run e2e:room`. 발급(`mint-license.mjs`, 0x01 가이드 토큰) → `POST /room {kind:'guide'}` →
+  `/ws?room=&role=listener` 둘(en·vi) → `/ws?role=host&token=host_token` → `{seq:1, text, broadcast:true}` 한 줄 → 둘 다 `text`·`broadcast:true`·`tr` 없음 →
+  `/translate` 같은 토큰(0x10 없음) 403 `no_package` → 토큰 없음 401. 7건.
+- wrangler dev 기준: 8787 에 릴레이가 없으면 `npx wrangler dev --local` 을 스스로 띄우고 끝에 내린다(RELAY_URL 이 있으면 붙기만). 운영 주소(raytok.kr·workers.dev)는 거부.
+- 비밀은 `relay/.dev.vars` 의 `LICENSE_SECRET` 만 읽고 어디에도 찍지 않는다. `.dev.vars` 는 .gitignore 에 이미 있다(이 PC 에는 시험용 임의값으로 새로 만들었다 — 커밋 안 됨).
+
+실행 출력 발췌:
+```
+[relay] wrangler dev 를 띄운다 (port 8787)… / [relay] 준비 (2377ms)
+[PASS] 1 발급 … [PASS] 5 broadcast 원문 한 줄 → 청취자 둘 다 받음(tr 없음) · [PASS] 6 /translate 0x10 없는 토큰 → 403 no_package · [PASS] 7 토큰 없음 → 401
+=== e2e-room: 7/7 PASS ===   (끝나면 8787 내려감 확인)
+되돌림 실증: index.js /translate 허용 플래그에 0x01 을 더하면 → "500 !== 403" 붉음. 복구 후 7/7.
+```
+한 줄 판정: ① 끝. 막힌 것: 없음. 배포 안 함.
+
+---
 
 진행 중: MASTER [열림] 6 — 키가 있는 환경에서 확인 (릴레이 지역 시험 묶음 + 10-06 16:40 `test:att`) — 11:27
 
