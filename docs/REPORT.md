@@ -5,6 +5,30 @@
 
 ---
 
+[B] ① 청취 페이지 사전 — 기존 47키 × 62언어 채움, langs 19→81 (마스터 10-14 승인)
+2026-10-14 12:30 · 세션: claude-code · 가지: main · 커밋 `c60c78f`
+
+- `web/listener/ui-strings.json` — 62개 언어(ja es fr de it pt ru ar hi tr nl pl sv da nb fi cs el he hu ro uk ms ta te fa sw
+  sk bg ca hr sr sl lt lv et is ga cy eu gl af zu xh hy az ka kk kn ml mr gu pa am so mk sq bs mt yo ig ha)에 47키 전부 +
+  ko·en 뿐이던 4키(`script_prefix`·`skip_line`·`break_band`·`demo_notice`)는 나머지 17개 언어도. **53키 × 81언어 = 4,293칸, 빈 칸 0.**
+  `langs` 19→81: 그 언어 폰이면 UI 가 그 언어로 뜬다(전엔 영어).
+- **직접 번역했다 — 기계 번역 스크립트 없음(앞 보고), 원어민 검수 없음.** 특히 tet·so·yo·ig·ha·xh·zu·am·mt·ga·cy 는
+  품질 확신이 낮다 — 손님이 틀렸다고 하면 그 칸만 고친다.
+- `samples/listener_i18n_test.js` — 전 칸 **모양 검사**: 빈 칸 · HTML 꺾쇠 · 자리표(`${}`/`{0}`) 생김 · 따옴표 홀수 ·
+  앞뒤 빈칸이 en 과 다름 · 머리 기호(🔊🔇✋•※) · `(TXT)` 유무 · 숫자 6(현지 숫자 ६۶៦… 허용) · 끝 콜론. 21건.
+
+실행 출력 발췌:
+```
+첫 돌림 — 붉음 10건: room_code_label.fa/km 숫자 6(۶·៦ 현지 숫자 → 검사에 허용) · lang_need_net.zh / alert_rejected.zh
+  앞뒤 빈칸(**기존 값**이 en 과 달랐다 → 고침) · summary_total_lines.he 따옴표(סה"כ → סה״כ) · alert_rejected.hy/am 끝 콜론
+고친 뒤: [PASS] 사전 langs 가 81개 · [PASS] 키 53 × 언어 81 = 4293 칸 · [PASS] 모양 검사 0건 · 전부 통과 (21건)
+bytes_out_test 12건 · question_test 21건 통과 (페이지가 새 사전으로 뜬다)
+```
+한 줄 판정: 청취 페이지가 81개 언어로 뜬다. 검수는 없다.
+막힌 것: 없음. 건드린 파일: `web/listener/ui-strings.json` · `samples/listener_i18n_test.js`.
+
+---
+
 [B] 10-13 22:15 여섯 + 7·8 — git 대조 결과: **여덟 다 이미 커밋돼 있다**(10-13 23:16~00:27 KST). 빈 곳 하나(손님 글자 사전)만 채움
 2026-10-14 11:40 · 세션: claude-code · 가지: main · 커밋 `f8a392a`
 
