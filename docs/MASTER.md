@@ -1445,3 +1445,5 @@ B-1(`ef77662`)·B-2(`8ce3a70`)·B-3(`493da37`) 과 청취 글자 81언어(`f8a39
 순서: ① REPORT 정리(5분) → ② **B 9 웹 호스트**(22:55 설계 8항 + 22:53/22:56 보탬: iOS 인식 재열기·호스트 wakeLock·청취 무음 오디오 「화면 꺼도 듣기」 기본 켬·첫 탭 소리) → ③ 7 청취자 마이크 → ④ 8 목소리.
 
 ## 2026-10-15 12:05 — [B] `raytok.kr/download` 시험 빌드 자리를 **LANG-79** 로 (apk: https://expo.dev/artifacts/eas/wBaoND11pRzUG9O2_CeRZXRviaMu0pXmUcn_fHCvKPQ.apk). 08:40 순서 그대로(REPORT 정리 → B 9 → 7 → 8).
+
+## 2026-10-15 17:45 — [열림] B 10 **`/translate` 프로(LLM) 엔진** — 설계는 app `docs/MASTER.md` 10-15 17:45 [열림] 27 의 [B] 1~6 그대로. 순서: B 9 뒤. 키는 secret 만(`LLM_API_KEY`), 일일 상한 변수, 상한·느림·숫자 바뀜은 basic 으로. [B]
