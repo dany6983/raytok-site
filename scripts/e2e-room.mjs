@@ -177,6 +177,18 @@ async function main() {
   assert.equal(trBody && trBody.why, 'no_package');
   pass('/translate 0x10 없는 토큰 → 403 no_package');
 
+  // [6-2] B 10 — 프로(LLM). 0x20 없는 토큰이 engine:'pro' 를 쓰면 403 no_pro.
+  //        끝에서 끝에서는 **문만** 본다 — LLM 을 실제로 부르는 길은 samples/translate_pro_test.js
+  //        가 가짜 상류로 본다(여기서 진짜 키를 쓰면 돈이 나간다).
+  const proNo = await fetch(`${BASE}/translate`, {
+    method: 'POST', headers: { ...J, Authorization: `Bearer ${hostLic}` },
+    body: JSON.stringify({ q: [text], source: 'ko', target: 'en', engine: 'pro' })
+  });
+  let proBody = null; try { proBody = await proNo.json(); } catch (_) {}
+  assert.equal(proNo.status, 403, `/translate engine:pro, 0x20 없음 → 403, got ${proNo.status} ${JSON.stringify(proBody)}`);
+  assert.equal(proBody && proBody.why, 'no_pro', `why=no_pro, got ${proBody && proBody.why}`);
+  pass('/translate engine:pro — 0x20 없는 토큰 → 403 no_pro');
+
   // [7] 토큰 없이 /translate → 401 (403 보다 먼저)
   const tr0 = await fetch(`${BASE}/translate`, { method: 'POST', headers: J, body: JSON.stringify({ q: ['x'], target: 'en' }) });
   assert.equal(tr0.status, 401);
