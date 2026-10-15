@@ -3,7 +3,12 @@
 새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
 공개 저장소 — 키·토큰 마스킹.
 
+진행 중: B 9 웹 호스트 — 시작 23:58
+
 ---
+
+> ⚠ 이 가지(`ccr-5e763034-zo0m63`)의 보고 둘은 **main 의 B 세션과 따로** 돌아간 것이다.
+> 10-15 에 main 을 합치면서 겹친 곳을 풀었다 — 자세한 것은 바로 아래 보고의 「합치기」 항.
 
 [B] B-BACKLOG ⑨-1 되돌림 실증 **전수 점검** — 주장 60건 중 **16건이 빈 증거**였다 (특허 자물쇠 셋 포함)
 2026-10-14 20:37 · 세션: claude-code · 가지: `ccr-5e763034-zo0m63` · 커밋 `c055433`
@@ -182,6 +187,137 @@ Playwright 1.63.0 못 박힌 그대로. 이 통 브라우저 경로는 **`/opt/p
 막힌 것: **`join/index.html` 면제 하나만 마스터 판정** (위 ①. 기본안 = 면제 유지로 진행했다).
 남은 것: B-BACKLOG 는 5 가 닫히면서 `[대기]` 둘(7 줄 18 운영 전환 — 대표님 PG · 8 줄 24 Desk 요약 — 마스터)만 남는다.
 MASTER `[대기]` 도 전부 바깥을 기다리는 줄이다. **배포 안 함**(relay 안 건드림 — 배포 대기: 아니오).
+[B] MASTER 13:20 ★ 구매 페이지 전부 열기 — 다섯 줄 끝 · push 됨(공개)
+2026-10-14 14:25 · 세션: claude-code · 가지: main · 커밋 `2fffae7` · 시작 14:18
+
+**어디서 보나**: `https://raytok.kr/buy/` — 위쪽 「우리 제품」 표 네 줄, 아래 1일권·7일권 카드 + 「3,300원 결제하기」 단추(활성). 홈 `raytok.kr` 메뉴 맨 끝·첫 화면 둘째 단추·바닥에 「이용권 구매」. `/web/buy/` 는 `/buy/` 로 넘어간다.
+**심사 재요청에 붙일 사실 한 줄**: `raytok.kr/buy 에서 판매 중, 결제 단추 활성 — 손님 1일권 3,300원·7일권 9,900원, 홈 메뉴 「이용권 구매」에서 진입.`
+
+| 줄 | 한 것 |
+|---|---|
+| ① 띠·단추 | "준비 중" 띠·`is-test-mode` 분기·테스트 배지 제거. 결제 단추 활성. 누르면 포트원 V2 `requestPayment` 가 **항상** 뜬다(테스트 채널 = 실돈 0). `STORE_ID`·`CHANNEL_KEY` 두 상수 그대로 + 실키 전환 주석 한 줄. |
+| ② 주소·홈 | `web/buy/index.html` → `buy/index.html`(git mv, 넘김 없음). `/web/buy/` 는 12줄 넘김으로 뒤집음. 홈 메뉴·첫 화면·바닥 「이용권 구매」→`/buy/`. 홈 사전 4언어에 그 글자 한 줄씩. |
+| ③ 제품 표 | 손님 이용권(1일 3,300 · 7일 9,900 · 묶음 66,000/99,000/198,000) · 호스트 코드 "문의" · 인터넷 번역 패키지 "문의" · 교육기관·단체 "문의". 각 줄 한 문장. 지어낸 숫자 0. |
+| ④ 언어 | ko·en 둘(언어 단추). |
+| ⑤ 시험 | `pay_test` 74→92건: 띠 없음·단추 활성·홈 메뉴/첫 화면→`/buy/`·`/buy/` 본 페이지·쉼표 숫자 전부 허용 5개 안·표 네 줄·"문의" 줄에 숫자 없음. 되돌림(D-09): 띠 되살림·`12,000` 끼움·메뉴 링크 지움 → 셋 다 붉음 확인. |
+
+`npm test` 41 스위트 **전부 초록**(exit 0; `CHROME=/opt/google/chrome/chrome`). 링크 검사 0 broken. `terms_test`·`take_shots`·`docs/pg-switchover.md` 경로 `/buy/` 로 맞춤.
+통신판매업·사업자번호 바닥 줄: 손 안 댐.
+
+막힌 것(설계에 없어 기본안으로 감, 뒤집으면 고친다):
+- `meta robots noindex`(B-9)는 **뗐다** — "전부 열기"와 맞지 않아서. `sitemap.xml` 엔 안 넣음(설계에 없음). `robots.txt` 의 `Disallow: /web/buy/` 는 넘김 페이지라 그대로.
+- 묶음 셋(66,000·99,000·198,000)은 **표에만 숫자**로 적고 카드는 전처럼 숨김(03:36 "단건 둘만 판다" 유지) — 묶음 구매는 기존 「문의하기」 줄.
+- 입력칸의 시험값(`테스트가이드`·`guide@test.com`)을 비웠다 — 심사원이 보면 시험 화면으로 읽힌다.
+- 공개 확인(`curl https://raytok.kr/buy/`)은 **이 PC 에서 못 했다** — 프록시가 raytok.kr 을 막는다(CONNECT 403). push 는 됐으니 GitHub Pages 1~2분 뒤 대표님 폰에서 `/buy/` 를 열어 보시면 된다.
+- 테스트 상수(`store-raytok-test`)로 실제 포트원 결제창이 뜨는지는 **이 PC 에서 못 본다**(SDK 는 시험에서 가짜). 안 뜨면 그 상수 둘을 포트원 콘솔 테스트 채널 값으로 바꾸면 된다 — 대표님 몫.
+남은 것: 없음 — MASTER [열림]은 13:20 이 마지막. 11:10 다섯은 끝(앞 보고). 마스터가 다음 줄을 준다.
+
+---
+
+[B] MASTER 11:10 ⑤ 약관·개인정보 ↔ 사실 넷 — 다른 줄 **하나**만 고침 + 다섯 줄 마무리
+2026-10-14 12:53 · 세션: claude-code · 가지: main · 커밋 `b3f6fa9`(⑤) · `9d38c50`(rtl 시험 보정) · 시작 12:47
+
+**⑤ 어느 줄이 사실과 다른가** (기준: §22-2 사실 넷 — QR 2시간 1MB · 청취 wss 암호화/투폰 평문 · 고객 망에 장비 없음 · 오프라인 = 앱+같은 와이파이)
+| 페이지 | 줄 | 어긋남 | 한 것 |
+|---|---|---|---|
+| `privacy` 2항 표 | "강의 한 줄(원문+번역, 글자) → RayTok 중계 서버 → 브라우저 참석자" | 암호화를 안 적었고 **바로 아래 투폰 줄만 "암호화 없음"**이라 청취도 평문으로 읽힌다 | `— 암호화 전송(wss/TLS)` 더함 (두 사본 `privacy/`·`web/privacy/` 같이) |
+| `privacy` 2항 표 | 투폰·가이드 앱 참석자 "같은 근거리망, 암호화 없음" | 사실과 같다 | 그대로 |
+| `privacy` 2항 끝 | "인터넷 없이 쓰려면 … 브라우저(QR) 청취는 강사와 참석자 모두 인터넷이 필요" | 사실(오프라인 조건)과 같다 | 그대로 |
+| `web/terms` (국·영) | — | 넷에 닿는 줄이 **없다**(암호화·장비·오프라인·데이터량 언급 없음) | 손 안 댐 |
+| 장비 없음 · QR 2시간 1MB | — | 두 페이지 어디에도 없다(어긋난 줄 없음, 더하지도 않음 — "다른 줄만") | 손 안 댐 |
+문구는 만들지 않았다(§21). `terms_test` 88→93건(사본 동일 검사 포함), 되돌림: 그 글자를 지우면 붉다.
+
+**덤 — `rtl_test` 1건**: 10-14 `c60c78f`(UI 사전 19→81) 뒤로 `samples/rtl_test.js` 가 "ar 은 19개 UI 언어에 없으므로 en fallback" 을 단언해 **`npm test` 가 붉은 채였다**(앞 보고들은 개별 시험만 돌렸다). 사전대로 ar·fa 는 UI 도 그 언어·rtl, en fallback 은 사전에 없는 언어로 옮겼다(`9d38c50`).
+
+**다섯 줄 전체 `npm test`**: 41 스위트 **전부 초록**(exit 0) — pay 74 · pay-verify 22 · terms 93 · usage 36 · qr-sheet 17 · listener-state 14 · listener-i18n 35 · join-i18n 24 · broadcast_raw 14 · links 572/0 … relay(wrangler dev, 이 PC): e2e-room 7 · usage-package 4 · translate-pkg 6 · issue-flags 5.
+
+한 줄 판정: 11:10 다섯 줄 **전부 끝** — ① `329b7ad` ② `0e01da8` ③ `9d212c9` ④ `9f4fa70` ⑤ `b3f6fa9`. 배포 안 함(코드만, 10-17 뒤 대표님).
+막힌 것: ④ 의 "/join 에서" 는 청취 페이지(`web/listener`)로 풀었다(자막이 거기 있다) — 뒤집으면 고친다. 이 PC 는 `cdn.playwright.dev` 가 막혀 `CHROME=/opt/google/chrome/chrome` 로 돌렸다.
+남은 것: **집을 줄 없음** — MASTER [열림]은 11:10 다섯뿐이었고 [대기] 셋(줄 18 운영 전환·24 Desk 요약·6 Desk 끝점)은 바깥 대기. 마스터가 다음 줄을 준다.
+
+---
+
+[B] MASTER 11:10 ④ 청취 페이지 — 빈 방 문구 셋 · 자막 글자 크기 소·중·대 · wakeLock (81언어)
+2026-10-14 12:47 · 세션: claude-code · 가지: main · 커밋 `9f4fa70` · 시작 12:41
+
+- **어디서 보나**: `/web/listener/?room=…` 참여 뒤 자막 칸. `/join` 은 앱을 열거나 「브라우저로 듣기」로 이 페이지에 보내는 길목이라 자막이 없다 — 셋 다 **자막이 있는 청취 페이지**에 넣었다(기본안, 아래 막힌 것).
+- **빈 방 문구** `#room-state`: 줄이 0 이고 말하는 중도 없을 때만. 연결됨·연결 중 → "강사의 말을 기다리는 중입니다" / 재연결 중 → "연결이 끊겼습니다. 다시 연결 중…" / 종료·거부 → "안내가 끝났습니다". 줄이 하나라도 오면 치운다. 참여 전(join 화면)엔 없다.
+- **글자 크기** 도구 막대 「작게·보통·크게」: 13 / 15(기본) / 20px, `localStorage raytok_font` 로 새로고침 뒤에도 기억. 큰 화면 보기(`?view=screen`)는 제 크기 그대로.
+- **wakeLock**: 청취 페이지에 **이미 있었다**(`keepAwake` — 참여 때 `navigator.wakeLock.request`, 없으면 무음 영상). 새로 넣지 않았고 시험이 호출을 센다(사실).
+- **새 글자 7키 × 81언어 = 567칸** 같은 커밋(`web/listener/ui-strings.json`: `empty_waiting·empty_disconnected·empty_ended·font_size_label·font_small·font_medium·font_large`). 직접 번역, 원어민 검수 없음. 모양 검사(빈칸·꺾쇠·따옴표·앞뒤 빈칸) 0건.
+- 시험: `samples/listener_state_test.js` 14건(`npm test` 에 `test:listener-state` 추가; mock 릴레이, UI 언어 vi 로 돌려 사전이 실제로 쓰이는지) · `listener_i18n_test` 21→35건.
+- 청취자 브라우저 자체 번역 안내 문구는 **넣지 않았다**(특허 답 대기).
+
+실행 출력 발췌:
+```
+[PASS] [대기] welcome 뒤 줄 0 → "Đang chờ người nói…" (vi) · [PASS] [wakeLock] 참여하면 navigator.wakeLock.request 를 부른다
+[PASS] [끊김] 소켓이 끊기면 → "Mất kết nối. Đang kết nối lại…" · [PASS] [끊김→대기] · [PASS] [줄 도착] 띠 치움
+[PASS] [글자] 크게 → 20px · 작게 → 13px · 새로고침 뒤 기억(font-s) · [PASS] [끝남] end → "Phiên đã kết thúc" · 전부 통과 (14건)
+되돌림 실증: reconnecting 분기 지움 → [끊김] 시간 초과 붉음 · setItem 지움 → "[글자] localStorage raytok_font=s" 붉음. 복구 후 14건.
+listener_i18n 35건 · broadcast_raw 14건(회귀 없음)
+```
+한 줄 판정: ④ 끝. 막힌 것(기본안으로 진행): 지시의 "/join 에서 방이 비었을 때" — `/join` 에는 자막 칸이 없어 **청취 페이지(`web/listener`)에 넣었다.** `/join` 자체에 넣으라는 뜻이면 뒤집어 달라. 배포 안 함.
+
+---
+
+[B] MASTER 11:10 ③ 묶음 QR 인쇄 페이지 `web/tools/qr-sheet/`
+2026-10-14 12:41 · 세션: claude-code · 가지: main · 커밋 `9d212c9` · 시작 12:39
+
+- **어디서 보나**: `raytok.kr/web/tools/qr-sheet/` (noindex). 코드 128자 또는 `/lic/<code>` 링크를 한 줄에 하나씩 → 「격자 만들기」 → 「인쇄」.
+- A4 세로 한 장 **2열 × 4행 = 8칸**, 9장째부터 다음 장(`@page A4`, `break-after:page`). 칸마다 **QR**(`https://raytok.kr/lic/<code>`) · **코드 글자**(4자 묶음) · **기간(일)**(`N일권`, 0 이면 "기간 없음"). 장 머리글(선택) + 쪽 번호.
+- 기간은 정본 `[3..4]`(uint16 BE) 를 브라우저에서 base32 풀어 읽는다 — **서명은 검사하지 않는다**(인쇄 보조; 유효성은 앱·릴레이). 하이픈·빈칸·소문자·I/L/O 교정은 정본 글자 표 그대로.
+- **서버 호출 0건**: fetch/XHR 코드가 없고 QR 은 `/web/vendor/qrcode.js`(로컬). 시험이 요청 목록을 세어 페이지·qrcode.js 밖 0건을 확인.
+- 시험 `samples/qr_sheet_test.js` 17건(`npm test` 에 `test:qr-sheet` 추가) — 시험 키 0 으로 1일권 8 + 7일권 2 발급 → 2장(8+2) · svg 10 · 읽을 수 없는 줄은 붉은 칸.
+
+실행 출력 발췌:
+```
+[PASS] 10칸 → A4 2장 (8 + 2) · [PASS] 기간(일) = payload [3..4] (1일권 ×8, 7일권 ×2) · [PASS] 페이지·qrcode.js 밖의 요청 0건 · 전부 통과 (17건)
+되돌림 실증: daysOf 를 [5..6] 으로 바꾸면 → "[FAIL] 기간(일) = payload [3..4]". 복구 후 17건.
+check_links 572/0
+```
+한 줄 판정: ③ 끝. 막힌 것: 없음. 배포 안 함.
+
+---
+
+[B] MASTER 11:10 ② `/usage` 패키지 글자 칸
+2026-10-14 12:39 · 세션: claude-code · 가지: main · 커밋 `0e01da8` · 시작 12:36
+
+- `relay/src/index.js` `/usage`: **토큰으로 인증한 경우에만** `package` 칸. 0x10 토큰 → `{flag:16, month, chars}`(이번 달 `/translate` 글자 수 = 기존 `total_chars`), 0x10 없는 토큰 → `null`. 관리자(비밀값) 조회에는 칸 없음. 감시선(`TRANSLATE_CAP_CHARS` 300만)은 **싣지 않는다**(손님 비공개 — 전부터 `cap_chars` 를 안 보내던 것 그대로).
+- `web/usage/index.html`: 카드 하나 「인터넷 번역 패키지」 — 객체면 글자 수, null 이면 "패키지 없음". 상한 숫자 없음.
+- 정본 `docs/samples/wire-messages.json` 에 `http_usage_package` 한 줄(응답 모양 + null 보기). `test:wire` 통과.
+- 시험: `relay/test/usage-package.mjs`(`npm --prefix relay run test:usage-package`, wrangler dev) 4건 — 0x10 글자 증가 · 0x02/0x01 null · cap 없음 · 관리자 칸 없음. `usage_view_test` 32→36건.
+
+실행 출력 발췌:
+```
+[PASS] 1 0x10 token → package {flag:16, month, chars=18} · [PASS] 2 tokens without 0x10 → package: null · [PASS] 3 no cap · [PASS] 4 admin no package
+되돌림 실증: index.js packageCell 블록을 치우면 → "[1] package 칸이 있어야 한다: undefined" 붉음. 복구 후 all PASS.
+usage_view_test: 전부 통과 (36건) · test:wire 전부 통과
+```
+한 줄 판정: ② 끝. 막힌 것: 이 PC 는 `cdn.playwright.dev` 가 막혀 Playwright 크롬을 못 받는다 → `CHROME=/opt/google/chrome/chrome` 으로 돌렸다(시험 코드는 이미 `CHROME` 환경변수를 본다). 배포 안 함.
+
+---
+
+[B] MASTER 11:10 ① 끝에서 끝 시험 틀 `scripts/e2e-room.mjs`
+2026-10-14 12:36 · 세션: claude-code · 가지: main · 커밋 `329b7ad` · 시작 12:34
+
+- `scripts/e2e-room.mjs` 신규 + `npm run e2e:room`. 발급(`mint-license.mjs`, 0x01 가이드 토큰) → `POST /room {kind:'guide'}` →
+  `/ws?room=&role=listener` 둘(en·vi) → `/ws?role=host&token=host_token` → `{seq:1, text, broadcast:true}` 한 줄 → 둘 다 `text`·`broadcast:true`·`tr` 없음 →
+  `/translate` 같은 토큰(0x10 없음) 403 `no_package` → 토큰 없음 401. 7건.
+- wrangler dev 기준: 8787 에 릴레이가 없으면 `npx wrangler dev --local` 을 스스로 띄우고 끝에 내린다(RELAY_URL 이 있으면 붙기만). 운영 주소(raytok.kr·workers.dev)는 거부.
+- 비밀은 `relay/.dev.vars` 의 `LICENSE_SECRET` 만 읽고 어디에도 찍지 않는다. `.dev.vars` 는 .gitignore 에 이미 있다(이 PC 에는 시험용 임의값으로 새로 만들었다 — 커밋 안 됨).
+
+실행 출력 발췌:
+```
+[relay] wrangler dev 를 띄운다 (port 8787)… / [relay] 준비 (2377ms)
+[PASS] 1 발급 … [PASS] 5 broadcast 원문 한 줄 → 청취자 둘 다 받음(tr 없음) · [PASS] 6 /translate 0x10 없는 토큰 → 403 no_package · [PASS] 7 토큰 없음 → 401
+=== e2e-room: 7/7 PASS ===   (끝나면 8787 내려감 확인)
+되돌림 실증: index.js /translate 허용 플래그에 0x01 을 더하면 → "500 !== 403" 붉음. 복구 후 7/7.
+```
+한 줄 판정: ① 끝. 막힌 것: 없음. 배포 안 함.
+
+---
+
+진행 중: MASTER [열림] 6 — 키가 있는 환경에서 확인 (릴레이 지역 시험 묶음 + 10-06 16:40 `test:att`) — 11:27
 
 [B] 10-14 셋 — ① 시험 빌드 LANG-76 · ② 개인정보 처리방침 2항 사실 반영 · ③ 홈페이지 ↔ 사실표 어긋난 줄 **목록만**
 2026-10-14 14:10 · 세션: claude-code · 가지: main · 커밋 ① `cf0e68e` · ② `a29c914` · ③ 이 보고(고치지 않음)

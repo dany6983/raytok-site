@@ -13,11 +13,13 @@ const ROOT = path.dirname(__dirname);
 const dict = JSON.parse(fs.readFileSync(path.join(ROOT, 'web/listener/ui-strings.json'), 'utf8'));
 const langs = JSON.parse(fs.readFileSync(path.join(ROOT, 'web/listener/langs.json'), 'utf8'));
 const html = fs.readFileSync(path.join(ROOT, 'web/listener/index.html'), 'utf8');
-const KEYS = ['voice_absent_notice', 'voice_button', 'voice_pick_title', 'voice_none', 'voice_preview_text', 'anon_name'];
+const KEYS = ['voice_absent_notice', 'voice_button', 'voice_pick_title', 'voice_none', 'voice_preview_text', 'anon_name',
+  // ④ (10-14 11:10) 빈 방 문구 셋 · 글자 크기 넷
+  'empty_waiting', 'empty_disconnected', 'empty_ended', 'font_size_label', 'font_small', 'font_medium', 'font_large'];
 const want = [...new Set(langs.map(l => l.code.startsWith('zh') ? 'zh' : l.code))];
 let n = 0; const ok = (c, m) => { assert(c, m); n++; console.log('  [PASS] ' + m); };
 
-console.log('=== 청취 페이지 손님 글자 사전 (키 6 × 언어 ' + want.length + ') ===');
+console.log('=== 청취 페이지 손님 글자 사전 (키 ' + KEYS.length + ' × 언어 ' + want.length + ') ===');
 // ① 키 여섯 × 언어 전부
 for (const k of KEYS) {
   const item = dict.strings[k];
@@ -27,7 +29,7 @@ for (const k of KEYS) {
 }
 // ② index.html 이 키를 쓴다
 for (const k of KEYS) {
-  const used = html.includes(`data-i18n="${k}"`) || html.includes(`t('${k}'`);
+  const used = html.includes(`data-i18n="${k}"`) || html.includes(`data-i18n-aria="${k}"`) || html.includes(`t('${k}'`) || html.includes(`'${k}'`);
   ok(used, `index.html 이 ${k} 를 쓴다`);
 }
 // ③ 하드코딩이 남지 않았다 (손님이 보는 글자)

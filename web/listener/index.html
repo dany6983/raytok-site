@@ -151,6 +151,18 @@
     .msg-line.msg-skip .msg-bubble { opacity: 0.6; font-size: 13px; color: var(--text-muted); border-style: dashed; }
     #break-band { display: none; margin: 0 16px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: #b45309; font-weight: 700; text-align: center; }
     #break-band.on { display: block; }
+    /* ④ 방이 비었을 때(줄 0) 보이는 문구 — 대기·끊김·끝남 셋. 줄이 하나라도 오면 숨긴다 */
+    #room-state { display: none; margin: auto 16px; padding: 18px 14px; border-radius: 10px; border: 1px dashed var(--border); color: var(--text-muted); text-align: center; font-size: 15px; line-height: 1.5; }
+    #room-state.on { display: block; }
+    #room-state.state-disconnected { border-color: var(--warning); color: #b45309; }
+    #room-state.state-ended { border-color: var(--border); }
+    /* ④ 자막 글자 크기 소·중·대 — html 의 font-s / font-l (기본 = 중). 큰 화면 보기(.view-screen)는 자기 크기를 쓴다 */
+    .font-s .msg-bubble { font-size: 13px; }
+    .font-l .msg-bubble { font-size: 20px; }
+    .font-l .msg-src { font-size: 15px; }
+    .font-group { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .font-group .tool-btn { border: 0; border-radius: 0; margin: 0; min-width: 34px; }
+    .font-group .tool-btn.active { background: var(--primary); color: #0f172a; }
     [dir="rtl"] .msg-bubble {
       border-top-left-radius: 12px;
       border-top-right-radius: 2px;
@@ -284,7 +296,7 @@
       <button class="btn" id="btn-join" data-i18n="join_button">참여하기</button>
     </div>
     <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 12px; line-height: 1.4;">
-      v<span id="ver-text">1.1.3</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;">이용약관</a><br>
+      v<span id="ver-text">1.1.4</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;">이용약관</a><br>
       주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:raytok.dany@gmail.com" style="color: var(--text-muted); text-decoration: none;">raytok.dany@gmail.com</a>
     </div>
   </div>
@@ -292,11 +304,17 @@
   <div class="screen" id="chat-screen">
     <div id="voice-notice" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
+    <div id="room-state" role="status" aria-live="polite"></div>
     <div id="chat-list"></div>
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
       <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
       <button class="tool-btn" id="btn-open-voice-picker" data-i18n="voice_button">🗣️ 목소리</button>
+      <span class="font-group" id="font-group" role="group" aria-label="글자 크기" data-i18n-aria="font_size_label">
+        <button class="tool-btn" id="btn-font-s" data-font="s" data-i18n="font_small">작게</button>
+        <button class="tool-btn" id="btn-font-m" data-font="m" data-i18n="font_medium">보통</button>
+        <button class="tool-btn" id="btn-font-l" data-font="l" data-i18n="font_large">크게</button>
+      </span>
       <button class="tool-btn" id="btn-ask" aria-label="ask question" data-i18n="btn_ask" style="display: none;">✋ 질문</button>
       <button class="tool-btn" id="btn-save" aria-label="save transcript" title="내 기록 받기 (TXT)">⬇ TXT</button>
       <button class="tool-btn tool-btn-screen" id="btn-fullscreen" aria-label="fullscreen">⛶</button>
@@ -395,7 +413,7 @@
   </div>
 
   <script>
-    const LISTENER_VER = '1.1.3'; // v1.1.3
+    const LISTENER_VER = '1.1.4'; // v1.1.4 — ④ 빈 방 문구·글자 크기
     document.getElementById('ver-text').textContent = LISTENER_VER;
 
     const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"de","name_ko":"독일어","name_en":"German","offline":true,"fallback":null},{"code":"it","name_ko":"이탈리아어","name_en":"Italian","offline":true,"fallback":null},{"code":"pt","name_ko":"포르투갈어","name_en":"Portuguese","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"hi","name_ko":"힌디어","name_en":"Hindi","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"tr","name_ko":"튀르키예어","name_en":"Turkish","offline":true,"fallback":null},{"code":"nl","name_ko":"네덜란드어","name_en":"Dutch","offline":true,"fallback":null},{"code":"pl","name_ko":"폴란드어","name_en":"Polish","offline":true,"fallback":null},{"code":"sv","name_ko":"스웨덴어","name_en":"Swedish","offline":true,"fallback":null},{"code":"da","name_ko":"덴마크어","name_en":"Danish","offline":true,"fallback":null},{"code":"nb","name_ko":"노르웨이어","name_en":"Norwegian","offline":true,"fallback":null},{"code":"fi","name_ko":"핀란드어","name_en":"Finnish","offline":true,"fallback":null},{"code":"cs","name_ko":"체코어","name_en":"Czech","offline":true,"fallback":null},{"code":"el","name_ko":"그리스어","name_en":"Greek","offline":true,"fallback":null},{"code":"he","name_ko":"히브리어","name_en":"Hebrew","offline":true,"fallback":null},{"code":"hu","name_ko":"헝가리어","name_en":"Hungarian","offline":true,"fallback":null},{"code":"ro","name_ko":"루마니아어","name_en":"Romanian","offline":true,"fallback":null},{"code":"uk","name_ko":"우크라이나어","name_en":"Ukrainian","offline":true,"fallback":null},{"code":"ms","name_ko":"말레이어","name_en":"Malay","offline":true,"fallback":null},{"code":"fil","name_ko":"필리핀어","name_en":"Filipino","offline":true,"fallback":null},{"code":"bn","name_ko":"벵골어","name_en":"Bengali","offline":true,"fallback":null},{"code":"ta","name_ko":"타밀어","name_en":"Tamil","offline":true,"fallback":null},{"code":"te","name_ko":"텔루구어","name_en":"Telugu","offline":true,"fallback":null},{"code":"ur","name_ko":"우르두어","name_en":"Urdu","offline":true,"fallback":null},{"code":"fa","name_ko":"페르시아어","name_en":"Persian","offline":true,"fallback":null},{"code":"sw","name_ko":"스와힐리어","name_en":"Swahili","offline":true,"fallback":null},{"code":"sk","name_ko":"슬로바키아어","name_en":"Slovak","offline":true,"fallback":null},{"code":"bg","name_ko":"불가리아어","name_en":"Bulgarian","offline":true,"fallback":null},{"code":"ca","name_ko":"카탈루냐어","name_en":"Catalan","offline":true,"fallback":null},{"code":"hr","name_ko":"크로아티아어","name_en":"Croatian","offline":true,"fallback":null},{"code":"sr","name_ko":"세르비아어","name_en":"Serbian","offline":false,"fallback":null},{"code":"sl","name_ko":"슬로베니아어","name_en":"Slovenian","offline":true,"fallback":null},{"code":"lt","name_ko":"리투아니아어","name_en":"Lithuanian","offline":true,"fallback":null},{"code":"lv","name_ko":"라트비아어","name_en":"Latvian","offline":true,"fallback":null},{"code":"et","name_ko":"에스토니아어","name_en":"Estonian","offline":true,"fallback":null},{"code":"is","name_ko":"아이슬란드어","name_en":"Icelandic","offline":true,"fallback":null},{"code":"ga","name_ko":"아일랜드어","name_en":"Irish","offline":true,"fallback":null},{"code":"cy","name_ko":"웨일스어","name_en":"Welsh","offline":true,"fallback":null},{"code":"eu","name_ko":"바스크어","name_en":"Basque","offline":false,"fallback":null},{"code":"gl","name_ko":"갈리시아어","name_en":"Galician","offline":true,"fallback":null},{"code":"af","name_ko":"아프리칸스어","name_en":"Afrikaans","offline":true,"fallback":null},{"code":"zu","name_ko":"줄루어","name_en":"Zulu","offline":false,"fallback":null},{"code":"xh","name_ko":"코사어","name_en":"Xhosa","offline":false,"fallback":null},{"code":"hy","name_ko":"아르메니아어","name_en":"Armenian","offline":false,"fallback":null},{"code":"az","name_ko":"아제르바이잔어","name_en":"Azerbaijani","offline":false,"fallback":null},{"code":"ka","name_ko":"조지아어","name_en":"Georgian","offline":true,"fallback":null},{"code":"kk","name_ko":"카자흐어","name_en":"Kazakh","offline":false,"fallback":null},{"code":"uz","name_ko":"우즈베크어","name_en":"Uzbek","offline":false,"fallback":"ru"},{"code":"ky","name_ko":"키르기스어","name_en":"Kyrgyz","offline":false,"fallback":"ru"},{"code":"tg","name_ko":"타지크어","name_en":"Tajik","offline":false,"fallback":"ru"},{"code":"tet","name_ko":"테툼어","name_en":"Tetum","offline":false,"fallback":"id"},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"},{"code":"ne","name_ko":"네팔어","name_en":"Nepali","offline":false,"fallback":"hi"},{"code":"si","name_ko":"싱할라어","name_en":"Sinhala","offline":false,"fallback":"ta"},{"code":"kn","name_ko":"칸나다어","name_en":"Kannada","offline":true,"fallback":null},{"code":"ml","name_ko":"말라얄람어","name_en":"Malayalam","offline":false,"fallback":null},{"code":"mr","name_ko":"마라티어","name_en":"Marathi","offline":true,"fallback":null},{"code":"gu","name_ko":"구자라트어","name_en":"Gujarati","offline":true,"fallback":null},{"code":"pa","name_ko":"펀자브어","name_en":"Punjabi","offline":false,"fallback":null},{"code":"km","name_ko":"크메르어","name_en":"Khmer","offline":false,"fallback":null},{"code":"lo","name_ko":"라오어","name_en":"Lao","offline":false,"fallback":"th"},{"code":"my","name_ko":"미얀마어","name_en":"Burmese","offline":false,"fallback":null},{"code":"am","name_ko":"암하라어","name_en":"Amharic","offline":false,"fallback":null},{"code":"so","name_ko":"소말리어","name_en":"Somali","offline":false,"fallback":null},{"code":"mk","name_ko":"마케도니아어","name_en":"Macedonian","offline":true,"fallback":null},{"code":"sq","name_ko":"알바니아어","name_en":"Albanian","offline":true,"fallback":null},{"code":"bs","name_ko":"보스니아어","name_en":"Bosnian","offline":false,"fallback":null},{"code":"mt","name_ko":"몰타어","name_en":"Maltese","offline":true,"fallback":null},{"code":"yo","name_ko":"요루바어","name_en":"Yoruba","offline":false,"fallback":null},{"code":"ig","name_ko":"이그보어","name_en":"Igbo","offline":false,"fallback":null},{"code":"ha","name_ko":"하우사어","name_en":"Hausa","offline":false,"fallback":null}];
@@ -676,10 +694,16 @@
         }
       });
 
+      document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+        const val = t(el.getAttribute('data-i18n-aria'), lang);
+        if (val) el.setAttribute('aria-label', val);
+      });
+
       btnToggleTts.textContent = isTtsEnabled ? t('tts_on', lang) : t('tts_off', lang);
       if (currentStatusKey) {
         statusText.textContent = t(currentStatusKey, lang);
       }
+      updateRoomState();
 
       updateLangSelectOptions();
       if (isConnected) {
@@ -727,7 +751,38 @@
       currentStatusKey = key;
       statusText.textContent = t(key, currentUiLang);
       if (dotClass) statusDot.className = dotClass;
+      updateRoomState();
     }
+
+    // ④ 방이 비었을 때 문구 — 줄이 0 이고 말하는 중(임시)도 없을 때만. 상태로 셋 중 하나를 고른다.
+    //    연결됨·연결 중 → 대기 / 재연결 중 → 끊김 / 종료·거부 → 끝남. 줄이 하나라도 있으면 띠를 치운다.
+    const roomState = document.getElementById('room-state');
+    function updateRoomState() {
+      if (!roomState) return;
+      const empty = lines.length === 0 && !document.getElementById('msg-pending');
+      if (!empty || !isSessionActive && currentStatusKey === 'status_ready') {
+        roomState.className = '';
+        roomState.textContent = '';
+        return;
+      }
+      let key = 'empty_waiting', cls = 'state-waiting';
+      if (currentStatusKey === 'status_ended' || currentStatusKey === 'status_rejected') { key = 'empty_ended'; cls = 'state-ended'; }
+      else if (currentStatusKey === 'status_reconnecting') { key = 'empty_disconnected'; cls = 'state-disconnected'; }
+      roomState.className = 'on ' + cls;
+      roomState.textContent = t(key, currentUiLang);
+    }
+
+    // ④ 자막 글자 크기 소·중·대 — localStorage 'raytok_font' (s|m|l), 기본 m. 시연에서도 같은 길.
+    const FONT_SIZES = ['s', 'm', 'l'];
+    function applyFontSize(size, save) {
+      if (!FONT_SIZES.includes(size)) size = 'm';
+      document.documentElement.classList.remove('font-s', 'font-l');
+      if (size !== 'm') document.documentElement.classList.add('font-' + size);
+      document.querySelectorAll('#font-group .tool-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-font') === size));
+      if (save) { try { localStorage.setItem('raytok_font', size); } catch (e) {} }
+    }
+    document.querySelectorAll('#font-group .tool-btn').forEach(b => b.addEventListener('click', () => applyFontSize(b.getAttribute('data-font'), true)));
+    (function () { let saved = 'm'; try { saved = localStorage.getItem('raytok_font') || 'm'; } catch (e) {} applyFontSize(saved, false); })();
 
     async function initApp() {
       try {
@@ -1163,6 +1218,7 @@
           `;
           pendingDiv.querySelector('.msg-text').setAttribute('lang', srcLang);
           chatList.appendChild(pendingDiv);
+          updateRoomState();
         }
         pendingDiv.querySelector('.msg-text').textContent = msg.text;
         chatList.scrollTop = chatList.scrollHeight;
@@ -1333,6 +1389,7 @@
     }
 
     function addLine(line) {
+      updateRoomState();   // ④ 줄이 하나라도 오면 빈 방 띠를 치운다
       const div = document.createElement('div');
       div.className = 'msg-line' + (line.script ? ' msg-script' : '');
       div.id = lineElId(line);
@@ -1424,6 +1481,7 @@
       lines.forEach(addLine);
       updateCurrentLangText();
       updateVoice();
+      updateRoomState();
     }
 
     function showEnd(summary) {

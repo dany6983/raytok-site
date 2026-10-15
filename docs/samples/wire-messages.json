@@ -426,6 +426,7 @@
       ]
     }
   },
+  "http_usage_package": { "_dir": "릴레이 → 토큰 소유자. GET /usage (Authorization: Bearer 이용권 토큰) 응답의 package 칸 (10-14 ②). 0x10(인터넷 번역 패키지) 토큰이면 이번 달 /translate 글자 수, 0x10 없으면 null. 감시선·상한은 싣지 않는다(손님 비공개). 관리자 조회(X-Admin-Secret)에는 이 칸이 없다.", "sample": { "package": { "flag": 16, "month": "2026-10", "chars": 34567 } }, "sample_no_package": { "package": null } },
   "_vs_design_4": [
     "09-22 설계_3 §4를 코드 기준으로 고쳤다(마스터 결정 ②). 이 파일과 §4가 같다.",
     "end는 LANG-41에서 추가. summary.joined_max는 층 2 예정.",

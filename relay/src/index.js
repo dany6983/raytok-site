@@ -1228,6 +1228,7 @@ export default {
 
       // 2) 라이선스 토큰 확인
       let authedToken = null;
+      let authedFlags = 0;
       if (!isAuthorized) {
         const licenseSecret = (env.LICENSE_SECRET || '').trim().replace(/^["']|["']$/g, '');
         if (licenseSecret) {
@@ -1235,6 +1236,7 @@ export default {
           if (licRes.valid) {
             isAuthorized = true;
             authedSub = licRes.payload.sub;
+            authedFlags = Number(licRes.payload.flags || 0);
             if (authHeader.startsWith('Bearer ')) {
               authedToken = authHeader.slice(7).trim();
             }
@@ -1294,6 +1296,15 @@ export default {
         lifetime: { calls: 0, failures: 0, rate: '0%' }
       };
 
+      // 패키지 글자 칸 (MASTER 10-14 11:10 ②): 토큰 소유자에게만. 0x10(인터넷 번역 패키지) 토큰이면
+      // 이번 달 글자 수, 아니면 null. 감시선(TRANSLATE_CAP_CHARS)은 손님 비공개 — 여기 싣지 않는다.
+      // 관리자 조회(비밀값)에는 이 칸이 없다 — 정본 docs/samples/wire-messages.json `http_usage_package`.
+      const packageCell = authedSub
+        ? ((authedFlags & TRANSLATE_PKG_FLAG)
+            ? { flag: TRANSLATE_PKG_FLAG, month: usageData.month || month || new Date().toISOString().slice(0, 7), chars: Number(usageData.total_chars || 0) }
+            : null)
+        : undefined;
+
       return new Response(JSON.stringify({
         engine: {
           current: currentEngine,
@@ -1302,7 +1313,8 @@ export default {
           lifetime: currentStat.lifetime
         },
         engine_stats: engineStats,
-        ...usageData
+        ...usageData,
+        ...(packageCell !== undefined ? { package: packageCell } : {})
       }), {
         status: 200,
         headers: {

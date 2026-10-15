@@ -41,6 +41,7 @@ ok(usageHtml.includes('이번 달 번역 글자 수'), '번역 글자 수 메트
 ok(usageHtml.includes('Desk 회의 시간'), 'Desk 회의 시간 메트릭 카드 확인');
 ok(usageHtml.includes('<span>등록 기기 수</span>'), '등록 기기 수 메트릭 카드 확인');
 ok(usageHtml.includes('언어별 번역 현황'), '언어별 번역 현황 섹션 확인');
+ok(usageHtml.includes('인터넷 번역 패키지') && usageHtml.includes('val-package'), '인터넷 번역 패키지 글자 카드 확인 (②)');
 ok(usageHtml.includes('사람 기록 0건 원칙') || usageHtml.includes('순수 숫자 통계'), '개인정보 및 사람 기록 0건 원칙 안내 확인');
 ok(usageHtml.includes('/web/terms/'), '바닥 이용약관 링크 확인');
 ok(usageHtml.includes('/privacy/'), '바닥 개인정보 처리방침 링크 확인');
@@ -77,7 +78,7 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
         res.end(); // 빈 응답
         return;
       }
-      if (!auth.includes('valid_token')) {
+      if (!auth.includes('valid_token') && !auth.includes('pkg_token')) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'unauthorized', message: 'Invalid token' }));
         return;
@@ -100,6 +101,8 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
           en: { chars: 800000, calls: 200 },
           ja: { chars: 450000, calls: 120 }
         },
+        // ② 패키지 글자 칸 — 정본 wire-messages.json http_usage_package. pkg_token 이면 객체, 아니면 null
+        package: auth.includes('pkg_token') ? { flag: 16, month: '2026-10', chars: 34567 } : null,
         _note: '원가 감시용 · 과금 근거 아님'
       }));
       return;
@@ -190,10 +193,24 @@ ok(redirHtml.includes('/web/usage/'), 'usage/ -> /web/usage/ 리다이렉트 확
     // 외부 네트워크 요청 0건 검증
     ok(outsideRequests.length === 0, `외부 네트워크 요청 0건 확인 (실제: ${outsideRequests.length})`);
 
+    // ② 패키지 칸 — 0x10 없는 토큰(valid_token, package:null) → "패키지 없음"
+    const pkgNone = await page.textContent('#val-package');
+    ok(pkgNone.includes('패키지 없음'), '패키지 없는 토큰 → "패키지 없음" (②)');
+
     // 4) 다른 코드 조회 버튼 클릭 시 복귀
     await page.click('#btn-reauth');
     ok(await page.isVisible('#view-auth'), '다른 코드 조회 클릭 시 인증 뷰 복귀 확인');
     ok(!(await page.isVisible('#view-usage')), '인증 뷰 복귀 시 대시보드 숨김 확인');
+
+    // ② 패키지 칸 — 0x10 토큰(pkg_token, package 객체) → 글자 수 34,567자. 상한 글자는 화면 어디에도 없다.
+    await page.fill('#input-token', 'pkg_token_xyz');
+    await page.click('#btn-auth');
+    await page.waitForSelector('#view-usage:not(.hidden)', { timeout: 5000 });
+    const pkgText = await page.textContent('#val-package');
+    ok(pkgText.includes('34,567'), '0x10 토큰 → 패키지 글자 34,567자 노출 (②)');
+    const pkgBody = await page.textContent('#card-package');
+    ok(!pkgBody.includes('3,000,000'), '패키지 카드에 감시선 숫자 없음 (손님 비공개)');
+    await page.click('#btn-reauth');
 
     // 5) [9-1 되돌림 실증] 대시보드 메트릭 단언에 불일치 값을 넣었을 때 단언 실패 입증 (D-09)
     let revertMetricFailed = false;

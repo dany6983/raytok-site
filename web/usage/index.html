@@ -388,6 +388,21 @@
           <div id="bar-listener-bytes" class="progress-bar-fill" style="width: 100%; background: #38bdf8;"></div>
         </div>
       </div>
+
+      <!-- 5) 인터넷 번역 패키지(0x10) 이번 달 글자 수 (MASTER 10-14 11:10 ②) — 서버가 package 칸을 줄 때만 값, 없으면 "패키지 없음". 상한은 적지 않는다. -->
+      <div class="metric-card" id="card-package">
+        <div>
+          <div class="metric-title">
+            <span>인터넷 번역 패키지</span>
+            <span id="badge-package" style="font-size:11px; color:#64748b;">서버 번역</span>
+          </div>
+          <div class="metric-value" id="val-package">-</div>
+          <div class="metric-sub" id="sub-package">이번 달 패키지 글자</div>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="bar-package" class="progress-bar-fill" style="width: 0%; background: #a78bfa;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- 언어별 번역 분포 (targets) -->
@@ -605,6 +620,24 @@
         const hourlyKb = (avgB / 1024).toFixed(1);
         valListenerBytes.textContent = `${bytesDisplay}`;
         subListenerBytes.textContent = `세션당 청취자 1명 평균 · 시간당 ~${hourlyKb} KB`;
+      }
+
+      // 6) 인터넷 번역 패키지 글자 (②): package 가 객체면 글자 수, null/없음이면 "패키지 없음". 상한·감시선은 서버가 안 주고 여기도 안 적는다.
+      const valPackage = document.getElementById('val-package');
+      const subPackage = document.getElementById('sub-package');
+      const badgePackage = document.getElementById('badge-package');
+      if (valPackage && subPackage) {
+        const pkg = data.package;
+        if (pkg && typeof pkg === 'object') {
+          const pc = Number(pkg.chars || 0);
+          valPackage.textContent = pc.toLocaleString() + '자';
+          subPackage.textContent = `이번 달 패키지 글자 · ${pkg.month || month}`;
+          if (badgePackage) badgePackage.textContent = '패키지 있음';
+        } else {
+          valPackage.textContent = '패키지 없음';
+          subPackage.textContent = '이 코드에는 인터넷 번역 패키지가 없습니다';
+          if (badgePackage) badgePackage.textContent = '서버 번역';
+        }
       }
 
       // 5) 언어별 번역 분포

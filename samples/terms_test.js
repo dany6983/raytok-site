@@ -64,10 +64,23 @@ ok(enTerms.includes('October 12, 2026'), 'Effective Date');
 ok(enTerms.includes('/web/terms/'), '국문 전환 링크');
 ok(enTerms.includes('/privacy/en/'), '영문 개인정보 처리방침 링크');
 
-/* ── 3. 11번 대기줄: 구매 화면(/web/buy/) 환불 고지 실측 검증 ── */
-console.log('\n[Test 3] 11번 환불·청약철회 정책 — /web/buy/ 구매 화면 사전 고지 검증');
-const buyPath = path.join(ROOT, 'web', 'buy', 'index.html');
-ok(fs.existsSync(buyPath), 'web/buy/index.html 파일 존재');
+/* ── 2-1. 개인정보 처리방침 ↔ 사실 넷 (MASTER 10-14 11:10 ⑤) ──
+ * 사실: 청취 전송은 암호화(wss/TLS) · 투폰 LAN 은 평문. 2항 표의 청취 줄이 암호화를 적고, 투폰 줄은 "암호화 없음" 그대로.
+ * 되돌려서 실패 확인: 청취 줄의 "암호화 전송(wss/TLS)" 을 지우면 아래가 붉다. */
+console.log('\n[Test 2-1] 개인정보 처리방침 2항 — 청취 암호화 · 투폰 평문 (사실표 넷)');
+for (const rel of ['web/privacy/index.html', 'privacy/index.html']) {
+  const pv = fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+  const row = pv.split('\n').find((l) => l.includes('강의 한 줄(원문+번역, 글자)')) || '';
+  ok(row.includes('암호화 전송(wss/TLS)'), `${rel}: 청취(QR) 줄에 암호화 전송(wss/TLS)`);
+  const twophone = pv.split('\n').find((l) => l.includes('대화·강연 한 줄(원문+번역)')) || '';
+  ok(twophone.includes('암호화 없음'), `${rel}: 투폰·가이드 앱 참석자 줄은 "암호화 없음"(평문 LAN) 그대로`);
+}
+ok(fs.readFileSync(path.join(ROOT, 'web/privacy/index.html'), 'utf-8') === fs.readFileSync(path.join(ROOT, 'privacy/index.html'), 'utf-8'), '/privacy 와 /web/privacy 사본이 같다');
+
+/* ── 3. 11번 대기줄: 구매 화면(/buy/) 환불 고지 실측 검증 ── */
+console.log('\n[Test 3] 11번 환불·청약철회 정책 — /buy/ 구매 화면 사전 고지 검증');
+const buyPath = path.join(ROOT, 'buy', 'index.html');
+ok(fs.existsSync(buyPath), 'buy/index.html 파일 존재');
 const buyHtml = fs.readFileSync(buyPath, 'utf-8');
 ok(buyHtml.includes('id="refund-notice"'), '구매 화면에 refund-notice 영역 존재 확인');
 ok(buyHtml.includes('7일 이내 전액 환불'), '구매 화면에 미사용 7일 이내 전액 환불 고지 확인');
@@ -192,7 +205,7 @@ const koFooterPages = [
   'guide/index.html',
   'contact/index.html',
   'download/index.html',          // 제품 포장에 인쇄되는 주소 — 바닥이 없었다
-  'web/buy/index.html',
+  'buy/index.html',               // 10-14 13:20 에 web/buy → buy 로 옮겼다 (git mv)
   'privacy/index.html',
   'web/privacy/index.html',
   'web/host/index.html',
@@ -279,10 +292,12 @@ const FOOTER_EXEMPT = {
   'web/guide/index.html': '넘기는 쪽 → /guide/',
   'privacy/en/index.html': '넘기는 쪽 → /privacy/ (국문 하나)',
   'web/privacy/en/index.html': '넘기는 쪽 → /web/privacy/ (국문 하나)',
+  'web/buy/index.html': '넘기는 쪽 → /buy/ (10-14 13:20 에 본 페이지를 /buy/ 로 옮겼다)',
   // 그 밖
   '404.html': 'noindex, 없는 주소 안내 + /lic/ 되돌리기만',
   'join/index.html': 'QR 진입 — 본문이 81개 언어 사전으로 뜬다. 국문 한 줄을 박으면 그 설계가 깨진다(ui-strings.json)',
   'web/listener/selftest.html': '개발용 자체 점검, 공개 링크 0개',
+  'web/tools/qr-sheet/index.html': '단체에 나눠 줄 코드를 A4 에 찍는 인쇄 도구 — 손님이 사는 화면이 아니고, 바닥 줄이 인쇄물에 같이 찍힌다. 공개 링크 0개',
 };
 
 function walkHtml(dir, acc) {

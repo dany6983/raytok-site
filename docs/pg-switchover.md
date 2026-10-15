@@ -7,9 +7,9 @@
 
 ## 1. 키·MID 설정 파일 및 변수 목록 (값은 비움)
 
-### A. 프론트엔드 구매 화면 (`web/buy/index.html`)
+### A. 프론트엔드 구매 화면 (`buy/index.html`)
 포트원 V2 브라우저 SDK에 전달하는 공개 식별자입니다.
-- **파일 경로:** `web/buy/index.html`
+- **파일 경로:** `buy/index.html`
 - **변수 이름:**
   - `STORE_ID`: 포트원 콘솔 발급 Store ID (실운영 상점 아이디, 형식: `store-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
   - `CHANNEL_KEY`: 토스페이먼츠 연동 채널 키 (형식: `channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
@@ -42,15 +42,15 @@
      ```bash
      npx wrangler deploy
      ```
-3. **프론트엔드(`web/buy/index.html`) 실운영 키 교체**
-   - `web/buy/index.html` 내 변수 갱신:
+3. **프론트엔드(`buy/index.html`) 실운영 키 교체**
+   - `buy/index.html` 내 변수 갱신:
      ```javascript
      const STORE_ID = '<실운영 포트원 Store ID>';
      const CHANNEL_KEY = '<실운영 토스페이먼츠 Channel Key>';
      ```
    - `STORE_ID`와 `CHANNEL_KEY`에서 `'test'` 문자열이 제거되면, `isTestStore`가 자동으로 `false`로 전환되며 「테스트 모드 P1」 및 「준비 중」 배너가 사라지고 실제 포트원 SDK 결제창이 활성화됩니다.
 4. **저장소 커밋 및 GitHub Pages 배포**
-   - `git add web/buy/index.html`
+   - `git add buy/index.html`
    - `git commit -m "feat(pay): 포트원 토스페이먼츠 실운영 결제 연동 키 적용"`
    - `git push origin main`
 
@@ -61,12 +61,12 @@
 운영 결제 중 장애, 키 오류, 또는 오작동 발생 시 즉시 테스트 모드로 되돌리는 절차입니다.
 
 1. **프론트엔드 즉시 차단 (1분 롤백)**
-   - `web/buy/index.html`에서 `STORE_ID` 또는 `CHANNEL_KEY` 값에 `'test'` 문자열을 다시 복원:
+   - `buy/index.html`에서 `STORE_ID` 또는 `CHANNEL_KEY` 값에 `'test'` 문자열을 다시 복원:
      ```javascript
      const STORE_ID = 'store-raytok-test';
      const CHANNEL_KEY = 'channel-key-test';
      ```
-   - 커밋 후 푸시하면 화면에 즉시 「준비 중입니다. 결제는 아직 받지 않습니다」 배너가 노출되고 결제 버튼이 비활성화(`disabled = true`)되어 추가 결제 진입이 원천 차단됩니다.
+   - 테스트 키로 되돌리면 결제창은 포트원 **테스트 채널**로 뜬다(실돈 0). 2026-10-14 MASTER 13:20 으로 「준비 중」 배너·단추 비활성 분기는 **없앴다**(PG 심사 "판매 상품 없음" 회신) — 화면을 막으려면 `btnPay.disabled = true` 를 손으로 넣는다.
 2. **백엔드 웹훅 비밀값 롤백**
    - `cd relay && npx wrangler secret put PORTONE_WEBHOOK_SECRET` 실행 후 테스트용 키로 복원 또는 비상 조치.
 
@@ -75,7 +75,7 @@
 ## 4. 실결제 전환 직후 반드시 확인할 3가지 (체크리스트)
 
 1. **실제 카드 100원/1회 결제 및 정상 환불 확인**
-   - 운영 화면(`https://raytok.kr/web/buy/`)에 접속하여 손님 1일권(3,300원)을 실제 카드로 결제.
+   - 운영 화면(`https://raytok.kr/buy/`)에 접속하여 손님 1일권(3,300원)을 실제 카드로 결제.
    - 포트원 및 토스페이먼츠 상점 관리자에서 정상 승인 및 거래번호 생성 확인 후 당일 즉시 취소(환불) 처리.
 2. **0x02 손님 쿠폰 코드 정상 발급 및 딥링크 유효성 확인**
    - 결제 완료 즉시 화면에 `0000-0000-0000-0000` 형태의 16자리 쿠폰 코드와 바로가기 입장 링크(`https://raytok.kr/web/listener/?room=...`)가 정상 렌더링되는지 확인.
