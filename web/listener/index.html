@@ -179,6 +179,9 @@
       display: flex;
       gap: 12px;
       align-items: center;
+      /* 단추가 늘면 좁은 폰(320px)에서 가로로 넘쳤다 — 접어 내린다 (B 9 에서 잡음) */
+      flex-wrap: wrap;
+      row-gap: 8px;
     }
     .tool-btn {
       background: none;

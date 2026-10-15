@@ -153,6 +153,20 @@ async function main() {
   }
   pass('broadcast 원문 한 줄 → 청취자 둘 다 받음(tr 없음)');
 
+  // [5-2] B 9 웹 호스트가 **말한** 줄 — 브라우저 인식이 내는 것과 같은 모양 한 줄
+  //       (web/host 의 sendSpokenLine 이 만드는 것: seq 10000+, 원문+언어, broadcast, 번역 칸 없음)
+  //       화면 시험은 samples/web_host_mic_test.js 가 본다. 여기서는 **끝에서 끝**으로 닿는지만.
+  const spoken = `안전모를 반드시 착용하십시오 ${tag}`;
+  host.send(JSON.stringify({ seq: 10001, src_lang: 'ko', text: spoken, broadcast: true }));
+  const bothSpoken = await waitFor(() => [L1, L2].every((L) => L.got.some((m) => m.text === spoken && m.broadcast === true)));
+  assert.ok(bothSpoken, `웹 호스트가 말한 줄이 둘 다에 닿아야 한다 — L1:${JSON.stringify(L1.got)} L2:${JSON.stringify(L2.got)}`);
+  for (const L of [L1, L2]) {
+    const m = L.got.find((x) => x.text === spoken);
+    assert.equal(m.tr, undefined, `${L.name}: 말한 줄에도 번역 칸이 없어야 한다 (P-14)`);
+    assert.equal(m.src_lang, 'ko', `${L.name}: 말한 줄에 언어가 실려야 한다`);
+  }
+  pass('B 9 웹 호스트가 말한 줄 → 청취자 둘 다 받음 (원문+언어만, P-14)');
+
   // [6] /translate — 0x10 없는 토큰은 403 no_package (B-3). 호스트 토큰(0x01)도 마찬가지.
   const tr = await fetch(`${BASE}/translate`, {
     method: 'POST', headers: { ...J, Authorization: `Bearer ${hostLic}` },
