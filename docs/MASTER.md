@@ -1447,3 +1447,5 @@ B-1(`ef77662`)·B-2(`8ce3a70`)·B-3(`493da37`) 과 청취 글자 81언어(`f8a39
 ## 2026-10-15 12:05 — [B] `raytok.kr/download` 시험 빌드 자리를 **LANG-79** 로 (apk: https://expo.dev/artifacts/eas/wBaoND11pRzUG9O2_CeRZXRviaMu0pXmUcn_fHCvKPQ.apk). 08:40 순서 그대로(REPORT 정리 → B 9 → 7 → 8).
 
 ## 2026-10-15 17:45 — [열림] B 10 **`/translate` 프로(LLM) 엔진** — 설계는 app `docs/MASTER.md` 10-15 17:45 [열림] 27 의 [B] 1~6 그대로. 순서: B 9 뒤. 키는 secret 만(`LLM_API_KEY`), 일일 상한 변수, 상한·느림·숫자 바뀜은 basic 으로. [B]
+
+## 2026-10-15 19:00 — [B] 순서 그대로(REPORT 정리 → B 9 → B 10 → 7 → 8). `raytok.kr/download` 시험 빌드 = **LANG-80** (https://expo.dev/artifacts/eas/AUq5NDQguMqruAcOkVFhAOTAiuP2ZAvJPkANJzxo3Jg.apk). 확인 하나: 웹 청취 페이지가 `att` 로 자기 언어를 릴레이에 올리는가(`room.js:107`) — REPORT 에 한 줄. 끝나면 보고 → MASTER 5분마다 확인.
