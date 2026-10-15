@@ -3,6 +3,8 @@
 새 보고는 맨 위에. 양식: GEMINI.md 4) 그대로 (만든·바꾼 파일 / 실행 출력 발췌 / 한 줄 판정 / 막힌 것).
 공개 저장소 — 키·토큰 마스킹.
 
+진행 중: 되돌림 빚 여덟 — 마스터 08:40 ③ "B 9 뒤에 둘씩". desk-read·desk-session → host_view·wire_script → hwpx·lic_page → join_i18n·report_common. 갚은 줄은 REVERT_DEBT 에서 지운다(안 지우면 래칫이 붉다) — 10:49
+
 [B] ③ B 7 청취자 마이크 — **끊겨 있었다.** 이었다 · ④ B 8 목소리 — 코드는 맞고 시험이 없었다
 2026-10-15 10:37 · 세션: claude-code · 가지: `ccr-5e763034-zo0m63` · 커밋 `0f0a5b1`(7번 잇기) · `bae9163`(시험 보정)
 
