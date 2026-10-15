@@ -1,7 +1,14 @@
 
 const ALLOWED_BODY_KEYS = new Set(['ver', 'session', 'items', 'last']);
 // RULE: P-16
-const ALLOWED_TRANSLATE_KEYS = new Set(['q', 'source', 'target', 'format', 'role']);
+// B 10 — 프로(LLM) 번역. 설계: app MASTER 2026-10-15 17:45 [열림] 27 [B] 1~6
+import {
+  PRO_FLAG, PRO_FALLBACK, buildProPrompt, inventedNumbers,
+  callLlmOnce, estimateUsd, todayKey
+} from './pro-translate.js';
+
+// engine·context·glossary 는 프로가 쓰는 칸이다 (P-16 허용 목록에 더한다)
+const ALLOWED_TRANSLATE_KEYS = new Set(['q', 'source', 'target', 'format', 'role', 'engine', 'context', 'glossary']);
 const ALLOWED_SESSION_KEYS = new Set(['code', 'host', 'lang', 'started']);
 const ALLOWED_ITEM_KEYS = {
   common: new Set(['n', 'ts', 'kind', 'prev', 'hash']),
@@ -158,6 +165,8 @@ function checkIssueLimit(sub) {
 const NO_STORE_FLAGS = 0x04 | 0x08;
 // /translate 를 여는 비트 (B-3): 인터넷 번역 패키지 0x10, 또는 Desk 시간 묶음 0x04|0x08. 그 밖은 403.
 const TRANSLATE_PKG_FLAG = 0x10;
+// 프로(0x20)는 기본(0x10)을 **포함**한다 — 프로 = 인터넷 번역 + LLM (설계 방향).
+// 그래서 0x20 만 든 토큰도 /translate 를 지난다.
 const TRANSLATE_DESK_FLAGS = 0x04 | 0x08;
 
 // In-memory fallback cache if Cache API is unavailable
@@ -192,7 +201,8 @@ async function recordEngineCall(env, engine, success) {
   }
 }
 
-async function recordUsage(env, { sub, target, chars = 0, sttKey = false, deskMinutes = 0 }) {
+async function recordUsage(env, { sub, target, chars = 0, sttKey = false, deskMinutes = 0,
+                                 proTokensIn = 0, proTokensOut = 0, proUsd = 0 }) {
   if (!sub) return;
   try {
     const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
@@ -200,7 +210,9 @@ async function recordUsage(env, { sub, target, chars = 0, sttKey = false, deskMi
     await limiter.fetch(new Request('http://internal/usage/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sub, target, chars, sttKey, deskMinutes })
+      body: JSON.stringify({ sub, target, chars, sttKey, deskMinutes,
+                             pro_tokens_in: proTokensIn, pro_tokens_out: proTokensOut, pro_usd: proUsd,
+                             pro_day: proUsd > 0 ? `pro_usd:${todayKey()}` : undefined })
     }));
   } catch (_) {}
 }
@@ -858,7 +870,7 @@ export default {
       //    호스트 코드(0x01)에 0x10 자동 포함 없음 — 별도 구매. 0x02(camera) 만으로는 못 쓴다.
       //    Desk(0x04|0x08) 는 시간 묶음 상품이라 지금처럼 그대로 지나간다.
       //    글자 세기(TRANSLATE_CAP_CHARS)는 이 문을 지난 뒤, 즉 패키지 안에서만 센다(4-2).
-      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, TRANSLATE_PKG_FLAG | TRANSLATE_DESK_FLAGS);
+      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, TRANSLATE_PKG_FLAG | PRO_FLAG | TRANSLATE_DESK_FLAGS);
       if (!licenseRes.valid) {
         const extra = licenseRes.error === 'not_allowed' ? { why: 'no_package', need: '0x10' } : {};
         return jsonError(licenseRes.error,
@@ -948,6 +960,23 @@ export default {
       }
 
       const { q, source, target } = body || {};
+
+      /* ── B 10 — 프로(LLM) 번역 문 (설계 1) ───────────────────────────────
+         요청 칸 engine: 'basic' | 'pro'. 기본 basic.
+         pro 는 토큰에 **0x20** 이 없으면 403 no_pro. 있으면 0x10 검사도 통과한다
+         (프로 = 인터넷 번역 + LLM). 떨어뜨림은 아래 7-pro 에서 한다. */
+      const tierRaw = String((body && body.engine) || 'basic').trim().toLowerCase();
+      if (tierRaw !== 'basic' && tierRaw !== 'pro') {
+        return jsonError('bad_request', `engine must be 'basic' or 'pro'`, 400, { why: 'bad_tier', val: tierRaw });
+      }
+      const licFlags = Number(licenseRes.payload.flags || 0);
+      if (tierRaw === 'pro' && (licFlags & PRO_FLAG) === 0) {
+        return jsonError('forbidden', 'Pro (LLM) translation requires the pro package (0x20)', 403,
+                         { why: 'no_pro', need: '0x20' });
+      }
+      const wantPro = tierRaw === 'pro';
+      const proContext = typeof (body && body.context) === 'string' ? body.context : '';
+      const proGlossary = Array.isArray(body && body.glossary) ? body.glossary : null;
 
       // 4) q 배열 검사 (최대 50개, 합계 5000자)
       if (!Array.isArray(q)) {
@@ -1166,6 +1195,77 @@ export default {
         }
       }
 
+      /* ── 7-pro) 프로(LLM) 번역 — **basic 결과를 먼저 만든 뒤** 그 위에 얹는다 ──────
+         basic 이 손에 있어야 **떨어뜨릴 곳**이 있다. 설계 2·3·4 의 멈추는 장치 셋:
+           ① 일일 상한(LLM_DAILY_CAP_USD, 기본 5)을 넘으면 → basic (LLM 을 부르지도 않는다)
+           ② 2초 안에 안 오면               → basic  (기다리는 것이 손님에겐 고장이다)
+           ③ 원문에 없는 숫자가 생기면      → basic  (지어낸 것이다 — R-15)
+         셋 다 **기록한다.** 10-14 에 Gemini 가 한 달 476,423원 나온 사고를 되풀이하지 않는다. */
+      let proApplied = false;
+      let proFallbackWhy = null;
+      let proTokIn = 0;
+      let proTokOut = 0;
+
+      if (wantPro) {
+        const capUsd = Number(env.LLM_DAILY_CAP_USD || 5);
+        const dayKey = `pro_usd:${todayKey()}`;
+        let spentToday = 0;
+        try {
+          const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+          const limiter = env.ROOM.get(limiterId);
+          const r = await limiter.fetch(new Request(`http://internal/usage/summary?key=${encodeURIComponent(dayKey)}`));
+          if (r.ok) {
+            const d = await r.json();
+            spentToday = Number((d && (d.pro_usd || (d.keys && d.keys[dayKey]))) || 0);
+          }
+        } catch (_) {}
+
+        if (spentToday >= capUsd) {
+          proFallbackWhy = PRO_FALLBACK.CAP;   // ① 오늘 쓸 만큼 썼다 — basic 으로
+        } else {
+          const proTimeoutMs = Number(env.LLM_TIMEOUT_MS || 2000);
+          const out = results.slice();
+          try {
+            for (let i = 0; i < q.length; i++) {
+              const srcText = q[i];
+              if (!srcText) continue;
+              const prompt = buildProPrompt({
+                text: srcText,
+                sourceLang: sourceLang || detectedSrc,
+                targetLang,
+                context: i === 0 ? proContext : q[i - 1],   // ⓐ 앞 **원문** 한 문장만
+                glossary: proGlossary
+              });
+              const got = await callLlmOnce({ prompt, env, timeoutMs: proTimeoutMs });
+              proTokIn += got.tokIn;
+              proTokOut += got.tokOut;
+              const extra = inventedNumbers(srcText, got.text);
+              if (extra.length) {
+                // ③ 원문에 없는 숫자가 생겼다. 이 줄만이 아니라 **묶음 전체**를 basic 으로 —
+                //    한 줄만 바꾸면 손님이 왜 말투가 섞이는지 모른다.
+                proFallbackWhy = PRO_FALLBACK.NUMBERS;
+                break;
+              }
+              out[i] = got.text;
+            }
+          } catch (err) {
+            proFallbackWhy = (err && err.why) || PRO_FALLBACK.ERROR;   // ② 느림·죽음·키 없음
+          }
+          if (!proFallbackWhy) {
+            for (let i = 0; i < out.length; i++) results[i] = out[i];
+            proApplied = true;
+          }
+        }
+
+        // 쓴 만큼 적는다 — 떨어졌어도 부른 몫은 돈이다
+        const spentNow = estimateUsd(proTokIn, proTokOut, env);
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(recordUsage(env, { sub, target: targetLang, chars: 0, proTokensIn: proTokIn, proTokensOut: proTokOut, proUsd: spentNow }));
+        } else {
+          await recordUsage(env, { sub, target: targetLang, chars: 0, proTokensIn: proTokIn, proTokensOut: proTokOut, proUsd: spentNow });
+        }
+      }
+
       // 8) 캐시 판정 헤더 계산
       const hits = q.length - uncachedTexts.length;
       let xCache = 'MISS';
@@ -1198,11 +1298,17 @@ export default {
         await recordUsage(env, { sub, target: targetLang, chars: totalChars });
       }
 
+      responseHeaders['X-RayTok-Tier'] = proApplied ? 'pro' : 'basic';
+      if (proFallbackWhy) responseHeaders['X-RayTok-Tier-Why'] = proFallbackWhy;
+
       return new Response(JSON.stringify({
         t: results,
         src: finalSrc,
         chars: totalChars,
-        lines: q.length
+        lines: q.length,
+        tier: proApplied ? 'pro' : 'basic',
+        ...(proFallbackWhy ? { why: proFallbackWhy } : {}),
+        ...(wantPro ? { pro_tokens_in: proTokIn, pro_tokens_out: proTokOut } : {})
       }), {
         status: 200,
         headers: responseHeaders

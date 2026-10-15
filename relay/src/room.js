@@ -566,7 +566,8 @@ export class Room {
     // 0-4. 내부 월별·코드별·언어별 사용량 기록 (/usage/record)
     // - 원가 감시용 · 과금 근거 아님
     if (url.pathname === '/usage/record' && request.method === 'POST') {
-      const { sub, target, chars = 0, sttKey = false, deskMinutes = 0, listenerBytes = 0, listenerCount = 0 } = await request.json();
+      const { sub, target, chars = 0, sttKey = false, deskMinutes = 0, listenerBytes = 0, listenerCount = 0,
+              pro_tokens_in = 0, pro_tokens_out = 0, pro_usd = 0, pro_day = null } = await request.json();
       if (!sub) {
         return new Response(JSON.stringify({ error: 'sub required' }), { status: 400 });
       }
@@ -588,6 +589,8 @@ export class Room {
           total_listener_bytes: 0,
           total_listener_sessions: 0,
           avg_listener_bytes: 0,
+          pro_tokens_in: 0,      // B 10 — 프로(LLM) 토큰. 원가 감시용, 과금 근거 아님
+          pro_tokens_out: 0,
           updated_at: now.toISOString()
         };
       }
@@ -611,6 +614,19 @@ export class Room {
 
       if (deskMinutes > 0) {
         record.desk_minutes = (record.desk_minutes || 0) + deskMinutes;
+      }
+
+      // B 10 — 프로(LLM) 토큰은 **떨어졌어도** 센다. 부른 몫은 돈이다.
+      if (pro_tokens_in > 0 || pro_tokens_out > 0) {
+        record.pro_tokens_in = (record.pro_tokens_in || 0) + pro_tokens_in;
+        record.pro_tokens_out = (record.pro_tokens_out || 0) + pro_tokens_out;
+      }
+
+      // 일일 상한이 읽는 칸 — 오늘 쓴 달러. 하루가 바뀌면 키가 바뀌어 저절로 0 부터다.
+      // ⛔ 10-14 Gemini 476,423원 사고를 막는 자리다.
+      if (pro_day && pro_usd > 0) {
+        const spent = Number((await this.ctx.storage.get(pro_day)) || 0) + Number(pro_usd);
+        await this.ctx.storage.put(pro_day, spent);
       }
 
       if (listenerBytes > 0) {
@@ -918,6 +934,18 @@ export class Room {
       const month = url.searchParams.get('month') || currentMonth;
       const sub = url.searchParams.get('sub');
 
+      // B 10 — 일일 상한이 읽는 칸 하나 (pro_usd:YYYY-MM-DD). 다른 칸은 보지 않는다.
+      const oneKey = url.searchParams.get('key');
+      if (oneKey) {
+        if (!/^pro_usd:\d{4}-\d{2}-\d{2}$/.test(oneKey)) {
+          return new Response(JSON.stringify({ error: 'bad_key' }), { status: 400 });
+        }
+        const spent = Number((await this.ctx.storage.get(oneKey)) || 0);
+        return new Response(JSON.stringify({ key: oneKey, pro_usd: spent, keys: { [oneKey]: spent } }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
       if (sub) {
         const key = `usage:${month}:${sub}`;
         const record = await this.ctx.storage.get(key);
@@ -953,6 +981,8 @@ export class Room {
           targets: rec.targets,
           stt_keys_issued: rec.stt_keys_issued,
           desk_minutes: rec.desk_minutes,
+          pro_tokens_in: rec.pro_tokens_in || 0,
+          pro_tokens_out: rec.pro_tokens_out || 0,
           _note: '원가 감시용 · 과금 근거 아님'
         };
       }
