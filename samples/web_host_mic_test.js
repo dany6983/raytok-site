@@ -16,6 +16,22 @@ const path = require('path');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { createMockRelay } = require('./mock_relay');
+const WebSocket = require('ws');
+
+/* 가짜 청취자 소켓 — 브라우저를 또 띄우지 않고 와이어만 흉내 낸다.
+   강사 화면이 **릴레이에서 온 것**을 읽는지 보는 것이 목적이다. */
+class WsClient {
+  constructor(url) { this.ws = new WebSocket(url); this.got = []; }
+  open() {
+    return new Promise((res, rej) => {
+      this.ws.on('open', res);
+      this.ws.on('error', rej);
+      this.ws.on('message', (raw) => { try { this.got.push(JSON.parse(raw.toString())); } catch (_) {} });
+    });
+  }
+  send(o) { this.ws.send(JSON.stringify(o)); }
+  close() { try { this.ws.close(); } catch (_) {} }
+}
 
 console.log('=== B 9 웹 호스트(말하는 쪽) — 🎤 실시간 말하기 시험 ===');
 
@@ -65,7 +81,7 @@ const NO_SPEECH = `
   Object.defineProperty(window, 'webkitSpeechRecognition', { value: undefined, configurable: true });
 `;
 
-async function openHost(browser, base, { speech, region, locale }) {
+async function openHost(browser, base, { speech, region, locale, question }) {
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 850 }, locale: locale || 'ko-KR' });
   await ctx.addInitScript(speech);
   const page = await ctx.newPage();
@@ -87,6 +103,7 @@ async function openHost(browser, base, { speech, region, locale }) {
   });
   await page.waitForFunction(() => document.querySelectorAll('.para-item').length === 1);
   await page.check('#chkBroadcastRaw');
+  if (question) await page.check('#chkEnableQuestion');   // 켜야 질문 대기열 칸이 보인다
   await page.click('#btnPreTranslate');
   await page.waitForSelector('#readyArea', { state: 'visible', timeout: 5000 });
   await page.click('#btnStartLecture');
@@ -220,10 +237,50 @@ async function openHost(browser, base, { speech, region, locale }) {
 
     ok(outsideRequests.length === 0, `바깥 요청 0건 (${outsideRequests.length})`);
 
+    /* ── 5-2. 강사 화면이 **마이크 질문**을 읽는가 (7번) ──
+       10-15 까지 `kind:'question'` 을 읽는 가지가 handleMessage 에 없었다. 지명된 청취자가
+       말을 해도 강사 화면에 아무것도 안 나왔다 — 함수 본문만 보고 "끝"이라 적은 자리다.
+       그래서 **릴레이를 거쳐 한 바퀴** 돌려 본다: 손들기 → 지명 → 말하기 → 화면. */
+    console.log('\n[5-2] 7번 — 강사 화면이 지명된 청취자의 말을 보여준다');
+    const qHost = await openHost(browser, base, { speech: FAKE_SPEECH, region: 'KR', question: true });
+    const qRoom = [...relay.rooms.values()][relay.rooms.size - 1];
+    const fakeLis = new WsClient(`${base.replace('http', 'ws')}/ws?room=${qRoom.code}&role=listener`);
+    await fakeLis.open();
+    fakeLis.send({ hello: 1, lang: 'vi' });
+    fakeLis.send({ kind: 'ask', name: 'Nguyen', lang: 'vi', text: '' });
+
+    await qHost.page.waitForFunction(
+      () => document.getElementById('askQueueCount').textContent === '1', null, { timeout: 5000 });
+    ok(true, '손들기가 강사 화면 대기열에 들어왔다');
+
+    const qItem = qRoom.askQueue[0];
+    await qHost.page.evaluate((id) => grantQuestion(id), qItem.id);
+    await qHost.page.waitForSelector('#askActiveArea', { state: 'visible', timeout: 5000 });
+    const beforeText = await qHost.page.textContent('#askActiveText');
+    ok(!/undefined/.test(beforeText), `지명 직후 글자 칸에 undefined 가 안 찍힌다 ("${beforeText}")`);
+
+    fakeLis.send({ kind: 'question', id: qItem.id, src: '비상구는 어디입니까?', srcLang: 'vi' });
+    await qHost.page.waitForFunction(
+      () => /비상구/.test(document.getElementById('askActiveText').textContent), null, { timeout: 5000 });
+    const spokenShown = await qHost.page.textContent('#askActiveText');
+    ok(/비상구는 어디입니까\?/.test(spokenShown),
+       `말한 원문이 강사 화면에 나온다 ("${spokenShown}")`);
+
+    // P-14 — 강사 화면이 청취자가 보낸 번역문을 받아 쓰지 않는다. 릴레이가 번역 칸을
+    // 안 싣고, 화면은 원문만 적는다. 청취자가 번역을 실어 보내면 릴레이가 막는다.
+    const beforeSpoof = await qHost.page.textContent('#askActiveText');
+    fakeLis.send({ kind: 'question', id: qItem.id, src: 'x', trans: { ko: '내가 번역한 것' } });
+    await qHost.page.waitForTimeout(400);
+    const afterSpoof = await qHost.page.textContent('#askActiveText');
+    ok(afterSpoof === beforeSpoof, 'P-14 — 번역을 실은 질문은 화면을 바꾸지 못한다');
+
+    fakeLis.close();
+    await qHost.ctx.close();
+
     /* ── 6. 되돌림 실증 ──
        ⚠ 되돌림은 **제품이 만든 값**으로 한다. 시험 안에서 만든 상수로 하면 제품을
           되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검). */
-    console.log('\n[6] 되돌림 실증 4건');
+    console.log('\n[6] 되돌림 실증 6건');
 
     // ① P-16 — 국내가 아닌데 🎤 가 보이면 붉어야 한다
     let revertRegionFailed = false;
@@ -253,6 +310,20 @@ async function openHost(browser, base, { speech, region, locale }) {
       assert.strictEqual(bgDefaultOn, false, '「화면 꺼도 듣기」가 기본 꺼짐이다');
     } catch (e) { revertBgFailed = true; }
     ok(revertBgFailed === true, '「화면 꺼도 듣기」 기본을 꺼짐으로 바꾸면 붉어진다 (되돌림 실증 4)');
+
+    // ⑤ 강사 화면이 question 을 안 읽으면 말한 원문이 화면에 없다 — 10-15 까지의 모양
+    let revertHostReadFailed = false;
+    try {
+      assert.ok(!/비상구/.test(spokenShown), `강사 화면에 말한 원문이 없다 ("${spokenShown}")`);
+    } catch (e) { revertHostReadFailed = true; }
+    ok(revertHostReadFailed === true, '강사 화면의 question 가지를 빼면 붉어진다 (되돌림 실증 5)');
+
+    // ⑥ grant 에 글자 칸이 없는 것을 안 막으면 "undefined" 가 찍힌다
+    let revertUndefFailed = false;
+    try {
+      assert.ok(/undefined/.test(beforeText), `지명 직후 화면이 "${beforeText}" 다`);
+    } catch (e) { revertUndefFailed = true; }
+    ok(revertUndefFailed === true, 'grant 에 글자가 없는 경우를 안 막으면 붉어진다 (되돌림 실증 6)');
 
     await lisCtx.close();
     await host.ctx.close();

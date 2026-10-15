@@ -1048,9 +1048,12 @@
     let activeSpeechRec = null;
     let activeMediaStream = null;
     let askMicFailed = false;   // 마이크가 안 되는 폰 — 글자 칸으로 넘어갔나
+    let askSpeakingFor = null;  // 지금 발언권을 받은 질문 {id, seq} — 보내는 길이 이것으로 갈린다
 
     async function startListenerMicQuestion(askId, askSeq) {
       askMicFailed = false;
+      // 발언권을 받았다 — 마이크로 말하든 글자로 말하든 보내는 길은 같은 하나다.
+      askSpeakingFor = { id: askId, seq: askSeq };
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRec) {
         try {
@@ -1107,6 +1110,7 @@
     }
 
     function stopListenerMicQuestion() {
+      askSpeakingFor = null;          // 발언권이 끝났다 — 단추는 다시 손들기 쪽
       if (activeSpeechRec) {
         try { activeSpeechRec.stop(); } catch (_) {}
         activeSpeechRec = null;
@@ -1119,29 +1123,16 @@
       if (askModal) askModal.style.display = 'none';
     }
 
+    // 마이크가 없거나 거절당했을 때 — 글자 칸으로 대신한다.
+    // 보내는 코드를 여기 또 쓰지 않는다(§12): 상태만 세우고 위의 한 길이 보낸다.
     function showAskModalFallback(askId, askSeq) {
+      askSpeakingFor = { id: askId, seq: askSeq };
       const askModal = document.getElementById('ask-modal');
       const askInput = document.getElementById('ask-input-text');
-      const submitBtn = document.getElementById('btn-ask-submit');
-      if (askModal && askInput && submitBtn) {
-        askModal.style.display = 'block';
-        askInput.focus();
-        submitBtn.onclick = () => {
-          const text = askInput.value.trim();
-          if (text && ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              kind: 'question',
-              id: askId,
-              seq: askSeq,
-              name: myName || t('anon_name') || 'Anonymous',
-              src: text,
-              srcLang: selectedLang || 'ko',
-              at: Date.now()
-            }));
-            askModal.style.display = 'none';
-          }
-        };
-      }
+      if (!askModal || !askInput) return;
+      askModal.style.display = 'block';
+      askInput.value = '';
+      try { askInput.focus(); } catch (_) {}
     }
 
     // 소리 단추 — 켜고 끄는 곳은 여기 하나(단추 글·모양이 늘 상태와 같게).
@@ -1811,11 +1802,26 @@
       });
     }
     if (btnAskSubmit) {
+      // 보내는 길은 **이 하나**다. 손들기(ask)와 발언(question)은 상태로 가른다 —
+      // 핸들러를 하나 더 붙이면 먼저 도는 쪽이 글자 칸을 비워 뒤쪽이 빈손이 된다
+      // (10-16 에 실제로 그랬다: 마이크를 거절당한 사람의 글자 질문이 한 번도 안 나갔다).
       btnAskSubmit.addEventListener('click', () => {
         const text = (askInputText && askInputText.value || '').trim();
         if (!text) return;
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          const userName = myName || (nameInput && nameInput.value) || '익명';
+        if (!(ws && ws.readyState === WebSocket.OPEN)) return;
+        const userName = myName || (nameInput && nameInput.value) || t('anon_name', currentUiLang) || 'Anonymous';
+        if (askSpeakingFor) {
+          // 발언권을 받은 사람이 글자로 말한다 — 원문+언어만(P-14)
+          ws.send(JSON.stringify({
+            kind: 'question',
+            id: askSpeakingFor.id,
+            seq: askSpeakingFor.seq,
+            name: userName,
+            src: text,
+            srcLang: selectedLang,
+            at: Date.now()
+          }));
+        } else {
           ws.send(JSON.stringify({
             kind: 'ask',
             name: userName,
@@ -1824,10 +1830,10 @@
             src: text,
             at: Date.now()
           }));
-          if (askModal) askModal.style.display = 'none';
-          if (askInputText) askInputText.value = '';
-          btnAsk.textContent = '✋ 대기열 등록됨';
+          btnAsk.textContent = t('btn_ask_waiting', currentUiLang) || '✋ 대기';
         }
+        if (askModal) askModal.style.display = 'none';
+        if (askInputText) askInputText.value = '';
       });
     }
 

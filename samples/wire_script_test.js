@@ -99,9 +99,16 @@ for (const r of EXPECTED_REASONS) {
 
 // question: src, srcLang, trans
 const questionSamples = ((spec.messages && spec.messages.question) || {}).samples || [];
+/* 올라오는 쪽(_up)과 내려가는 쪽을 가른다 — 같은 이름, 다른 방향이다.
+   올려보낼 때 trans 가 붙어 있으면 P-14 위반이고 릴레이가 ask_error 로 막는다. */
 for (const s of questionSamples) {
   ok(typeof s.src === 'string' && s.src.length > 0, 'question — src 원문 텍스트 확인 (P-16)');
   ok(typeof s.srcLang === 'string' && s.srcLang.length > 0, 'question — srcLang 확인');
+  if (s._up) {
+    ok(!('trans' in s) && !('tr' in s),
+       'question(올려보내는 쪽) — 번역 칸이 **없다** (P-14 참여자는 번역하지 않는다)');
+    continue;
+  }
   ok(s.trans && typeof s.trans === 'object', 'question — trans 역번역 객체 확인 (P-14)');
 }
 

@@ -15,6 +15,7 @@
  * 되돌려서 실패 확인(D-09):
  *   · relay/src/index.js `/translate` 의 허용 플래그에 0x02 를 더하면 [6] 이 붉다.
  *   · relay/src/room.js 호스트 → 청취자 전달 for 문을 지우면 [5] 가 붉다.
+ *   · relay/src/room.js 의 inbound `question` 가지를 지우면 [5-3] 이 붉다 (B 7).
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -100,6 +101,9 @@ function openListener(code, name) {
 function openHost(code, token) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(`${WS_BASE}/ws?room=${code}&role=host&token=${encodeURIComponent(token)}`);
+    // 강사도 받은 글을 모은다 — B 7 질문이 강사에게 닿는지 보려면 필요하다
+    ws.got = [];
+    ws.on('message', (d) => { try { ws.got.push(JSON.parse(String(d))); } catch (_) { ws.got.push({ _raw: String(d) }); } });
     ws.on('open', () => resolve(ws));
     ws.on('error', reject);
     ws.on('unexpected-response', (_req, res) => reject(new Error(`host ws ${res.statusCode}`)));
@@ -167,6 +171,43 @@ async function main() {
   }
   pass('B 9 웹 호스트가 말한 줄 → 청취자 둘 다 받음 (원문+언어만, P-14)');
 
+  // [5-3] B 7 — 지명된 청취자가 **마이크로 말한 질문**이 전원에게 닿는가.
+  //       화면 쪽은 samples/listener_mic_voice_test.js · web_host_mic_test.js 가 본다.
+  //       여기서는 와이어를 끝에서 끝으로: 손들기 → 지명 → 말하기 → 강사 + **다른 청취자**.
+  L1.ws.send(JSON.stringify({ kind: 'ask', name: 'L1', lang: 'en', text: '' }));
+  const askSeen = await waitFor(() => host.got && host.got.some((m) => m.kind === 'ask'));
+  assert.ok(askSeen, `손들기가 강사에게 닿아야 한다 — host:${JSON.stringify(host.got)}`);
+  const askMsg = host.got.find((m) => m.kind === 'ask');
+  pass('B 7 손들기 → 강사에게 닿음');
+
+  host.send(JSON.stringify({ kind: 'grant', id: askMsg.id }));
+  await waitFor(() => L1.got.some((m) => m.kind === 'grant' && m.id === askMsg.id));
+
+  const spokenQ = `비상구는 어디입니까 ${tag}`;
+  L1.ws.send(JSON.stringify({ kind: 'question', id: askMsg.id, src: spokenQ, srcLang: 'en' }));
+  const qEverywhere = await waitFor(() =>
+    host.got.some((m) => m.kind === 'question' && m.src === spokenQ) &&
+    L2.got.some((m) => m.kind === 'question' && m.src === spokenQ));
+  assert.ok(qEverywhere,
+    `말한 질문이 강사와 **다른 청취자** 둘 다에 닿아야 한다 — host:${JSON.stringify(host.got)} L2:${JSON.stringify(L2.got)}`);
+  const qAtHost = host.got.find((m) => m.kind === 'question' && m.src === spokenQ);
+  assert.equal(qAtHost.trans, undefined, '말한 질문에 번역 칸이 없어야 한다 (P-14)');
+  assert.equal(qAtHost.srcLang, 'en', '말한 질문에 언어가 실려야 한다');
+  pass('B 7 말한 질문 → 강사 + 다른 청취자 둘 다 (원문+언어만, P-14)');
+
+  // 지명 안 된 청취자는 같은 id 로도 말할 수 없다 (P-17)
+  const spoof = `내가 아닌데 말한다 ${tag}`;
+  L2.ws.send(JSON.stringify({ kind: 'question', id: askMsg.id, src: spoof }));
+  await sleep(300);
+  assert.ok(!host.got.some((m) => m.kind === 'question' && m.src === spoof),
+    '지명 안 된 청취자의 질문은 닿지 않아야 한다 (P-17)');
+  assert.ok(L2.got.some((m) => m.kind === 'ask_error' && m.why === 'not_granted'),
+    `막힌 쪽에 까닭이 돌아가야 한다 — L2:${JSON.stringify(L2.got)}`);
+  pass('B 7 지명 안 된 청취자가 같은 id 로 말하면 막힌다 (P-17 not_granted)');
+
+  host.send(JSON.stringify({ kind: 'revoke', id: askMsg.id }));
+  await sleep(200);
+
   // [6] /translate — 0x10 없는 토큰은 403 no_package (B-3). 호스트 토큰(0x01)도 마찬가지.
   const tr = await fetch(`${BASE}/translate`, {
     method: 'POST', headers: { ...J, Authorization: `Bearer ${hostLic}` },
@@ -180,14 +221,30 @@ async function main() {
   // [6-2] B 10 — 프로(LLM). 0x20 없는 토큰이 engine:'pro' 를 쓰면 403 no_pro.
   //        끝에서 끝에서는 **문만** 본다 — LLM 을 실제로 부르는 길은 samples/translate_pro_test.js
   //        가 가짜 상류로 본다(여기서 진짜 키를 쓰면 돈이 나간다).
+  //        ⚠ 문 둘은 **순서가 있다**: 패키지(0x10) 문이 먼저다. 0x01 뿐인 토큰은 거기서
+  //        막혀 no_package 가 나온다 — 그래서 프로 문을 보려면 **0x10 은 있고 0x20 은 없는**
+  //        토큰이어야 한다. (10-16: 이 단언이 0x01 토큰을 쓰고 있었다. 이 스크립트를
+  //        돌려 본 적이 없어서 몰랐다 — relay/.dev.vars 가 없으면 시작도 못 한다.)
+  const pkgLic = mintLicenseToken({ sub: `e2e-pkg-${tag}`, days: 1, flags: 0x10, secret: SECRET });
   const proNo = await fetch(`${BASE}/translate`, {
-    method: 'POST', headers: { ...J, Authorization: `Bearer ${hostLic}` },
+    method: 'POST', headers: { ...J, Authorization: `Bearer ${pkgLic}` },
     body: JSON.stringify({ q: [text], source: 'ko', target: 'en', engine: 'pro' })
   });
   let proBody = null; try { proBody = await proNo.json(); } catch (_) {}
   assert.equal(proNo.status, 403, `/translate engine:pro, 0x20 없음 → 403, got ${proNo.status} ${JSON.stringify(proBody)}`);
   assert.equal(proBody && proBody.why, 'no_pro', `why=no_pro, got ${proBody && proBody.why}`);
-  pass('/translate engine:pro — 0x20 없는 토큰 → 403 no_pro');
+  pass('/translate engine:pro — 0x10 은 있고 0x20 없는 토큰 → 403 no_pro');
+
+  //        0x01 뿐인 토큰은 프로를 청해도 **패키지 문**에서 먼저 막힌다 (문 순서가 사실이다)
+  const proNoPkg = await fetch(`${BASE}/translate`, {
+    method: 'POST', headers: { ...J, Authorization: `Bearer ${hostLic}` },
+    body: JSON.stringify({ q: [text], source: 'ko', target: 'en', engine: 'pro' })
+  });
+  let proNoPkgBody = null; try { proNoPkgBody = await proNoPkg.json(); } catch (_) {}
+  assert.equal(proNoPkg.status, 403);
+  assert.equal(proNoPkgBody && proNoPkgBody.why, 'no_package',
+    `0x10 없는 토큰은 프로를 청해도 패키지 문에서 먼저 막힌다, got ${proNoPkgBody && proNoPkgBody.why}`);
+  pass('/translate engine:pro — 0x10 도 없으면 no_package 가 먼저 (문 순서)');
 
   // [7] 토큰 없이 /translate → 401 (403 보다 먼저)
   const tr0 = await fetch(`${BASE}/translate`, { method: 'POST', headers: J, body: JSON.stringify({ q: ['x'], target: 'en' }) });

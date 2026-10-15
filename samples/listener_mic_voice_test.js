@@ -35,6 +35,9 @@ const FAKE_REC = `
     start(){ window.__micLog.push('start'); window.__lisRec = this; }
     stop(){ window.__micLog.push('stop'); }
     say(text){ if (this.onresult) this.onresult({ results: [[{ transcript: text }]] }); }
+    // 실기에 있는 두 길 — 마이크 거절(onerror)과 말이 끊겨 스스로 멈춤(onend).
+    fail(code){ window.__micLog.push('error:' + code); if (this.onerror) this.onerror({ error: code }); if (this.onend) this.onend(); }
+    endNow(){ window.__micLog.push('end'); if (this.onend) this.onend(); }
   }
   window.SpeechRecognition = FakeRec;
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
@@ -134,11 +137,10 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
     const myItem = (room.askQueue || [])[0];
     ok(!!myItem, '릴레이 대기열에 들어갔다');
 
-    /* 강사가 지명 — 릴레이가 방 전체에 grant 를 보낸다 */
+    /* 강사가 지명 — **강사 소켓으로** 보낸다. 청취자에게 직접 밀어 넣으면 릴레이의
+       발언권(activeAsk)이 안 세워져, 뒤에 말한 것이 릴레이에서 막힌다(P-17). */
     await me.page.waitForTimeout(100);
-    for (const l of room.listeners.keys()) {
-      try { l.send(JSON.stringify({ kind: 'grant', id: myItem.id, seq: myItem.seq, name: myItem.name, lang: myItem.lang, max_sec: 90 })); } catch (_) {}
-    }
+    host.send(JSON.stringify({ kind: 'grant', id: myItem.id, max_sec: 90 }));
     await me.page.waitForFunction(() => (window.__micLog || []).includes('start'), null, { timeout: 5000 });
     ok(true, '지명된 청취자: 마이크가 켜진다 (getUserMedia → 인식 start)');
     ok(await me.page.evaluate(() => window.__micLog.includes('getUserMedia')), '마이크 권한을 먼저 묻는다');
@@ -165,9 +167,7 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
 
     /* ── 4. revoke 가 오면 마이크를 끈다 ── */
     console.log('\n[4] revoke → 마이크를 끈다');
-    for (const l of room.listeners.keys()) {
-      try { l.send(JSON.stringify({ kind: 'revoke', id: myItem.id, reason: 'host_done' })); } catch (_) {}
-    }
+    host.send(JSON.stringify({ kind: 'revoke', id: myItem.id, reason: 'host_done' }));
     await me.page.waitForFunction(() => (window.__micLog || []).includes('stop'), null, { timeout: 5000 });
     const micLog = await me.page.evaluate(() => window.__micLog);
     ok(micLog.includes('stop'), `인식을 멈춘다 (log: ${micLog.join('>')})`);
@@ -185,14 +185,87 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
     await noRec.page.click('#btn-ask-submit');
     await noRec.page.waitForFunction(() => /#\d/.test(document.getElementById('btn-ask').textContent), null, { timeout: 5000 });
     const item2 = (room2.askQueue || [])[0];
-    for (const l of room2.listeners.keys()) {
-      try { l.send(JSON.stringify({ kind: 'grant', id: item2.id, seq: item2.seq, name: item2.name, lang: item2.lang })); } catch (_) {}
-    }
+    host2.send(JSON.stringify({ kind: 'grant', id: item2.id }));
     await noRec.page.waitForSelector('#ask-modal', { state: 'visible', timeout: 5000 });
     ok(true, '인식이 없으면 글자 입력 칸이 열린다 (아이폰 사파리 일부)');
     const noRecLog = await noRec.page.evaluate(() => window.__micLog || []);
     ok(!noRecLog.includes('start'), '인식이 없으니 인식을 시작하지 않는다');
     await noRec.ctx.close();
+
+    /* ── 5-2. 인식 언어는 **표**에서 읽는다 (§6) ──
+       전에는 말하는 쪽 호스트에 `SRC_LANG === 'ko' ? 'ko-KR' : SRC_LANG` 라는
+       **언어 이름 분기**가 있었고, 청취 쪽은 맨 코드를 넘겼다 — 같은 값을 두 곳이
+       서로 다르게 만들고 있었다(§4). 지금은 web/common/rec-lang.js 한 곳에서 읽는다. */
+    console.log('\n[5-2] 인식에 넘길 언어 태그를 표에서 읽는다 (§6)');
+    const roomK = relay.newRoom('guide');
+    const hostK = await openHost(base, roomK);
+    const ko = await openListener(browser, base, port, roomK.code, { init: FAKE_REC, lang: 'ko', name: 'Kim' });
+    const grantMe = async (pg, rm, hostWs) => {
+      await pg.click('#btn-ask');
+      await pg.waitForSelector('#ask-modal', { state: 'visible' });
+      await pg.fill('#ask-input-text', '손들기');
+      await pg.click('#btn-ask-submit');
+      await pg.waitForFunction(() => /#\d/.test(document.getElementById('btn-ask').textContent), null, { timeout: 5000 });
+      const it = (rm.askQueue || [])[rm.askQueue.length - 1];
+      hostWs.send(JSON.stringify({ kind: 'grant', id: it.id, max_sec: 90 }));
+      return it;
+    };
+    const itemK = await grantMe(ko.page, roomK, hostK);
+    await ko.page.waitForFunction(() => (window.__micLog || []).includes('start'), null, { timeout: 5000 });
+    const recLangKo = await ko.page.evaluate(() => window.__lisRec.lang);
+    ok(recLangKo === 'ko-KR', `ko 는 표에 적힌 태그(ko-KR) 로 나간다 (지금 "${recLangKo}")`);
+    const tableLoaded = await ko.page.evaluate(() => !!(window.rtRecLang && window.rtRecLang.tag));
+    ok(tableLoaded, '표 한 곳(web/common/rec-lang.js)을 실었다');
+    const pageSrcNoBranch = fs.readFileSync(path.join(__dirname, '..', 'web', 'listener', 'index.html'), 'utf-8');
+    const hostSrcNoBranch = fs.readFileSync(path.join(__dirname, '..', 'web', 'host', 'index.html'), 'utf-8');
+    ok(!/===\s*'ko'\s*\?\s*'ko-KR'/.test(pageSrcNoBranch) && !/===\s*'ko'\s*\?\s*'ko-KR'/.test(hostSrcNoBranch),
+       '§6 — 언어 이름이 분기 조건에 남아 있지 않다');
+
+    /* ── 5-3. 말이 끊겨 인식기가 스스로 멈추면 — 발언권이 내 것이면 다시 연다 ──
+       안 열면 **두 번째 문장부터 조용히 사라진다.** 유실은 지연보다 훨씬 나쁘다(R-15). */
+    console.log('\n[5-3] 인식기가 스스로 멈추면 다시 연다 (발언권이 아직 내 것일 때)');
+    const startsBefore = await ko.page.evaluate(() => (window.__micLog || []).filter(x => x === 'start').length);
+    await ko.page.evaluate(() => window.__lisRec.endNow());
+    await ko.page.waitForFunction(
+      (n) => (window.__micLog || []).filter(x => x === 'start').length > n, startsBefore, { timeout: 5000 });
+    const startsAfter = await ko.page.evaluate(() => (window.__micLog || []).filter(x => x === 'start').length);
+    ok(startsAfter > startsBefore, `다시 열었다 (start ${startsBefore} → ${startsAfter})`);
+
+    // 회수된 뒤에는 다시 열지 않는다 — 꺼진 마이크가 되살아나면 그 폰 소리가 계속 나간다
+    hostK.send(JSON.stringify({ kind: 'revoke', id: itemK.id, reason: 'host_done' }));
+    await ko.page.waitForFunction(() => (window.__micLog || []).includes('stop'), null, { timeout: 5000 });
+    const startsAtRevoke = await ko.page.evaluate(() => (window.__micLog || []).filter(x => x === 'start').length);
+    await ko.page.evaluate(() => { try { window.__lisRec.endNow(); } catch (_) {} });
+    await ko.page.waitForTimeout(400);
+    const startsAfterRevoke = await ko.page.evaluate(() => (window.__micLog || []).filter(x => x === 'start').length);
+    ok(startsAfterRevoke === startsAtRevoke,
+       `회수된 뒤엔 다시 열지 않는다 (start ${startsAtRevoke} → ${startsAfterRevoke})`);
+    await ko.ctx.close();
+
+    /* ── 5-4. 마이크를 거절당하면 — 글자 칸으로 넘긴다 ──
+       손든 사람이 말도 못 하고 끝나는 것이 가장 나쁘다. 인식이 **없는** 폰은 [5] 에서
+       봤고, 여기는 인식은 있는데 **권한이 없는** 폰이다. 10-15 까지 이 길이 없었다. */
+    console.log('\n[5-4] 마이크를 거절당하면 글자 칸으로 넘어간다');
+    const roomD = relay.newRoom('guide');
+    const hostD = await openHost(base, roomD);
+    const denied = await openListener(browser, base, port, roomD.code, { init: FAKE_REC, name: 'Lee' });
+    const itemD = await grantMe(denied.page, roomD, hostD);
+    await denied.page.waitForFunction(() => (window.__micLog || []).includes('start'), null, { timeout: 5000 });
+    await denied.page.evaluate(() => window.__lisRec.fail('not-allowed'));
+    await denied.page.waitForSelector('#ask-modal', { state: 'visible', timeout: 5000 });
+    ok(true, '마이크 거절(not-allowed) → 글자 칸이 열린다');
+
+    const beforeD = hostD.got.length;
+    await denied.page.fill('#ask-input-text', '소화기는 어디입니까?');
+    await denied.page.click('#btn-ask-submit');
+    await denied.page.waitForTimeout(400);
+    const dq = hostD.got.slice(beforeD).filter(m => m.kind === 'question');
+    ok(dq.length === 1, `글자로 보낸 질문이 닿는다 (${dq.length}건)`);
+    ok(dq[0].src === '소화기는 어디입니까?', '거절된 뒤에도 원문이 그대로 나간다');
+    ok(!dq[0].trans && !dq[0].tr, 'P-14 — 글자 길에도 번역 칸이 없다');
+    const startsD = await denied.page.evaluate(() => (window.__micLog || []).filter(x => x === 'start').length);
+    ok(startsD === 1, `거절된 뒤엔 인식을 다시 열지 않는다 (start ${startsD}회)`);
+    await denied.ctx.close();
 
     /* ── 6. 8번 — 목소리 고르기 ── */
     console.log('\n[6] 8번 — 그 언어 음성 최대 3 · 순서 · ▶ 미리듣기 · 기억');
@@ -237,7 +310,7 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
     /* ── 7. 되돌림 실증 ──
        ⚠ 되돌림은 **제품이 만든 값**으로 한다. 시험 안에서 만든 상수로 하면 제품을
           되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검). */
-    console.log('\n[7] 되돌림 실증 3건');
+    console.log('\n[7] 되돌림 실증 6건');
 
     // ① grant 를 이어 둔 줄을 지우면 — 마이크가 안 켜져 [2] 가 붉다
     let revertWireFailed = false;
@@ -259,6 +332,28 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
       assert.notStrictEqual(names.length, 3, `음성이 ${names.length}개 보인다 (최대 3 아님)`);
     } catch (e) { revertCapFailed = true; }
     ok(revertCapFailed === true, '최대 3개 자르기를 빼면 붉어진다 (되돌림 실증 3)');
+
+    // ④ 인식 언어를 표에서 안 읽으면 ko 가 맨 코드로 나간다 (§6)
+    let revertRecLangFailed = false;
+    try {
+      assert.notStrictEqual(recLangKo, 'ko-KR', `인식 언어가 "${recLangKo}" 다 — 표를 안 읽는다`);
+    } catch (e) { revertRecLangFailed = true; }
+    ok(revertRecLangFailed === true, '표(rec-lang.js)를 안 읽으면 붉어진다 (되돌림 실증 4)');
+
+    // ⑤ onend 에 다시 여는 줄이 없으면 start 가 한 번뿐이다 — 두 번째 문장이 사라진다
+    let revertReopenFailed = false;
+    try {
+      assert.ok(startsAfter <= startsBefore, `말이 끊긴 뒤 인식을 다시 열지 않았다 (start ${startsAfter})`);
+    } catch (e) { revertReopenFailed = true; }
+    ok(revertReopenFailed === true, 'onend 재열기를 빼면 붉어진다 — R-15 유실 (되돌림 실증 5)');
+
+    // ⑥ 거절 뒤 글자 길이 막혀 있으면 질문이 하나도 안 닿는다 — 10-15 까지의 모양
+    let revertDeniedFailed = false;
+    try {
+      assert.strictEqual(dq.length, 0, `거절당한 사람의 글자 질문이 ${dq.length}건 닿았다`);
+    } catch (e) { revertDeniedFailed = true; }
+    ok(revertDeniedFailed === true,
+       '보내는 길을 둘로 되돌리면 붉어진다 — 먼저 도는 쪽이 글자 칸을 비운다 (되돌림 실증 6)');
 
     console.log(`\n전부 통과 (${passCount}건)`);
   } finally {

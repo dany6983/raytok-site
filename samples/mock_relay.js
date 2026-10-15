@@ -395,8 +395,10 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
             };
             if (!room.askQueue) room.askQueue = [];
             if (!room.askHistory) room.askHistory = [];
+            if (!room.askOwner) room.askOwner = new Map();
             room.askQueue.push(askItem);
             room.askHistory.push({ ...askItem });
+            room.askOwner.set(ws, askItem.id);   // 진짜 릴레이의 소켓 쪽지(askId) 와 같은 몫
             const wireAskMsg = JSON.stringify({
               kind: 'ask', id: askItem.id, seq: askItem.seq, name: askItem.name, lang: askItem.lang, src: askItem.src, at: askItem.at
             });
@@ -419,9 +421,37 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
             }
             return;
           }
+          // 7번 마이크 질문 — relay/src/room.js 의 가지와 같은 문을 둔다(D-11).
+          if (p && p.kind === 'question') {
+            if (p.trans || p.tr) {
+              try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}
+              return;
+            }
+            const mine = room.askOwner && room.askOwner.get(ws);
+            if (!room.activeAsk || !p.id || p.id !== room.activeAsk.id || mine !== p.id) {
+              try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'not_granted' })); } catch (_) {}
+              return;
+            }
+            const spoken = typeof p.src === 'string' ? p.src.trim() : '';
+            if (!spoken) return;                       // §20 빈 답은 버린다
+            room.activeAsk.src = spoken;
+            room.activeAsk.text = spoken;
+            if (room.askHistory) {
+              const h = room.askHistory.find(x => x.id === p.id);
+              if (h) { h.src = spoken; h.text = spoken; h.spokenAt = Date.now(); }
+            }
+            const spokenMsg = JSON.stringify({
+              kind: 'question', id: room.activeAsk.id, seq: room.activeAsk.seq,
+              name: room.activeAsk.name, src: spoken,
+              srcLang: room.activeAsk.lang || p.srcLang || 'ko', at: Date.now()
+            });
+            for (const h of room.hosts) { try { h.send(spokenMsg); } catch (_) {} }
+            for (const l of room.listeners.keys()) { try { l.send(spokenMsg); } catch (_) {} }
+            return;
+          }
           for (const h of room.hosts) { try { h.send(s); } catch (_) {} }
         });
-        ws.on('close', () => attLeave(room, ws));
+        ws.on('close', () => { attLeave(room, ws); if (room.askOwner) room.askOwner.delete(ws); });
       }
     });
   });
