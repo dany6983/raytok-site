@@ -416,6 +416,7 @@
     <span data-i18n="btn_save_record">내 기록 받기 (TXT)</span>
   </div>
 
+  <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 — 말하는 짝 호스트와 같은 표 -->
   <script>
     const LISTENER_VER = '1.1.4'; // v1.1.4 — ④ 빈 방 문구·글자 크기
     document.getElementById('ver-text').textContent = LISTENER_VER;
@@ -1046,8 +1047,10 @@
     // 7번: 브라우저 청취자 마이크 — N:1 질문
     let activeSpeechRec = null;
     let activeMediaStream = null;
+    let askMicFailed = false;   // 마이크가 안 되는 폰 — 글자 칸으로 넘어갔나
 
     async function startListenerMicQuestion(askId, askSeq) {
+      askMicFailed = false;
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRec) {
         try {
@@ -1055,9 +1058,31 @@
             activeMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
           }
           activeSpeechRec = new SpeechRec();
-          activeSpeechRec.lang = selectedLang || 'ko';
+          // 언어 이름을 분기에 두지 않는다 — 말하는 쪽 호스트와 **같은 표**를 읽는다
+          // (§6, web/common/rec-lang.js). 표가 안 실렸으면 코드를 그대로 넘긴다(§20).
+          activeSpeechRec.lang = (window.rtRecLang && window.rtRecLang.tag)
+            ? window.rtRecLang.tag(selectedLang || 'ko')
+            : (selectedLang || 'ko');
           activeSpeechRec.continuous = true;
           activeSpeechRec.interimResults = false;
+          // 마이크를 거절당하거나 인식 서비스가 입을 닫으면 **질문할 길이 없어진다.**
+          // 그때는 글자 칸으로 넘긴다 — 손든 사람이 말을 못 하고 끝나는 것이 가장 나쁘다(R-15).
+          activeSpeechRec.onerror = (ev) => {
+            const why = (ev && ev.error) || '';
+            if (why === 'aborted') return;            // 우리가 stop() 한 것
+            askMicFailed = true;
+            try { activeSpeechRec && activeSpeechRec.stop(); } catch (_) {}
+            activeSpeechRec = null;
+            showAskModalFallback(askId, askSeq);
+          };
+          // 인식기는 말이 끊기면 스스로 멈춘다(아이폰·안드로이드 둘 다). 발언권이 아직
+          // 내 것이면 다시 연다 — 안 열면 두 번째 문장부터 조용히 사라진다.
+          activeSpeechRec.onend = () => {
+            if (askMicFailed) return;
+            if (!activeSpeechRec) return;             // stopListenerMicQuestion 이 껐다
+            if (!myAskId || myAskId !== askId) return;
+            try { activeSpeechRec.start(); } catch (_) {}
+          };
           activeSpeechRec.onresult = (e) => {
             const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
             if (transcript && ws && ws.readyState === WebSocket.OPEN) {

@@ -73,6 +73,12 @@ export class Room {
   attMark(ws) {
     try { return ws.deserializeAttachment() || null; } catch (_) { return null; }
   }
+  // 소켓 쪽지는 **통째로 덮인다**(D-19 savePrefs 와 같은 병). 한 칸만 쓰면 언어·붙은 시각이
+  // 조용히 지워지고, 그러면 참석 집계가 틀린다. 칸을 더하거나 고칠 때는 꼭 이 함수로 합친다.
+  attPatch(ws, patch) {
+    const m = this.attMark(ws) || {};
+    try { ws.serializeAttachment({ ...m, ...patch }); } catch (_) {}
+  }
   // 지금 붙어 있는 청취자 수와 언어별 수 — 실제 소켓에서 센다(동면 뒤에도 맞다)
   attLive() {
     const byLang = {};
@@ -138,7 +144,7 @@ export class Room {
     const prev = this.attLang(m.lang || '?');
     prev.sec += Math.max(0, Math.floor((now - (m.at || now)) / 1000));
     this.attLang(code);
-    try { ws.serializeAttachment({ lang: code, at: now }); } catch (_) {}
+    this.attPatch(ws, { lang: code, at: now });
     this.attSnapshot();
     this.attSend();
     return this.attSave();
@@ -149,7 +155,7 @@ export class Room {
     if (m && !m.left) {
       const L = this.attLang(m.lang || '?');
       L.sec += Math.max(0, Math.floor((now - (m.at || now)) / 1000));
-      try { ws.serializeAttachment({ left: true }); } catch (_) {}
+      this.attPatch(ws, { left: true });
     }
     this.attSend();
     return this.attSave();
@@ -1438,6 +1444,9 @@ export class Room {
         if (!this.askHistory) this.askHistory = [];
         this.askQueue.push(askItem);
         this.askHistory.push({ ...askItem });
+        // 손든 **그 소켓**을 표시한다. 질문 id 는 grant 로 방 전체에 나가므로 id 만으로는
+        // 다른 청취자가 흉내낼 수 있다(7번 마이크 질문의 문). 쪽지는 합쳐서 쓴다(D-19).
+        this.attPatch(ws, { askId: askItem.id });
 
         // 정본 와이어 ask 메시지 (docs/samples/wire-messages.json)
         const wireAskMsg = JSON.stringify({
@@ -1470,6 +1479,59 @@ export class Room {
             listenerWs.send(wireAskMsg);
             listenerWs.send(listMsg);
           } catch (_) {}
+        }
+        return;
+      }
+
+      // 7번: 지명된 **브라우저 청취자의 마이크 질문** — 원문+언어만 올라온다.
+      // 여기가 그 값을 **읽는 곳**이다. 이 가지가 없으면 청취자가 말한 말은 아래 두루길로
+      // 호스트에게만 날것으로 가고(= 다른 청취자는 못 듣고, P-14 검사도 안 받고) 화면에는
+      // 아무것도 안 나온다. 대표님 10-13 22:38: **질문도 답도 전원에게.**
+      if (parsed && parsed.kind === 'question') {
+        // P-14 자물쇠: 참여자는 번역하지 않는다 (ask 길과 같은 문)
+        if (parsed.trans || parsed.tr) {
+          try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}
+          return;
+        }
+        // P-17 수동 지명: 지금 발언권을 받은 **그 소켓**만 말할 수 있다.
+        // id 는 grant 로 방 전체에 나가므로 id 만 보면 흉내낼 수 있다 — 쪽지도 같이 본다.
+        const mark = this.attMark(ws);
+        const mine = mark && mark.askId;
+        if (!this.activeAsk || !parsed.id || parsed.id !== this.activeAsk.id || mine !== parsed.id) {
+          try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'not_granted' })); } catch (_) {}
+          return;
+        }
+        // §20 빈 답은 없음이 아니다 — 인식기는 빈 줄도 준다. 버리되 발언권은 그대로 둔다.
+        const spoken = typeof parsed.src === 'string' ? parsed.src.trim() : '';
+        if (!spoken) return;
+
+        // 기록에 남긴다 — 리포트가 읽는 곳이 askHistory 다(R-15 유실 > 지연).
+        this.activeAsk.src = spoken;
+        this.activeAsk.text = spoken;
+        if (this.askHistory) {
+          const hItem = this.askHistory.find(h => h.id === parsed.id);
+          if (hItem) {
+            hItem.src = spoken;
+            hItem.text = spoken;
+            hItem.spokenAt = Date.now();
+          }
+        }
+
+        // 정본 와이어 question (docs/samples/wire-messages.json) — 번역 칸은 **싣지 않는다**(P-14).
+        const spokenMsg = JSON.stringify({
+          kind: 'question',
+          id: this.activeAsk.id,
+          seq: this.activeAsk.seq,
+          name: this.activeAsk.name,
+          src: spoken,
+          srcLang: this.activeAsk.lang || parsed.srcLang || 'ko',
+          at: Date.now()
+        });
+        for (const hostWs of this.ctx.getWebSockets('host')) {
+          try { hostWs.send(spokenMsg); } catch (_) {}
+        }
+        for (const listenerWs of this.ctx.getWebSockets('listener')) {
+          try { listenerWs.send(spokenMsg); } catch (_) {}
         }
         return;
       }
