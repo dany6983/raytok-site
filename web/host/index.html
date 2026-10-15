@@ -394,14 +394,18 @@
         </div>
       </div>
 
-      <!-- ②-C N:1 질문 대기열 스위치 (FIX_QUESTION, 기본 꺼짐) -->
+      <!-- ②-C N:1 질문 대기열 스위치 (FIX_QUESTION, **기본 켬** — AGENTS §24)
+           10-16 까지 기본 꺼짐이었다. 그래서 7번(청취자 마이크 질문)을 다 만들어 놓고도
+           대표님 화면에 질문 대기열 칸이 아예 안 보였다 — §24 가 말하는 바로 그 모양이다.
+           켜도 깨지는 것이 없다(청취자에게 ✋ 단추가 하나 늘고, 강사에게 대기열이 보인다).
+           스위치는 **끄기 위해** 있다. -->
       <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
         <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
-          <input type="checkbox" id="chkEnableQuestion" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+          <input type="checkbox" id="chkEnableQuestion" checked style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
           <span data-t="enable_question_title">참여자 질문 받기 (N:1 손들기 대기열)</span>
         </label>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4;" data-t="enable_question_desc">
-          청취자가 텍스트로 질문을 요청하고 강사가 수동으로 지명하여 답변할 수 있습니다 (기본 꺼짐).
+          청취자가 질문을 청하고 강사가 **직접 지명**해 답변합니다. 지명된 청취자는 글자 또는 폰 마이크로 묻습니다 (기본 켬 — 받지 않으려면 끄세요).
         </div>
       </div>
 
@@ -1853,7 +1857,7 @@
         broadcast_raw_title: '번역 없이 방송 (원문 브로드캐스팅)',
         broadcast_raw_desc: '한국인 가이드·강연 등 같은 언어로 방송할 때 번역 API를 부르지 않고 원문 그대로 청취자에게 전송합니다 (번역 비용 0원, 지연 없음).',
         enable_question_title: '참여자 질문 받기 (N:1 손들기 대기열)',
-        enable_question_desc: '청취자가 텍스트로 질문을 요청하고 강사가 수동으로 지명하여 답변할 수 있습니다 (기본 꺼짐).',
+        enable_question_desc: '청취자가 질문을 청하고 강사가 **직접 지명**해 답변합니다. 지명된 청취자는 글자 또는 폰 마이크로 묻습니다 (기본 켬 — 받지 않으려면 끄세요).',
         mic_start: '🎤 실시간 말하기 시작',
         mic_stop: '🎤 말하기 멈춤',
         mic_idle: '원고 없이 말한 대로 청취자에게 보냅니다.',
@@ -1895,7 +1899,7 @@
         broadcast_raw_title: 'Broadcast without translation (Original broadcast)',
         broadcast_raw_desc: 'Broadcast the original text directly to listeners without calling translation APIs when lecturing in the same language (Zero cost, no delay).',
         enable_question_title: 'Allow attendee questions (N:1 Queue)',
-        enable_question_desc: 'Listeners can request questions by text, and instructor manually grants speaking turn (Default OFF).',
+        enable_question_desc: 'Listeners raise a hand and the instructor grants the turn manually; the chosen listener asks by text or phone mic (Default ON — uncheck to decline questions).',
         mic_start: '🎤 Start live speaking',
         mic_stop: '🎤 Stop speaking',
         mic_idle: 'Speak without a script — your words go to listeners.',

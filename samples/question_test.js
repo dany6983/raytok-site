@@ -55,9 +55,15 @@ const outsideRequests = [];
     await hostPage.click('#btnPreTranslate');
     await hostPage.waitForSelector('#readyArea', { state: 'visible', timeout: 10000 });
 
-    // 질문 받기 기본 꺼짐 확인 및 켜기 (question.md)
-    const isDefaultOff = await hostPage.isChecked('#chkEnableQuestion');
-    ok(!isDefaultOff, 'N:1 질문 대기열 스위치: 기본 꺼짐 확인 (question.md)');
+    // 질문 받기 **기본 켬** 확인 (AGENTS §24, 대표님 10-16)
+    // 10-16 까지 기본 꺼짐이었다 — 7번을 다 만들어 놓고도 대표님 화면에 대기열이 안 보였다.
+    // 문은 기본 켬이고 스위치는 **끄기 위해** 있다.
+    const questionDefaultOn = await hostPage.isChecked('#chkEnableQuestion');
+    ok(questionDefaultOn, 'N:1 질문 대기열 스위치: **기본 켬** (§24 — 문은 열어 둔다)');
+
+    // 끌 수 있어야 한다 — 스위치가 스위치 노릇을 하는지도 본다
+    await hostPage.uncheck('#chkEnableQuestion');
+    ok(!(await hostPage.isChecked('#chkEnableQuestion')), '끄는 쪽으로도 움직인다 (받지 않으려면 끈다)');
     await hostPage.check('#chkEnableQuestion');
 
     // 강의 시작
@@ -193,7 +199,7 @@ const outsideRequests = [];
     });
     ok(true, '1번 질문 종료 후 대기열에서 1번 제거 및 남은 1건 유지 확인');
 
-    // ── 10. 특허 자물쇠 되돌림 실증 3건 (D-09) ──
+    // ── 10. 특허 자물쇠·기본값 되돌림 실증 4건 (D-09) ──
     //
     // ⚠ 되돌림은 **제품이 실제로 만든 값**으로 해야 한다. 시험 안에서 만든 상수로 하면
     //   제품을 되돌려도 그대로 통과한다 — 증거가 아니다. 셋 다 그 꼴이었다(10-14 ⑨-1 점검).
@@ -241,6 +247,13 @@ const outsideRequests = [];
       revertSeqFailed = true;
     }
     ok(revertSeqFailed === true, '독립항 순번 보존: 순번 기록을 지우면 붉어진다 (되돌림 실증 3)');
+
+    // ④ 기본값이 꺼짐으로 돌아가면 붉다 (§24 — 숨기면 대표님이 못 보신다)
+    let revertDefaultFailed = false;
+    try {
+      assert.strictEqual(questionDefaultOn, false, '질문 받기가 기본 꺼짐이다 — 화면에 대기열이 안 보인다');
+    } catch (e) { revertDefaultFailed = true; }
+    ok(revertDefaultFailed === true, '기본값을 꺼짐으로 되돌리면 붉어진다 (되돌림 실증 4)');
 
     ok(outsideRequests.length === 0, `외부 네트워크 요청 0건 확인 (${outsideRequests.length})`);
 
