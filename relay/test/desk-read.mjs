@@ -216,6 +216,28 @@ async function run() {
   }), mockEnv, mockCtx);
   ok(noDeskListRes.status === 403, '0x08 누락 토큰 목록 조회 시 403 Forbidden 반환');
 
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**으로 한다. 시험 안에서 만든 상수로 하면
+  //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+
+  // ① 칸막이 — 남의 세션이 보이면 붉어야 한다. 지금 404 라서 아래 단언이 던진다.
+  let revertTenantFailed = false;
+  try {
+    assert.notStrictEqual(sneakRes.status, 404, `남의 세션이 ${sneakRes.status} 로 열렸다`);
+  } catch (e) {
+    revertTenantFailed = true;
+  }
+  ok(revertTenantFailed === true, '손님 칸막이를 빼면 남의 세션이 열려 붉어진다 (되돌림 실증 1)');
+
+  // ② 이용권 — 0x08 없는 토큰이 통과하면 붉어야 한다. 지금 403 이라서 던진다.
+  let revertFlagFailed = false;
+  try {
+    assert.notStrictEqual(noDeskListRes.status, 403, `0x08 없는 토큰이 ${noDeskListRes.status} 로 통과했다`);
+  } catch (e) {
+    revertFlagFailed = true;
+  }
+  ok(revertFlagFailed === true, '0x08 검사를 빼면 붉어진다 (되돌림 실증 2)');
+
   console.log(`\n전부 통과 (${passCount}건)`);
   process.exit(0);
 }

@@ -163,6 +163,30 @@ const srv = http.createServer(async (req, res) => {
     // 4. 외부 네트워크 요청 0건 검증
     ok(outsideRequests.length === 0, `외부 네트워크 요청 0건 확인 (실제: ${outsideRequests.length})`);
 
+    // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+    // ⚠ 되돌림은 **이 시험이 실제로 읽은 값**으로 한다. 시험 안에서 만든 상수로 하면
+    //   제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+
+    // ① 표 안 문단을 빠뜨리면 붉어야 한다 — 관공서·학교 원고는 표가 많다(영업 1순위).
+    //    지금 넷을 다 뽑아서 아래 단언이 던진다.
+    let revertTableFailed = false;
+    try {
+      assert.ok(!paras.some(p => p.includes('표 안에 작성된 네 번째 문단')),
+                `표 안 문단을 뽑았다 (문단 ${paras.length}개)`);
+    } catch (e) {
+      revertTableFailed = true;
+    }
+    ok(revertTableFailed === true, '표 안 문단을 빠뜨리면 붉어진다 (되돌림 실증 1)');
+
+    // ② 한글 파일을 바깥으로 보내면 붉어야 한다 — 손님 원고다. 지금 0건이라 던진다.
+    let revertOutsideFailed = false;
+    try {
+      assert.notStrictEqual(outsideRequests.length, 0, `한글 원고가 바깥으로 나갔다 (${outsideRequests.join(', ')})`);
+    } catch (e) {
+      revertOutsideFailed = true;
+    }
+    ok(revertOutsideFailed === true, '원고가 바깥으로 나가면 붉어진다 (되돌림 실증 2)');
+
     console.log(`\n전부 통과 (${passCount}건)`);
   } finally {
     await browser.close();

@@ -165,17 +165,12 @@ ok(claimedOnly.length === 0,
  */
 console.log('\n[2-2] 래칫 — npm test 의 시험은 되돌림을 하나는 가져야 한다 (남은 빚은 목록으로)');
 
-/* 되돌림이 **아직** 없는 것 — 10-15 현재. 줄이기만 한다, 늘리지 않는다. */
-const REVERT_DEBT = [
-  'relay/test/desk-read.mjs',
-  'relay/test/desk-session.mjs',
-  'samples/host_view_test.js',
-  'samples/hwpx_test.js',
-  'samples/join_i18n_test.js',
-  'samples/lic_page_test.js',
-  'samples/report_common_test.js',
-  'samples/wire_script_test.js',
-];
+/* 되돌림이 **아직** 없는 것 — 비어 있다.
+   10-15 에 여덟을 다 갚았다(마스터 08:40 ③ "B 9 뒤에 둘씩"):
+     desk-read · desk-session · host_view · wire_script · hwpx · lic_page · join_i18n · report_common
+   앞으로 여기에 **줄을 더하지 않는다.** 새 시험은 되돌림을 가지고 들어와야 한다. */
+const REVERT_DEBT = [];
+
 /* 되돌림이 **어울리지 않는** 것 — 까닭이 있어 면제. 이쪽은 빚이 아니다. */
 const REVERT_NA = {
   'tools/check_links.js': '깨진 링크를 세는 도구다 — 깨진 링크를 넣으면 그대로 붉는다. 되돌림이 곧 본체',

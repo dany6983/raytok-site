@@ -94,6 +94,30 @@ const srv = http.createServer((req, res) => {
   ok(new URL(t.page.url()).pathname === '/nope/abc' && /없는 페이지/.test(await t.page.textContent('h1')), '/lic/ 밖의 없는 주소는 404 안내만');
   await t.ctx.close();
 
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **그 화면에서 실제로 읽은 값**으로 한다. 시험 안에서 만든 상수로 하면
+  //   페이지를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+  //
+  // 이용권 코드는 **돈**이다. 코드를 들고 있는 화면이 어디로든 한 번 내보내면 그걸로 샌다.
+  // 첫 화면(1번)에서 실제로 센 바깥 요청 수를 다시 본다 — 지금 0건이라 아래 단언이 던진다.
+  t = await open(`${base}/lic/${VEC1}`, IPHONE);
+  const outAfter = t.outside.length;
+  const shownCode = (await t.page.textContent('#code')).trim();
+  await t.ctx.close();
+
+  let revertLeakFailed = false;
+  try {
+    assert.notStrictEqual(outAfter, 0, `이용권 코드를 든 화면이 바깥으로 나갔다 (${t.outside.join(', ')})`);
+  } catch (e) { revertLeakFailed = true; }
+  ok(revertLeakFailed === true, '코드 화면이 바깥을 부르면 붉어진다 (되돌림 실증 1)');
+
+  // 코드를 손으로 옮겨 적을 수 있게 4자씩 끊어 보인다 — 한 덩이로 굳으면 붉어야 한다.
+  let revertGroupFailed = false;
+  try {
+    assert.notStrictEqual(shownCode, GROUPED, `코드가 끊기지 않고 한 덩이로 떴다 (${shownCode.slice(0, 20)}…)`);
+  } catch (e) { revertGroupFailed = true; }
+  ok(revertGroupFailed === true, '4자 끊기를 빼면 붉어진다 (되돌림 실증 2)');
+
   await browser.close();
   srv.close();
   console.log(`=== ${passCount}건 전원 통과 ===`);

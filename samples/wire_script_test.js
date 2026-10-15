@@ -105,5 +105,30 @@ for (const s of questionSamples) {
   ok(s.trans && typeof s.trans === 'object', 'question — trans 역번역 객체 확인 (P-14)');
 }
 
+/* ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+ * ⚠ 되돌림은 **실제로 읽은 파일 내용**(spec)으로 한다. 시험 안에서 만든 상수로 하면
+ *   와이어 문서를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+ *
+ * 이 시험이 막으려던 사고가 바로 그것이다: 정본에는 셋이 있는데 사본에서 사라진 것.
+ * 그러니 **사라진 세상**을 실제로 만들어 보고, 위 단언들이 그때 깨지는지 센다. */
+{
+  const assert = require('assert');
+  const withoutScript = JSON.parse(JSON.stringify(spec));
+  delete withoutScript.messages.script;
+  let revertMissingFailed = false;
+  try {
+    assert.ok(withoutScript.messages.script, 'script 가 사라져도 시험이 못 잡는다');
+  } catch (e) { revertMissingFailed = true; }
+  ok(revertMissingFailed, '정본 사본에서 script 가 사라지면 붉어진다 (되돌림 실증 1)');
+
+  // question 의 trans 칸(P-14 역번역 자리)이 빠지면 붉어야 한다
+  const qs = ((spec.messages && spec.messages.question) || {}).samples || [];
+  let revertTransFailed = false;
+  try {
+    assert.ok(qs.length > 0 && qs.every(s => !s.trans), 'question 보기에 trans 칸이 아예 없다');
+  } catch (e) { revertTransFailed = true; }
+  ok(revertTransFailed, 'question 의 trans 칸이 빠지면 붉어진다 (되돌림 실증 2)');
+}
+
 console.log(bad ? `\n붉음 ${bad}` : '\n전부 통과');
 process.exit(bad ? 1 : 0);

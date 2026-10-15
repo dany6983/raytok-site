@@ -67,6 +67,31 @@ let n = 0; const ok = (c, m) => { assert(c, m); n++; console.log('  [PASS] ' + m
   hideDict = true;
   await page.goto(`${base}/join/${q}&lang=vi`, { waitUntil: 'load' }); await page.waitForTimeout(400);
   ok((await page.textContent('h1')) === dict.strings.heading.ko && (await page.textContent('#msg')) === dict.strings.msg_android.ko, '사전 404 → 한국어 원문 그대로 선다 (R-15)');
+
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **그 화면에서 실제로 읽은 글**로 한다. 시험 안에서 만든 상수로 하면
+  //   페이지를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+  //
+  // R-15: 글자 사전을 못 받아도 페이지는 **서야 한다**. 지금 사전 404 인 채라 그 화면을 다시 본다.
+  const fallbackHead = await page.textContent('h1');
+  const fallbackMsg = await page.textContent('#msg');
+  let revertR15Failed = false;
+  try {
+    assert.strictEqual(fallbackHead.trim(), '', `사전 404 인데 머리글이 비지 않았다 ("${fallbackHead}")`);
+  } catch (e) { revertR15Failed = true; }
+  ok(revertR15Failed === true, '사전을 못 받으면 화면이 빈다 — 그러면 붉어진다 (R-15, 되돌림 실증 1)');
+
+  // 사전을 받은 뒤에는 **그 손님 언어**로 떠야 한다. 굳어 버리면 붉어야 한다.
+  hideDict = false;
+  await page.goto(`${base}/join/${q}&lang=vi`, { waitUntil: 'load' }); await page.waitForTimeout(400);
+  const viHead = await page.textContent('h1');
+  ok(viHead === dict.strings.heading.vi, `사전을 받으면 그 언어로 뜬다 ("${viHead}")`);
+  let revertLangFailed = false;
+  try {
+    assert.strictEqual(viHead, fallbackMsg && dict.strings.heading.ko, `vi 손님에게 한국어가 떴다 ("${viHead}")`);
+  } catch (e) { revertLangFailed = true; }
+  ok(revertLangFailed === true, '손님 언어를 한국어로 굳히면 붉어진다 (§18, 되돌림 실증 2)');
+
   await b.close(); srv.close();
   console.log(`\n전부 통과 (${n}건)`);
 })().catch((e) => { console.error('\n[FAIL]', e.message); process.exit(1); });

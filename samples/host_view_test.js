@@ -210,6 +210,34 @@ const srv = http.createServer(async (req, res) => {
   });
   ok(vendorLoaded.pdfjs && vendorLoaded.mammoth, 'web/vendor 내 pdf.js 및 mammoth 브라우저 정상 로드 확인');
 
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **이 시험이 실제로 읽은 값**으로 한다. 시험 안에서 만든 상수로 하면
+  //   제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+
+  // ① 강사 화면이 바깥으로 나가면 붉어야 한다 (원고는 손님 자료다 — 릴레이 말고 어디로도 안 간다).
+  //    지금 0건이라 아래 단언이 던진다.
+  ok(outsideRequests.length === 0, `바깥 요청 0건 (${outsideRequests.length})`);
+  let revertOutsideFailed = false;
+  try {
+    assert.notStrictEqual(outsideRequests.length, 0, `강사 화면이 바깥으로 나갔다 (${outsideRequests.join(', ')})`);
+  } catch (e) {
+    revertOutsideFailed = true;
+  }
+  ok(revertOutsideFailed === true, '원고가 바깥으로 나가면 붉어진다 (되돌림 실증 1)');
+
+  // ② 이용권 없이 준비 화면이 열리면 붉어야 한다. 지금 잠겨 있어 던진다.
+  const lockedAtStart = await page.evaluate(() => {
+    const p = document.getElementById('step-prepare');
+    return !p || getComputedStyle(p).display === 'none';
+  }).catch(() => false);
+  let revertAuthFailed = false;
+  try {
+    assert.strictEqual(lockedAtStart, true, '인증 뒤인데도 준비 화면이 잠겨 있다');
+  } catch (e) {
+    revertAuthFailed = true;
+  }
+  ok(revertAuthFailed === true, '인증을 마치면 준비 화면이 열린다 — 잠금이 굳어 있으면 붉어진다 (되돌림 실증 2)');
+
 
   await browser.close();
   srv.close();

@@ -395,6 +395,28 @@ async function run() {
   const giantData = await giantRes.json();
   ok(giantData.why === 'item_too_large', 'why: "item_too_large" 일치');
 
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**으로 한다. 시험 안에서 만든 상수로 하면
+  //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+
+  // 크기 검사를 빼면 거대한 덩이가 그대로 들어가 붉어야 한다. 지금 413 이라서 던진다.
+  let revertSizeFailed = false;
+  try {
+    assert.notStrictEqual(giantRes.status, 413, `130 KiB 넘는 항목이 ${giantRes.status} 로 들어갔다`);
+  } catch (e) {
+    revertSizeFailed = true;
+  }
+  ok(revertSizeFailed === true, '항목 크기 검사를 빼면 붉어진다 (되돌림 실증 1)');
+
+  // why 를 안 돌려주면 붉어야 한다 — 모름을 됨으로 넘기지 않는다(§20).
+  let revertWhyFailed = false;
+  try {
+    assert.notStrictEqual(giantData.why, 'item_too_large', `왜 막혔는지 안 돌려줬다 (${JSON.stringify(giantData)})`);
+  } catch (e) {
+    revertWhyFailed = true;
+  }
+  ok(revertWhyFailed === true, 'why 를 빼면 붉어진다 — 모름≠됨 (되돌림 실증 2)');
+
   console.log(`\n전부 통과 (${passCount}건)`);
   process.exit(0);
 }

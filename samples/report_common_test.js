@@ -99,6 +99,25 @@ const mockLines = [
   ok(/\] 안녕하세요\. 회의를 시작합니다\.\r\nHello\. We start the meeting\./.test(plain) && plain.endsWith('test <script>alert(1)</script>\r\n'), 'label·footer 없음 TXT: 줄 모양·끝이 전과 같다');
   ok(!buildReportHtml({ lines: mockLines, srcLang: 'ko', targetLang: 'en', langName: 'English' }).includes('report-footer'), 'label·footer 없음 HTML: 꼬리 줄 없음');
   ok(buildReportText({ ...args, footer: [] }) === buildReportText({ ...args, footer: null }), '빈 footer = footer 없음');
+
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **실제로 만들어진 글**로 한다. 시험 안에서 만든 상수로 하면 만드는 쪽을
+  //   되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+  //
+  // ① 이스케이프가 빠지면 붉어야 한다. 리포트는 손님이 열어 보는 파일이라, 원고에 꺾쇠가
+  //    섞여 있으면 그대로 태그가 된다. 지금 &lt; 로 바뀌어 있어 아래 단언이 던진다.
+  let revertEscapeFailed = false;
+  try {
+    assert.ok(html.includes('<script>alert(1)</script>'), '리포트 HTML 에 날 꺾쇠가 그대로 들어갔다');
+  } catch (e) { revertEscapeFailed = true; }
+  ok(revertEscapeFailed === true, '이스케이프를 빼면 붉어진다 (되돌림 실증 1)');
+
+  // ② 줄 끝이 CRLF 가 아니면 붉어야 한다 — 받는 쪽이 메모장이다(관공서·학교).
+  let revertCrlfFailed = false;
+  try {
+    assert.ok(!/\r\n/.test(plain), `리포트 TXT 에 CRLF 가 없다`);
+  } catch (e) { revertCrlfFailed = true; }
+  ok(revertCrlfFailed === true, 'CRLF 를 LF 로 바꾸면 붉어진다 — 메모장에서 한 줄로 붙는다 (되돌림 실증 2)');
 }
 
 console.log(`\n전부 통과 (${passCount}건)`);
