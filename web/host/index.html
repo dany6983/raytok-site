@@ -29,7 +29,9 @@
       --border: #334155;
       --text: #f8fafc;
       --text-muted: #94a3b8;
-      --primary: #0284c7;
+      /* 흰 글자를 얹는 색이라 WCAG AA(4.5:1) 를 넘겨야 한다. #0284c7 은 4.1:1 로 모자랐다
+         — 10-15 a11y 시험이 잡았다. #0369a1 은 같은 파랑 계열에서 5.9:1. */
+      --primary: #0369a1;
       --primary-hover: #0369a1;
       --success: #10b981;
       --warning: #f59e0b;
