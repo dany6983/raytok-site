@@ -58,6 +58,9 @@ const mockEnv = {
 
 const SECRET = mockEnv.LICENSE_SECRET;
 
+let lastPlaybackStatus = -1;   // 되돌림 실증용 — 제품이 돌려준 값
+let lastListenerWhy = '';      // 되돌림 실증용 — 제품이 돌려준 값
+
 (async () => {
   // 정상 호스트 토큰 생성 (0x04 meet)
   const { token: hostToken } = await mintLicense('cust_HOST', 30, 0x04, SECRET);
@@ -98,6 +101,7 @@ const SECRET = mockEnv.LICENSE_SECRET;
 
   ok(resListenerBody.status === 403, '청취자 role=listener 403 Forbidden 반환');
   const errListenerBody = await resListenerBody.json();
+  lastListenerWhy = errListenerBody.why;         // 아래 되돌림 실증이 이 **진짜 값**을 쓴다
   ok(errListenerBody.why === 'p16_listener_translate', '에러 사유 why: p16_listener_translate 일치');
 
   // [Test 3] body role: 'audience' 차단 검증 (403)
@@ -182,10 +186,33 @@ const SECRET = mockEnv.LICENSE_SECRET;
       body: JSON.stringify({ text: '음성 재생 요청' })
     }), mockEnv);
 
+    lastPlaybackStatus = resPlay.status;          // 아래 되돌림 실증이 이 **진짜 값**을 쓴다
     ok(resPlay.status === 403, `${ep} 재생 요청 403 Forbidden 반환`);
     const errPlay = await resPlay.json();
     ok(errPlay.why === 'p16_forbidden_endpoint', `${ep} why: p16_forbidden_endpoint 일치`);
   }
+
+
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**으로 한다. 시험 안에서 만든 상수로 하면
+  //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+  // P-16 자물쇠가 풀리면(403 을 안 주면) 붉어야 한다. 지금 403 이라 아래 단언이 던진다.
+  let revertP16Failed = false;
+  try {
+    assert.notStrictEqual(lastPlaybackStatus, 403, `재생 끝점이 403 으로 막히지 않았다 (${lastPlaybackStatus})`);
+  } catch (e) {
+    revertP16Failed = true;
+  }
+  ok(revertP16Failed === true, 'P-16 자물쇠를 풀면(재생 끝점 403 아님) 붉어진다 (되돌림 실증 1)');
+
+  // 청취자 역할 /translate 차단도 같이 — 지금 why 가 p16_listener_translate 라 던진다.
+  let revertRoleFailed = false;
+  try {
+    assert.notStrictEqual(lastListenerWhy, 'p16_listener_translate', `청취자 /translate 가 P-16 으로 막히지 않았다 (${lastListenerWhy})`);
+  } catch (e) {
+    revertRoleFailed = true;
+  }
+  ok(revertRoleFailed === true, 'P-16 ① 청취자 /translate 차단을 풀면 붉어진다 (되돌림 실증 2)');
 
   console.log(`\n전부 통과 (${passCount}건)`);
 })().catch(err => {

@@ -181,6 +181,30 @@ async function run() {
     ok(data4.why === 'google_403', `why: "google_403" 확인 (실제: ${data4.why})`);
     ok(mockUpstreamCount === 1, `4xx는 재시도하지 않고 1회만 호출 (실제: ${mockUpstreamCount})`);
 
+    // ── 되돌림 실증 (B-BACKLOG 공통 조건) ──
+    // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**으로 한다. 시험 안에서 만든 상수로 하면
+    //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+    //
+    // ① 상류가 왜 막혔는지를 안 돌려주면 붉어야 한다 — 모름을 됨으로 넘기지 않는 자리(§20).
+    //    지금 why 가 google_403 이라 아래 단언이 던진다.
+    let revertWhyFailed = false;
+    try {
+      assert.notStrictEqual(data4.why, 'google_403', `상류 4xx 를 why 없이 넘겼다 (${JSON.stringify(data4)})`);
+    } catch (e) {
+      revertWhyFailed = true;
+    }
+    ok(revertWhyFailed === true, 'why 를 빼면 붉어진다 — 모름을 됨으로 넘기지 않는다 (되돌림 실증 1)');
+
+    // ② 4xx 에 재시도를 붙이면 붉어야 한다 (상류에 같은 요청을 퍼붓는다).
+    //    지금 1회라서 아래 단언이 던진다.
+    let revertRetryFailed = false;
+    try {
+      assert.notStrictEqual(mockUpstreamCount, 1, `4xx 인데 상류를 ${mockUpstreamCount}번 불렀다`);
+    } catch (e) {
+      revertRetryFailed = true;
+    }
+    ok(revertRetryFailed === true, '4xx 에 재시도를 붙이면 붉어진다 (되돌림 실증 2)');
+
     console.log(`\n전부 통과 (${passCount}건)`);
     process.exit(0);
   } finally {

@@ -107,6 +107,8 @@ function tryBlocks(body) {
   return body.match(/try\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}\s*catch/g) || [];
 }
 
+const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
+
 console.log('=== ⑨-1 되돌림 실증 점검 — 되돌림이 증거인지 센다 ===\n');
 
 const files = listFiles();
@@ -152,10 +154,65 @@ ok(claimedOnly.length === 0,
      ? '되돌림을 말만 하고 코드가 없는 파일 0건'
      : `말만 있는 되돌림: ${claimedOnly.join(', ')}`);
 
+/* ── [2-2] 래칫 — `npm test` 가 돌리는 시험은 되돌림을 **하나는** 가져야 한다 ──
+ *
+ * B-BACKLOG "모든 줄에 걸리는 조건": **시험 + 되돌림 1건 — 되돌려서 붉지 않으면 그 시험은
+ * 증거가 아니다.** 10-15 에 세어 보니 `npm test` 가 돌리는 40개 중 **16개가 되돌림 0** 이었다.
+ *
+ * 한 번에 다 채우면 급히 지어낸 되돌림이 또 빈 증거가 된다 — 그게 바로 이 줄의 사고였다.
+ * 그래서 **래칫**: 아래 목록에 적힌 것만 봐주고, **새로 만드는 시험은 반드시 하나 가져야 한다.**
+ * 목록은 줄기만 한다 — 빚을 갚으면 그 줄을 지운다(안 지우면 아래가 붉는다).
+ */
+console.log('\n[2-2] 래칫 — npm test 의 시험은 되돌림을 하나는 가져야 한다 (남은 빚은 목록으로)');
+
+/* 되돌림이 **아직** 없는 것 — 10-15 현재. 줄이기만 한다, 늘리지 않는다. */
+const REVERT_DEBT = [
+  'relay/test/desk-read.mjs',
+  'relay/test/desk-session.mjs',
+  'samples/host_view_test.js',
+  'samples/hwpx_test.js',
+  'samples/join_i18n_test.js',
+  'samples/lic_page_test.js',
+  'samples/report_common_test.js',
+  'samples/wire_script_test.js',
+];
+/* 되돌림이 **어울리지 않는** 것 — 까닭이 있어 면제. 이쪽은 빚이 아니다. */
+const REVERT_NA = {
+  'tools/check_links.js': '깨진 링크를 세는 도구다 — 깨진 링크를 넣으면 그대로 붉는다. 되돌림이 곧 본체',
+  'tools/i18n_check.js': '빠진 글자를 세는 도구다 — 같은 까닭',
+  'samples/match_test.js': '두 파일이 같은지만 본다 — 다르게 만들면 그대로 붉는다',
+  'samples/rtl_test.js': 'ok() 없이 전부 assert 로 짜였다 — 한 줄만 어겨도 그 자리에서 던진다',
+};
+
+{
+  const ranFiles2 = new Set();
+  for (const name of (pkg.scripts.test || '').match(/test:[a-z0-9-]+/g) || []) {
+    for (const m of (pkg.scripts[name] || '').matchAll(/([\w/.-]+\.(?:js|mjs|cjs))/g)) {
+      ranFiles2.add(m[1].replace(/^\.\//, ''));
+    }
+  }
+  const hasRevert = (rel) => {
+    const f = path.join(ROOT, rel);
+    return fs.existsSync(f) && /revert[A-Za-z]*Failed|되돌림 실증/.test(fs.readFileSync(f, 'utf-8'));
+  };
+  const missing = [...ranFiles2].sort().filter(
+    (rel) => fs.existsSync(path.join(ROOT, rel)) && !REVERT_DEBT.includes(rel) && !(rel in REVERT_NA) && !hasRevert(rel));
+  ok(missing.length === 0,
+     missing.length === 0
+       ? `되돌림을 가진 시험 ${ranFiles2.size - REVERT_DEBT.length - Object.keys(REVERT_NA).length}개 · 남은 빚 ${REVERT_DEBT.length}개 · 어울리지 않는 것 ${Object.keys(REVERT_NA).length}개`
+       : `되돌림 없이 npm test 에 들어온 시험: ${missing.join(', ')} — 하나 넣든가, 못 넣을 까닭을 REVERT_NA 에 적어라`);
+
+  /* 빚 목록이 썩지 않게 — 갚은 것은 목록에서 지워야 한다 */
+  const paid = REVERT_DEBT.filter(hasRevert);
+  ok(paid.length === 0,
+     paid.length === 0
+       ? '빚 목록에 **이미 갚은** 줄이 없다 (목록이 썩지 않았다)'
+       : `빚을 갚았으면 REVERT_DEBT 에서 지워라: ${paid.join(', ')}`);
+}
+
 /* ── [3] 되돌림이 있다고 적힌 시험은 npm test 가 돌려야 한다 ── */
 console.log('\n[3] 되돌림을 가진 시험이 npm test 밖에 있지 않은지');
 
-const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
 const testCmd = pkg.scripts.test || '';
 const ranScripts = (testCmd.match(/test:[a-z0-9-]+/g) || []);
 const ranFiles = new Set();

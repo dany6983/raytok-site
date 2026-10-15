@@ -84,6 +84,30 @@ const srv = http.createServer((req, res) => {
     await page.evaluate(() => window.rtQrSheetBuild());
     ok((await page.textContent('.cell .days')) === '기간 없음', '기간 0 → "기간 없음"');
 
+    // ── 되돌림 실증 2건 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+    // ⚠ 되돌림은 **이 시험이 실제로 읽은 값**으로 한다. 시험 안에서 만든 상수로 하면
+    //   제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+
+    // ① 읽을 수 없는 줄을 **조용히 버리면** 붉어야 한다 (버리면 단체가 코드 한 장을 잃는다).
+    //    지금 11줄 중 1줄이 bad 로 남아 아래 단언이 던진다.
+    let revertBadFailed = false;
+    try {
+      assert.strictEqual(r.bad, 0, `읽을 수 없는 줄을 조용히 버렸다 (total ${r.total} · good ${r.good})`);
+    } catch (e) {
+      revertBadFailed = true;
+    }
+    ok(revertBadFailed === true, '읽을 수 없는 줄을 버리면 붉어진다 (되돌림 실증 1)');
+
+    // ② 인쇄 도구가 바깥으로 나가면 붉어야 한다 (코드가 통째로 새는 길이다).
+    //    지금 페이지·qrcode.js 밖 요청이 0건이라 아래 단언이 던진다.
+    let revertNetFailed = false;
+    try {
+      assert.notStrictEqual(nonStatic.length, 0, `인쇄 도구가 바깥으로 나갔다 (${nonStatic.join(', ')})`);
+    } catch (e) {
+      revertNetFailed = true;
+    }
+    ok(revertNetFailed === true, '인쇄 도구가 서버를 부르면 붉어진다 (되돌림 실증 2)');
+
     console.log(`\n전부 통과 (${passCount}건)`);
   } finally {
     await browser.close();

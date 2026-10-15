@@ -230,6 +230,20 @@ function createSessionPayload(session) {
   const privacyHtml = fs.readFileSync(path.join(process.cwd(), 'web', 'privacy', 'index.html'), 'utf-8');
   ok(privacyHtml.includes('Desk 회의 기록') && privacyHtml.includes('기본 30일') && privacyHtml.includes('즉시 영구 삭제'), '처리방침에 30일 보관 및 즉시 영구 삭제권 명시 확인');
 
+
+  // ── 되돌림 실증 (B-BACKLOG 공통 조건) ──
+  // ⚠ 되돌림은 **실제로 읽은 파일 내용**으로 한다. 시험 안에서 만든 상수로 하면
+  //   문서를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+  // 처리방침에서 보관 기간·삭제권 약속이 빠지면 붉어야 한다. 지금 있어서 아래가 던진다.
+  let revertRetentionFailed = false;
+  try {
+    assert.ok(!privacyHtml.includes('기본 30일') || !privacyHtml.includes('즉시 영구 삭제'),
+              '처리방침에서 보관 기간 또는 즉시 삭제권이 빠졌다');
+  } catch (e) {
+    revertRetentionFailed = true;
+  }
+  ok(revertRetentionFailed === true, '처리방침에서 30일 보관·즉시 삭제권을 지우면 붉어진다 (되돌림 실증)');
+
   console.log(`\n전부 통과 (${passCount}건)`);
 })().catch(err => {
   console.error('\n[FAIL]', err);

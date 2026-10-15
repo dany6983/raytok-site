@@ -179,6 +179,19 @@ async function testLimitsBundle() {
   ok(excData.scope === 'translate_chars', 'scope translate_chars 일치');
   ok(excData.limit === 100, 'limit 100 일치');
 
+
+  // ── 되돌림 실증 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+  // ⚠ 되돌림은 **릴레이가 실제로 돌려준 답**으로 한다. 시험 안에서 만든 상수로 하면
+  //   릴레이를 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+  // 상한을 넘겼는데 막지 않으면 붉어야 한다. 지금 limit 100 이 실려 와 아래 단언이 던진다.
+  let revertCapFailed = false;
+  try {
+    assert.notStrictEqual(excData.limit, 100, `상한 초과 응답에 limit 이 실리지 않았다 (${JSON.stringify(excData)})`);
+  } catch (e) {
+    revertCapFailed = true;
+  }
+  ok(revertCapFailed === true, '상한 검사를 빼면 붉어진다 (되돌림 실증)');
+
   console.log(`\n전부 통과 (${passCount}건)`);
   globalThis.fetch = realFetch;
   process.exit(0);

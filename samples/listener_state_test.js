@@ -96,6 +96,31 @@ function openHost(base, room) {
     ok(endTxt === 'Phiên đã kết thúc', `[끝남] end 가 오면 → "${endTxt}"`);
 
     ok(outside.length === 0, `외부 요청 0건 (${outside.length})`);
+
+    // ── 되돌림 실증 2건 (B-BACKLOG "모든 줄에 걸리는 조건: 시험 + 되돌림 1건") ──
+    // ⚠ 되돌림은 **이 시험이 실제로 읽은 값**으로 한다. 시험 안에서 만든 상수로 하면
+    //   제품을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검).
+
+    // ① 띠 글자가 **한국어로 굳으면** 붉어야 한다 — 손님은 자기 언어로 본다(§18).
+    //    지금 vi 청취자가 베트남어 끝남 문구를 봐서 아래 단언이 던진다.
+    let revertLangFailed = false;
+    try {
+      assert.strictEqual(endTxt, '세션이 종료되었습니다', `vi 청취자에게 한국어 띠가 떴다 (실제: "${endTxt}")`);
+    } catch (e) {
+      revertLangFailed = true;
+    }
+    ok(revertLangFailed === true, '띠 글자를 한국어로 굳히면 붉어진다 (되돌림 실증 1)');
+
+    // ② 청취 페이지가 바깥으로 나가면 붉어야 한다 (P-16 ① — 번역을 청하지 않는다).
+    //    지금 0건이라 아래 단언이 던진다.
+    let revertNetFailed = false;
+    try {
+      assert.notStrictEqual(outside.length, 0, `청취 페이지가 바깥으로 나갔다 (${outside.join(', ')})`);
+    } catch (e) {
+      revertNetFailed = true;
+    }
+    ok(revertNetFailed === true, '청취 페이지가 바깥을 부르면 붉어진다 (되돌림 실증 2 · P-16 ①)');
+
     try { host1.close(); host2.close(); } catch (_) {}
     console.log(`\n전부 통과 (${passCount}건)`);
   } finally {
