@@ -1335,13 +1335,28 @@
         if (btnAsk) {
           if (myItem) {
             myAskId = myItem.id;
-            btnAsk.textContent = `✋ 대기 ${myItem.seq}번`;
+            btnAsk.textContent = `${t('btn_ask_waiting', currentUiLang) || '✋ 대기'} #${myItem.seq}`;
           } else if (!currentActiveAskId) {
             btnAsk.textContent = t('btn_ask', currentUiLang) || '✋ 질문';
           }
         }
         return;
       }
+      /* 7번 — 강사가 **나를** 지명했다: 마이크를 켠다 (MASTER 10-13 22:41).
+         grant 는 방 전체에 간다. 그래서 **내 요청일 때만** 켠다 — 남이 지명됐는데
+         내 마이크가 열리면 그 폰의 소리가 인식 서버로 나간다.
+         인식이 없는 브라우저(아이폰 사파리 일부)는 글자 입력 칸으로 대신한다.
+         보내는 것은 **원문+언어만** — 청취 페이지는 번역하지 않는다 (P-14). */
+      if (msg.kind === 'grant' || msg.kind === 'ask_grant') {
+        currentActiveAskId = msg.id;
+        if (myAskId && msg.id === myAskId) {
+          const btnAskG = document.getElementById('btn-ask');
+          if (btnAskG) btnAskG.textContent = t('btn_ask_speaking', currentUiLang) || '🎤 발언 중';
+          startListenerMicQuestion(msg.id, msg.seq);
+        }
+        return;
+      }
+
       if (msg.kind === 'question' || msg.kind === 'ask_active') {
         currentActiveAskId = msg.id;
         const line = {
@@ -1360,14 +1375,14 @@
         addLine(line);
         const btnAsk = document.getElementById('btn-ask');
         if (btnAsk && myAskId === msg.id) {
-          btnAsk.textContent = '✋ 발언 중';
+          btnAsk.textContent = t('btn_ask_speaking', currentUiLang) || '🎤 발언 중';
         }
         if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
         return;
       }
       if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
         if (currentActiveAskId === msg.id) currentActiveAskId = null;
-        if (myAskId === msg.id) myAskId = null;
+        if (myAskId === msg.id) { myAskId = null; stopListenerMicQuestion(); }   // 7번 — 회수되면 마이크를 끈다
         const btnAsk = document.getElementById('btn-ask');
         if (btnAsk) btnAsk.textContent = t('btn_ask', currentUiLang) || '✋ 질문';
         return;
