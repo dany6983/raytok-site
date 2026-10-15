@@ -2,6 +2,7 @@
 // 실행: node samples/question_test.js
 const fs = require('fs');
 const path = require('path');
+const ROOT = path.join(__dirname, '..');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { createMockRelay } = require('./mock_relay');
@@ -174,7 +175,12 @@ const outsideRequests = [];
     ok(hasQuestion, '다른 청취자(Somchai)에게도 지명된 질문 본문 표출 확인');
 
     const lis1BtnText = await lis1Page.textContent('#btn-ask');
-    ok(lis1BtnText.includes('발언 중'), '지명된 청취자 1의 단추가 "발언 중"으로 변경 확인');
+    /* 10-15: 이 글자는 한국어로 박혀 있었다 — 손님 화면이라 사전으로 옮겼다(§18).
+       청취자 1 은 vi 이므로 **베트남어**로 떠야 한다. 사전에서 꺼내 맞춘다. */
+    const dict = JSON.parse(fs.readFileSync(path.join(ROOT, 'web', 'listener', 'ui-strings.json'), 'utf-8'));
+    const speakingVi = dict.strings.btn_ask_speaking.vi;
+    ok(lis1BtnText.includes(speakingVi),
+       `지명된 청취자 1(vi)의 단추가 그 언어로 바뀐다 ("${lis1BtnText.trim()}" ⊃ "${speakingVi}")`);
 
     // ── 9. 강사 [끝내기] 클릭으로 회수 (B-4, B-5) ──
     await hostPage.click('#btnAskEnd');
