@@ -24,8 +24,11 @@
  * 토큰·코드는 화면에 **가려서** 찍는다(앞 6글자만). 저장소에 남기지 않는다.
  */
 import assert from 'node:assert/strict';
-import WebSocket from 'ws';
 import { mintCode, privateKeyFromSeed, testSeed, FLAG, TEST_KEY_ID } from '../relay/tools/mint-code.mjs';
+
+/* WebSocket 은 Node 22 의 **내장**을 쓴다 — `ws` 를 import 하면 대표님 PC 에서 `npm ci`
+   가 먼저 필요해지고, 그러면 "한 줄" 이 아니다. 내장이 없는 낡은 Node 면 그렇다고 말하고 멈춘다. */
+const WebSocket = globalThis.WebSocket;
 
 const BASE = (process.env.RELAY_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
 const WS_BASE = BASE.replace(/^http/, 'ws');
@@ -43,14 +46,18 @@ function step(n, what, okFlag, detail) {
 async function body(res) {
   try { return await res.json(); } catch (_) { return null; }
 }
+/* 내장 WebSocket 은 **브라우저 모양**이다 — addEventListener·ev.data 를 쓴다.
+   `ws` 모듈의 .on('message', buf) 와 다르니 읽는 쪽을 여기 한 곳에서 맞춘다(§4). */
 function openWs(url, tag) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(url);
     ws.got = [];
-    ws.on('message', (d) => { try { ws.got.push(JSON.parse(String(d))); } catch (_) { ws.got.push({ _raw: String(d) }); } });
-    ws.on('open', () => resolve(ws));
-    ws.on('error', (e) => reject(new Error(`${tag} ws: ${e.message}`)));
-    ws.on('unexpected-response', (_q, r) => reject(new Error(`${tag} ws ${r.statusCode}`)));
+    ws.addEventListener('message', (ev) => {
+      const raw = typeof ev.data === 'string' ? ev.data : String(ev.data);
+      try { ws.got.push(JSON.parse(raw)); } catch (_) { ws.got.push({ _raw: raw }); }
+    });
+    ws.addEventListener('open', () => resolve(ws));
+    ws.addEventListener('error', () => reject(new Error(`${tag} ws 를 열지 못했다 (주소·토큰·방 번호)`)));
   });
 }
 async function waitFor(pred, ms = 6000) {
@@ -61,6 +68,11 @@ async function waitFor(pred, ms = 6000) {
 
 (async () => {
   console.log(`=== 이용권 끝에서 끝 실측 — ${BASE} ===\n`);
+  if (typeof WebSocket !== 'function') {
+    console.error(`이 Node 에는 내장 WebSocket 이 없다 (${process.version}). Node 22 이상으로 돌리거나`);
+    console.error('이 저장소에서 `npm ci` 를 한 번 하고 다시 돌려 주세요.');
+    process.exit(1);
+  }
   const device = 'e2e_' + Math.random().toString(36).slice(2, 10);
 
   // ① 코드 발급 — 키 0 시험 씨앗(공개값), 0x01 호스트, 1일
