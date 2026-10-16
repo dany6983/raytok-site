@@ -1457,3 +1457,6 @@ B-1(`ef77662`)·B-2(`8ce3a70`)·B-3(`493da37`) 과 청취 글자 81언어(`f8a39
 그 뒤: 20문장 ⓑ basic 칸 채우기(앱 `docs/eval/zh-ko-20.md` 의 20문장을 운영 `/translate` basic 으로 — 0x10 시험 토큰은 `LIC_TEST_SEED` 길로) · ⓒ pro 는 LLM 키 넣은 뒤.
 
 ## 2026-10-16 17:55 — ★ [B] 빈 손이면 `node scripts/mailwait.js` 반복 (대표님 17:44 "5분마다 메일박스"). exit 2 면 git pull → MASTER 다시. 창 닫고 기다리는 것은 없는 것. 13:40 셋 끝나면 → `/download` LANG-82 (https://expo.dev/artifacts/eas/pacxl_blZxXPT9lhBCvlmJBmksmOPiGKxod6sOzPqrQ.apk) → 20문장 ⓑ basic 칸.
+
+## 2026-10-16 19:58 — [열림] B 11 — `/web/host/` 시험용 강사 토큰
+대표님이 오늘 웹 강사 화면을 보시려는데 **토큰이 없다.** 발급 길 하나: 릴레이 개발자 전용 `/dev/host-token`(기존 관리 비밀값으로 보호, **24시간 만료, 0x04 만**), 또는 이미 있는 발급 스크립트가 있으면 그것. 산출: REPORT 에 "대표님이 치는 한 줄"(비밀값은 자리만). 13:40 ① 의 "PC 에서 돌리는 한 줄"도 같이.
