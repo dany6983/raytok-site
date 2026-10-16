@@ -1449,3 +1449,9 @@ B-1(`ef77662`)·B-2(`8ce3a70`)·B-3(`493da37`) 과 청취 글자 81언어(`f8a39
 ## 2026-10-15 17:45 — [열림] B 10 **`/translate` 프로(LLM) 엔진** — 설계는 app `docs/MASTER.md` 10-15 17:45 [열림] 27 의 [B] 1~6 그대로. 순서: B 9 뒤. 키는 secret 만(`LLM_API_KEY`), 일일 상한 변수, 상한·느림·숫자 바뀜은 basic 으로. [B]
 
 ## 2026-10-15 19:00 — [B] 순서 그대로(REPORT 정리 → B 9 → B 10 → 7 → 8). `raytok.kr/download` 시험 빌드 = **LANG-80** (https://expo.dev/artifacts/eas/AUq5NDQguMqruAcOkVFhAOTAiuP2ZAvJPkANJzxo3Jg.apk). 확인 하나: 웹 청취 페이지가 `att` 로 자기 언어를 릴레이에 올리는가(`room.js:107`) — REPORT 에 한 줄. 끝나면 보고 → MASTER 5분마다 확인.
+
+## 2026-10-16 13:40 — ★ 릴레이 **배포됨**(대표님 11:53 KST, deployment 0d2b7fbc) → [B] 다음 셋 [B]
+1. **이용권 끝에서 끝 실측** — 배포된 릴레이로: `mint-code.mjs --days 1` 발급 → `/license/issue` → 토큰에 0x01 → `POST /room {kind:'guide'}` 200 → 청취 `/join?room=` 글자 수신 → `/translate` 0x10 없는 토큰 403. `e2e-room.mjs` 를 **운영 주소**로 한 번(비밀은 secret 에만, 로컬엔 없음 — 읽기만 하는 호출). 결과 표를 REPORT 에. 실패하면 어느 단계인지 한 줄 + 그 응답 본문(토큰 가림).
+2. **KCP 상수 전환 준비** — `buy/index.html` 의 `STORE_ID`·`CHANNEL_KEY` 를 **환경 하나로** 모아(`buy/pg.js` 같은 자리) 운영값을 넣는 순간 끝나게. 값은 **대표님이 포트원 콘솔 → KCP 채널에서 복사**해 주셔야 한다 — MASTER 에 값을 적지 않는다. 받기 전엔 테스트 상수 그대로. `docs/pg-switchover.md` 갱신.
+3. **download 를 LANG-81** 로 (`https://expo.dev/artifacts/eas/diMlv_aFc4HnC9qYpwqbF_V6oC8jvF5P8BvhkEA-E5Q.apk`). stable 은 74 그대로.
+그 뒤: 20문장 ⓑ basic 칸 채우기(앱 `docs/eval/zh-ko-20.md` 의 20문장을 운영 `/translate` basic 으로 — 0x10 시험 토큰은 `LIC_TEST_SEED` 길로) · ⓒ pro 는 LLM 키 넣은 뒤.
