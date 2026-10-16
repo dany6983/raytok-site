@@ -44,9 +44,21 @@ const shape = (s) => ({
   emo: (s.match(EMO) || [''])[0].replace(/\uFE0F/g, ''),
   txt: /\(TXT\)/.test(s), six: /6/.test(s), colon: /[:：៖]\s*$/.test(s),
 });
+/* ★ 79언어를 기다리는 키 — **ko·en 만** 들어온 자리 (마스터 2026-10-16 21:35 ⓐ).
+ *
+ * B 12 에서 청취 화면의 손님 글자 **열 곳**이 사전을 아예 안 거치는 것을 찾았다 — 그래서
+ * 영어뿐 아니라 **81개 언어 전부에서 한국어**로 나왔다. B 가 ko·en 을 넣고 마크업까지 이었고,
+ * 나머지 79언어는 **A2 몫**이다(앱 MASTER). 제가 지어내면 "다 찼다"로 보이는 가짜가 된다(D-11).
+ *
+ * 이 목록은 **비어야 맞다.** A2 커밋이 오면 그 키를 여기서 지운다 — 안 지우면 아래 ⑥ 이 붉다.
+ */
+const AWAIT_A2 = ['foot_privacy', 'foot_terms', 'save_title', 'save_content',
+                  'save_both', 'save_src', 'save_trans', 'save_format', 'save_do', 'save_close'];
+
 const allKeys = Object.keys(dict.strings);
+const fullKeys = allKeys.filter(k => !AWAIT_A2.includes(k));
 let bad = [];
-for (const k of allKeys) {
+for (const k of fullKeys) {
   const en = dict.strings[k].en; const se = shape(en);
   for (const l of dict.langs) {
     const v = dict.strings[k][l];
@@ -63,7 +75,26 @@ for (const k of allKeys) {
   }
 }
 ok(dict.langs.length >= 80, `사전 langs 가 ${dict.langs.length}개 (80 이상)`);
-ok(allKeys.length * dict.langs.length > 4000, `키 ${allKeys.length} × 언어 ${dict.langs.length} = ${allKeys.length * dict.langs.length} 칸이 다 찼다`);
+ok(fullKeys.length * dict.langs.length > 4000, `키 ${fullKeys.length} × 언어 ${dict.langs.length} = ${fullKeys.length * dict.langs.length} 칸이 다 찼다`);
+
+/* ── ⑥ 예외 목록이 썩지 않게 ──
+   ⓐ 목록에 적힌 키는 ko·en 이 **반드시** 있어야 한다(그래야 영어 폰이 한국어를 안 본다).
+   ⓑ 81언어가 다 찬 키가 목록에 남아 있으면 붉다 — A2 가 채웠는데 안 지운 것이다.
+   ⓒ 목록이 비면 이 줄들은 저절로 통과한다 = 다 끝났다는 뜻. */
+for (const k of AWAIT_A2) {
+  const item = dict.strings[k];
+  ok(item && item.ko && item.en, `${k}: 79언어를 기다리는 동안에도 ko·en 은 있다`);
+}
+const paid = AWAIT_A2.filter(k => {
+  const item = dict.strings[k] || {};
+  return want.every(l => item[l] && String(item[l]).trim());
+});
+ok(paid.length === 0,
+   paid.length === 0
+     ? `79언어 대기 ${AWAIT_A2.length}개 (A2 몫) · 이미 찬 것 0`
+     : `A2 가 채웠으면 AWAIT_A2 에서 지워라: ${paid.join(', ')}`);
+ok(AWAIT_A2.every(k => html.includes(`data-i18n="${k}"`)),
+   '대기 중인 키도 **마크업에 이어져 있다** — 사전에만 있고 화면이 안 쓰면 아무 뜻이 없다');
 ok(bad.length === 0, '모양 검사(빈칸·꺾쇠·자리표·따옴표·앞뒤 빈칸·머리 기호·(TXT)·6·콜론) 0건' + (bad.length ? '\n    ' + bad.slice(0, 20).join('\n    ') : ''));
 // 되돌림 실증: 끝 빈칸을 지운 값은 걸린다
 ok(shape('Connection rejected:').trail !== shape(dict.strings.alert_rejected.en).trail, '되돌림 실증: alert_rejected 의 끝 빈칸을 지우면 모양 검사가 붉다');

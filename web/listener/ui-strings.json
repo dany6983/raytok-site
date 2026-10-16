@@ -5395,6 +5395,46 @@
       "yo": "🎤 Ń sọ̀rọ̀",
       "ig": "🎤 Na-ekwu okwu",
       "ha": "🎤 Yana magana"
+    },
+    "foot_privacy": {
+      "ko": "개인정보 처리방침",
+      "en": "Privacy policy"
+    },
+    "foot_terms": {
+      "ko": "이용약관",
+      "en": "Terms of use"
+    },
+    "save_title": {
+      "ko": "기록 저장",
+      "en": "Save transcript"
+    },
+    "save_content": {
+      "ko": "내용",
+      "en": "Contents"
+    },
+    "save_both": {
+      "ko": "① 원문/번역문",
+      "en": "① Original + translation"
+    },
+    "save_src": {
+      "ko": "② 원문만",
+      "en": "② Original only"
+    },
+    "save_trans": {
+      "ko": "③ 번역문만",
+      "en": "③ Translation only"
+    },
+    "save_format": {
+      "ko": "형식",
+      "en": "Format"
+    },
+    "save_do": {
+      "ko": "저장",
+      "en": "Save"
+    },
+    "save_close": {
+      "ko": "닫기",
+      "en": "Close"
     }
   }
 }

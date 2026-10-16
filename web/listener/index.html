@@ -299,7 +299,7 @@
       <button class="btn" id="btn-join" data-i18n="join_button">참여하기</button>
     </div>
     <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 12px; line-height: 1.4;">
-      v<span id="ver-text">1.1.4</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;">이용약관</a><br>
+      v<span id="ver-text">1.1.4</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_privacy">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_terms">이용약관</a><br>
       주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:raytok.dany@gmail.com" style="color: var(--text-muted); text-decoration: none;">raytok.dany@gmail.com</a>
     </div>
   </div>
@@ -348,21 +348,21 @@
   <!-- 기록 저장 내용 x 형식 선택판 모달 (L2) -->
   <div id="save-picker-modal" style="display:none; position:fixed; bottom:70px; right:16px; z-index:60; width:260px; background:var(--card-bg, #fff); border:1px solid #cbd5e1; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25); text-align:left;">
     <div>
-      <div style="font-weight:bold; font-size:16px; margin-bottom:14px; color:var(--text, #1e293b);">기록 저장</div>
+      <div style="font-weight:bold; font-size:16px; margin-bottom:14px; color:var(--text, #1e293b);" data-i18n="save_title">기록 저장</div>
       <div style="margin-bottom:14px;">
-        <div style="font-size:12px; font-weight:600; color:var(--text-muted, #64748b); margin-bottom:8px;">내용</div>
+        <div style="font-size:12px; font-weight:600; color:var(--text-muted, #64748b); margin-bottom:8px;" data-i18n="save_content">내용</div>
         <label style="display:block; margin-bottom:6px; font-size:13px; cursor:pointer; color:var(--text, #1e293b);">
-          <input type="radio" name="save-content-mode" value="both" checked> ① 원문/번역문
+          <input type="radio" name="save-content-mode" value="both" checked> <span data-i18n="save_both">① 원문/번역문</span>
         </label>
         <label style="display:block; margin-bottom:6px; font-size:13px; cursor:pointer; color:var(--text, #1e293b);">
-          <input type="radio" name="save-content-mode" value="src"> ② 원문만
+          <input type="radio" name="save-content-mode" value="src"> <span data-i18n="save_src">② 원문만</span>
         </label>
         <label style="display:block; margin-bottom:6px; font-size:13px; cursor:pointer; color:var(--text, #1e293b);">
-          <input type="radio" name="save-content-mode" value="trans"> ③ 번역문만
+          <input type="radio" name="save-content-mode" value="trans"> <span data-i18n="save_trans">③ 번역문만</span>
         </label>
       </div>
       <div style="margin-bottom:18px;">
-        <div style="font-size:12px; font-weight:600; color:var(--text-muted, #64748b); margin-bottom:8px;">형식</div>
+        <div style="font-size:12px; font-weight:600; color:var(--text-muted, #64748b); margin-bottom:8px;" data-i18n="save_format">형식</div>
         <div style="display:flex; gap:14px; font-size:13px; color:var(--text, #1e293b);">
           <label style="cursor:pointer;"><input type="radio" name="save-format" value="txt" checked> TXT</label>
           <label style="cursor:pointer;"><input type="radio" name="save-format" value="pdf"> PDF</label>
@@ -370,8 +370,8 @@
         </div>
       </div>
       <div style="display:flex; gap:8px;">
-        <button class="btn" id="btn-save-execute" style="flex:1; margin:0; background:var(--primary, #0284c7); color:#fff; border:none; padding:8px 0; border-radius:6px; font-weight:600; cursor:pointer;">저장</button>
-        <button class="btn" id="btn-save-close" style="flex:1; margin:0; background:none; border:1px solid #cbd5e1; color:#64748b; padding:8px 0; border-radius:6px; cursor:pointer;">닫기</button>
+        <button class="btn" id="btn-save-execute" style="flex:1; margin:0; background:var(--primary, #0284c7); color:#fff; border:none; padding:8px 0; border-radius:6px; font-weight:600; cursor:pointer;" data-i18n="save_do">저장</button>
+        <button class="btn" id="btn-save-close" style="flex:1; margin:0; background:none; border:1px solid #cbd5e1; color:#64748b; padding:8px 0; border-radius:6px; cursor:pointer;" data-i18n="save_close">닫기</button>
       </div>
     </div>
   </div>
