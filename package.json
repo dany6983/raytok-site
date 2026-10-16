@@ -35,6 +35,7 @@
     "mail": "node scripts/mailcheck.js --force",
     "e2e:room": "node scripts/e2e-room.mjs",
     "e2e:license": "node scripts/prod-license-e2e.mjs",
+    "eval:basic": "node scripts/eval20-basic.mjs",
     "test:hwpx": "node samples/hwpx_test.js",
     "test:desk-view": "node samples/desk_view_test.js",
     "test:dual": "npm --prefix relay run test:dual",
