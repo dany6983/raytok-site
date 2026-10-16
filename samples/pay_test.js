@@ -1,5 +1,6 @@
 // 줄 18: 쿠폰 온라인 결제 P1 (포트원 V2 연동 및 0x01 관광권 발급) 검증 시험
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -206,7 +207,52 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     ok(!buyHtml.includes('준비 중입니다') && !buyHtml.includes('not yet accepted'), '13:20 ①: "준비 중" 글자가 페이지에 없다');
     const btnDisabled = await page.evaluate(() => document.getElementById('btn-pay').disabled);
     ok(btnDisabled === false, '13:20 ①: 결제 단추 활성 (테스트 키여도 결제창이 뜬다)');
-    ok(buyHtml.includes("const STORE_ID = '") && buyHtml.includes("const CHANNEL_KEY = '"), '13:20 ①: 실키 전환 자리 STORE_ID·CHANNEL_KEY 두 상수 유지');
+    // 마스터 10-16 13:40 ②: 실키 전환 자리는 **buy/pg.js 한 파일**이다.
+    // 전에는 buy/index.html 안에 박혀 있었고 같은 값을 읽는 곳이 넷이었다(§4) —
+    // 전환하는 사람이 하나를 빠뜨리면 **테스트 채널로 실결제를 받는다.**
+    const pgSrc = fs.readFileSync(path.join(ROOT, 'buy', 'pg.js'), 'utf-8');
+    ok(/storeId:\s*'/.test(pgSrc) && /channelKey:\s*'/.test(pgSrc),
+       '13:40 ②: buy/pg.js 에 storeId·channelKey 두 칸이 있다 (전환은 이 파일만)');
+    ok(!/const STORE_ID\s*=\s*'store/.test(buyHtml) && !/const CHANNEL_KEY\s*=\s*'channel/.test(buyHtml),
+       '13:40 ②: 값을 **만드는 곳**이 buy/index.html 에 남아 있지 않다 (두 곳에서 만들면 한쪽만 바뀐다)');
+    ok(buyHtml.includes('pg.js'), '13:40 ②: 구매 화면이 pg.js 를 싣는다');
+    ok(/window\.rtPG/.test(buyHtml), '13:40 ②: 구매 화면은 그 한 자리에서 **읽기만** 한다');
+
+    // 저장소에는 테스트 값만 둔다 — 운영값은 대표님이 포트원 콘솔에서 복사해 넣는다
+    const pgMod = createRequire(import.meta.url)(path.join(ROOT, 'buy', 'pg.js'));
+    ok(pgMod.isTest === true, `13:40 ②: 지금은 테스트 채널이다 (storeId=${pgMod.storeId})`);
+    ok(pgMod.provider === 'kcp', `13:40 ②: 채널은 KCP 라고 적혀 있다 (${pgMod.provider})`);
+    ok(pgMod.ready() === true, '13:40 ②: 두 값이 다 채워져 있다 (빈 값이면 결제창을 열지 않는다)');
+
+    // isTest 는 **값에서** 갈린다 — 사람이 켜고 끄는 깃발이 아니다
+    ok(!/isTest\s*[:=]\s*(true|false)\b/.test(pgSrc),
+       '13:40 ②: isTest 를 손으로 박아 두지 않았다 — 값에서 갈린다 (깃발과 값이 어긋나면 사고다)');
+
+    // §20 빈 답은 없음이 아니다 — pg.js 가 **실제로 안 실린** 쪽을 본다.
+    // (전에 이 자리를 window.rtPG 를 지우는 식으로 썼는데, 페이지는 불릴 때 이미 값을
+    //  const 로 잡아 두므로 늘 통과하는 **빈 증거**였다. 파일 자체를 막아야 증거가 된다.)
+    const noPgPage = await browser.newPage();
+    const noPgDialogs = [];   // 이 화면은 alert() 로 알린다 — 그 글을 잡는다
+    noPgPage.on('dialog', async d => { noPgDialogs.push(d.message()); await d.dismiss(); });
+    await noPgPage.route('**/buy/pg.js', route => route.abort());
+    let portoneCalls = 0;
+    await noPgPage.route('https://cdn.portone.io/**', route => {
+      route.fulfill({
+        status: 200, contentType: 'application/javascript',
+        body: 'window.PortOne = { requestPayment: async (p) => { window.__poCalled = (window.__poCalled||0)+1; return { code: 0, paymentId: p.paymentId }; } };'
+      });
+    });
+    await noPgPage.goto(`${baseUrl}/buy/`);
+    ok(await noPgPage.evaluate(() => window.rtPG === undefined), '13:40 ②: pg.js 를 막은 쪽에서는 결제 상수가 없다');
+    await noPgPage.click('#btn-pay');
+    await noPgPage.waitForTimeout(500);
+    portoneCalls = await noPgPage.evaluate(() => window.__poCalled || 0);
+    ok(portoneCalls === 0, `13:40 ②: 결제 설정이 없으면 **포트원을 부르지 않는다** (부른 횟수 ${portoneCalls}, §20)`);
+    ok(noPgDialogs.some(m => /결제 설정/.test(m)),
+       `13:40 ②: 까닭을 손님에게 알린다 — 조용히 실패하지 않는다 (${JSON.stringify(noPgDialogs)})`);
+    const btnBack = await noPgPage.evaluate(() => document.getElementById('btn-pay').disabled);
+    ok(btnBack === false, '13:40 ②: 단추가 잠긴 채 남지 않는다 (D-32 반쯤 바꾼 화면)');
+    await noPgPage.close();
 
     // ② 홈 → /buy/ 링크 (메뉴·첫 화면) · /tour/ 링크 유지
     const homeHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf-8');
@@ -249,6 +295,20 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
       assert.notStrictEqual(strange.length, 0, `페이지에 허용 밖 숫자가 있다: ${strange.join(',')}`);
     } catch (e) { fakeNumFailed = true; }
     ok(fakeNumFailed === true, '13:20 ⑤: 허용 밖 숫자가 끼면 단언 실패 입증 (되돌림 실증)');
+
+    // ⑥ 되돌림 실증 — 상수를 buy/index.html 로 되돌리면 / 빈 값 문을 빼면 붉다 (13:40 ②)
+    let revertOneSpotFailed = false;
+    try {
+      assert.ok(/const STORE_ID\s*=\s*'store/.test(buyHtml),
+        `값을 만드는 곳이 buy/index.html 에 남아 있다`);
+    } catch (e) { revertOneSpotFailed = true; }
+    ok(revertOneSpotFailed === true, '13:40 ②: 상수를 구매 화면으로 되돌리면 붉어진다 (되돌림 실증)');
+
+    let revertGuardFailed = false;
+    try {
+      assert.notStrictEqual(portoneCalls, 0, `설정이 없는데 포트원을 ${portoneCalls}번 불렀다`);
+    } catch (e) { revertGuardFailed = true; }
+    ok(revertGuardFailed === true, '13:40 ②: 빈 값 문을 빼면 붉어진다 — 손님이 알 수 없는 오류를 본다 (되돌림 실증)');
 
 
     // 1) 상품 렌더링 확인
