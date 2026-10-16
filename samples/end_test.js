@@ -360,13 +360,17 @@ const ttsStub = () => {
     en.on('dialog', d => d.accept());
     await en.waitForSelector('#readyArea', { state: 'visible', timeout: 8000 });   // 같은 브라우저의 IndexedDB 원고가 되살아난다
     await en.click('#btnStartLecture');
-    await en.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 5000 });
+    // B 12: 이 화면은 ?lang=en 이다 — 상태 글도 표(HOST_STR.en)에서 나온다.
+    // 전에는 한국어가 박혀 있어 en 에서도 '연결됨' 이었고, 이 시험이 그 결함을 못박아 뒀다.
+    await en.waitForFunction(() => document.getElementById('liveStatus').textContent === HOST_STR.en.live_connected,
+                             null, { timeout: 5000 });
     const room2 = relay.rooms.get((await en.textContent('#roomCode')).trim());
     const D = await openListener({ room: room2.code, lang: 'en', name: 'Dana' });
     await join(D);
     await en.waitForFunction(() => Object.keys(live.roster).length === 1, null, { timeout: 5000 });
     for (const h of [...room2.hosts]) h.terminate();
-    await en.waitForFunction(() => document.getElementById('liveStatus').textContent.includes('다시 연결 중'), null, { timeout: 5000 });
+    await en.waitForFunction(() => document.getElementById('liveStatus').textContent === HOST_STR.en.live_reconnect,
+                             null, { timeout: 5000 });
     await en.click('#btnEnd');
     await en.click('#btnCloseRoom');
     const st = (await en.textContent('#endStatus')).trim();

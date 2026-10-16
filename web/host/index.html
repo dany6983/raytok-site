@@ -334,50 +334,48 @@
   <header>
     <div class="brand">
       <span>RayTok</span>
-      <span class="badge">웹 강사 화면 (사전 원고 번역)</span>
+      <span class="badge" data-t="hdr_title"></span>
     </div>
-    <div id="licenseInfo" style="font-size: 0.85rem; color: var(--text-muted);">
-      미인증
-    </div>
+    <div id="licenseInfo" style="font-size: 0.85rem; color: var(--text-muted);" data-t="auth_badge_unverified"></div>
   </header>
 
   <main>
     <!-- 1단계: 이용권 인증 (들어가기) -->
     <section id="step-auth" class="card">
-      <div class="card-title">강사 이용권 인증</div>
+      <div class="card-title" data-t="auth_title"></div>
       <div class="notice info">
-        원고 사전 번역 및 강의 진행을 위해 강사 이용권(Meet 또는 Desk 라이선스)이 필요합니다.<br>
-        인증된 정보는 브라우저에 안전하게 보관됩니다.
+        <span data-t="auth_desc"></span><br>
+        <span data-t="auth_keep"></span>
       </div>
       <div class="form-group">
-        <label for="tokenInput">이용권 코드</label>
+        <label for="tokenInput" data-t="auth_label"></label>
         <input type="text" id="tokenInput" placeholder="이용권 토큰을 입력하세요" autocomplete="off">
       </div>
       <div style="display: flex; gap: 10px; align-items: center;">
-        <button id="btnVerifyToken" class="btn">인증하고 들어가기</button>
-        <a href="https://raytok.kr/download/" target="_blank" style="color: #38bdf8; font-size: 0.85rem; text-decoration: none;">이용권 발급 문의 →</a>
+        <button id="btnVerifyToken" class="btn" data-t="auth_btn"></button>
+        <a href="https://raytok.kr/download/" target="_blank" style="color: #38bdf8; font-size: 0.85rem; text-decoration: none;" data-t="auth_ask"></a>
       </div>
       <div id="authError" style="margin-top: 10px; color: var(--danger); font-size: 0.85rem; display: none;"></div>
     </section>
 
     <!-- 2단계: 원고 업로드 및 사전 번역 준비 -->
     <section id="step-prepare" class="card" style="display: none;">
-      <div class="card-title">강의 원고 준비 및 사전 번역</div>
+      <div class="card-title" data-t="prep_title"></div>
       
       <!-- ① 파일 올리기 -->
       <div class="form-group">
-        <label>① 원고 파일 올리기 (TXT · PDF · DOCX · HWPX)</label>
+        <label data-t="prep_step1"></label>
         <div class="drop-zone" id="dropZone">
           <div class="drop-icon">📄</div>
-          <div style="font-weight: 600; margin-bottom: 4px;">강의 원고 파일(TXT · PDF · DOCX)을 마우스로 끌어다 놓으세요</div>
-          <div style="font-size: 0.8rem; color: var(--text-muted);">또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)</div>
+          <div style="font-weight: 600; margin-bottom: 4px;" data-t="prep_drop"></div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);" data-t="prep_drop_sub"></div>
           <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.doc,.hwpx,.hwp" style="display: none;">
         </div>
       </div>
 
       <!-- ② 청취자 지원 언어 선택 -->
       <div class="form-group" id="langChipsGroup">
-        <label>② 번역할 청취 언어 선택 (여럿 가능)</label>
+        <label data-t="prep_step2"></label>
         <div class="lang-chips" id="langChips">
           <!-- 동적 생성 -->
         </div>
@@ -412,13 +410,11 @@
       <!-- ③ 문단 미리보기 및 편집 -->
       <div class="form-group">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <label style="margin: 0;">③ 문단 나눔 미리보기 (<span id="paraCount">0</span>개 문단)</label>
-          <button id="btnResetParas" class="btn-action">원고 초기화</button>
+          <label style="margin: 0;"><span data-t="prep_step3a"></span><span id="paraCount">0</span><span data-t="prep_step3b"></span></label>
+          <button id="btnResetParas" class="btn-action" data-t="prep_reset"></button>
         </div>
         <div id="paraList" style="max-height: 380px; overflow-y: auto; padding-right: 4px;">
-          <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;">
-            원고 파일을 올리면 문단이 자동으로 나뉘어 표시됩니다.
-          </div>
+          <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;" data-t="prep_empty"></div>
         </div>
       </div>
 
@@ -426,17 +422,15 @@
       <div class="form-group" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 18px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <div style="font-weight: 600; font-size: 0.95rem;">미리 번역 실행 (릴레이 경유)</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">
-              선택한 언어로 모든 문단을 미리 번역하여 브라우저 IndexedDB에 저장합니다.
-            </div>
+            <div style="font-weight: 600; font-size: 0.95rem;" data-t="prep_pre_title"></div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);" data-t="prep_pre_desc"></div>
           </div>
-          <button id="btnPreTranslate" class="btn" disabled>🌐 사전 번역 시작</button>
+          <button id="btnPreTranslate" class="btn" disabled data-t="prep_pre_btn"></button>
         </div>
 
         <div id="transProgressArea" style="display: none; margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-            <span id="transProgressText">번역 진행 중...</span>
+            <span id="transProgressText" data-t="prep_progress"></span>
             <span id="transProgressPercent">0%</span>
           </div>
           <div class="progress-bar">
@@ -447,29 +441,27 @@
 
       <!-- 완료 및 다음 단계 안내 -->
       <div id="readyArea" style="display: none; margin-top: 18px; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 6px;">
-        <div style="color: #6ee7b7; font-weight: 600; margin-bottom: 6px;">✓ 사전 번역이 완료되었습니다!</div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          원고 및 번역문이 로컬 IndexedDB에 저장되었습니다. 이제 강의를 개설하고 문단을 송출할 수 있습니다.
-        </div>
-        <button id="btnStartLecture" class="btn success">강의 시작하기</button>
+        <div style="color: #6ee7b7; font-weight: 600; margin-bottom: 6px;" data-t="prep_done"></div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;" data-t="prep_done_desc"></div>
+        <button id="btnStartLecture" class="btn success" data-t="prep_start"></button>
         <div id="liveError" style="margin-top: 10px; color: var(--danger); font-size: 0.85rem; display: none;"></div>
       </div>
     </section>
 
     <!-- 3단계: 진행 (L4-2) — 문단 넘기기 · QR · 참석 수 -->
     <section id="step-live" class="card" style="display: none;">
-      <div class="card-title">강의 진행 <span id="liveProgress" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></span></div>
-      <div id="breakBand" class="break-band">⏸ 쉬는 시간</div>
+      <div class="card-title"><span data-t="live_title"></span> <span id="liveProgress" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></span></div>
+      <div id="breakBand" class="break-band" data-t="live_break_badge"></div>
       <div class="live-grid">
         <div>
           <div id="liveParaList" class="live-list"></div>
           <div class="live-controls">
-            <button id="btnPrev" class="btn secondary" title="← 키">◀ 이전</button>
-            <button id="btnNext" class="btn" title="→ 또는 스페이스 키">다음 ▶</button>
-            <button id="btnSkip" class="btn secondary">건너뜀</button>
-            <button id="btnBreak" class="btn warn">쉬는 시간</button>
+            <button id="btnPrev" class="btn secondary" title="← 키" data-t="live_prev"></button>
+            <button id="btnNext" class="btn" title="→ 또는 스페이스 키" data-t="live_next"></button>
+            <button id="btnSkip" class="btn secondary" data-t="live_skip"></button>
+            <button id="btnBreak" class="btn warn" data-t="live_break"></button>
             <button id="btnEnd" class="btn secondary" data-t="btn_end"></button>
-            <span id="liveStatus" class="live-status">연결 중…</span>
+            <span id="liveStatus" class="live-status" data-t="live_connecting"></span>
           </div>
 
           <!-- B 9 실시간 말하기 — 원고 모드와 **같은 방**에서 섞어 쓴다 (MASTER 10-14 22:55 ①) -->
@@ -478,29 +470,27 @@
             <span id="micStatus" class="live-status" data-t="mic_idle"></span>
           </div>
           <div class="notice info" id="micOffNote" style="display: none; margin-top: 12px; margin-bottom: 0;"></div>
-          <div class="notice info" style="margin-top: 14px; margin-bottom: 0;">
-            키보드: → 또는 스페이스 = 다음, ← = 이전. 넘길 때 미리 번역해 둔 문단만 보냅니다 — 번역이 없는 언어의 청취자는 원문을 봅니다.
-          </div>
+          <div class="notice info" style="margin-top: 14px; margin-bottom: 0;" data-t="live_keys"></div>
         </div>
         <div class="live-side">
           <div class="qr-box" id="qrBox"></div>
           <div class="room-code" id="roomCode">------</div>
           <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; overflow-wrap: anywhere;" id="joinUrl"></div>
           <div class="att-box">
-            <div style="color: var(--text-muted);">참석</div>
-            <div><span class="att-now" id="attNow">0</span> <span style="color: var(--text-muted);">명 (최대 <span id="attMax">0</span>)</span></div>
+            <div style="color: var(--text-muted);" data-t="att_label"></div>
+            <div><span class="att-now" id="attNow">0</span> <span style="color: var(--text-muted);"><span data-t="att_unit"></span> <span id="attMax">0</span>)</span></div>
             <div class="att-langs" id="attLangs">—</div>
             <div id="batchStatsRow" style="font-size: 0.8rem; color: #38bdf8; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(148, 163, 184, 0.2); display: none;">
-              <span id="batchStatsText">오늘 0명 / 총 0명</span>
+              <span id="batchStatsText" data-t="batch_default"></span>
             </div>
             <!-- 산 코드 N개 또는 묶음 QR 보기 (08:25 7번: 가이드 화면에 코드마다 QR) -->
             <div id="hostLicenseQrArea" style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; text-align: center;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 0.8rem; font-weight: 600; color: #38bdf8;">손님 이용권 QR</span>
-                <button id="btnToggleLicQr" class="btn-action" style="font-size: 0.75rem;">QR 보기</button>
+                <span style="font-size: 0.8rem; font-weight: 600; color: #38bdf8;" data-t="qr_title"></span>
+                <button id="btnToggleLicQr" class="btn-action" style="font-size: 0.75rem;" data-t="live_qr_show"></button>
               </div>
               <div id="hostLicQrBox" style="display: none; background: #fff; padding: 8px; border-radius: 6px; margin: 8px auto; width: 180px; height: 180px; align-items: center; justify-content: center;"></div>
-              <div id="hostLicQrDesc" style="font-size: 0.75rem; color: var(--text-muted); display: none;">손님이 찍으면 즉시 이용권이 활성화됩니다.</div>
+              <div id="hostLicQrDesc" style="font-size: 0.75rem; color: var(--text-muted); display: none;" data-t="qr_desc"></div>
               <div id="hostLicNav" style="display: none; justify-content: center; gap: 8px; align-items: center; margin-top: 6px;">
                 <button id="btnLicPrev" class="btn-action">◀</button>
                 <span id="hostLicIndexText" style="font-size: 0.75rem; color: var(--text-muted);">1 / 1</span>
@@ -511,25 +501,23 @@
           <!-- 질문 대기열 및 지명 UI (N:1, question.md) -->
           <div class="ask-box" id="askBox" style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="font-weight: 600; font-size: 0.85rem;">질문 대기 (<span id="askQueueCount">0</span>)</span>
+              <span style="font-weight: 600; font-size: 0.85rem;"><span data-t="ask_queue_label"></span><span id="askQueueCount">0</span>)</span>
             </div>
             <!-- 활성 발언(답변) 영역 -->
             <div id="askActiveArea" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-weight: 600; font-size: 0.85rem; color: #38bdf8;" id="askActiveSpeaker">말하는 중</span>
+                <span style="font-weight: 600; font-size: 0.85rem; color: #38bdf8;" id="askActiveSpeaker" data-t="ask_speaking"></span>
                 <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
               <div style="display: flex; gap: 6px;">
-                <button id="btnAskEnd" class="btn secondary" style="flex: 1; min-height: 36px; padding: 6px;">끝내기</button>
-                <button id="btnAskSilent" class="btn" style="min-height: 36px; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;" title="발언자가 무음이거나 응답하지 않을 때 회수">무음</button>
+                <button id="btnAskEnd" class="btn secondary" style="flex: 1; min-height: 36px; padding: 6px;" data-t="btn_end"></button>
+                <button id="btnAskSilent" class="btn" style="min-height: 36px; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;" title="발언자가 무음이거나 응답하지 않을 때 회수" data-t="live_mute"></button>
               </div>
             </div>
             <!-- 대기열 목록 -->
             <div id="askQueueList" style="max-height: 180px; overflow-y: auto;">
-              <div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText">
-                대기 중인 질문이 없습니다.
-              </div>
+              <div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText" data-t="ask_empty"></div>
             </div>
           </div>
         </div>
@@ -583,25 +571,32 @@
 
   <footer style="margin-top: 36px; padding: 16px 0; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); text-align: center;">
     <div style="margin-bottom: 6px;">
-      <a href="/privacy/" style="color: var(--text-muted); text-decoration: none; margin-right: 14px;">개인정보 처리방침</a>
-      <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;">이용약관</a>
+      <a href="/privacy/" style="color: var(--text-muted); text-decoration: none; margin-right: 14px;" data-t="foot_privacy"></a>
+      <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;" data-t="foot_terms"></a>
     </div>
     <p style="margin: 0; font-size: 12px; color: var(--text-muted);">주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:raytok.dany@gmail.com" style="color: var(--text-muted);">raytok.dany@gmail.com</a></p>
   </footer>
 
   <script>
     // ── 상수 및 지원 언어 정의 ──
+    /* 언어 이름도 **손님이 보는 글자**다 (B 12). name=ko · name_en=en 두 칸을 두고
+       읽는 곳은 langName() 한 함수로 모은다 — 읽는 자리가 셋이었다(칩·고르기·리포트, §4). */
     const SUPPORTED_TARGET_LANGS = [
-      { code: 'en', name: '영어 (English)' },
-      { code: 'ja', name: '일본어 (日本語)' },
-      { code: 'zh', name: '중국어 (中文)' },
-      { code: 'vi', name: '베트남어 (Tiếng Việt)' },
-      { code: 'th', name: '태국어 (ไทย)' },
-      { code: 'id', name: '인도네시아어 (Bahasa Indonesia)' },
-      { code: 'ru', name: '러시아어 (Русский)' },
-      { code: 'mn', name: '몽골어 (Монгол)' },
-      { code: 'ar', name: '아랍어 (العربية)', rtl: true }   // rtl 은 리포트(PDF·DOC) 글 방향에 쓴다 — 표에서 읽는다
+      { code: 'en', name: '영어 (English)',              name_en: 'English' },
+      { code: 'ja', name: '일본어 (日本語)',               name_en: 'Japanese (日本語)' },
+      { code: 'zh', name: '중국어 (中文)',                name_en: 'Chinese (中文)' },
+      { code: 'vi', name: '베트남어 (Tiếng Việt)',         name_en: 'Vietnamese (Tiếng Việt)' },
+      { code: 'th', name: '태국어 (ไทย)',                 name_en: 'Thai (ไทย)' },
+      { code: 'id', name: '인도네시아어 (Bahasa Indonesia)', name_en: 'Indonesian (Bahasa Indonesia)' },
+      { code: 'ru', name: '러시아어 (Русский)',            name_en: 'Russian (Русский)' },
+      { code: 'mn', name: '몽골어 (Монгол)',              name_en: 'Mongolian (Монгол)' },
+      { code: 'ar', name: '아랍어 (العربية)', rtl: true,    name_en: 'Arabic (العربية)' }   // rtl 은 리포트(PDF·DOC) 글 방향에 쓴다 — 표에서 읽는다
     ];
+    /** 화면 언어에 맞는 언어 이름 — 표에 en 이 없으면 ko 로 떨어진다(빈 칸이 영어 폰에 안 나오게) */
+    function langName(info, code) {
+      if (!info) return code || '';
+      return (UI_LANG === 'en' && info.name_en) || info.name;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const RELAY_BASE = (urlParams.get('relay') || 'https://raytok-relay.raytok.workers.dev').replace(/\/+$/, '');
@@ -679,7 +674,7 @@
 
     // ── 1. 이용권 검증 (들어가기) ──
     async function verifyHostToken(token) {
-      if (!token || !token.trim()) throw new Error('이용권 코드를 입력하세요.');
+      if (!token || !token.trim()) throw new Error(T('err_need_code'));
       
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 5000);
@@ -692,8 +687,8 @@
           signal: controller.signal
         });
       } catch (err) {
-        if (err.name === 'AbortError') throw new Error('서버 응답 시간 초과 (5초)');
-        throw new Error('서버에 닿지 않습니다: ' + err.message);
+        if (err.name === 'AbortError') throw new Error(T('err_timeout'));
+        throw new Error(T('err_unreachable') + err.message);
       } finally {
         clearTimeout(timer);
       }
@@ -702,14 +697,14 @@
       try {
         data = await res.json();
       } catch (err) {
-        throw new Error('서버로부터 올바르지 않은(빈) 응답을 받았습니다.');
+        throw new Error(T('err_bad_json'));
       }
 
       if (!res.ok) {
-        throw new Error(data.message || data.error || '이용권이 유효하지 않습니다. (상태 코드: ' + res.status + ')');
+        throw new Error(data.message || data.error || `${T('err_bad_license')} (${res.status})`);
       }
       if (!data.valid) {
-        throw new Error(data.message || '이용권 서명 검증 실패');
+        throw new Error(data.message || T('err_sig'));
       }
       return data.payload;
     }
@@ -718,7 +713,7 @@
       const val = tokenInput.value.trim();
       authError.style.display = 'none';
       btnVerifyToken.disabled = true;
-      btnVerifyToken.textContent = '인증 중...';
+      btnVerifyToken.textContent = T('auth_btn_busy');
 
       try {
         const payload = await verifyHostToken(val);
@@ -730,14 +725,14 @@
         authError.style.display = 'block';
       } finally {
         btnVerifyToken.disabled = false;
-        btnVerifyToken.textContent = '인증하고 들어가기';
+        btnVerifyToken.textContent = T('auth_btn');
       }
     });
 
     function showPrepareScreen(payload) {
       stepAuth.style.display = 'none';
       stepPrepare.style.display = 'block';
-      licenseInfo.textContent = `강사 이용권 인증됨 (${payload && payload.sub ? payload.sub : 'Host'})`;
+      licenseInfo.textContent = `${T('auth_ok')} (${payload && payload.sub ? payload.sub : 'Host'})`;
       initLangChips();
       restoreSavedData();
     }
@@ -788,7 +783,7 @@
     function renderParagraphs() {
       paraCount.textContent = paragraphs.length;
       if (paragraphs.length === 0) {
-        paraList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;">원고 파일을 올리면 문단이 나뉘어 표시됩니다.</div>';
+        paraList.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;">${T('prep_empty_js')}</div>`;
         btnPreTranslate.disabled = true;
         return;
       }
@@ -799,10 +794,10 @@
         el.className = 'para-item';
         el.innerHTML = `
           <div class="para-header">
-            <span>문단 #${p.id} (${p.src.length}자)</span>
+            <span>${T('prep_para')} #${p.id} (${p.src.length}${T('prep_chars')})</span>
             <div class="para-actions">
-              ${idx < paragraphs.length - 1 ? `<button class="btn-action" onclick="mergeWithNext(${p.id})">아래와 합치기</button>` : ''}
-              <button class="btn-action" onclick="deletePara(${p.id})">삭제</button>
+              ${idx < paragraphs.length - 1 ? `<button class="btn-action" onclick="mergeWithNext(${p.id})">${T('para_merge')}</button>` : ''}
+              <button class="btn-action" onclick="deletePara(${p.id})">${T('para_delete')}</button>
             </div>
           </div>
           <div style="font-size: 0.95rem; line-height: 1.5; color: var(--text);">${escapeHtml(p.src)}</div>
@@ -847,7 +842,7 @@
     }
 
     async function extractTextFromPdf(arrayBuffer) {
-      if (!window.pdfjsLib) throw new Error('PDF 변환 모듈이 로드되지 않았습니다.');
+      if (!window.pdfjsLib) throw new Error(T('err_pdf_mod'));
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let fullText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -860,7 +855,7 @@
     }
 
     async function extractTextFromHwpx(arrayBuffer) {
-      if (!window.fflate) throw new Error('HWPX 압축 해제 모듈(fflate)이 로드되지 않았습니다.');
+      if (!window.fflate) throw new Error(T('err_hwpx_mod'));
       const u8 = new Uint8Array(arrayBuffer);
       const unzipped = fflate.unzipSync(u8);
 
@@ -950,7 +945,7 @@
     }
 
     async function extractTextFromDocx(arrayBuffer) {
-      if (!window.mammoth) throw new Error('DOCX 변환 모듈이 로드되지 않았습니다.');
+      if (!window.mammoth) throw new Error(T('err_docx_mod'));
       const result = await mammoth.extractRawText({ arrayBuffer });
       return result.value || '';
     }
@@ -962,12 +957,12 @@
 
       // 옛 .doc 및 .hwp 바이너리 차단 안내 (L3, L3-2 규칙)
       if (ext === 'doc') {
-        alert('Word 에서 .docx 로 저장해 다시 올려 주세요');
+        alert(T('err_doc_old'));
         return;
       }
       if (ext === 'hwp') {
         const isEn = (urlParams.get('lang') === 'en');
-        alert(isEn ? "Please save as HWPX in Hancom Office and upload again." : "한글에서 '다른 이름으로 저장 → HWPX' 로 다시 올려 주세요");
+        alert(T('err_hwpx_old'));
         return;
       }
 
@@ -980,7 +975,7 @@
             renderParagraphs();
             saveParagraphsToDB(paragraphs);
           } catch (err) {
-            alert((urlParams.get('lang') === 'en') ? 'Error reading HWPX file: ' + err.message : 'HWPX 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+            alert(T('err_hwpx_read') + err.message);
           }
         };
         reader.readAsArrayBuffer(file);
@@ -996,7 +991,7 @@
             renderParagraphs();
             saveParagraphsToDB(paragraphs);
           } catch (err) {
-            alert('PDF 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+            alert(T('err_pdf_read') + err.message);
           }
         };
         reader.readAsArrayBuffer(file);
@@ -1012,7 +1007,7 @@
             renderParagraphs();
             saveParagraphsToDB(paragraphs);
           } catch (err) {
-            alert('DOCX 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+            alert(T('err_docx_read') + err.message);
           }
         };
         reader.readAsArrayBuffer(file);
@@ -1031,7 +1026,7 @@
         return;
       }
 
-      alert('지원되지 않는 파일 형식입니다. (TXT, PDF, DOCX 만 가능)');
+      alert(T('err_filetype'));
     }
 
     dropZone.addEventListener('click', () => fileInput.click());
@@ -1050,7 +1045,7 @@
     });
 
     document.getElementById('btnResetParas').addEventListener('click', () => {
-      if (confirm('원고를 초기화하시겠습니까?')) {
+      if (confirm(T('ask_reset'))) {
         paragraphs = [];
         renderParagraphs();
         saveParagraphsToDB(paragraphs);
@@ -1067,7 +1062,7 @@
         chip.className = `lang-chip ${isChecked ? 'selected' : ''}`;
         chip.innerHTML = `
           <input type="checkbox" value="${l.code}" ${isChecked ? 'checked' : ''}>
-          <span>${l.name}</span>
+          <span>${langName(l, l.code)}</span>
         `;
         const cb = chip.querySelector('input');
         cb.addEventListener('change', () => {
@@ -1116,11 +1111,11 @@
         const langGroup = document.getElementById('langChipsGroup');
         if (chkBroadcastRaw.checked) {
           if (langGroup) langGroup.style.opacity = '0.5';
-          btnPreTranslate.textContent = '🚀 원문 방송 준비 완료 (번역 없음)';
+          btnPreTranslate.textContent = T('prep_raw_ready');
           if (paragraphs.length > 0) btnPreTranslate.disabled = false;
         } else {
           if (langGroup) langGroup.style.opacity = '1';
-          btnPreTranslate.textContent = '🌐 사전 번역 시작';
+          btnPreTranslate.textContent = T('prep_pre_btn');
           if (paragraphs.length === 0 || selectedLangs.length === 0) btnPreTranslate.disabled = true;
         }
       });
@@ -1129,11 +1124,11 @@
     btnPreTranslate.addEventListener('click', async () => {
       const isRaw = chkBroadcastRaw && chkBroadcastRaw.checked;
       if (!isRaw && (paragraphs.length === 0 || selectedLangs.length === 0)) {
-        alert('문단과 번역할 언어를 최소 1개 이상 선택하세요.');
+        alert(T('err_pick_lang'));
         return;
       }
       if (paragraphs.length === 0) {
-        alert('원고 파일을 먼저 올려주세요.');
+        alert(T('err_need_file'));
         return;
       }
 
@@ -1168,14 +1163,14 @@
           const pct = Math.round((completedJobs / totalJobs) * 100);
           transProgressPercent.textContent = `${pct}%`;
           transProgressFill.style.width = `${pct}%`;
-          transProgressText.textContent = `번역 중... (${completedJobs}/${totalJobs})`;
+          transProgressText.textContent = `${T('prep_tr_busy')} (${completedJobs}/${totalJobs})`;
         }
       }
 
       await saveParagraphsToDB(paragraphs);
       renderParagraphs();
 
-      transProgressText.textContent = '번역 완료!';
+      transProgressText.textContent = T('prep_tr_done');
       btnPreTranslate.disabled = false;
       readyArea.style.display = 'block';
     });
@@ -1282,10 +1277,10 @@
           const nav = document.getElementById('hostLicNav');
           if (desc) desc.style.display = 'none';
           if (nav) nav.style.display = 'none';
-          btnToggleLicQr.textContent = 'QR 보기';
+          btnToggleLicQr.textContent = T('live_qr_show');
         } else {
           renderHostLicQr();
-          btnToggleLicQr.textContent = 'QR 닫기';
+          btnToggleLicQr.textContent = T('live_qr_hide');
         }
       });
     }
@@ -1326,10 +1321,10 @@
       if (!res.ok) {
         let msg = '';
         try { msg = (await res.json()).message || ''; } catch (_) {}
-        throw new Error(`방을 만들지 못했습니다 (${res.status}) ${msg}`.trim());
+        throw new Error(`${T('err_room')} (${res.status}) ${msg}`.trim());
       }
       const data = await res.json();
-      if (!data.code || !data.host_token) throw new Error('방 응답이 비었습니다.');
+      if (!data.code || !data.host_token) throw new Error(T('err_room_empty'));
       return data;
     }
 
@@ -1489,7 +1484,7 @@
       wsSend({ kind: 'break', on });
       breakBand.classList.toggle('on', on);
       btnBreak.classList.toggle('on', on);
-      btnBreak.textContent = on ? '쉬는 시간 끝' : '쉬는 시간';
+      btnBreak.textContent = on ? T('live_break_end') : T('live_break');
     }
 
     function renderLive() {
@@ -1507,7 +1502,7 @@
         if (live.state[n] === 'skip') el.classList.add('is-skipped');
         const no = document.createElement('div');
         no.className = 'live-no';
-        no.textContent = `${n} / ${total}` + (live.state[n] === 'skip' ? ' · 건너뜀' : '') + (Object.keys(p.trans || {}).length ? '' : ' · 번역 없음(원문만)');
+        no.textContent = `${n} / ${total}` + (live.state[n] === 'skip' ? T('tag_skipped') : '') + (Object.keys(p.trans || {}).length ? '' : T('tag_raw'));
         const body = document.createElement('div');
         body.textContent = p.src;
         el.appendChild(no);
@@ -1582,7 +1577,7 @@
         const txt = document.getElementById('batchStatsText');
         if (row && txt) {
           row.style.display = 'block';
-          txt.textContent = msg.batch_stats.summaryText || `오늘 ${msg.batch_stats.today || 0}명 / 총 ${msg.batch_stats.total || 0}명`;
+          txt.textContent = msg.batch_stats.summaryText || T('batch_stats').replace('{t}', msg.batch_stats.today || 0).replace('{n}', msg.batch_stats.total || 0);
         }
         return;
       }
@@ -1596,7 +1591,7 @@
       if (msg.end) {
         // 릴레이가 먼저 끝냈다(무음 정지 등) — 그때를 끝 시각으로 잡고 열린 참석을 닫는다. 끝 화면은 끝내기로 연다.
         const now = Date.now();
-        liveStatus.textContent = '세션이 끝났습니다' + (msg.why ? ` (${msg.why})` : '');
+        liveStatus.textContent = T('live_ended') + (msg.why ? ` (${msg.why})` : '');
         live.closing = true;
         live.relayEnded = true;
         if (!live.endedAt) live.endedAt = now;
@@ -1623,7 +1618,7 @@
         return;
       }
       if (msg.warning === 'silence_warning') {
-        liveStatus.textContent = '오래 넘기지 않아 곧 끊깁니다 — 문단을 넘기세요';
+        liveStatus.textContent = T('live_silence');
       }
     }
 
@@ -1639,7 +1634,7 @@
       const listEl = document.getElementById('askQueueList');
       if (!listEl) return;
       if (!queue.length) {
-        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText">대기 중인 질문이 없습니다.</div>';
+        listEl.innerHTML = `<div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText">${T('ask_empty')}</div>`;
         return;
       }
       listEl.innerHTML = '';
@@ -1652,7 +1647,7 @@
         const btnGrant = document.createElement('button');
         btnGrant.className = 'btn';
         btnGrant.style.cssText = 'padding:2px 8px; font-size:0.75rem; min-height:28px; white-space:nowrap;';
-        btnGrant.textContent = '지명';
+        btnGrant.textContent = T('ask_grant_btn');
         btnGrant.disabled = !!liveActiveAsk;
         btnGrant.onclick = () => grantQuestion(item.id);
         row.appendChild(info);
@@ -1705,12 +1700,12 @@
       const textEl = document.getElementById('askActiveText');
       const timerEl = document.getElementById('askTimer');
       if (area) area.style.display = 'block';
-      if (speakerEl) speakerEl.textContent = `말하는 중: ${msg.name} (${msg.lang})`;
+      if (speakerEl) speakerEl.textContent = `${T('ask_speaking')}: ${msg.name} (${msg.lang})`;
       if (textEl) {
         // grant 에는 글자 칸이 없다 — 마이크 질문은 말한 뒤에 온다(아래 renderAskSpoken).
         const raw = msg.text || msg.src || '';
         const trText = (msg.trans && msg.trans[SRC_LANG || 'ko']) || raw;
-        textEl.textContent = !raw ? '…' : (trText !== raw ? `"${trText}" (원문: ${raw})` : `"${raw}"`);
+        textEl.textContent = !raw ? '…' : (trText !== raw ? `"${trText}" (${T('label_src')}: ${raw})` : `"${raw}"`);
       }
       renderAskQueue(liveAskQueue);
 
@@ -1755,7 +1750,7 @@
       const ws = new WebSocket(`${base}/ws?room=${encodeURIComponent(live.code)}&role=host&token=${encodeURIComponent(live.token)}`);
       live.ws = ws;
       ws.onopen = () => {
-        liveStatus.textContent = '연결됨';
+        liveStatus.textContent = T('live_connected');
         sendWelcome();   // 링버퍼에 남아 뒤에 오는 청취자도 받는다
         clearInterval(live.pingTimer);
         live.pingTimer = setInterval(() => wsSend({ __ping: true }), 25000);
@@ -1764,7 +1759,7 @@
       ws.onclose = () => {
         clearInterval(live.pingTimer);
         if (live.closing || !live.on) return;
-        liveStatus.textContent = '다시 연결 중…';
+        liveStatus.textContent = T('live_reconnect');
         setTimeout(() => { if (live.on && !live.closing) connectHostWs(); }, 3000);
       };
     }
@@ -1772,7 +1767,7 @@
     async function startLecture() {
       liveError.style.display = 'none';
       if (!paragraphs.length) {
-        liveError.textContent = '원고가 없습니다.';
+        liveError.textContent = T('live_no_script');
         liveError.style.display = 'block';
         return;
       }
@@ -1825,6 +1820,94 @@
     const UI_LANG = urlParams.get('lang') === 'en' ? 'en' : 'ko';
     const HOST_STR = {
       ko: {
+        /* B 12 (마스터 10-16 21:00) — 손님이 보는 글은 전부 이 표에서 나온다.
+           전에는 아래 40개만 표에 있었고 나머지 ~82곳이 코드에 박힌 한국어였다 — 영어 폰에 한국어가 나온다(§18). */
+        auth_badge_unverified: '미인증',
+        auth_title: '강사 이용권 인증',
+        auth_desc: '원고 사전 번역 및 강의 진행을 위해 강사 이용권(Meet 또는 Desk 라이선스)이 필요합니다.',
+        auth_keep: '인증된 정보는 브라우저에 안전하게 보관됩니다.',
+        auth_label: '이용권 코드',
+        auth_btn: '인증하고 들어가기',
+        auth_btn_busy: '인증 중...',
+        auth_ask: '이용권 발급 문의 →',
+        auth_ok: '강사 이용권 인증됨',
+        prep_title: '강의 원고 준비 및 사전 번역',
+        prep_step1: '① 원고 파일 올리기 (TXT · PDF · DOCX · HWPX)',
+        prep_drop: '강의 원고 파일(TXT · PDF · DOCX)을 마우스로 끌어다 놓으세요',
+        prep_drop_sub: '또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)',
+        prep_step2: '② 번역할 청취 언어 선택 (여럿 가능)',
+        prep_reset: '원고 초기화',
+        prep_empty: '원고 파일을 올리면 문단이 자동으로 나뉘어 표시됩니다.',
+        prep_pre_title: '미리 번역 실행 (릴레이 경유)',
+        prep_pre_desc: '선택한 언어로 모든 문단을 미리 번역하여 브라우저 IndexedDB에 저장합니다.',
+        prep_pre_btn: '🌐 사전 번역 시작',
+        prep_raw_ready: '🚀 원문 방송 준비 완료 (번역 없음)',
+        prep_tr_busy: '번역 중...',
+        prep_tr_done: '번역 완료!',
+        prep_para: '문단',
+        live_qr_show: 'QR 보기',
+        live_qr_hide: 'QR 닫기',
+        live_connected: '연결됨',
+        live_reconnect: '다시 연결 중…',
+        live_ended: '세션이 끝났습니다',
+        live_silence: '오래 넘기지 않아 곧 끊깁니다 — 문단을 넘기세요',
+        live_no_script: '원고가 없습니다.',
+        ask_grant_btn: '지명',
+        ask_speaking: '말하는 중',
+        ask_empty: '대기 중인 질문이 없습니다.',
+        err_need_code: '이용권 코드를 입력하세요.',
+        err_timeout: '서버 응답 시간 초과 (5초)',
+        err_unreachable: '서버에 닿지 않습니다: ',
+        err_bad_json: '서버로부터 올바르지 않은(빈) 응답을 받았습니다.',
+        err_bad_license: '이용권이 유효하지 않습니다.',
+        err_sig: '이용권 서명 검증 실패',
+        err_pdf_mod: 'PDF 변환 모듈이 로드되지 않았습니다.',
+        err_hwpx_mod: 'HWPX 압축 해제 모듈(fflate)이 로드되지 않았습니다.',
+        err_docx_mod: 'DOCX 변환 모듈이 로드되지 않았습니다.',
+        err_doc_old: 'Word 에서 .docx 로 저장해 다시 올려 주세요',
+        err_pdf_read: 'PDF 파일을 읽는 중 오류가 발생했습니다: ',
+        err_docx_read: 'DOCX 파일을 읽는 중 오류가 발생했습니다: ',
+        err_filetype: '지원되지 않는 파일 형식입니다. (TXT, PDF, DOCX 만 가능)',
+        err_pick_lang: '문단과 번역할 언어를 최소 1개 이상 선택하세요.',
+        err_need_file: '원고 파일을 먼저 올려주세요.',
+        err_room: '방을 만들지 못했습니다',
+        err_room_empty: '방 응답이 비었습니다.',
+        prep_empty_js: '원고 파일을 올리면 문단이 나뉘어 표시됩니다.',
+        prep_chars: '자',
+        para_merge: '아래와 합치기',
+        para_delete: '삭제',
+        hdr_title: '웹 강사 화면 (사전 원고 번역)',
+        prep_step3a: '③ 문단 나눔 미리보기 (',
+        prep_step3b: '개 문단)',
+        prep_progress: '번역 진행 중...',
+        prep_done: '✓ 사전 번역이 완료되었습니다!',
+        prep_done_desc: '원고 및 번역문이 로컬 IndexedDB에 저장되었습니다. 이제 강의를 개설하고 문단을 송출할 수 있습니다.',
+        prep_start: '강의 시작하기',
+        live_title: '강의 진행',
+        live_break_badge: '⏸ 쉬는 시간',
+        live_prev: '◀ 이전',
+        live_next: '다음 ▶',
+        live_skip: '건너뜀',
+        live_break: '쉬는 시간',
+        live_connecting: '연결 중…',
+        live_keys: '키보드: → 또는 스페이스 = 다음, ← = 이전. 넘길 때 미리 번역해 둔 문단만 보냅니다 — 번역이 없는 언어의 청취자는 원문을 봅니다.',
+        att_label: '참석',
+        att_unit: '명 (최대',
+        qr_title: '손님 이용권 QR',
+        qr_desc: '손님이 찍으면 즉시 이용권이 활성화됩니다.',
+        ask_queue_label: '질문 대기 (',
+        live_mute: '무음',
+        foot_privacy: '개인정보 처리방침',
+        foot_terms: '이용약관',
+        err_hwpx_old: '한글에서 \'다른 이름으로 저장 → HWPX\' 로 다시 올려 주세요',
+        err_hwpx_read: 'HWPX 파일을 읽는 중 오류가 발생했습니다: ',
+        ask_reset: '원고를 초기화하시겠습니까?',
+        live_break_end: '쉬는 시간 끝',
+        tag_skipped: ' · 건너뜀',
+        tag_raw: ' · 번역 없음(원문만)',
+        label_src: '원문',
+        batch_stats: '오늘 {t}명 / 총 {n}명',
+        batch_default: '오늘 0명 / 총 0명',
         btn_end: '끝내기',
         end_title: '강의 끝',
         sum_att: '참석',
@@ -1867,6 +1950,92 @@
         mic_region_off: '실시간 말하기는 지금 국내에서만 켭니다. 원고 모드로 진행해 주세요.'
       },
       en: {
+        auth_badge_unverified: 'Not verified',
+        auth_title: 'Instructor licence',
+        auth_desc: 'A Meet or Desk licence is required to pre-translate a script and run a session.',
+        auth_keep: 'Verified details stay in this browser.',
+        auth_label: 'Licence code',
+        auth_btn: 'Verify and continue',
+        auth_btn_busy: 'Verifying…',
+        auth_ask: 'Ask about licences →',
+        auth_ok: 'Instructor licence verified',
+        prep_title: 'Prepare the script and pre-translate',
+        prep_step1: '① Upload the script (TXT · PDF · DOCX · HWPX)',
+        prep_drop: 'Drag the script file (TXT · PDF · DOCX) here',
+        prep_drop_sub: 'or click to choose a file — handled in this browser, nothing is uploaded',
+        prep_step2: '② Choose listener languages (more than one is fine)',
+        prep_reset: 'Clear script',
+        prep_empty: 'Upload a script and it will be split into paragraphs here.',
+        prep_pre_title: 'Pre-translate (via relay)',
+        prep_pre_desc: 'Every paragraph is translated into the chosen languages and kept in this browser (IndexedDB).',
+        prep_pre_btn: '🌐 Start pre-translation',
+        prep_raw_ready: '🚀 Ready to broadcast the original (no translation)',
+        prep_tr_busy: 'Translating…',
+        prep_tr_done: 'Translation finished',
+        prep_para: 'Paragraph',
+        live_qr_show: 'Show QR',
+        live_qr_hide: 'Hide QR',
+        live_connected: 'Connected',
+        live_reconnect: 'Reconnecting…',
+        live_ended: 'The session has ended',
+        live_silence: 'No paragraph for a while — advance one or the room will close',
+        live_no_script: 'No script loaded.',
+        ask_grant_btn: 'Grant',
+        ask_speaking: 'Speaking',
+        ask_empty: 'No questions waiting.',
+        err_need_code: 'Enter the licence code.',
+        err_timeout: 'The server did not answer within 5 seconds.',
+        err_unreachable: 'Cannot reach the server: ',
+        err_bad_json: 'The server returned an empty or invalid response.',
+        err_bad_license: 'This licence is not valid.',
+        err_sig: 'Licence signature check failed',
+        err_pdf_mod: 'The PDF reader did not load.',
+        err_hwpx_mod: 'The HWPX unpacker (fflate) did not load.',
+        err_docx_mod: 'The DOCX reader did not load.',
+        err_doc_old: 'Please save it as .docx in Word and upload again.',
+        err_pdf_read: 'Could not read the PDF: ',
+        err_docx_read: 'Could not read the DOCX: ',
+        err_filetype: 'That file type is not supported (TXT, PDF, DOCX only).',
+        err_pick_lang: 'Choose at least one paragraph and one language.',
+        err_need_file: 'Upload the script file first.',
+        err_room: 'Could not open the room',
+        err_room_empty: 'The room response was empty.',
+        prep_empty_js: 'Upload a script and it will be split into paragraphs.',
+        prep_chars: 'chars',
+        para_merge: 'Merge with next',
+        para_delete: 'Delete',
+        hdr_title: 'Web instructor (pre-translated script)',
+        prep_step3a: '③ Paragraph preview (',
+        prep_step3b: ' paragraphs)',
+        prep_progress: 'Translating…',
+        prep_done: '✓ Pre-translation finished',
+        prep_done_desc: 'The script and translations are stored in this browser. You can open the room and send paragraphs.',
+        prep_start: 'Start the session',
+        live_title: 'Session',
+        live_break_badge: '⏸ Break',
+        live_prev: '◀ Back',
+        live_next: 'Next ▶',
+        live_skip: 'Skip',
+        live_break: 'Break',
+        live_connecting: 'Connecting…',
+        live_keys: 'Keys: → or Space = next, ← = back. Only pre-translated paragraphs are sent; listeners in other languages see the original.',
+        att_label: 'Attending',
+        att_unit: 'people (peak',
+        qr_title: 'Visitor pass QR',
+        qr_desc: 'Scanning it activates the pass right away.',
+        ask_queue_label: 'Questions waiting (',
+        live_mute: 'Mute',
+        foot_privacy: 'Privacy',
+        foot_terms: 'Terms',
+        err_hwpx_old: 'Please save as HWPX in Hancom Office and upload again.',
+        err_hwpx_read: 'Error reading HWPX file: ',
+        ask_reset: 'Clear the script?',
+        live_break_end: 'End break',
+        tag_skipped: ' · skipped',
+        tag_raw: ' · no translation (original only)',
+        label_src: 'original',
+        batch_stats: 'Today {t} / total {n}',
+        batch_default: 'Today 0 / total 0',
         btn_end: 'Finish',
         end_title: 'Session finished',
         sum_att: 'Attendees',
@@ -2038,7 +2207,7 @@
         const info = SUPPORTED_TARGET_LANGS.find(l => l.code === code);
         const opt = document.createElement('option');
         opt.value = code;
-        opt.textContent = info ? info.name : code;
+        opt.textContent = langName(info, code);
         repLang.appendChild(opt);
       }
       if (keep && [...repLang.options].some(o => o.value === keep)) repLang.value = keep;
@@ -2089,7 +2258,7 @@
         lines,
         srcLang: SRC_LANG,
         targetLang: code,
-        langName: info ? info.name : code,
+        langName: langName(info, code),
         contentMode: checkedValue('rep-content', 'both'),
         format: checkedValue('rep-format', 'txt'),
         isRtl: !!(info && info.rtl),
