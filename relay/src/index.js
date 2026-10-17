@@ -1727,7 +1727,18 @@ export default {
     // 1-3. 포트원 웹훅: POST /pay/webhook
     if (url.pathname === '/pay/webhook' && request.method === 'POST') {
       const sig = request.headers.get('x-portone-signature') || '';
-      const secret = env.PORTONE_WEBHOOK_SECRET || 'test_webhook_secret_key_123';
+      /* 비밀값이 없으면 **서지 않는다** — `/pay/complete` 와 같은 모양(pay.js: pg_secret_missing).
+         전에는 `|| 'test_webhook_secret_key_123'` 로 떨어졌다. 그 글자는 **공개 저장소에 있다** —
+         비밀값을 안 넣은 채 배포하면 누구나 서명을 맞출 수 있다. 지금 이 길은 검증만 하고
+         아무것도 발급하지 않아 피해는 없지만, 발급을 붙이는 날 그게 문이 된다.
+         §20 — 비밀값이 **없는 경우**를 시험이 돌지 않아 그동안 안 보였다. */
+      const secret = (env.PORTONE_WEBHOOK_SECRET || '').trim();
+      if (!secret) {
+        return new Response(JSON.stringify({
+          error: 'pg_secret_missing',
+          message: 'PORTONE_WEBHOOK_SECRET 환경변수가 누락되었습니다.'
+        }), { status: 503, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
+      }
       const bodyText = await request.text();
       const valid = verifyPortoneWebhook(sig, bodyText, secret);
       if (!valid) {

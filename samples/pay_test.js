@@ -310,6 +310,28 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     } catch (e) { revertGuardFailed = true; }
     ok(revertGuardFailed === true, '13:40 ②: 빈 값 문을 빼면 붉어진다 — 손님이 알 수 없는 오류를 본다 (되돌림 실증)');
 
+    /* ★ 발급 요청이 **릴레이**로 가는가 (B 13, 10-17).
+       전에는 `fetch('/pay/complete')` 였다 — 이 시험의 모의 릴레이가 `/buy/` 도 같이 서빙하니
+       같은 출처라 통과했다. 운영은 `raytok.kr`(GitHub Pages)이고 그 길이 없어 **404** 다:
+       돈이 빠진 뒤에 "결제 처리 중 오류" 만 뜬다. 가짜가 실기보다 쉬웠던 자리(D-11).
+       그래서 운영 호스트 이름을 **넣어서** 돌린다 — 목을 채워 놓고 도는 시험이 아니다(§20). */
+    const payBaseProd = await page.evaluate(() => window.__rtPayBase('raytok.kr', ''));
+    ok(payBaseProd === 'https://raytok-relay.raytok.workers.dev',
+       `운영 호스트에서 발급 요청은 릴레이로 간다 (${payBaseProd || '빈 값 = 같은 출처 = 404'})`);
+    const payBaseLocal = await page.evaluate(() => window.__rtPayBase('127.0.0.1', ''));
+    ok(payBaseLocal === '', '로컬에서는 같은 출처 (wrangler dev · 이 시험)');
+    const payBaseParam = await page.evaluate(() => window.__rtPayBase('raytok.kr', '?relay=http://127.0.0.1:8787/'));
+    ok(payBaseParam === 'http://127.0.0.1:8787', '?relay= 로 바꿔 끼운다 (끝 슬래시 제거)');
+    ok(!/fetch\('\/pay\/complete'/.test(buyHtml) && /PAY_BASE \+ '\/pay\/complete'/.test(buyHtml),
+       '구매 화면에 같은 출처로 던지는 `fetch(\'/pay/complete\')` 가 남아 있지 않다');
+
+    // 되돌림 실증 — 상대 주소로 되돌리면(운영에서 빈 값) 위 단언이 붉다
+    let revertPayBaseFailed = false;
+    try {
+      assert.strictEqual(payBaseProd, '', '운영에서 발급 요청이 같은 출처로 간다 = GitHub Pages 404');
+    } catch (e) { revertPayBaseFailed = true; }
+    ok(revertPayBaseFailed === true, '상대 주소로 되돌리면 붉어진다 (되돌림 실증)');
+
 
     // 1) 상품 렌더링 확인
     const title = await page.textContent('h1');
@@ -482,6 +504,26 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     });
     const hookRes = await relayWorker.fetch(hookReq, { PORTONE_WEBHOOK_SECRET: webhookSecret }, {});
     ok(hookRes.status === 200, 'relay 라우트 POST /pay/webhook 200 OK 서명 통과 확인');
+
+    /* ★ §20 — 비밀값이 **없는 경우**. 이 시험은 늘 비밀값을 넘겨 주고 돌아서 그 길을
+       한 번도 돌리지 않았다. 전에는 `|| 'test_webhook_secret_key_123'` 로 떨어졌고,
+       그 글자는 **이 공개 저장소에 있다** — 비밀값을 안 넣고 배포하면 누구나 서명을 맞춘다. */
+    const noSecretReq = new Request('http://localhost/pay/webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-portone-signature': hookSig },
+      body: hookBody
+    });
+    const noSecretRes = await relayWorker.fetch(noSecretReq, {}, {});
+    const noSecretBody = await noSecretRes.json().catch(() => ({}));
+    ok(noSecretRes.status === 503 && noSecretBody.error === 'pg_secret_missing',
+       `비밀값이 없으면 웹훅이 **서지 않는다** (${noSecretRes.status} ${noSecretBody.error}) — /pay/complete 와 같은 모양`);
+
+    // 되돌림 실증: 박힌 기본값으로 떨어지면 그 서명이 통과한다 = 붉다
+    let revertHookFailed = false;
+    try {
+      assert.notStrictEqual(noSecretRes.status, 503, `비밀값 없이 ${noSecretRes.status} 로 답했다`);
+    } catch (e) { revertHookFailed = true; }
+    ok(revertHookFailed === true, '박힌 기본 비밀값으로 되돌리면 붉어진다 (되돌림 실증)');
 
     // 라우트 되돌림 실증: 없는 라우트 호출 시 404 반환
     const notFoundReq = new Request('http://localhost/pay/unknown', { method: 'POST' });
