@@ -1,3 +1,64 @@
+[B] 21 주석 낼 때만 빼기 · 22 `/asr/batch` 뼈대 · 23 실서버 재측정(건너뜀) — NOW 셋 끝
+2026-10-17 09:20 · 커밋 `f7f479d`(21) · `6dc11d2`(22) · `npm test` 종료코드 0 **3회**
+
+### 어디서 보나
+- **21**: 청취 화면은 그대로다(글자 하나 안 바뀜). 받는 양만 줄었다 —
+  `python3` 아니라 `node tools/build-listener.js --check` 로 확인, `npm run test:listener-build` 가 게이트에서 센다.
+- **22**: `POST /asr/batch`. 지금은 **503 `asr_disabled`** 로 선다(켜는 것은 E-8 뒤).
+  `npm run test:asr` 31건이 문·상한·크기·보관 0 을 센다.
+
+### 21 — 주석은 소스에만, 손님에게는 안 보낸다
+자리를 둘로 나눴다: `web/listener/index.src.html`(주석 그대로, **사람이 고치는 곳**) ·
+`web/listener/index.html`(주석 없는 판, 손님에게 가는 것, `tools/build-listener.js` 가 만든다).
+
+| | raw | gz |
+|---|---|---|
+| 소스 `index.src.html` | 103,004 B | 29.7 KB |
+| 만든 판 `index.html` | 94,858 B | **26.0 KB** |
+| 청취 첫 화면 합계 | — | 36.7 → **33.0 KB** |
+
+지운 것은 **줄 전체가 주석인 줄 80개**뿐이다. 코드 뒤에 붙은 `// …` 32줄은 건드리지 않았다 —
+그것까지 지우려면 글자열·정규식을 가려야 하고 그 길에서 앱이 깨진다(얻는 것은 0.2 KB).
+생성기가 쓰기 전에 스스로 검사한다: 스크립트가 파싱되나(`vm.Script`) · `id=`·`data-i18n`·
+`<script>`·`function`·`addEventListener` 수가 같나 · 줄었나. 하나라도 틀리면 **쓰지 않고 멈춘다.**
+첫 화면 시험 한도도 40 → **36 KB** 로 조였다(줄인 만큼 잠근다).
+
+⚠ **다른 세션에게**: `web/listener/index.html` 을 직접 고치지 않는다. `index.src.html` 을 고치고
+`node tools/build-listener.js` 를 돌려 둘을 같이 커밋한다 — 게이트가 센다(B 16 과 같은 자물쇠).
+
+### 22 — `/asr/batch` 뼈대 (설계 `raytok-native1/docs/design/post-asr.md`, 비공개)
+`relay/src/asr.js` 손잡이 하나 + 얇은 라우트 + 일일 상한 칸(`asr_usd:YYYY-MM-DD`).
+`ASR_ENABLED` 없으면 503 `asr_disabled` · 0x20 없으면 403 `no_package` · 200MB 넘으면 413
+`asr_too_big`(딱 200MB 는 통과) · 상한 채우면 503 `asr_cap` · 엔진이 답 안 하면 503
+`asr_unavailable` **줄 0**(지어내지 않는다) · **소리 보관 0**(storage 를 넘겨도 안 쓴다 — 시험이
+호출 0건을 센다). 가짜 엔진은 `engine:'fake'`·`usd:0` 으로 **가짜라고 말한다**(D-11).
+
+시험 31건 중 **6건이 라우트**다 — B 7 의 교훈(손잡이만 초록이고 길이 안 이어지면 아무 일도
+안 일어난다). 되돌림 실증 둘.
+
+판단 하나(§13): 마스터가 적은 "503 `no_package`" 를 **403** 으로 넣었다. `/translate` 가 이미
+403 + `why=no_package` 로 답하고 앱이 그 모양을 읽는다 — 두 끝점이 다른 번호를 주면 앱이 두
+가지를 알아야 한다. 뒤집으시면 한 줄.
+
+### 23 — 실서버 재측정: **건너뜀** (NOW 3 의 "배포 전이면 한 줄")
+방금 확인한 사실:
+```
+curl https://raytok.kr/                         → CONNECT tunnel failed, 403
+curl https://raytok-relay.raytok.workers.dev/usage → CONNECT tunnel failed, 403
+```
+이 컨테이너에서 두 호스트가 막혀 있어 **실서버 숫자를 낼 수 없다.** 그리고 배포도 아직이다.
+대표님 PC 에서 한 줄이면 표가 실서버 숫자로 바뀐다:
+`node scripts/measure-first-load.mjs --base https://raytok.kr --out docs/first-load.md`
+
+### 막힌 것
+- **배포 대기** — `docs/deploy-2026-10-17.md` 한 장. 이제 거기 실리는 것이 넷이다
+  (B 7 질문 · B 10 프로 · 웹훅 503 · B 22 뼈대 — 뼈대는 꺼져 있어 아무 일도 안 한다).
+- **호스트 둘 차단**(위 사실) → B 23 · 이용권 끝에서 끝 실측 · 20문장 ⓑ 숫자가 전부 그 뒤.
+
+### 남은 것
+NOW 의 B 줄 전부 끝(16·17·19·20·21·22, 23 은 배포 전이라 건너뜀) · 5번 B 18 은 E-8 뒤.
+→ `node scripts/mailwait.js` 로 들어간다.
+
 [B] 19 손님 첫 화면 −82 KB · 20 재측정 스크립트 — NOW 넷 전부 끝 (16·17·19·20)
 2026-10-17 08:40 · 커밋 `3730365`(19) · `7e7db52`(20) · `npm test` 종료코드 0 **3회**
 
