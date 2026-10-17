@@ -39,7 +39,9 @@ let n = 0; const ok = (c, m) => { assert(c, m); n++; console.log('  [PASS] ' + m
   let hideDict = false;
   const srv = http.createServer((q, r) => {
     let p = decodeURIComponent(q.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
-    if (hideDict && p.endsWith('ui-strings.json')) { r.writeHead(404); return r.end(); }
+    // 사전은 이제 **조각**(ui-strings/<언어>.json)과 통째 파일 둘이다 — 404 로 막을 때 둘 다 막는다.
+    // 한쪽만 막으면 "사전을 못 받는 경우" 를 시험이 돌지 않는다(§20 · D-11 가짜가 실기보다 쉬웠다).
+    if (hideDict && /ui-strings/.test(p)) { r.writeHead(404); return r.end(); }
     const f = path.join(ROOT, p);
     if (!f.startsWith(ROOT) || !fs.existsSync(f)) { r.writeHead(404); return r.end(); }
     r.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(r);

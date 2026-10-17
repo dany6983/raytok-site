@@ -684,6 +684,28 @@
 
     const RTL = new Set(['ar', 'he', 'iw', 'fa', 'ur']); // iw 는 he 의 옛 코드
 
+    /* 글자 조각을 받는다 — 받은 언어를 기억해 **같은 것을 두 번 받지 않는다.**
+       조각이 없으면(옛 배포·만들기 빠짐) 통째 사전으로 떨어진다 — 느려도 글자가 나오는 쪽이다(R-15).
+       조각도 통째도 없으면 화면은 마크업의 한국어 그대로 돈다(§20 — 빈 답에 멈추지 않는다). */
+    let uiStringsLoadedFor = null;
+    async function loadUiStrings(lang) {
+      if (uiStringsLoadedFor === lang || uiStringsLoadedFor === '*') return;
+      const keep = (uiStrings && uiStrings.langs) || null;
+      try {
+        const res = await fetch('./ui-strings/' + encodeURIComponent(lang) + '.json');
+        if (res.ok) {
+          const d = await res.json();
+          uiStrings = { ver: d.ver, langs: d.langs || keep, strings: d.strings };
+          uiStringsLoadedFor = lang;
+          return;
+        }
+      } catch (e) {}
+      try {
+        const res = await fetch('./ui-strings.json');
+        if (res.ok) { uiStrings = await res.json(); uiStringsLoadedFor = '*'; }
+      } catch (e) {}
+    }
+
     function t(key, lang = currentUiLang) {
       if (!uiStrings || !uiStrings.strings || !uiStrings.strings[key]) return '';
       const item = uiStrings.strings[key];
@@ -860,9 +882,12 @@
         if (res.ok) langs = await res.json();
       } catch (e) {}
 
+      /* B 19 — 첫 화면에서 81개 언어 사전을 **통째로** 받지 않는다(238 KB · gz 85 KB).
+         ① 고를 수 있는 언어 목록만(0.4 KB) → ② 쓸 언어 **한 조각**(약 8 KB · gz 3 KB).
+         조각은 `tools/split-ui-strings.js` 가 손 표에서 만든다 — 고치는 자리는 손 표 하나다. */
       try {
-        const res = await fetch('./ui-strings.json');
-        if (res.ok) uiStrings = await res.json();
+        const res = await fetch('./ui-strings/_langs.json');
+        if (res.ok) uiStrings = await res.json();        // {ver, langs} — strings 는 아직 없다
       } catch (e) {}
 
       const availableLangs = (uiStrings && uiStrings.langs) || ['ko', 'en'];
@@ -890,6 +915,7 @@
 
       // 3. UI 언어 결정 및 적용 (selectedLang 기반)
       const initialUiLang = determineLanguage();
+      await loadUiStrings(initialUiLang);
       applyStrings(initialUiLang);
       updateSubtitleDir();
 
@@ -917,11 +943,12 @@
     }
     initApp();
 
-    langSelect.addEventListener('change', () => {
+    langSelect.addEventListener('change', async () => {
       selectedLang = langSelect.value;
       if (!isDemo) localStorage.setItem('raytok_lang', selectedLang);   // 시연에서 고른 언어는 저장하지 않는다
 
       const newUiLang = determineLanguage();
+      await loadUiStrings(newUiLang);      // 그 언어 조각이 손에 없으면 받는다 (B 19)
       applyStrings(newUiLang);
       updateSubtitleDir();
 
