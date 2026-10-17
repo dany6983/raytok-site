@@ -51,9 +51,14 @@ const shape = (s) => ({
  * 나머지 79언어는 **A2 몫**이다(앱 MASTER). 제가 지어내면 "다 찼다"로 보이는 가짜가 된다(D-11).
  *
  * 이 목록은 **비어야 맞다.** A2 커밋이 오면 그 키를 여기서 지운다 — 안 지우면 아래 ⑥ 이 붉다.
+ *
+ * **2026-10-17 A2: 다 채웠다.** 열 중 일곱(save_content·both·src·trans·format·do·close)은
+ * 앱이 이미 81언어로 갖고 있던 말이라 `src/i18n-auto` 에서 가져왔다 — 같은 말을 두 번
+ * 번역하지 않는다(D-193). 앱 키는 reportContent·reportContentBoth/Src/Trans·reportFormat·
+ * termSave·close 이고 ①②③ 은 청취 화면이 붙이는 번호라 앞에 다시 붙였다. 청취의 zh 는
+ * 간체 하나뿐이라 앱의 zh-CN 을 썼다. 나머지 셋(save_title·foot_privacy·foot_terms)만 손으로 썼다.
  */
-const AWAIT_A2 = ['foot_privacy', 'foot_terms', 'save_title', 'save_content',
-                  'save_both', 'save_src', 'save_trans', 'save_format', 'save_do', 'save_close'];
+const AWAIT_A2 = [];   /* 2026-10-17 A2 가 열 키 × 79언어를 채웠다 — 비었다 = 다 끝났다(ⓒ) */
 
 const allKeys = Object.keys(dict.strings);
 const fullKeys = allKeys.filter(k => !AWAIT_A2.includes(k));
