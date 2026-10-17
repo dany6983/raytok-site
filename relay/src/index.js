@@ -98,6 +98,7 @@ async function sha256Hex(str) {
 export { Room } from './room.js';
 import { verifyLicense, mintLicense, computeSub } from './license.js';
 import { handlePaymentComplete, verifyPortoneWebhook } from './pay.js';
+import { handleAsrBatch, fakeAsrEngine, ASR_MAX_BYTES, ASR_DEFAULT_CAP_USD, ASR_PRO_FLAG } from './asr.js';
 
 // Crockford Base32 (I, L, O, U 제외 32자)
 const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -202,7 +203,8 @@ async function recordEngineCall(env, engine, success) {
 }
 
 async function recordUsage(env, { sub, target, chars = 0, sttKey = false, deskMinutes = 0,
-                                 proTokensIn = 0, proTokensOut = 0, proUsd = 0 }) {
+                                 proTokensIn = 0, proTokensOut = 0, proUsd = 0,
+                                 asrUsd = 0, asrDay = null }) {
   if (!sub) return;
   try {
     const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
@@ -212,7 +214,8 @@ async function recordUsage(env, { sub, target, chars = 0, sttKey = false, deskMi
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sub, target, chars, sttKey, deskMinutes,
                              pro_tokens_in: proTokensIn, pro_tokens_out: proTokensOut, pro_usd: proUsd,
-                             pro_day: proUsd > 0 ? `pro_usd:${todayKey()}` : undefined })
+                             pro_day: proUsd > 0 ? `pro_usd:${todayKey()}` : undefined,
+                             asr_usd: asrUsd, asr_day: asrUsd > 0 ? (asrDay || `asr_usd:${todayKey()}`) : undefined })
     }));
   } catch (_) {}
 }
@@ -860,6 +863,72 @@ export default {
     // RULE: P-16
     if (url.pathname === '/summarize' || url.pathname === '/summary' || url.pathname === '/desk/summary' || url.pathname === '/tts' || url.pathname === '/playback') {
       return jsonError('forbidden', 'Summarization and playback requests are forbidden (RULE: P-16)', 403, { why: 'p16_forbidden_endpoint' });
+    }
+
+    /* `POST /asr/batch` — 설계(비공개): raytok-native1/docs/design/post-asr.md · 마스터 10-17 12:45
+       뼈대만이다: 문(0x20)·상한·크기·보관 0 은 여기, 줄을 만드는 엔진은 **가짜**(E-8 뒤 진짜).
+       `ASR_ENABLED` 가 켜져 있지 않으면 서지 않는다. 키는 secret 에만 둔다. */
+    if (url.pathname === '/asr/batch' && request.method === 'POST') {
+      const enabled = /^(1|true|yes|on)$/i.test(String(env.ASR_ENABLED || '').trim());
+      const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, ASR_PRO_FLAG);
+      if (!licenseRes.valid) {
+        const extra = licenseRes.error === 'not_allowed' ? { why: 'no_package', need: '0x20' } : {};
+        return jsonError(licenseRes.error,
+          licenseRes.error === 'not_allowed' ? 'Post-ASR requires the pro package (0x20)' : licenseRes.message,
+          licenseRes.status, extra);
+      }
+
+      /* 소리와 목록을 읽는다. 두 모양을 받는다:
+           · multipart/form-data — `manifest`(JSON 글자) + 토막 파일들 (앱이 보내는 모양)
+           · application/json    — `{manifest}` 만 (소리 없이 문·상한만 먼저 묻는 길) */
+      let manifest = null, totalBytes = 0;
+      try {
+        const ctype = (request.headers.get('Content-Type') || '').toLowerCase();
+        if (ctype.includes('multipart/form-data')) {
+          const form = await request.formData();
+          manifest = JSON.parse(String(form.get('manifest') || 'null'));
+          for (const [, v] of form.entries()) {
+            if (v && typeof v === 'object' && typeof v.size === 'number') totalBytes += v.size;
+          }
+        } else {
+          const body = await request.json();
+          manifest = body && body.manifest;
+          totalBytes = Number((body && body.bytes) || 0);
+        }
+      } catch (e) {
+        return jsonError('bad_request', `본문을 읽지 못했습니다: ${e.message}`, 400, { why: 'bad_body' });
+      }
+
+      const capUsd = Number(env.ASR_DAILY_CAP_USD || ASR_DEFAULT_CAP_USD);
+      const dayKey = `asr_usd:${todayKey()}`;
+      let spentToday = 0;
+      try {
+        const limiterId = env.ROOM.idFromName('GLOBAL_RATE_LIMITER');
+        const limiter = env.ROOM.get(limiterId);
+        const r = await limiter.fetch(new Request(`http://internal/usage/summary?key=${encodeURIComponent(dayKey)}`));
+        if (r.ok) {
+          const d = await r.json();
+          spentToday = Number((d && (d.asr_usd || d.pro_usd || (d.keys && d.keys[dayKey]))) || 0);
+        }
+      } catch (_) {}
+
+      const result = await handleAsrBatch({
+        enabled,
+        licFlags: Number((licenseRes.payload && licenseRes.payload.flags) || 0),
+        manifest,
+        totalBytes,
+        capUsd,
+        spentToday,
+        engine: fakeAsrEngine        // 진짜 GPU 워커는 E-8 이 주소를 정한 뒤 (키는 secret)
+      });
+
+      if (result.status === 200 && Number(result.body.usd) > 0) {
+        await recordUsage(env, { sub: licenseRes.payload.sub, asrUsd: Number(result.body.usd), asrDay: dayKey });
+      }
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
     }
 
     if (url.pathname === '/translate' && request.method === 'POST') {
