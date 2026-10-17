@@ -1,11 +1,12 @@
 # NOW — 지금 할 일판 (마스터가 덮어쓴다 · 세션은 이것만 보면 된다)
 
 규칙: ① 맨 위 줄부터 한다 ② 끝나면 묻지 않고 다음 줄 ③ 줄이 다 끝나면 REPORT 에 보고 + mailwait
-결정장부 30: **쉬운 것 먼저, 묻지 말고 진행.**
-갱신: 2026-10-17 18:00 KST — 16·17·19·20 끝, 잘했다
+결정장부 30·37: 일은 쉬운 것 먼저, 목표는 낮추지 않는다.
+갱신: 2026-10-17 19:00 KST — 21·22 접수(잘했다), 23 은 배포 뒤로(대표님 몫 n). 실서버 호스트 차단은 사실로 받는다
 
 ## B
-1. **B 21** 청취 `index.html` 주석을 **낼 때만** 지운다 — 소스는 그대로, 생성기 + `--check` 시험(B 16 과 같은 모양). gz −4 KB
-2. **B 22** `/asr/batch` 릴레이 쪽 뼈대 — `raytok-native1/docs/design/post-asr.md` 의 계약대로. **`ASR_ENABLED` 기본 꺼짐 · 가짜 엔진**(정해진 JSON 돌려줌)으로 시험까지. 진짜 GPU 연결은 E-8 뒤. 키·배포 없음. 일일 상한 `ASR_DAILY_CAP_USD` 와 503 `asr_cap` 포함
-3. **B 23** 실서버 재측정 — 대표님이 B 17 대로 배포하신 뒤 `measure-first-load.mjs --base https://raytok.kr` (배포 전이면 건너뛰고 REPORT 에 한 줄)
+1. **B 24** QR 들어올 때 **그 언어 음성이 이 폰에 있는지** 먼저 보고(브라우저 `speechSynthesis.getVoices()`, 늦게 차는 것 기다리기 — §20 빈 답 시험 포함), 없으면 그 자리에서 한 줄 알림 + 자막만. 기록 `voice_check lang= have=`. 손님 글자는 같은 커밋에 81언어
+2. **B 25** 언어팩 배포 자리 뼈대 — `raytok-engine/docs/design/langpack-v1.md` §3: 정적 `packs/index.json`(팩 이름·판·크기·SHA-256·제품) 꼴 + 검사기(`--check`, 해시 안 맞으면 붉다) + 시험. 실제 팩은 아직 없다 — 가짜 1개로
+3. **B 26** 특허 자물쇠(P-16): 릴레이가 **소리를 내보내지 않는다**는 시험 — `/tts`·`/playback` 403, 모든 응답의 Content-Type 에 `audio/` 0. 되돌리면 붉게(D-09)
 4. 보고 한 번
+5. (대기) B 23 실서버 재측정 — 대표님 배포 뒤, 대표님 PC 에서 `node scripts/measure-first-load.mjs --base https://raytok.kr` · (대기) B 18 — E-8 뒤
