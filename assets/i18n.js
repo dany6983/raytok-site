@@ -1,4 +1,4 @@
-/* RayTok 소개 페이지 번역 (한국어 원문 → en / zh / ja / vi)
+/* RayTok 소개 페이지 번역 (한국어 원문 → en / zh / ja / vi / th / id)
    - 원문은 HTML 에 있는 한국어 그대로다. 번역은 /assets/i18n/<언어>.json 의 { "한국어 원문": "번역문" } 사전.
    - 사전에 없는 문장은 한국어로 남는다(깨지지 않는다). 빠진 문장은 주소에 ?i18n=debug 를 붙이면 콘솔에 나온다.
    - 문장 안의 <b>·<span>·<a> 같은 태그는 <1>…</1> 번호표로 바꿔서 사전에 싣는다. 번역문도 같은 번호표를 쓴다.
@@ -6,7 +6,7 @@
    - Desk 페이지는 번역하지 않는다(국내 한정). 그 페이지에는 이 스크립트를 싣지 않는다. */
 (function () {
   "use strict";
-  var LANGS = ["ko", "en", "zh", "ja", "vi"], KEY = "raytok-lang";
+  var LANGS = ["ko", "en", "zh", "ja", "vi", "th", "id"], KEY = "raytok-lang";
   var INLINE = { B: 1, STRONG: 1, SPAN: 1, A: 1, I: 1, EM: 1, SMALL: 1, U: 1, BR: 1 };
   var SKIP = { SCRIPT: 1, STYLE: 1, VIDEO: 1, SVG: 1, NOSCRIPT: 1 };
   var ATTRS = ["alt", "aria-label", "title"];

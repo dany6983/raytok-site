@@ -27,7 +27,7 @@ IDS = {
  "mmove":"20261002_092349_877168a2-47d0-440f-b265-bc2788874a08",
 }
 import hashlib
-I18N_LANGS = ("en", "zh", "ja", "vi")  # 번역 사전: assets/i18n/<언어>.json. 원문(한국어)을 고치면 사전도 같이 고친다 — tools/i18n_check.js 로 빠진 문장 확인
+I18N_LANGS = ("en", "zh", "ja", "vi", "th", "id")  # 번역 사전: assets/i18n/<언어>.json. 원문(한국어)을 고치면 사전도 같이 고친다 — tools/i18n_check.js 로 빠진 문장 확인
 def _i18n_ver():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     h = hashlib.md5()
@@ -74,7 +74,7 @@ BODY = "회사·단체명:\n담당자:\n연락처:\n인원(근로자/손님 수)
 
 def head(title, desc, path, og, i18n=True):
     # i18n=False: 번역하지 않는 페이지(Desk — 국내 한정)
-    tr = (f'<script>try{{var l=(location.search.match(/[?&]lang=([a-z]{{2}})/)||[])[1]||localStorage.getItem("raytok-lang");if(/^(en|zh|ja|vi)$/.test(l))document.documentElement.className="i18n-wait"}}catch(e){{}}</script>\n'
+    tr = (f'<script>try{{var l=(location.search.match(/[?&]lang=([a-z]{{2}})/)||[])[1]||localStorage.getItem("raytok-lang");if(/^(en|zh|ja|vi|th|id)$/.test(l))document.documentElement.className="i18n-wait"}}catch(e){{}}</script>\n'
           f'<script defer src="/assets/i18n.js?v={I18NV}"></script>\n') if i18n else ""
     return f'''<!doctype html>
 <html lang="ko">
@@ -103,7 +103,7 @@ def top(cur):
     def a(href, label, key):
         c = ' aria-current="page"' if cur == key else ''
         return f'<a href="{href}"{c}>{label}</a>'
-    lang = "" if cur == "desk" else '<div class="langbar" data-noi18n><div class="wrap" role="group" aria-label="Language"><button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button><button type="button" data-lang="ja" lang="ja">日本語</button><button type="button" data-lang="vi" lang="vi">Tiếng Việt</button></div></div>\n'
+    lang = "" if cur == "desk" else '<div class="langbar" data-noi18n><div class="wrap" role="group" aria-label="Language"><button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button><button type="button" data-lang="ja" lang="ja">日本語</button><button type="button" data-lang="vi" lang="vi">Tiếng Việt</button><button type="button" data-lang="th" lang="th">ไทย</button><button type="button" data-lang="id" lang="id">Bahasa Indonesia</button></div></div>\n'
     return lang + f'''<header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
 <nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/museum/",'도슨트',"museum")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk").replace("<a ",'<a class="ko-only" ')}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}</nav>

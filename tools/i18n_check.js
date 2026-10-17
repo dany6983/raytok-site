@@ -8,7 +8,7 @@
 // 실패(종료 코드 1)로 남는 것은 기계가 틀렸다고 말할 수 있는 둘뿐이다: 빠진 문장 · 번호표(<1>) 불일치.
 // 원문을 고친 뒤에는 이 점검에서 빠진 문장이 0 이 되도록 사전을 같이 고친다. 사전에 없는 문장은 한국어로 남는다.
 const http = require('http'), fs = require('fs'), path = require('path');
-const ROOT = path.dirname(__dirname), PAGES = ['/', '/field/', '/tour/', '/museum/', '/ows/', '/student/'], LANGS = ['en', 'zh', 'ja', 'vi'];
+const ROOT = path.dirname(__dirname), PAGES = ['/', '/field/', '/tour/', '/museum/', '/ows/', '/student/'], LANGS = ['en', 'zh', 'ja', 'vi', 'th', 'id'];
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const srv = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
@@ -40,7 +40,8 @@ const srv = http.createServer((q, r) => {
     vi: ['dịch cabin', 'phiên dịch đồng thời', 'dịch song song', 'độc quyền sáng chế', 'được cấp bằng sáng chế', 'đầu tiên trên thế giới', 'duy nhất', 'không thể chỉnh sửa', 'không thể sửa', 'chống giả mạo', 'chống sửa đổi', 'đảm bảo', 'cam kết', '100%', '®'],
   };
   const CLAIM = /위변조|검출|기록|정확|특허|억제|저장|밖으로|살균|인정|증빙/;   // 특허·효능 주장 문장
-  const hit = (s, l) => BAN[l].filter(w => s.toLowerCase().includes(w.toLowerCase()));
+  // 목록이 없는 언어(th·id)는 통지 0 으로 지나간다 — **새 금지어 목록을 만들지 않는다**(AGENTS §22-1).
+const hit = (s, l) => (BAN[l] || []).filter(w => s.toLowerCase().includes(w.toLowerCase()));
   let bad = 0;
   let notices = 0;
   for (const k of keys) { const h = hit(k, 'ko'); if (h.length) { console.log('통지(ko) ' + h.join(',') + ' : ' + k); notices++; } }
@@ -55,11 +56,15 @@ const srv = http.createServer((q, r) => {
     const miss = keys.filter(k => d[k] == null), wrong = keys.filter(k => d[k] != null && tags(k) !== tags(d[k]));
     const extra = Object.keys(d).filter(k => !seen.has(k));
     const banned = keys.filter(k => d[k] != null && hit(d[k], l).length);
-    console.log(`${l}: 원문 ${keys.length} · 빠짐 ${miss.length} · 번호표 불일치 ${wrong.length} · 통지 ${banned.length} · 안 쓰는 항목 ${extra.length}`);
+    /* 깨진 글자 — 글꼴·인코딩이 어긋나면 U+FFFD(\uFFFD) 나 빈 네모가 들어온다.
+       앱에서 펀자브어가 두 번 이렇게 깨졌다. 기계가 잡을 수 있는 것은 기계가 잡는다. */
+    const broken = keys.filter(k => d[k] != null && /[\uFFFD\u25A1]/.test(d[k]));
+    console.log(`${l}: 원문 ${keys.length} · 빠짐 ${miss.length} · 번호표 불일치 ${wrong.length} · 깨진 글자 ${broken.length} · 통지 ${banned.length} · 안 쓰는 항목 ${extra.length}`);
     miss.concat(wrong).forEach(k => console.log('   - ' + k));
+    broken.forEach(k => console.log('   깨짐 : ' + d[k]));
     banned.forEach(k => console.log('   통지 ' + hit(d[k], l).join(',') + ' : ' + d[k]));
     notices += banned.length;
-    bad += miss.length + wrong.length;   // 통지는 실패로 세지 않는다
+    bad += miss.length + wrong.length + broken.length;   // 통지는 실패로 세지 않는다
   }
   if (notices) console.log(`\n통지 ${notices}건 — 막지 않는다. 쓸지 말지는 마케팅과 대표님이 정한다 (지시_창조우선_금지어폐지_1011).`);
   process.exit(bad ? 1 : 0);
