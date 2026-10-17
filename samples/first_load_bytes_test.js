@@ -22,7 +22,7 @@ const MIME = { '.html': 'text/html', '.json': 'application/json', '.js': 'text/j
 
 /* 첫 화면 한도 — 지금 재는 값에 **여유를 두고** 잠근다. 통째 사전(gz 46~85 KB)이
    다시 섞이면 넘는다. 기능을 더해 넘게 되면 그때 이 수와 이유를 같이 고친다. */
-const LIMIT_GZ = { '/web/listener/': 40 * 1024, '/join/': 12 * 1024 };
+const LIMIT_GZ = { '/web/listener/': 36 * 1024, '/join/': 12 * 1024 };   // 10-17 B 21(주석 빼기) 뒤 33.0 KB — 한도를 그만큼 조였다
 
 (async () => {
   const srv = http.createServer((q, r) => {

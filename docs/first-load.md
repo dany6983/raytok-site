@@ -23,14 +23,14 @@ node scripts/measure-first-load.mjs --base https://raytok.kr --out docs/first-lo
 
 ## 손님 첫 화면 실측 — 로컬(이 저장소, 압축 없음)
 
-- 잰 때: 2026-10-17 08:33 UTC
-- 주소: http://127.0.0.1:41225 · 언어: vi
+- 잰 때: 2026-10-17 09:00 UTC
+- 주소: http://127.0.0.1:40381 · 언어: vi
 
 | 쪽 | 받은 것 | raw KB | gz KB(계산) | 실제 받은 KB |
 |---|---:|---:|---:|---:|
-| /web/listener/ | 6 | 122.8 | 36.7 | 124.6 |
+| /web/listener/ | 6 | 114.9 | 33.0 | 116.6 |
 | /join/ | 2 | 10.7 | 5.1 | 11.3 |
 
 가장 큰 것:
-- /web/listener/ → /web/listener/ 29.4KB · /web/listener/ui-strings/vi.json 3.4KB · /web/listener/langs.json 1.6KB · /common/theme.css 1.1KB
+- /web/listener/ → /web/listener/ 25.7KB · /web/listener/ui-strings/vi.json 3.4KB · /web/listener/langs.json 1.6KB · /common/theme.css 1.1KB
 - /join/ → /join/ 3.3KB · /join/ui-strings/vi.json 1.8KB
