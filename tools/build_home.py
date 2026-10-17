@@ -72,8 +72,12 @@ def mailto(subject, body=""):
 OWS_M = None
 BODY = "회사·단체명:\n담당자:\n연락처:\n인원(근로자/손님 수):\n사용할 언어:\n"
 
-def head(title, desc, path, og, i18n=True):
+def head(title, desc, path, og, i18n=True, en=False):
     # i18n=False: 번역하지 않는 페이지(Desk — 국내 한정)
+    # en=True: 영문판(<path>en/)이 있는 쪽 — 검색엔진에 짝을 알린다(field·tour·ows)
+    alt = (f'<link rel="alternate" hreflang="ko" href="https://raytok.kr{path}">\n'
+           f'<link rel="alternate" hreflang="en" href="https://raytok.kr{path}en/">\n'
+           f'<link rel="alternate" hreflang="x-default" href="https://raytok.kr{path}">\n') if en else ""
     tr = (f'<script>try{{var l=(location.search.match(/[?&]lang=([a-z]{{2}})/)||[])[1]||localStorage.getItem("raytok-lang");if(/^(en|zh|ja|vi|th|id)$/.test(l))document.documentElement.className="i18n-wait"}}catch(e){{}}</script>\n'
           f'<script defer src="/assets/i18n.js?v={I18NV}"></script>\n') if i18n else ""
     return f'''<!doctype html>
@@ -84,7 +88,7 @@ def head(title, desc, path, og, i18n=True):
 <title>{title}</title>
 <meta name="description" content="{desc}">
 <link rel="canonical" href="https://raytok.kr{path}">
-<meta property="og:type" content="website">
+{alt}<meta property="og:type" content="website">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="https://raytok.kr{path}">
@@ -103,23 +107,32 @@ def top(cur):
     def a(href, label, key):
         c = ' aria-current="page"' if cur == key else ''
         return f'<a href="{href}"{c}>{label}</a>'
+    # 홈에만 머리 메뉴 끝에 「이용권 구매」 — 지금 index.html 그대로
+    buy = '<a href="/buy/">이용권 구매</a>' if cur == "home" else ""
     lang = "" if cur == "desk" else '<div class="langbar" data-noi18n><div class="wrap" role="group" aria-label="Language"><button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button><button type="button" data-lang="ja" lang="ja">日本語</button><button type="button" data-lang="vi" lang="vi">Tiếng Việt</button><button type="button" data-lang="th" lang="th">ไทย</button><button type="button" data-lang="id" lang="id">Bahasa Indonesia</button></div></div>\n'
     return lang + f'''<header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
-<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/museum/",'도슨트',"museum")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk").replace("<a ",'<a class="ko-only" ')}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}</nav>
+<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/museum/",'도슨트',"museum")}{a("/student/","유학생","student")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk").replace("<a ",'<a class="ko-only" ')}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}{buy}</nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 '''
 
-FOOT = f'''<footer><div class="wrap">
-<div class="row"><a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/museum/">도슨트</a><a href="/ows/">OWS 통역 이어폰</a><a class="ko-only" href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a><a href="/privacy/">개인정보 처리방침</a><a href="/web/terms/">이용약관</a></div>
-<p>주식회사 피엔엘에코 · 경기도 화성시 동탄대로 635, 1동 1507호 · <a href="mailto:{MAIL}">{MAIL}</a></p>
+# 사업자 정보는 통신판매업 고지 항목이라 **줄이지 않는다**(지금 11쪽 그대로).
+BIZ = f'주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:{MAIL}">{MAIL}</a>'
+FOOT_ROW = '<a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/museum/">도슨트</a><a href="/student/">유학생</a><a href="/ows/">OWS 통역 이어폰</a><a class="ko-only" href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a>'
+def _foot(extra=""):
+    return f'''<footer><div class="wrap">
+<div class="row">{FOOT_ROW}{extra}<a href="/privacy/">개인정보 처리방침</a><a href="/web/terms/">이용약관</a></div>
+<p>{BIZ}</p>
 <p>특허 출원 중 (10-2026-0166695 외 5건) · 사진과 영상은 연출 이미지입니다.</p>
 <p>RayTok은 통역 도구입니다. 교육기관·통역사·관광통역안내사를 대신하지 않으며, 기계 번역에는 오역이 있을 수 있습니다.</p>
 </div></footer>
 </body>
 </html>
 '''
+
+FOOT = _foot()
+FOOT_HOME = _foot('<a href="/buy/">이용권 구매</a>')   # 홈 바닥에만 구매 링크 — 지금 index.html 그대로
 
 def cta(title, sub, subject, btn="무료 체험 신청하기"):
     return f'''<section class="dark cta"><div class="wrap">
@@ -137,11 +150,43 @@ def shots(items):
 def faq(items):
     return "".join(f'<details><summary>{q}</summary><p>{a}</p></details>' for q, a in items)
 
+# 만드는 쪽(이 파일)과 저장소의 쪽을 **견주는 자리**가 있어야 덫이 다시 생기지 않는다
+# (10-17: 이 생성기가 낡아 돌리면 홍보자료·유학생 메뉴·구매 링크가 지워졌다 — B 14 가 발견).
+#   python3 tools/build_home.py            → 저장소에 쓴다 (전과 같다)
+#   python3 tools/build_home.py --check    → 쓰지 않고 **다른 곳만 센다**. 다르면 종료코드 1
+#   python3 tools/build_home.py --out <디렉터리>  → 그 디렉터리에 쓴다 (시험용)
+import sys
+CHECK = "--check" in sys.argv
+_outArg = sys.argv.index("--out") + 1 if "--out" in sys.argv else 0
+OUT_DIR = os.path.abspath(sys.argv[_outArg]) if _outArg and _outArg < len(sys.argv) else OUT
+DIFFS = []
+
 def write(path, html):
-    p = os.path.join(OUT, path.strip("/"), "index.html") if path != "/" else os.path.join(OUT, "index.html")
+    rel = os.path.join(path.strip("/"), "index.html") if path != "/" else "index.html"
+    if CHECK:
+        cur = os.path.join(OUT, rel)
+        old = open(cur, encoding="utf-8").read() if os.path.exists(cur) else None
+        if old != html:
+            DIFFS.append(rel)
+            print(f"다름: {rel}" + ("" if old is not None else " (저장소에 없다)"))
+        else:
+            print(f"같다: {rel}")
+        return
+    p = os.path.join(OUT_DIR, rel)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     open(p, "w", encoding="utf-8", newline="\n").write(html)
     print("wrote", p, len(html))
+
+import atexit
+@atexit.register
+def _verdict():
+    if not CHECK:
+        return
+    if DIFFS:
+        print(f"\n생성기 출력이 저장소와 다르다 ({len(DIFFS)}쪽): " + ", ".join(DIFFS))
+        print("→ 손으로 고친 것이 있으면 이 생성기에도 넣는다. 안 넣으면 다음에 누가 돌릴 때 지워진다.")
+        sys.exit(1)
+    print("\n생성기 출력 == 저장소 (전부 같다)")
 
 
 PATS = [
@@ -177,24 +222,52 @@ home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣�
 <p class="kick">RAYTOK · 실시간 통역</p>
 <h1>한 사람이 말하면,<br>모두가 각자의 말로 듣습니다.</h1>
 <p class="lead">듣는 사람은 앱을 깔지 않아도 되고, 인터넷도 필요 없습니다. 네팔어·미얀마어 등 일부 언어는 말하는 사람 휴대폰의 인터넷이 필요합니다.</p>
-<div class="btns"><a class="btn w" href="/download/">앱 설치하기</a><a class="btn g" href="{mailto("[RayTok] 무료 체험·도입 문의", BODY)}">무료 체험·도입 문의</a></div>
+<div class="btns"><a class="btn w" href="/download/">앱 설치하기</a><a class="btn g" href="/buy/">이용권 구매</a><a class="btn g" href="{mailto("[RayTok] 무료 체험·도입 문의", BODY)}">무료 체험·도입 문의</a></div>
 {HPAT}
 </div></div>
 
+<section class="news" id="news"><div class="wrap">
+<p class="eyebrow">홍보자료</p>
+<h2>새 소식 · 자료</h2>
+<div id="soro-blog" data-noi18n></div>
+<button type="button" class="news-more" id="news-more" hidden aria-expanded="false" aria-controls="soro-blog" data-noi18n>더 보기</button>
+<script src="https://app.trysoro.com/api/embed/0bfb60ae-7824-434e-a670-f203cd45da53" defer></script>
+<script>
+/* 홍보자료: 최신 4개만 보이고, '더 보기'를 누르면 전부 펼친다. 글을 누르면 그 자리에서 열린다. */
+(function(){{
+  var SHOW=4, box=document.getElementById("soro-blog"), btn=document.getElementById("news-more"), open=false;
+  function apply(){{
+    var cards=box.querySelectorAll(".soro-blog-list .soro-blog-card"), n=cards.length;
+    for(var i=0;i<n;i++) cards[i].classList.toggle("news-hid", !open && i>=SHOW);
+    btn.hidden = n<=SHOW;
+    btn.textContent = open ? "접기" : "더 보기 ("+(n-SHOW)+")";
+    btn.setAttribute("aria-expanded", open?"true":"false");
+  }}
+  btn.addEventListener("click", function(){{ open=!open; apply(); }});
+  new MutationObserver(apply).observe(box,{{childList:true,subtree:true}});
+}})();
+</script>
+</div></section>
+
 <section><div class="wrap">
 <p class="eyebrow">어디에 쓰나요</p>
-<h2>네 가지 쓰임</h2>
-<p class="sub">말이 통해야 하는 네 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
+<h2>다섯 가지 쓰임</h2>
+<p class="sub">말이 통해야 하는 다섯 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
 <div class="cards4">
 <a class="card" href="/field/"><img loading="lazy" src="{img("ship")}" alt="조선소에서 안전 지시를 듣는 외국인 근로자들">
 <div class="in"><span class="st">사업장 · 교육기관 · 2026년 11월 출시 예정</span><h3>현장교육</h3><p>강사는 한국어로, 외국인 근로자는 각자의 말로. 교육이 끝나면 참석·청취 기록이 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/tour/"><img loading="lazy" src="{img("bukc")}" alt="북촌 한옥마을에서 설명하는 가이드와 관광객">
 <div class="in"><span class="st">여행사 · 가이드 · 2026년 11월 출시 예정</span><h3>관광가이드</h3><p>가이드 한 명이 여러 나라 손님에게 동시에. 손님은 자기 폰과 이어폰이면 됩니다.</p><span class="more">자세히 보기 →</span></div></a>
+<a class="card" href="/museum/"><img loading="lazy" src="{img("muse")}" alt="박물관 전시실에서 도슨트의 해설을 듣는 관람객들">
+<div class="in"><span class="st">박물관 · 미술관 · 전시관 · 2026년 11월 출시 예정</span><h3>도슨트</h3><p>도슨트는 한 명, 관람객은 각자의 말로. 기기를 나눠 주고 회수하는 절차가 없습니다.</p><span class="more">자세히 보기 →</span></div></a>
+<a class="card" href="/student/"><img loading="lazy" src="{img("lect")}" alt="강의실에서 교수를 보며 각자의 언어로 듣는 유학생들">
+<div class="in"><span class="st">유학생 개인용 · 앱 + 이어폰 · 2026년 11월 출시 예정</span><h3>유학생 패키지</h3><p>교수는 평소처럼 말하고, 나는 내 폰과 이어폰으로 내 말로 듣습니다. 끝나면 강의 노트가 내 폰에 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card ko-only" href="/desk/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
 <div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Desk 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
-</div></div></section>
+</div>
+</div></section>
 
 <section class="alt"><div class="wrap">
 <p class="eyebrow">어떻게 되나요</p>
@@ -221,12 +294,12 @@ home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣�
 <div><div class="vid"><video controls playsinline preload="none" poster="{img("bukc")}" src="{V_TOUR}"></video></div><p class="vcap">북촌 — "조금만 조용히 걸어 주세요."</p></div>
 <div>{loopvid(V_OWS2, img("ocafe2"), "카페에서 이어폰 한쪽을 건네고 대화하는 두 사람")}<p class="vcap">OWS 이어폰 — 한쪽을 건네면 대화가 시작됩니다.</p></div>
 </div></div></section>
-''' + TECH + cta("먼저 써 보고 결정하세요", "시연은 무료입니다. 현장교육과 관광가이드 모두 30일 동안 무료로 체험할 수 있습니다.", "[RayTok] 무료 체험·도입 문의") + FOOT
+''' + TECH + cta("먼저 써 보고 결정하세요", "시연은 무료입니다. 현장교육과 관광가이드 모두 30일 동안 무료로 체험할 수 있습니다.", "[RayTok] 무료 체험·도입 문의") + FOOT_HOME
 write("/", home)
 
 # ───────────── 현장교육 ─────────────
 field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 각자의 말로",
-             "외국인 근로자 안전교육·작업지시를 위한 통역 도구. 근로자 앱 설치·인터넷 불필요, 교육 기록 자동 생성. 30일 무료 체험 · 시연 무료.", "/field/", img("ship")) + top("field") + f'''
+             "외국인 근로자 안전교육·작업지시를 위한 통역 도구. 근로자 앱 설치·인터넷 불필요, 교육 기록 자동 생성. 30일 무료 체험 · 시연 무료.", "/field/", img("ship"), en=True) + top("field") + f'''
 <div class="hero"><img src="{img("ship")}" alt="조선소 도크에서 안전 지시를 하는 관리자와 이어폰을 낀 외국인 근로자들">
 <div class="wrap">
 <span class="tag">현장교육 · 2026년 11월 출시 예정</span>
@@ -269,7 +342,7 @@ field = head("RayTok 현장교육 — 강사는 한국어로, 근로자는 각�
 <p class="sub">근로자 휴대폰은 인터넷이 필요 없습니다. 네팔어·미얀마어 등 일부 언어는 강사 휴대폰의 인터넷이 필요합니다.</p>
 {shots([("ware","물류창고 — 지게차 동선"),("scaf","고층 비계 — 안전대 체결"),("auto","자동차부품 라인 — 방호장치"),("food","식품공장 — 위생 수칙"),("port","어항·선상 — 출항 전 안전 수칙"),("orch","과수원 — 계절근로자 작업 요령")])}
 <table style="margin-top:22px">
-<tr><th>1회 인원</th><td>강사 폰 핫스팟으로 3~5명 · 그보다 많으면 인터넷이 되는 휴대용 공유기 (공유기 연결 시 20~40명, 현장 환경에 따라 다름)</td></tr>
+<tr><th>1회 인원</th><td>강사 폰 핫스팟으로 3~5명 · 그보다 많으면 인터넷이 되는 휴대용 공유기 (공유기 1대로 30~50명, 공유기 사양 기준 · 공유기를 추가하는 만큼 증가 · 실제 인원은 현장 환경에 따라 시범에서 확인)</td></tr>
 <tr><th>연결</th><td>강사와 근로자가 <b>같은 와이파이</b>에 접속합니다 (강사 폰 핫스팟 또는 소형 공유기 중 하나). 근로자는 한 번에 한 강사를 듣습니다</td></tr>
 <tr><th>언어</th><td>대부분의 언어는 인터넷 없이 · 네팔어·미얀마어·크메르어 등 일부 언어는 강사 휴대폰의 인터넷 필요</td></tr>
 <tr><th>준비</th><td>교육 전 사무실 와이파이에서 필요한 언어만 강사 폰에 한 번 내려받기</td></tr>
@@ -312,7 +385,7 @@ write("/field/", field)
 
 # ───────────── 관광가이드 ─────────────
 tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 각자의 말로 듣습니다",
-            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 30일 무료 체험 · 시연 무료.", "/tour/", img("bukc")) + top("tour") + f'''
+            "다국어 단체 투어를 위한 통역 도구. 손님은 설치도 로밍도 필요 없이 자기 폰과 이어폰으로 듣습니다. 30일 무료 체험 · 시연 무료.", "/tour/", img("bukc"), en=True) + top("tour") + f'''
 <div class="hero"><img src="{img("jeju")}" alt="제주 해안에서 가이드의 설명이 관광객 각자의 언어로 전달되는 장면">
 <div class="wrap">
 <span class="tag">관광가이드 · 2026년 11월 출시 예정</span>
@@ -355,7 +428,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 각자의 �
 <p class="sub">가이드 폰이 직접 연결을 만듭니다. 산·섬·지하에서도 손님은 데이터 없이 접속합니다. 네팔어·미얀마어 등 일부 언어는 가이드 휴대폰의 인터넷이 필요합니다.</p>
 {shots([("seong","성산일출봉 — 바람 부는 야외"),("bulg","불국사 — 조용한 사찰 해설"),("gwang","광장시장 — 시끄러운 음식 투어"),("hwas","수원화성 — 길게 늘어선 행렬"),("nami","남이섬 — 걸으며 설명"),("muse","박물관 — 조용히 말해도 전달")])}
 <table style="margin-top:22px">
-<tr><th>그룹 인원</th><td>가이드 폰 핫스팟으로 3~5명 · 그보다 많으면 인터넷이 되는 휴대용 공유기 (공유기 연결 시 20~40명, 환경에 따라 다름)</td></tr>
+<tr><th>그룹 인원</th><td>가이드 폰 핫스팟으로 3~5명 · 그보다 많으면 인터넷이 되는 휴대용 공유기 (공유기 1대로 30~50명, 공유기 사양 기준 · 공유기를 추가하는 만큼 증가 · 실제 인원은 환경에 따라 시범에서 확인)</td></tr>
 <tr><th>연결</th><td>가이드와 손님이 <b>같은 와이파이</b>에 접속합니다 (가이드 폰 핫스팟 또는 휴대용 공유기 중 하나). 손님은 한 번에 한 가이드를 듣습니다</td></tr>
 <tr><th>언어</th><td>대부분의 언어는 인터넷 없이 · 네팔어·미얀마어 등 일부 언어는 가이드 휴대폰의 인터넷 필요</td></tr>
 <tr><th>손님 준비물</th><td>자기 스마트폰과 이어폰. 수신기를 나눠 주고 걷을 필요가 없습니다</td></tr>
@@ -375,6 +448,7 @@ tour = head("RayTok 관광가이드 — 한 번 말하면, 모두가 각자의 �
 <tr><td>묶음 구매</td><td>할인 적용</td></tr>
 <tr><td>증빙</td><td>전자세금계산서 발행</td></tr>
 </table>
+<div style="margin-top:20px; text-align:center;"><a class="btn p" href="/buy/" style="display:inline-block; padding:12px 28px; text-decoration:none;">쿠폰 구매하기 →</a></div>
 </div></section>
 
 <section><div class="wrap">
@@ -396,7 +470,7 @@ write("/tour/", tour)
 # ───────────── OWS 통역 이어폰 ─────────────
 OWS_M = mailto("[RayTok OWS] 출시 알림 신청", "이름:\n연락처:\n")
 ows = head("RayTok OWS 통역 이어폰 — 건네도 괜찮은 통역 이어폰",
-           "귀를 막지 않는 오픈형 이어폰과 RayTok 앱. 한쪽을 건네고 마주 보며 대화합니다. 대부분의 언어는 인터넷 없이. 출시 준비 중.", "/ows/", img("ocafe")) + top("ows") + f'''
+           "귀를 막지 않는 오픈형 이어폰과 RayTok 앱. 한쪽을 건네고 마주 보며 대화합니다. 대부분의 언어는 인터넷 없이. 출시 준비 중.", "/ows/", img("ocafe"), en=True) + top("ows") + f'''
 <div class="hero"><img src="{img("ocafe")}" alt="카페에서 이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="wrap">
 <span class="tag">OWS 통역 이어폰 · 출시 준비 중</span>
@@ -431,7 +505,8 @@ ows = head("RayTok OWS 통역 이어폰 — 건네도 괜찮은 통역 이어폰
 <tr><th>언어</th><td>대부분의 언어는 인터넷 없이 · 일부 언어는 인터넷 필요</td></tr>
 <tr><th>형태</th><td>귀를 막지 않는 오픈형(OWS) · 충전 케이스 포함</td></tr>
 <tr><th>지원 폰</th><td>안드로이드 (아이폰은 준비 중)</td></tr>
-<tr><th>출시</th><td>준비 중입니다. 사양과 가격은 확정되는 대로 이 페이지에 올립니다</td></tr>
+<tr><th>가격</th><td>출시 시 안내 · 구매 문의는 메일로 주십시오</td></tr>
+<tr><th>출시</th><td>준비 중입니다. 사양은 확정되는 대로 이 페이지에 올립니다</td></tr>
 </table>
 <p class="note">이미지는 형태를 보여 주는 연출 이미지이며 실제 제품과 다를 수 있습니다.</p>
 </div></section>
