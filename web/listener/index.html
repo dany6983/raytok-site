@@ -885,6 +885,7 @@
       await loadUiStrings(initialUiLang);
       applyStrings(initialUiLang);
       updateSubtitleDir();
+      checkOsVoiceSupport(selectedLang);   // B 24 — QR 로 들어온 그 자리에서 본다(연결 전)
 
       if (isRawBroadcast) {
         if (langSelect) langSelect.style.display = 'none';
@@ -916,6 +917,7 @@
       const newUiLang = determineLanguage();
       await loadUiStrings(newUiLang);      // 그 언어 조각이 손에 없으면 받는다 (B 19)
       applyStrings(newUiLang);
+      checkOsVoiceSupport(selectedLang);   // B 24 — 바꾼 언어로 다시 본다
       updateSubtitleDir();
 
       if (isConnected) {
@@ -924,24 +926,58 @@
       }
     });
 
-    let hasWarnedVoiceAbsence = false;
-    function checkOsVoiceSupport(lang) {
-      if (hasWarnedVoiceAbsence) return;
-      if (typeof window.speechSynthesis === 'undefined') return;
-      const voices = speechSynthesis.getVoices() || [];
-      if (!voices.length) return;
-      const targetLang = (lang || selectedLang || '').toLowerCase();
-      const hasVoice = voices.some(v => v.lang && v.lang.toLowerCase().startsWith(targetLang));
-      const voiceNoticeEl = document.getElementById('voice-notice');
-      if (!hasVoice) {
-        hasWarnedVoiceAbsence = true;
-        if (voiceNoticeEl) {
-          voiceNoticeEl.textContent = 'ℹ️ ' + (t('voice_absent_notice', normalizeLangCode(selectedLang)) || t('voice_absent_notice'));
-          voiceNoticeEl.style.display = 'block';
-        }
+    const VOICE_WAIT_MS = 3000, VOICE_POLL_MS = 200;
+    window.__rtVoiceCheck = [];                  // 마지막 판정들 — 시험과 개발자 창이 읽는 자리
+    let voiceCheckedFor = null;                  // 어느 언어까지 알렸나 (언어마다 한 번)
+    let voiceWaitTimer = null;
+
+    function voiceLog(lang, have) {
+      const line = { lang, have, at: Date.now() };
+      window.__rtVoiceCheck.push(line);
+      try { console.log(`voice_check lang=${lang} have=${have}`); } catch (e) {}
+      return line;
+    }
+
+    function showVoiceNotice(show) {
+      const el = document.getElementById('voice-notice');
+      if (!el) return;
+      if (show) {
+        el.textContent = 'ℹ️ ' + (t('voice_absent_notice', normalizeLangCode(selectedLang)) || t('voice_absent_notice'));
+        el.style.display = 'block';
       } else {
-        if (voiceNoticeEl) voiceNoticeEl.style.display = 'none';
+        el.style.display = 'none';
       }
+    }
+
+    function checkOsVoiceSupport(lang, waitedMs) {
+      const target = normalizeLangCode(lang || selectedLang || '');
+      if (!target) return;
+      if (voiceCheckedFor === target && waitedMs === undefined) return;   // 같은 언어를 또 알리지 않는다
+
+      if (typeof window.speechSynthesis === 'undefined' || typeof speechSynthesis.getVoices !== 'function') {
+        voiceCheckedFor = target;
+        voiceLog(target, 'no_api');            // 이 브라우저는 소리를 낼 길이 아예 없다 = 자막만
+        showVoiceNotice(true);
+        return;
+      }
+
+      const voices = speechSynthesis.getVoices() || [];
+      if (!voices.length) {
+        const waited = Number(waitedMs || 0);
+        if (waited < VOICE_WAIT_MS) {          // 늦게 차는 중일 수 있다 — 기다린다
+          if (voiceWaitTimer) clearTimeout(voiceWaitTimer);
+          voiceWaitTimer = setTimeout(() => checkOsVoiceSupport(target, waited + VOICE_POLL_MS), VOICE_POLL_MS);
+          return;
+        }
+        voiceCheckedFor = target;
+        voiceLog(target, 'unknown');           // 모름 — 없다고 하지 않는다(D-70)
+        return;
+      }
+
+      const have = voices.some(v => v.lang && normalizeLangCode(v.lang) === target);
+      voiceCheckedFor = target;
+      voiceLog(target, have ? 1 : 0);
+      showVoiceNotice(!have);
     }
 
     function getRankedVoicesForLang(lang) {
@@ -973,7 +1009,12 @@
       }
       checkOsVoiceSupport(selectedLang);
     }
-    speechSynthesis.onvoiceschanged = updateVoice;
+    if (typeof window.speechSynthesis !== 'undefined') {
+      speechSynthesis.onvoiceschanged = () => {       // 늦게 찬 목록이 오면 그때 다시 본다
+        voiceCheckedFor = null;
+        updateVoice();
+      };
+    }
 
     function renderVoicePicker() {
       const container = document.getElementById('voice-list-container');
