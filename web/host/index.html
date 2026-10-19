@@ -329,6 +329,7 @@
   <script src="../common/report.js"></script>
   <script src="../common/region.js"></script>   <!-- RULE: P-16 — 🎤 를 켤지 정하는 한 곳 -->
   <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 -->
+  <script src="../common/script-follow.js"></script>   <!-- 10-20 판정 ⓐ: 원고를 읽는 중인 말은 안 보낸다 -->
 </head>
 <body>
   <header>
@@ -1456,10 +1457,58 @@
       return show;
     }
 
+    /**
+     * **원고를 읽는 중인 말인가** — 맞으면 보내지 않는다 (마스터 2026-10-20 02:45 판정 ⓐ).
+     *
+     * 그 전까지는 확정 줄을 **전부** 보냈다. 그래서 🎤 를 켠 채 원고를 읽으면 그 문단이
+     * **두 번** 갔다: 「다음」으로 보낸 **검수 번역문** 한 번, 그리고 번역 없는 원문 한 번
+     * (손님 화면은 받은 줄을 다 보여 준다 — 거르는 곳이 없다).
+     *
+     * 가리는 자리는 `web/common/script-follow.js` 한 곳이고, 그 판정은 **앱과 같은 사례
+     * 표**(`samples/script-follow-cases.json`)로 센다 — 두 구현이 갈리면 붉다.
+     * 원고가 없으면(문단 0개) 아무것도 바뀌지 않는다: 지금처럼 전부 보낸다.
+     */
+    const scriptMiss = { n: 0 };     // 연속으로 어긋난 수 (문턱 breakRun 이 쓴다)
+    function scriptOffScript(text) {
+      const F = window.rtScriptFollow;
+      /*
+       * ⚠ `paragraphs` 를 **그냥 읽으면 던진다** — 그 변수가 없는 자리에서도 이 함수가
+       * 불릴 수 있고(시험 틀·원고를 한 번도 안 올린 화면), 던지면 `sendSpokenLine` 이
+       * 통째로 죽어 **말한 줄이 전부 사라진다**(R-15). 60분 모의 시험이 300줄 중 0줄로
+       * 그것을 바로 잡아냈다. 없으면 "원고 없음"으로 보고 지금처럼 전부 보낸다.
+       */
+      const all = (typeof paragraphs !== 'undefined' && Array.isArray(paragraphs)) ? paragraphs : null;
+      if (!F || !all || !all.length) return { off: true, why: 'no_script' };
+      /*
+       * ★ **아직 한 문단도 안 보냈으면 전부 보낸다** (판정 문언: "지금 문단과 맞으면").
+       *
+       * 앱은 들린 말이 첫 문단과 겹치면 **그 문단을 대신 보낸다**(자동 따라가기). 웹은
+       * 사람이 「다음」을 눌러야 문단이 가므로, 여기서 같은 규칙을 쓰면 그 말은 발화로도
+       * 안 가고 문단으로도 안 가서 **사라진다**(R-15). 60분 모의 시험이 300줄 중 0줄로
+       * 그것을 잡았다 — "한 시간치 1" 이 첫 문단과 낱말 하나('한')를 공유했다.
+       */
+      if (!(Number(live.cur) >= 1)) return { off: true, why: 'not_started' };
+      const paras = all.map((p, i) => ({ n: i + 1, src: p.src }));
+      const r = F.offScript({ para: live.cur, broke: !!live.breakOn, miss: scriptMiss.n }, text, paras);
+      scriptMiss.n = r.miss;
+      return r;
+    }
+
     /** 말한 문장 하나 — **원문+언어만**. 번역 칸을 만들지 않는다 (P-14). */
     function sendSpokenLine(text) {
       const clean = (text || '').trim();
       if (!clean) return false;
+      /*
+       * ★ 원고를 읽는 중인 말은 **버리지 않고 안 보낸다** — 손님은 그 문단을 이미
+       * 검수 번역문으로 받았다(겹침). 기록에는 남겨 "왜 안 갔나"를 볼 수 있게 한다.
+       */
+      const judge = scriptOffScript(clean);
+      if (!judge.off) {
+        micNote('mic_script_skip', { why: judge.why, para: live.cur,
+                                     match: Math.round((judge.match || 0) * 100) / 100,
+                                     chars: clean.length });
+        return false;
+      }
       mic.seq += 1;
       const msg = {
         seq: 10000 + mic.seq,     // 원고 줄(para)과 섞이지 않게
@@ -1539,7 +1588,8 @@
       rec.onresult = (ev) => {
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
           const r = ev.results[i];
-          if (r.isFinal) sendSpokenLine(r[0] && r[0].transcript);   // **확정 문장만** 나간다
+          /* **확정 문장만** 나간다 — 그리고 원고를 읽는 중인 말은 **안** 나간다(아래) */
+          if (r.isFinal) sendSpokenLine(r[0] && r[0].transcript);
         }
       };
       /* 열렸다 — 물러서기를 되돌리고 지킴이에게 "살아 있다"고 알린다 */
