@@ -20,6 +20,7 @@ const { chromium } = pw;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'demo-shots');
+const VIDEO = 'demo-host.webm';            // 강사 화면 한 번 흐름 (손님 폰은 그림으로만)
 const CHECK = process.argv.includes('--check');
 
 /* 장면 목록 — **한 곳**이다. README 도 이 배열에서 만든다(§4: 같은 것을 두 곳에 적지 않는다). */
@@ -44,6 +45,7 @@ const readmeOf = () => `# 데모 장면 기록 — 11월 웹 데모 (${new Date(
 |---|---|---|
 ${SCENES.map(([f, d], i) => `| ${i + 1} | \`${f}.png\` | ${d} |`).join('\n')}
 
+- \`${VIDEO}\` — 강사 화면이 처음부터 끝까지 가는 **짧은 영상**(소리 없음). 폰에서도 재생됩니다.
 - 만드는 법: \`node scripts/demo-shots.mjs\` (저장소 루트에서). 목업 릴레이로 돌기 때문에
   **인터넷에 아무것도 나가지 않습니다.**
 - ⚠ **이 그림은 증거가 아닙니다.** 브라우저 인식·소리·QR 읽기가 모두 이 컨테이너 안의
@@ -57,6 +59,12 @@ if (CHECK) {
   const have = fs.readFileSync(p, 'utf-8');
   const missing = SCENES.filter(([f]) => !have.includes(`\`${f}.png\``));
   const noFile = SCENES.filter(([f]) => !fs.existsSync(path.join(OUT, `${f}.png`)));
+  /* README 가 영상을 가리키면 그 파일이 **있어야** 한다. 영상은 "가능하면" 이라 없을 수도
+     있는데, 그때는 README 도 안 가리켜야 한다 — 가리키면서 없는 것이 거짓말이다. */
+  if (have.includes(VIDEO) && !fs.existsSync(path.join(OUT, VIDEO))) {
+    console.error(`[FAIL] README 는 ${VIDEO} 를 가리키는데 파일이 없다`);
+    process.exit(1);
+  }
   if (missing.length || noFile.length) {
     console.error(`[FAIL] README 빠짐 ${missing.map(x => x[0]).join(',') || '없음'} · 그림 빠짐 ${noFile.map(x => x[0]).join(',') || '없음'}`);
     process.exit(1);
@@ -119,6 +127,7 @@ const guestStrip = async (pages, name) => {
 };
 
 fs.mkdirSync(OUT, { recursive: true });
+const VIDEO_TMP = fs.mkdtempSync(path.join(OUT, '.video-'));
 const port = await relay.listen();
 const base = `http://localhost:${port}`;
 const browser = await chromium.launch();
@@ -130,7 +139,12 @@ const watch = (p) => p.on('request', (rq) => {
 
 try {
   /* ── 강사 ── */
-  const hostCtx = await browser.newContext({ viewport: { width: 1100, height: 980 }, acceptDownloads: true });
+  /* 강사 화면은 **영상으로도** 남긴다(마스터 NOW 1 "가능하면 짧은 영상"). 손님 폰은 안 찍는다 —
+     셋을 다 찍으면 파일이 커지고, 대표님이 보시는 흐름은 강사 화면 하나로 이어진다. */
+  const hostCtx = await browser.newContext({
+    viewport: { width: 1100, height: 980 }, acceptDownloads: true,
+    recordVideo: { dir: VIDEO_TMP, size: { width: 1100, height: 980 } }
+  });
   await hostCtx.addInitScript(FAKE_SPEECH);
   const host = await hostCtx.newPage();
   watch(host);
@@ -235,6 +249,18 @@ try {
 
   await host.evaluate(() => document.getElementById('postasrBox').scrollIntoView({ block: 'center' }));
   await shot(host, SCENES[9][0]);
+
+  /* 영상 — 컨텍스트를 닫아야 파일이 떨어진다. 한 파일만 남기고 임시 자리는 치운다. */
+  await hostCtx.close();
+  const vids = fs.readdirSync(VIDEO_TMP).filter((f) => f.endsWith('.webm'));
+  if (vids.length) {
+    fs.copyFileSync(path.join(VIDEO_TMP, vids[0]), path.join(OUT, VIDEO));
+    const kb = Math.round(fs.statSync(path.join(OUT, VIDEO)).size / 1024);
+    console.log(`  ✓ ${VIDEO} (${kb}KB)`);
+  } else {
+    console.log(`  (영상 없음 — 브라우저가 못 찍었다. 그림 ${SCENES.length}장은 그대로다)`);
+  }
+  fs.rmSync(VIDEO_TMP, { recursive: true, force: true });
 
   fs.writeFileSync(path.join(OUT, 'README.md'), readmeOf());
   console.log(`\n장면 ${SCENES.length}개 · 바깥 요청 ${outside.length}건${outside.length ? ' — ' + outside[0] : ''}`);
