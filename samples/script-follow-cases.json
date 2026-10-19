@@ -5,133 +5,521 @@
   "cases": [
     {
       "name": "ko 문단을 읽었다",
-      "paras": [{ "n": 1, "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오" },
-                { "n": 2, "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다" }],
-      "state": { "para": 0, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오"
+        },
+        {
+          "n": 2,
+          "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다"
+        }
+      ],
+      "state": {
+        "para": 0,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오",
-      "want": { "off": false, "para": 1, "send": "script" }
+      "want": {
+        "off": false,
+        "para": 1,
+        "send": "script"
+      }
     },
     {
       "name": "ko 아직 시작 전의 딴 말",
-      "paras": [{ "n": 1, "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오" }],
-      "state": { "para": 0, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오"
+        }
+      ],
+      "state": {
+        "para": 0,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "자 그럼 오늘 교육을 한번 해 보겠습니다 날씨가 참 좋네요",
-      "want": { "off": true, "para": 0, "send": null }
+      "want": {
+        "off": true,
+        "para": 0,
+        "send": null
+      }
     },
     {
       "name": "ko 다음 문단으로 넘어간다",
-      "paras": [{ "n": 1, "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오" },
-                { "n": 2, "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다" }],
-      "state": { "para": 1, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오"
+        },
+        {
+          "n": 2,
+          "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다",
-      "want": { "off": false, "para": 2, "send": "script" }
+      "want": {
+        "off": false,
+        "para": 2,
+        "send": "script"
+      }
     },
     {
       "name": "ko 어긋나기 시작한 첫 줄 — 아직 끼어들기 아님 (R-15)",
-      "paras": [{ "n": 1, "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오" },
-                { "n": 2, "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다" }],
-      "state": { "para": 1, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오"
+        },
+        {
+          "n": 2,
+          "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "어제 사고 이야기를 잠깐 하겠습니다 아주 중요한 겁니다",
-      "want": { "off": true, "para": 1, "send": null }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": null
+      }
     },
     {
       "name": "ko 연속으로 어긋나 끼어들기로",
-      "paras": [{ "n": 1, "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오" },
-                { "n": 2, "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다" }],
-      "state": { "para": 1, "broke": false, "miss": 1 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오"
+        },
+        {
+          "n": 2,
+          "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 1
+      },
       "heard": "그래서 제가 그때 현장에 갔더니 상황이 아주 심각했습니다",
-      "want": { "off": true, "para": 1, "send": "break" }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": "break"
+      }
     },
     {
       "name": "ko 끼어든 중에 계속 딴 말",
-      "paras": [{ "n": 1, "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오" },
-                { "n": 2, "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다" }],
-      "state": { "para": 1, "broke": true, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오"
+        },
+        {
+          "n": 2,
+          "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": true,
+        "miss": 0
+      },
       "heard": "그때 찍은 사진을 나중에 보여 드리겠습니다",
-      "want": { "off": true, "para": 1, "send": null }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": null
+      }
     },
     {
       "name": "ko 원고로 돌아온다",
-      "paras": [{ "n": 1, "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오" },
-                { "n": 2, "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다" }],
-      "state": { "para": 1, "broke": true, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "안전 교육을 시작하겠습니다 모두 자리에 앉아 주십시오"
+        },
+        {
+          "n": 2,
+          "src": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": true,
+        "miss": 0
+      },
       "heard": "안전모를 반드시 착용하십시오 턱끈까지 조여야 합니다",
-      "want": { "off": false, "para": 2, "send": "break" }
+      "want": {
+        "off": false,
+        "para": 2,
+        "send": "break"
+      }
     },
     {
       "name": "en 문단을 읽었다",
-      "paras": [{ "n": 1, "src": "We will now begin the safety training please take your seats" },
-                { "n": 2, "src": "Always wear your helmet and fasten the chin strap" }],
-      "state": { "para": 0, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "We will now begin the safety training please take your seats"
+        },
+        {
+          "n": 2,
+          "src": "Always wear your helmet and fasten the chin strap"
+        }
+      ],
+      "state": {
+        "para": 0,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "We will now begin the safety training please take your seats",
-      "want": { "off": false, "para": 1, "send": "script" }
+      "want": {
+        "off": false,
+        "para": 1,
+        "send": "script"
+      }
     },
     {
       "name": "en 딴 말",
-      "paras": [{ "n": 1, "src": "We will now begin the safety training please take your seats" }],
-      "state": { "para": 1, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "We will now begin the safety training please take your seats"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "Let me tell you about yesterday accident it matters a great deal",
-      "want": { "off": true, "para": 1, "send": null }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": null
+      }
     },
     {
       "name": "zh 문단을 읽었다 (띄어쓰기 없는 글)",
-      "paras": [{ "n": 1, "src": "现在开始安全教育请大家就座不要走动" },
-                { "n": 2, "src": "请务必戴好安全帽并系紧下巴带" }],
-      "state": { "para": 0, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "现在开始安全教育请大家就座不要走动"
+        },
+        {
+          "n": 2,
+          "src": "请务必戴好安全帽并系紧下巴带"
+        }
+      ],
+      "state": {
+        "para": 0,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "现在开始安全教育请大家就座不要走动",
-      "want": { "off": false, "para": 1, "send": "script" }
+      "want": {
+        "off": false,
+        "para": 1,
+        "send": "script"
+      }
     },
     {
       "name": "zh 딴 말",
-      "paras": [{ "n": 1, "src": "现在开始安全教育请大家就座不要走动" }],
-      "state": { "para": 1, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "现在开始安全教育请大家就座不要走动"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "昨天那件事故我想先讲一下这非常重要",
-      "want": { "off": true, "para": 1, "send": null }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": null
+      }
     },
     {
       "name": "ja 문단을 읽었다",
-      "paras": [{ "n": 1, "src": "これから安全教育を始めますみなさん席に着いてください" },
-                { "n": 2, "src": "ヘルメットを必ずかぶりあごひもを締めてください" }],
-      "state": { "para": 0, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "これから安全教育を始めますみなさん席に着いてください"
+        },
+        {
+          "n": 2,
+          "src": "ヘルメットを必ずかぶりあごひもを締めてください"
+        }
+      ],
+      "state": {
+        "para": 0,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "これから安全教育を始めますみなさん席に着いてください",
-      "want": { "off": false, "para": 1, "send": "script" }
+      "want": {
+        "off": false,
+        "para": 1,
+        "send": "script"
+      }
     },
     {
       "name": "ja 딴 말",
-      "paras": [{ "n": 1, "src": "これから安全教育を始めますみなさん席に着いてください" }],
-      "state": { "para": 1, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "これから安全教育を始めますみなさん席に着いてください"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "昨日の事故について少しお話ししますとても大切なことです",
-      "want": { "off": true, "para": 1, "send": null }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": null
+      }
     },
     {
       "name": "th 문단을 읽었다",
-      "paras": [{ "n": 1, "src": "เราจะเริ่มการอบรมความปลอดภัยแล้วกรุณานั่งลง" },
-                { "n": 2, "src": "กรุณาสวมหมวกนิรภัยและรัดสายรัดคาง" }],
-      "state": { "para": 0, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "เราจะเริ่มการอบรมความปลอดภัยแล้วกรุณานั่งลง"
+        },
+        {
+          "n": 2,
+          "src": "กรุณาสวมหมวกนิรภัยและรัดสายรัดคาง"
+        }
+      ],
+      "state": {
+        "para": 0,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "เราจะเริ่มการอบรมความปลอดภัยแล้วกรุณานั่งลง",
-      "want": { "off": false, "para": 1, "send": "script" }
+      "want": {
+        "off": false,
+        "para": 1,
+        "send": "script"
+      }
     },
     {
       "name": "th 딴 말",
-      "paras": [{ "n": 1, "src": "เราจะเริ่มการอบรมความปลอดภัยแล้วกรุณานั่งลง" }],
-      "state": { "para": 1, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "เราจะเริ่มการอบรมความปลอดภัยแล้วกรุณานั่งลง"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "ผมขอเล่าเรื่องอุบัติเหตุเมื่อวานนี้ก่อนเพราะสำคัญมาก",
-      "want": { "off": true, "para": 1, "send": null }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": null
+      }
     },
     {
       "name": "ru 문단을 읽었다",
-      "paras": [{ "n": 1, "src": "Сейчас мы начнём инструктаж по безопасности пожалуйста садитесь" },
-                { "n": 2, "src": "Обязательно надевайте каску и застёгивайте подбородочный ремень" }],
-      "state": { "para": 0, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "Сейчас мы начнём инструктаж по безопасности пожалуйста садитесь"
+        },
+        {
+          "n": 2,
+          "src": "Обязательно надевайте каску и застёгивайте подбородочный ремень"
+        }
+      ],
+      "state": {
+        "para": 0,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "Сейчас мы начнём инструктаж по безопасности пожалуйста садитесь",
-      "want": { "off": false, "para": 1, "send": "script" }
+      "want": {
+        "off": false,
+        "para": 1,
+        "send": "script"
+      }
     },
     {
       "name": "ru 딴 말",
-      "paras": [{ "n": 1, "src": "Сейчас мы начнём инструктаж по безопасности пожалуйста садитесь" }],
-      "state": { "para": 1, "broke": false, "miss": 0 },
+      "paras": [
+        {
+          "n": 1,
+          "src": "Сейчас мы начнём инструктаж по безопасности пожалуйста садитесь"
+        }
+      ],
+      "state": {
+        "para": 1,
+        "broke": false,
+        "miss": 0
+      },
       "heard": "Расскажу сначала о вчерашнем происшествии это очень важно",
-      "want": { "off": true, "para": 1, "send": null }
+      "want": {
+        "off": true,
+        "para": 1,
+        "send": null
+      }
     }
-  ]
+  ],
+  "_late": "늦게 들어온 청취자(새 언어) — 마스터 10-20 04:45: 그때 번역한다 · 지금 읽는 문단부터 앞으로만 · 실시간이 먼저 · 5문단씩 · 기록 late_tr. 규칙은 src/lateTr.js, 같은 답을 웹도 내야 한다.",
+  "late": {
+    "batch": 5,
+    "cases": [
+      {
+        "name": "ko 지금 3번을 읽는 중 · 문단 12개",
+        "total": 12,
+        "cur": 3,
+        "have": [],
+        "want": [
+          [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          [
+            8,
+            9,
+            10,
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "name": "en 아직 시작 전 · 문단 3개",
+        "total": 3,
+        "cur": 0,
+        "have": [],
+        "want": [
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      {
+        "name": "zh 이미 번역이 있는 문단은 뺀다",
+        "total": 8,
+        "cur": 2,
+        "have": [
+          3,
+          5
+        ],
+        "want": [
+          [
+            2,
+            4,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      {
+        "name": "ja 끝 문단을 읽는 중",
+        "total": 4,
+        "cur": 4,
+        "have": [],
+        "want": [
+          [
+            4
+          ]
+        ]
+      },
+      {
+        "name": "th 지난 문단은 안 한다",
+        "total": 10,
+        "cur": 6,
+        "have": [],
+        "want": [
+          [
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        ]
+      },
+      {
+        "name": "ru 끝을 넘었으면 아무것도",
+        "total": 3,
+        "cur": 9,
+        "have": [],
+        "want": []
+      }
+    ],
+    "newLangs": [
+      {
+        "name": "ko 이미 있던 것·원고 언어·빈 값은 뺀다",
+        "prev": [
+          "en"
+        ],
+        "now": [
+          "en",
+          "vi"
+        ],
+        "srcLang": "ko",
+        "want": [
+          "vi"
+        ]
+      },
+      {
+        "name": "en 원고 언어는 뺀다",
+        "prev": [],
+        "now": [
+          "ko",
+          "en"
+        ],
+        "srcLang": "ko",
+        "want": [
+          "en"
+        ]
+      },
+      {
+        "name": "zh 같은 언어가 두 번 와도 한 번",
+        "prev": [],
+        "now": [
+          "vi",
+          "vi",
+          "ja"
+        ],
+        "srcLang": "ko",
+        "want": [
+          "vi",
+          "ja"
+        ]
+      }
+    ]
+  }
 }

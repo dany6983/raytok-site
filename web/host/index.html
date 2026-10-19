@@ -1187,6 +1187,47 @@
 
     /** 글 여러 개를 **한 번에** 번역한다. 돌려주는 것은 같은 길이의 배열이다.
      *  못 하면 **받은 그대로** 돌려준다(R-15) — 지어내지 않는다. */
+    /*
+     * 늦게 들어온 손님의 **새 언어**를 그때 번역한다 (마스터 10-20 04:45 판정).
+     *
+     * ① 지금 읽는 문단(`live.cur`)부터 앞으로만 — 지난 문단은 손님이 요청할 때
+     * ② 한 번에 **5문단씩**, 묶음 사이에 숨을 둬서 실시간 줄이 먼저 가게
+     * ③ 기록 `late_tr lang= paras= ms=` (마이크 기록과 같은 줄 모양)
+     */
+    const lateSeen = { langs: [] };
+    let lateBusy = false;
+    async function lateTranslate(lang) {
+      const F = window.rtScriptFollow;
+      if (!F || !lang || lateBusy) return;
+      if (!Array.isArray(paragraphs) || !paragraphs.length) return;
+      const fresh = F.newLangs(lateSeen.langs.concat(selectedLangs || []), [lang], SRC_LANG);
+      if (!fresh.length) return;                       // 이미 있던 언어다
+      lateBusy = true;
+      const t0 = Date.now();
+      let done = 0;
+      try {
+        for (const p of paragraphs) p.trans = p.trans || {};
+        const have = paragraphs.map((p, i) => (p.trans[lang] ? i + 1 : 0)).filter(Boolean);
+        const plan = F.latePlan({ total: paragraphs.length, cur: live.cur, have });
+        for (const group of plan) {
+          /* ② 실시간이 먼저 — 한 묶음 앞에서 숨을 둔다(보내는 일이 먼저 자리를 잡게) */
+          await new Promise((r) => setTimeout(r, 0));
+          const texts = group.map((n) => paragraphs[n - 1].src);
+          const got = await translateMany(texts, lang);
+          group.forEach((n, k) => {
+            const t = got && got[k];
+            if (typeof t === 'string' && t.trim() && t !== texts[k]) { paragraphs[n - 1].trans[lang] = t; done += 1; }
+          });
+        }
+        lateSeen.langs.push(lang);
+      } catch (e) {
+        micNote('late_tr_fail', { lang, why: String((e && e.message) || e).slice(0, 80) });
+      } finally {
+        lateBusy = false;
+        micNote('late_tr', { lang, paras: done, ms: Date.now() - t0 });
+      }
+    }
+
     async function translateMany(texts, targetLang) {
       try {
         const res = await fetch(`${RELAY_BASE}/translate`, {
@@ -1875,6 +1916,14 @@
         // 청취자 hello: 이름·언어는 이 화면에만 둔다(서버 저장 없음). welcome 으로 답한다.
         rosterJoin(msg, Date.now());
         sendWelcome();
+        /*
+         * ★ **늦게 들어온 손님의 새 언어를 그때 번역한다** (마스터 2026-10-20 04:45 판정).
+         * 원고 번역은 준비 화면에서 고른 언어만 만든다 — 그 뒤에 다른 언어로 들어온
+         * 손님은 **문단은 받고 번역 칸이 빈다**(이 페이지는 손님 대신 번역하지 않는다).
+         * 규칙(어떤 문단을 어떤 차례로)은 `web/common/script-follow.js` 한 곳이고
+         * **앱과 같은 사례 표**로 센다.
+         */
+        lateTranslate(String(msg.lang || '').trim());
         if (live.ended) renderEnd();
         return;
       }
