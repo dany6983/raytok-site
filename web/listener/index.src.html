@@ -40,7 +40,10 @@
       background-color: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      min-height: 100vh;
+      /* 아이폰 사파리는 `100vh` 가 **보이는 높이보다 크다** — 아래 도구막대가 그만큼
+         덮는다. `100dvh` 는 그 막대를 뺀 높이다. 둘을 같이 적어 옛 브라우저도 받는다
+         (`.in-chat body` 가 이미 그 꼴이었는데 여기와 아래 큰화면은 안 고쳐져 있었다 — §4) */
+      min-height: 100vh; min-height: 100dvh;
       display: flex;
       flex-direction: column;
     }
@@ -231,7 +234,7 @@
     /* ── 큰 화면 보기 (?view=screen) — 회의실 TV·빔. 원문과 고른 언어를 나란히, 최근 줄만 ── */
     .tool-btn-screen { display: none; }
     .view-screen.in-chat .header { display: none; }
-    .view-screen #chat-screen { height: 100vh; overflow: hidden; }
+    .view-screen #chat-screen { height: 100vh; height: 100dvh; overflow: hidden; }
     .view-screen #chat-list { overflow: hidden; justify-content: flex-end; padding: 4vh 4vw; gap: 3vh; }
     .view-screen #chat-list > .msg-line { max-width: 100%; align-self: stretch; opacity: 0.5; }
     .view-screen #chat-list > .msg-line.is-latest { opacity: 1; }   /* 방금 확정된 줄. 말하는 중인 줄(임시)은 흐리게 둔다 */
@@ -244,7 +247,8 @@
     .view-screen .msg-text { color: var(--text-muted); font-style: normal !important; }
     .view-screen .msg-tr { margin-top: 0; font-size: inherit !important; color: var(--primary) !important; font-weight: 600; }
     .view-screen .msg-src, .view-screen .msg-tr .badge { display: none; }
-    .view-screen .tool-bar { position: fixed; left: 0; right: 0; bottom: 0; transform: translateY(100%); transition: transform .2s; }
+    /* 노치 아이폰은 맨 아래 약 34px 이 홈 인디케이터 자리다 — 안 비우면 단추가 그 밑에 깔린다 */
+    .view-screen .tool-bar { position: fixed; left: 0; right: 0; bottom: 0; padding-bottom: env(safe-area-inset-bottom, 0px); transform: translateY(100%); transition: transform .2s; }
     .view-screen.show-tools .tool-bar { transform: none; }
     .view-screen .tool-btn-screen { display: inline-block; margin-left: auto; }
     /* ── 시연 (?demo=1) — 실제 세션이 아님을 늘 보이게 ── */
