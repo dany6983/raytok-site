@@ -1759,7 +1759,13 @@ export default {
           testKey,
           privateKeySeed: privSeed,
           portoneSecret,
-          portoneApiBase
+          portoneApiBase,
+          /* B 30 — V1 결제(KCP 채널이 V1 모듈)면 손님이 `impUid` 를 들고 온다. 그때는 V1 REST 로
+             확인한다. 열쇠는 Worker secret 에만 둔다(IMP_API_KEY·IMP_API_SECRET). */
+          impUid: body.impUid || body.imp_uid || null,
+          impKey: env.IMP_API_KEY,
+          impSecret: env.IMP_API_SECRET,
+          impApiBase: env.IMP_API_BASE || 'https://api.iamport.kr'
         });
 
         // DO 저장소(GLOBAL_LICENSE_MANAGER)에 발급 기록 및 묶음 영속화
