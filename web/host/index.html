@@ -639,7 +639,8 @@
         const res = await fetch(LANGS_URL, { cache: 'no-store' });
         if (!res.ok) throw new Error('status ' + res.status);
         const rows = await res.json();
-        if (!Array.isArray(rows) || rows.length < 20) throw new Error('목록이 너무 짧다');
+        /* 기록에만 남는 말이라 영어다 — 손님·대표님 화면에 뜨는 글이 아니다(§18 시험이 센다) */
+        if (!Array.isArray(rows) || rows.length < 20) throw new Error('list too short');
         const out = rows
           .filter((l) => l && typeof l.code === 'string' && l.code !== SRC_LANG)
           .map((l) => ({
