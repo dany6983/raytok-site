@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/web/common/theme.css">
   <!-- 포트원 V2 결제 SDK -->
   <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+  <script src="https://cdn.iamport.kr/v1/iamport.js"></script>   <!-- KCP 채널이 V1 모듈 (10-19) -->
   <script src="/web/vendor/qrcode.js"></script>
   <script src="./pg.js"></script>   <!-- 결제 상수 한 자리 (실키 전환은 이 파일만) -->
   <style>
@@ -235,6 +236,11 @@
         <input type="email" id="buyer-email" placeholder="email@example.com">
       </div>
 
+      <div class="form-group">
+        <label for="buyer-phone">휴대폰 번호 (결제 필수)</label>
+        <input type="tel" id="buyer-phone" placeholder="010-0000-0000" inputmode="tel">
+      </div>
+
       <button type="button" class="btn-pay" id="btn-pay">3,300원 결제하기</button>
 
       <!-- 11번 환불·청약철회 고지 (전자상거래법 제17조) -->
@@ -312,7 +318,14 @@
     btnPay.addEventListener('click', async () => {
       const name = document.getElementById('buyer-name').value.trim() || 'Guest';
       const email = document.getElementById('buyer-email').value.trim();
-      const paymentId = 'pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      const phone = (document.getElementById('buyer-phone').value || '').replace(/[^0-9]/g, '');
+      // KCP: paymentId 는 영문·숫자만, 최대 40자(포트원 KCP V2 안내). 밑줄·하이픈을 넣으면 결제창 호출이 파싱 오류로 죽는다(10-19 PG 심사).
+      const paymentId = 'pay' + Date.now() + Math.random().toString(36).replace(/[^a-z0-9]/g, '').substring(0, 8);
+      // KCP: 모바일 결제와 일부 카드사 PC 직접 호출은 구매자 연락처가 필수다.
+      if (!/^01[0-9]{8,9}$/.test(phone)) {
+        alert('휴대폰 번호를 정확히 입력해 주세요. (예: 010-1234-5678)');
+        return;
+      }
 
       btnPay.disabled = true;
       btnPay.textContent = '결제창을 여는 중...';
@@ -324,19 +337,40 @@
         if (!PG || !PG.ready()) {
           throw new Error('결제 설정을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
         }
-        if (!window.PortOne || typeof window.PortOne.requestPayment !== 'function') {
-          throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+        let paymentResponse;
+        if (PG.sdk === 'v1') {
+          // V1 SDK — KCP 채널이 V1 모듈이라 V2 requestPayment 는 "KCP 에 대해 지원하지 않는 기능" 으로 죽는다(10-19 실측).
+          if (!window.IMP || typeof window.IMP.request_pay !== 'function') {
+            throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+          }
+          window.IMP.init(PG.impCode);
+          const r = await new Promise(function (resolve) {
+            window.IMP.request_pay(Object.assign({
+              channelKey: CHANNEL_KEY,
+              pay_method: 'card',
+              merchant_uid: paymentId,
+              name: selectedProduct.name,
+              amount: selectedProduct.price,
+              buyer_name: name,
+              buyer_tel: phone
+            }, email ? { buyer_email: email } : {}), resolve);
+          });
+          paymentResponse = (r && r.error_msg) ? { code: 1, message: r.error_msg } : { code: 0, impUid: r && r.imp_uid };
+        } else {
+          if (!window.PortOne || typeof window.PortOne.requestPayment !== 'function') {
+            throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+          }
+          paymentResponse = await PortOne.requestPayment({
+            storeId: STORE_ID,
+            channelKey: CHANNEL_KEY,
+            paymentId: paymentId,
+            orderName: selectedProduct.name,
+            totalAmount: selectedProduct.price,
+            currency: 'CURRENCY_KRW',
+            payMethod: 'CARD',
+            customer: Object.assign({ fullName: name, phoneNumber: phone }, email ? { email: email } : {})
+          });
         }
-        const paymentResponse = await PortOne.requestPayment({
-          storeId: STORE_ID,
-          channelKey: CHANNEL_KEY,
-          paymentId: paymentId,
-          orderName: selectedProduct.name,
-          totalAmount: selectedProduct.price,
-          currency: 'CURRENCY_KRW',
-          payMethod: 'CARD',
-          customer: { fullName: name, email: email }
-        });
 
         if (paymentResponse && paymentResponse.code != null && paymentResponse.code !== 0) {
           alert('결제가 취소되었거나 실패했습니다: ' + (paymentResponse.message || ''));
@@ -351,6 +385,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paymentId: paymentId,
+            impUid: (paymentResponse && paymentResponse.impUid) || undefined,   // V1 결제면 릴레이가 이것으로 검증한다(B 몫)
             productId: selectedProduct.id,
             amount: selectedProduct.price,
             customerName: name,

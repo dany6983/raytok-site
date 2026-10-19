@@ -124,9 +124,13 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
       req.on('end', async () => {
         try {
           const body = JSON.parse(raw);
+          /* V1 결제(imp_uid 가 온 경우)는 V1 열쇠 둘이 있어야 **선다**(B 30). 여기선 확인을
+             건너뛰지만 열쇠는 넘긴다 — 운영과 같은 모양이다(없으면 503 pg_secret_missing). */
           const result = await handlePaymentComplete({
             ...body,
             portoneSecret: TEST_SECRET,
+            impKey: 'imp_key_for_browser_test',
+            impSecret: 'imp_secret_for_browser_test',
             skipPgVerification: true
           });
           res.writeHead(result.status, { 'Content-Type': 'application/json' });
@@ -181,12 +185,31 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
   const page = await browser.newPage();
   page.on('dialog', async d => { await d.dismiss(); });
 
-  // 외부 CDN 가로채기
+  /* 구매 폼 채우기 — **한 자리**에 둔다. 10-19 에 휴대폰 칸이 필수로 생겼고(KCP 모바일·일부
+     카드사), 안 채우면 결제 단추가 "휴대폰 번호를 정확히" 에서 멈춘다. 그 줄을 모든 클릭 앞에
+     두지 않으면 시험이 **엉뚱한 알림**을 보고 붉어진다(10-19 에 그렇게 붉었다). */
+  const fillBuyer = async (p, phone = '01012345678') => {
+    await p.fill('#buyer-name', '시험구매자');
+    await p.fill('#buyer-email', 'test@example.com');
+    await p.fill('#buyer-phone', phone);
+  };
+
+  // 외부 CDN 가로채기 — V2·V1 둘 다. 지금 KCP 채널은 **V1 모듈**이라 화면이 V1 길로 간다(10-19).
   await page.route('https://cdn.portone.io/**', route => {
     route.fulfill({
       status: 200,
       contentType: 'application/javascript',
       body: 'window.PortOne = { requestPayment: async (p) => ({ code: 0, paymentId: p.paymentId }) };'
+    });
+  });
+  await page.route('https://cdn.iamport.kr/**', route => {
+    /* V1 SDK 가짜. 실기와 같은 모양으로 답한다 — `imp_uid` 를 주고, 콜백으로 돌려준다(D-11).
+       `window.__impArgs` 에 넘겨받은 칸을 남겨 두어 시험이 **무엇을 보냈는지** 본다. */
+    route.fulfill({
+      status: 200, contentType: 'application/javascript',
+      body: 'window.IMP = { init: function (c) { window.__impCode = c; },'
+          + ' request_pay: function (p, cb) { window.__impArgs = p; setTimeout(function () {'
+          + ' cb({ success: true, imp_uid: "imp_fake_" + p.merchant_uid, merchant_uid: p.merchant_uid, paid_amount: p.amount }); }, 10); } };'
     });
   });
 
@@ -218,9 +241,27 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     ok(buyHtml.includes('pg.js'), '13:40 ②: 구매 화면이 pg.js 를 싣는다');
     ok(/window\.rtPG/.test(buyHtml), '13:40 ②: 구매 화면은 그 한 자리에서 **읽기만** 한다');
 
-    // 저장소에는 테스트 값만 둔다 — 운영값은 대표님이 포트원 콘솔에서 복사해 넣는다
+    /* 저장소에 있는 것은 **공개 식별자뿐**이다 (10-19: 대표님이 PG 심사 때문에 실값을 넣으셨다 —
+       `d40bda2`·`188d2f3`. storeId·channelKey·impCode 는 브라우저가 그대로 들고 쓰는 공개값이고
+       비밀값이 아니다). 그래서 이 시험이 보는 것이 바뀐다:
+         ⓐ 비밀값처럼 보이는 칸이 끼지 않았는가 (이게 끼면 공개 저장소에 비밀이 샌다)
+         ⓑ **반쯤 바꾼 상태가 아닌가** — 한쪽만 실값이면 테스트 채널로 실결제를 받는다(D-32) */
     const pgMod = createRequire(import.meta.url)(path.join(ROOT, 'buy', 'pg.js'));
-    ok(pgMod.isTest === true, `13:40 ②: 지금은 테스트 채널이다 (storeId=${pgMod.storeId})`);
+    const pgKeys = Object.keys(pgMod);
+    const secretish = pgKeys.filter(k => /secret|apikey|api_key|token|password|webhook/i.test(k));
+    ok(secretish.length === 0, `13:40 ②: pg.js 에 비밀값 칸이 없다 (${secretish.join(',') || '없음'})`);
+    const isTestStore = /test/i.test(String(pgMod.storeId));
+    const isTestChannel = /test/i.test(String(pgMod.channelKey));
+    ok(isTestStore === isTestChannel,
+       `13:40 ②: storeId·channelKey 가 **같은 쪽**이다 (store ${isTestStore ? '시험' : '운영'} · channel ${isTestChannel ? '시험' : '운영'}) — 섞이면 테스트 채널로 실결제를 받는다`);
+    ok(pgMod.isTest === isTestStore, '13:40 ②: isTest 가 값에서 갈린다 (사람이 켜는 깃발이 아니다)');
+    if (!pgMod.isTest) {
+      ok(/^store-[0-9a-f-]{8,}$/.test(String(pgMod.storeId)), `운영 storeId 가 포트원 꼴이다 (${String(pgMod.storeId).slice(0, 12)}…)`);
+      ok(/^channel-key-[0-9a-f-]{8,}$/.test(String(pgMod.channelKey)), '운영 channelKey 가 포트원 꼴이다');
+      if (pgMod.sdk === 'v1') {
+        ok(/^imp\w{6,}$/.test(String(pgMod.impCode)), `V1 채널이면 impCode 가 있다 (${pgMod.impCode})`);
+      }
+    }
     ok(pgMod.provider === 'kcp', `13:40 ②: 채널은 KCP 라고 적혀 있다 (${pgMod.provider})`);
     ok(pgMod.ready() === true, '13:40 ②: 두 값이 다 채워져 있다 (빈 값이면 결제창을 열지 않는다)');
 
@@ -244,6 +285,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     });
     await noPgPage.goto(`${baseUrl}/buy/`);
     ok(await noPgPage.evaluate(() => window.rtPG === undefined), '13:40 ②: pg.js 를 막은 쪽에서는 결제 상수가 없다');
+    await fillBuyer(noPgPage);
     await noPgPage.click('#btn-pay');
     await noPgPage.waitForTimeout(500);
     portoneCalls = await noPgPage.evaluate(() => window.__poCalled || 0);
@@ -376,7 +418,8 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     const btnText = await page.textContent('#btn-pay');
     ok(btnText.includes('9,900원 결제하기'), '상품 선택에 따른 결제 버튼 금액 갱신 확인');
 
-    // 3) 결제하기 클릭
+    // 3) 결제하기 클릭 (구매자 칸을 먼저 채운다 — 휴대폰은 10-19 부터 필수)
+    await fillBuyer(page);
     await page.click('#btn-pay');
     await page.waitForSelector('#view-result', { state: 'visible' });
 

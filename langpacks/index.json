@@ -1,0 +1,25 @@
+{
+ "ver": 1,
+ "_about": "언어팩 배포 목록. 설계(비공개): raytok-engine/docs/design/langpack-v1.md §3. 손으로 해시를 적지 않는다 — 파일을 넣고 `node tools/check-langpacks.js --fix`.",
+ "_readers": "앱은 status가 'ready'인 줄만 받는다. 받은 뒤 SHA-256을 다시 재서 다르면 버리고 지금 길(ML Kit/서버)로 간다 — 유실보다 지연(R-15).",
+ "_wifi": "받기는 와이파이에서만 (지금 언어팩 규칙 그대로).",
+ "updated": "2026-10-17",
+ "packs": [
+  {
+   "name": "ko-xx_v0",
+   "pair": {
+    "src": "ko",
+    "dst": "xx"
+   },
+   "version": "0",
+   "product": [
+    1
+   ],
+   "file": "ko-xx_v0.rtpack",
+   "bytes": 510,
+   "sha256": "cfd5b20a848be6d5dea69c552328403d8fc43b60655b0f7e04e38f9551730fc2",
+   "status": "fake",
+   "note": "모양만 보이는 가짜 팩. 모델이 없고 번역하지 않는다. 실제 팩은 1단(E-5) 결과가 ML Kit 을 이긴 언어부터 들어온다."
+  }
+ ]
+}

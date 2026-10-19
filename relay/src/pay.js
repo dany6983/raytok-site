@@ -107,6 +107,13 @@ export async function handlePaymentComplete({
   storage = null,
   portoneSecret = null,
   portoneApiBase = 'https://api.portone.io',
+  /* B 30 — KCP 채널이 **V1 모듈**이라 결제창이 V1 SDK 로 떴다(10-19 PG 심사). 그때 손님 쪽이
+     주는 열쇠는 `imp_uid` 하나이고, V2 조회 API 로는 그 결제를 찾을 수 없다. 그러면
+     **돈은 빠지고 쿠폰은 안 나온다.** 그래서 V1 결제는 V1 REST 로 확인한다. */
+  impUid = null,
+  impKey = null,
+  impSecret = null,
+  impApiBase = 'https://api.iamport.kr',
   skipPgVerification = false
 }) {
   if (!paymentId || typeof paymentId !== 'string') {
@@ -114,7 +121,16 @@ export async function handlePaymentComplete({
   }
 
   // 0. 포트원 비밀값 검사 (MASTER 12:35 ②: 없으면 503 pg_secret_missing)
-  if (!portoneSecret) {
+  //    V1 결제(imp_uid 가 온 경우)는 V1 열쇠 둘을 본다 — 없으면 역시 **서지 않는다**.
+  const useV1 = !!impUid;
+  if (useV1) {
+    if (!impKey || !impSecret) {
+      return {
+        status: 503,
+        body: { error: 'pg_secret_missing', message: 'IMP_API_KEY·IMP_API_SECRET 환경변수가 누락되었습니다.', why: 'imp_secret_missing' }
+      };
+    }
+  } else if (!portoneSecret) {
     return {
       status: 503,
       body: { error: 'pg_secret_missing', message: 'PORTONE_API_SECRET 환경변수가 누락되었습니다.' }
@@ -140,8 +156,104 @@ export async function handlePaymentComplete({
     return { status: 400, body: { error: 'amount_mismatch', message: '결제 금액이 일치하지 않습니다.' } };
   }
 
+  // 4-V1. 포트원 **V1** 단건 조회 (B 30) — imp_uid 로 상태·금액·주문번호를 확인한다.
+  //        V1 응답은 `{code, message, response:{status, amount, name, merchant_uid, custom_data}}` 꼴이고
+  //        status 는 **소문자 'paid'** 다(V2 는 'PAID'). 섞어 읽으면 늘 통과하거나 늘 막힌다.
+  if (useV1 && !skipPgVerification) {
+    const base = impApiBase.replace(/\/+$/, '');
+    const fetchJson = async (url, init, whatFor) => {
+      let res;
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 5000);
+        res = await fetch(url, { ...init, signal: ctrl.signal });
+        clearTimeout(timer);
+      } catch (err) {
+        return { err: { status: 503, body: { error: 'pg_unavailable', message: `포트원 V1 ${whatFor} 실패(네트워크/타임아웃): ${err.message}`, why: 'imp_unavailable' } } };
+      }
+      if (res.status >= 500) {
+        return { err: { status: 503, body: { error: 'pg_unavailable', message: `포트원 V1 서버 오류 (${res.status}, ${whatFor})`, why: 'imp_unavailable' } } };
+      }
+      let data;
+      try { data = await res.json(); }
+      catch (_) { return { err: { status: 503, body: { error: 'pg_unavailable', message: `포트원 V1 응답 JSON 파싱 실패 (${whatFor})`, why: 'imp_unavailable' } } }; }
+      return { res, data };
+    };
+
+    // ⓐ 접근 토큰 — 우리 열쇠 문제이므로 실패하면 **찍지 않고** 503 (402 가 아니다)
+    const tok = await fetchJson(`${base}/users/getToken`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imp_key: impKey, imp_secret: impSecret })
+    }, '토큰 발급');
+    if (tok.err) return tok.err;
+    const accessToken = tok.data && tok.data.response && tok.data.response.access_token;
+    if (!tok.res.ok || !accessToken) {
+      return {
+        status: 503,
+        body: { error: 'pg_unavailable', message: `포트원 V1 토큰을 받지 못했습니다 (${tok.res.status})`, why: 'imp_token' }
+      };
+    }
+
+    // ⓑ 결제 단건 조회
+    const pay = await fetchJson(`${base}/payments/${encodeURIComponent(impUid)}`, {
+      method: 'GET',
+      headers: { 'Authorization': accessToken, 'Content-Type': 'application/json' }
+    }, '결제 조회');
+    if (pay.err) return pay.err;
+    if (!pay.res.ok) {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `포트원 V1 결제 내역 조회 실패 (${pay.res.status})`, why: 'imp_not_found' }
+      };
+    }
+    const r = (pay.data && pay.data.response) || null;
+    if (!r) {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: '포트원 V1 응답에 결제 내역이 없습니다.', why: 'imp_empty' }
+      };
+    }
+
+    // ① status === 'paid'
+    if (String(r.status).toLowerCase() !== 'paid') {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `결제 상태가 paid 가 아닙니다 (현재: ${r.status})`, why: 'imp_status' }
+      };
+    }
+    // ② 금액
+    if (Number(r.amount) !== product.price) {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `결제 금액 불일치 (실제: ${r.amount}, 예상: ${product.price})`, why: 'imp_amount' }
+      };
+    }
+    // ③ 주문번호 — 손님이 보낸 paymentId 와 포트원이 아는 merchant_uid 가 같아야 한다
+    //    (이 줄이 없으면 **남의 결제 하나로 쿠폰을 계속 받는** 길이 된다)
+    if (String(r.merchant_uid || '') !== String(paymentId)) {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `주문번호 불일치 (포트원: ${r.merchant_uid}, 요청: ${paymentId})`, why: 'imp_merchant' }
+      };
+    }
+    // ④ 상품
+    let v1CustomProd = null;
+    if (r.custom_data) {
+      try { v1CustomProd = typeof r.custom_data === 'string' ? (JSON.parse(r.custom_data).productId || null) : (r.custom_data.productId || null); }
+      catch (_) { v1CustomProd = null; }
+    }
+    const v1Name = r.name || '';
+    if (!(v1CustomProd === productId || v1Name.includes(product.name) || v1Name.includes(productId))) {
+      return {
+        status: 402,
+        body: { error: 'payment_not_verified', message: `결제 상품 불일치 (주문명: ${v1Name}, 대상: ${product.name})`, why: 'imp_product' }
+      };
+    }
+  }
+
   // 4. 포트원 V2 결제 단건 조회 및 실결제 상태 검증 (MASTER 12:35 ①)
-  if (!skipPgVerification) {
+  if (!useV1 && !skipPgVerification) {
     let pgRes;
     try {
       const url = `${portoneApiBase.replace(/\/+$/, '')}/payments/${encodeURIComponent(paymentId)}`;

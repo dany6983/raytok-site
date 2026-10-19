@@ -573,7 +573,8 @@ export class Room {
     // - 원가 감시용 · 과금 근거 아님
     if (url.pathname === '/usage/record' && request.method === 'POST') {
       const { sub, target, chars = 0, sttKey = false, deskMinutes = 0, listenerBytes = 0, listenerCount = 0,
-              pro_tokens_in = 0, pro_tokens_out = 0, pro_usd = 0, pro_day = null } = await request.json();
+              pro_tokens_in = 0, pro_tokens_out = 0, pro_usd = 0, pro_day = null,
+              asr_usd = 0, asr_day = null } = await request.json();
       if (!sub) {
         return new Response(JSON.stringify({ error: 'sub required' }), { status: 400 });
       }
@@ -633,6 +634,12 @@ export class Room {
       if (pro_day && pro_usd > 0) {
         const spent = Number((await this.ctx.storage.get(pro_day)) || 0) + Number(pro_usd);
         await this.ctx.storage.put(pro_day, spent);
+      }
+
+      // B 22 — 사후 받아쓰기 일일 상한이 읽는 칸 (asr_usd:YYYY-MM-DD). 원가 감시용, 과금 근거 아님
+      if (asr_day && asr_usd > 0) {
+        const spent = Number((await this.ctx.storage.get(asr_day)) || 0) + Number(asr_usd);
+        await this.ctx.storage.put(asr_day, spent);
       }
 
       if (listenerBytes > 0) {
@@ -943,11 +950,12 @@ export class Room {
       // B 10 — 일일 상한이 읽는 칸 하나 (pro_usd:YYYY-MM-DD). 다른 칸은 보지 않는다.
       const oneKey = url.searchParams.get('key');
       if (oneKey) {
-        if (!/^pro_usd:\d{4}-\d{2}-\d{2}$/.test(oneKey)) {
+        if (!/^(pro_usd|asr_usd):\d{4}-\d{2}-\d{2}$/.test(oneKey)) {
           return new Response(JSON.stringify({ error: 'bad_key' }), { status: 400 });
         }
         const spent = Number((await this.ctx.storage.get(oneKey)) || 0);
-        return new Response(JSON.stringify({ key: oneKey, pro_usd: spent, keys: { [oneKey]: spent } }), {
+        const asKey = oneKey.startsWith('asr_usd:') ? 'asr_usd' : 'pro_usd';
+        return new Response(JSON.stringify({ key: oneKey, [asKey]: spent, keys: { [oneKey]: spent } }), {
           headers: { 'Content-Type': 'application/json' }
         });
       }

@@ -54,7 +54,20 @@ ok(suspects.length === 0, `값처럼 보이는 긴 글자 0 (${suspects.slice(0,
 ok(!/sk-|AIza|Bearer\s+[A-Za-z0-9]/.test(doc), '키 머리글자(sk- · AIza · Bearer <값>)가 없다');
 ok(/<ADMIN_SECRET>/.test(doc), '값이 필요한 자리는 자리표(<ADMIN_SECRET>)로만 적혀 있다');
 
-/* ⑤ 되돌림 실증 — 이름 하나를 코드에 없는 것으로 바꾸면 붉다 */
+/* ⑤ 문서가 든 **되돌림 해시**가 실제로 있는 커밋인가 — 없는 해시를 적어 두면 대표님이
+   급할 때 그 줄을 치고 실패한다(§4 — 문서도 값을 읽는 곳이다). */
+const { execFileSync } = require('child_process');
+const hashes = [...new Set((doc.match(/git revert\s+([0-9a-f]{7,40})/g) || [])
+  .map((m) => m.split(/\s+/).pop()))];
+ok(hashes.length >= 4, `문서가 되돌림 해시 ${hashes.length}개를 든다`);
+const ghostHash = [];
+for (const h of hashes) {
+  try { execFileSync('git', ['cat-file', '-e', h + '^{commit}'], { cwd: ROOT, stdio: 'pipe' }); }
+  catch (e) { ghostHash.push(h); }
+}
+ok(ghostHash.length === 0, `없는 커밋을 가리키는 해시 0 (${ghostHash.join(', ') || '없음'})`);
+
+/* ⑥ 되돌림 실증 — 이름 하나를 코드에 없는 것으로 바꾸면 붉다 */
 let reverted = false;
 try {
   const faked = names.concat(['PORTONE_NOPE_SECRET']).filter((n) => !src.includes('env.' + n));
