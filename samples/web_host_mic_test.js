@@ -373,6 +373,48 @@ async function openHost(browser, base, { speech, region, locale, question }) {
     ok(revertUndefFailed === true, 'grant 에 글자가 없는 경우를 안 막으면 붉어진다 (되돌림 실증 6)');
 
     await lisCtx.close();
+
+    /* ───────── [7] A1 — **한 시간치를 실제로 돌린다** (2026-10-19)
+       "60분 무중단"은 말이 아니라 **수치**여야 한다(D-11). 60분을 기다릴 수는 없으니
+       **그 시간에 일어나는 일의 양**을 돌린다: 크롬은 대략 분마다 한 번 끝내므로 한 시간이면
+       다시 열기 **60여 번**, 말한 문장 **200~300줄**(10-15 60분 기록에서 203 단위).
+       여기서는 **120번 다시 열고 300줄**을 넣는다 — 한 시간보다 빡빡하게.
+
+       재는 것 셋: ① 끝까지 살아 있나 ② 한 줄도 안 사라졌나 ③ 기록·대기줄이 **안 부푸나**
+       (고치면서 메모리를 새게 만드는 것이 흔한 사고라, 상한이 지켜지는지 같이 본다). */
+    console.log('\n[7] 한 시간치 — 120번 다시 열고 300줄 말한다 (A1)');
+    const long = await openHost(browser, base, { speech: FAKE_SPEECH, region: 'KR' });
+    const longRoom = relay.rooms.get((await long.page.textContent('#roomCode')).trim());
+    await long.page.click('#btnMic');
+    await long.page.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 3000 });
+    const LONG_LINES = 300, LONG_CYCLES = 120;
+    await long.page.evaluate(async ({ lines, cycles }) => {
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      for (let i = 1; i <= lines; i++) {
+        window.__rec.say('한 시간치 ' + i, true);
+        /* 줄 몇 개마다 브라우저가 혼자 끝낸다 — 진짜 크롬이 그렇게 군다 */
+        if (i % Math.ceil(lines / cycles) === 0) {
+          window.__rec.dieQuietly();
+          await sleep(12);                      // 물러서는 첫 간격은 0ms 다
+        }
+      }
+    }, { lines: LONG_LINES, cycles: LONG_CYCLES });
+    await long.page.waitForTimeout(1200);
+    const st = await long.page.evaluate(() => ({
+      on: window.rtHostMic.state.on, live: window.rtHostMic.state.live,
+      reopens: window.rtHostMic.state.reopens, held: window.rtHostMic.state.pending.length,
+      sent: window.rtHostMic.state.sent.length, logN: window.rtHostMic.log().length,
+    }));
+    ok(st.on && st.live, `한 시간치를 돌고도 🎤 가 **살아 있다** (다시 열기 ${st.reopens}번)`);
+    ok(st.reopens >= 50, `다시 열기가 한 시간 몫만큼 일어났다 (${st.reopens}번)`);
+    const longTexts = longRoom.received.filter(m => m && m.text && /^한 시간치 /.test(m.text));
+    ok(longTexts.length === LONG_LINES,
+       `말한 ${LONG_LINES} 줄이 **한 줄도 안 빠지고** 닿았다 (${longTexts.length}줄, 쥔 것 ${st.held})`);
+    const inOrder = longTexts.every((m, i) => m.text === '한 시간치 ' + (i + 1));
+    ok(inOrder, '차례도 그대로다 — 다시 여는 사이에 섞이지 않는다');
+    ok(st.logN <= 200, `기록이 부풀지 않는다 (${st.logN}줄, 상한 200)`);
+    await long.ctx.close();
+
     await host.ctx.close();
     console.log(`\n전부 통과 (${passCount}건)`);
   } finally {
