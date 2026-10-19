@@ -112,6 +112,40 @@ const overflowX = (page) => page.evaluate(() =>
        'QR 없이 열면 칸이 비고 손님이 친다 — 위 두 단언이 ?room= 덕이라는 증거 (되돌림 실증 ③)');
     await bare.close();
     await guest.close();
+
+  /* ⑤ 링크의 `?lang=` 이 **자막 언어까지** 맞추는가 (2026-10-19).
+     10-19 까지 링크와 저장값은 **딱 맞는 코드**만 봤다. 목록이 `zh-CN`·`zh-TW` 로 갈려 있어
+     `?lang=zh` 는 아무것도 못 맞추고 **조용히 영어**가 됐다 — 글자는 중국어, 자막은 영어.
+     손님은 그걸 모른다(§20). 고르개의 값으로 센다(화면이 실제로 들고 있는 값이다). */
+  for (const [want, expect] of [['zh', 'zh-CN'], ['zh-CN', 'zh-CN'], ['zh-TW', 'zh-TW'],
+                                ['en-US', 'en'], ['vi', 'vi']]) {
+    const lp = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await lp.goto(`${base}/web/listener/?lang=${want}`);
+    await lp.waitForSelector('#lang-select');
+    const got = await lp.evaluate(() => document.getElementById('lang-select').value);
+    ok(got === expect, `?lang=${want} → 자막 언어 ${expect} (지금 ${got})`);
+    await lp.close();
+  }
+  {
+    /* 모르는 코드는 **고르지 않는다** — 폰 언어·기본으로 떨어진다(지어내지 않는다) */
+    const lp = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await lp.goto(`${base}/web/listener/?lang=xx`);
+    await lp.waitForSelector('#lang-select');
+    const got = await lp.evaluate(() => document.getElementById('lang-select').value);
+    ok(got !== 'xx' && got.length >= 2, `모르는 코드(?lang=xx)는 고르지 않는다 → ${got}`);
+    await lp.close();
+  }
+  {
+    /* 되돌림 실증 ⑤ — 10-19 의 길(딱 맞는 것만)으로 되돌리면 `zh` 가 아무것도 못 맞춘다.
+       화면의 **실제 목록**으로 같은 셈을 돌린다(여기서 만든 상수가 아니다). */
+    const lp = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await lp.goto(`${base}/web/listener/?lang=zh`);
+    await lp.waitForSelector('#lang-select');
+    const codes = await lp.evaluate(() => [...document.querySelectorAll('#lang-select option')].map((o) => o.value));
+    ok(codes.length > 50 && !codes.includes('zh'),
+       `목록에 'zh' 자체는 없다 (${codes.length}개) — 그래서 옛 길은 못 맞췄다 (되돌림 실증 ⑤)`);
+    await lp.close();
+  }
   } finally {
     await browser.close();
     srv.close();

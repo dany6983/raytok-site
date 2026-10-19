@@ -901,18 +901,23 @@
       const qLang = params.get('lang');
       const savedLang = localStorage.getItem('raytok_lang');
 
-      // 1. 자막 언어(selectedLang) 먼저 결정
-      if (qLang && langs.some(l => l.code === qLang)) {
-        selectedLang = qLang;
-      } else if (savedLang && langs.some(l => l.code === savedLang)) {
-        selectedLang = savedLang;
-      } else {
-        const nav = (navigator.language || '').trim();
-        const norm = normalizeLangCode(nav);
-        const match = langs.find(l => l.code === nav || l.code === norm || l.code.startsWith(norm));
-        if (match) selectedLang = match.code;
-        else selectedLang = 'en';
+      /* 1. 자막 언어(selectedLang) — **고르는 법은 한 함수**다.
+         10-19 까지 세 자리가 서로 달랐다: 링크(`?lang=`)와 저장값은 **딱 맞는 것**만 봤고,
+         폰 언어만 느슨하게 봤다. 그래서 `?lang=zh` 로 들어오면(목록은 `zh-CN`·`zh-TW`)
+         **조용히 영어**가 됐다 — 글자는 중국어인데 자막은 영어다. 같은 날 강사 표의
+         `zh`→`zh-CN` 도 같은 부류였다(§4: 값의 출처를 바꾸면 읽는 곳을 전부 센다). */
+      function pickLang(want) {
+        const w = String(want || '').trim();
+        if (!w) return null;
+        const exact = langs.find(l => l.code === w);
+        if (exact) return exact.code;                      // 딱 맞는 것이 먼저다 (zh-TW 를 zh-CN 으로 보내지 않는다)
+        const norm = normalizeLangCode(w);
+        const near = langs.find(l => l.code === norm) || langs.find(l => normalizeLangCode(l.code) === norm);
+        if (near) { try { console.log(`lang_pick want=${w} use=${near.code}`); } catch (_) {} return near.code; }
+        return null;                                        // 모르면 **고르지 않는다** — 다음 자리가 본다(D-70)
       }
+
+      selectedLang = pickLang(qLang) || pickLang(savedLang) || pickLang(navigator.language) || 'en';
 
       // 2. langSelect.value = selectedLang (applyStrings 앞)
       if (selectedLang) langSelect.value = selectedLang;
