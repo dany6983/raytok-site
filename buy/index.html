@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/web/common/theme.css">
   <!-- 포트원 V2 결제 SDK -->
   <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+  <script src="https://cdn.iamport.kr/v1/iamport.js"></script>   <!-- KCP 채널이 V1 모듈 (10-19) -->
   <script src="/web/vendor/qrcode.js"></script>
   <script src="./pg.js"></script>   <!-- 결제 상수 한 자리 (실키 전환은 이 파일만) -->
   <style>
@@ -336,19 +337,40 @@
         if (!PG || !PG.ready()) {
           throw new Error('결제 설정을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
         }
-        if (!window.PortOne || typeof window.PortOne.requestPayment !== 'function') {
-          throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+        let paymentResponse;
+        if (PG.sdk === 'v1') {
+          // V1 SDK — KCP 채널이 V1 모듈이라 V2 requestPayment 는 "KCP 에 대해 지원하지 않는 기능" 으로 죽는다(10-19 실측).
+          if (!window.IMP || typeof window.IMP.request_pay !== 'function') {
+            throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+          }
+          window.IMP.init(PG.impCode);
+          const r = await new Promise(function (resolve) {
+            window.IMP.request_pay(Object.assign({
+              channelKey: CHANNEL_KEY,
+              pay_method: 'card',
+              merchant_uid: paymentId,
+              name: selectedProduct.name,
+              amount: selectedProduct.price,
+              buyer_name: name,
+              buyer_tel: phone
+            }, email ? { buyer_email: email } : {}), resolve);
+          });
+          paymentResponse = (r && r.error_msg) ? { code: 1, message: r.error_msg } : { code: 0, impUid: r && r.imp_uid };
+        } else {
+          if (!window.PortOne || typeof window.PortOne.requestPayment !== 'function') {
+            throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+          }
+          paymentResponse = await PortOne.requestPayment({
+            storeId: STORE_ID,
+            channelKey: CHANNEL_KEY,
+            paymentId: paymentId,
+            orderName: selectedProduct.name,
+            totalAmount: selectedProduct.price,
+            currency: 'CURRENCY_KRW',
+            payMethod: 'CARD',
+            customer: Object.assign({ fullName: name, phoneNumber: phone }, email ? { email: email } : {})
+          });
         }
-        const paymentResponse = await PortOne.requestPayment({
-          storeId: STORE_ID,
-          channelKey: CHANNEL_KEY,
-          paymentId: paymentId,
-          orderName: selectedProduct.name,
-          totalAmount: selectedProduct.price,
-          currency: 'CURRENCY_KRW',
-          payMethod: 'CARD',
-          customer: Object.assign({ fullName: name, phoneNumber: phone }, email ? { email: email } : {})
-        });
 
         if (paymentResponse && paymentResponse.code != null && paymentResponse.code !== 0) {
           alert('결제가 취소되었거나 실패했습니다: ' + (paymentResponse.message || ''));
@@ -363,6 +385,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paymentId: paymentId,
+            impUid: (paymentResponse && paymentResponse.impUid) || undefined,   // V1 결제면 릴레이가 이것으로 검증한다(B 몫)
             productId: selectedProduct.id,
             amount: selectedProduct.price,
             customerName: name,
