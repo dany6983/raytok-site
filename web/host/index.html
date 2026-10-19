@@ -606,7 +606,11 @@
     const SUPPORTED_TARGET_LANGS = [
       { code: 'en', name: '영어 (English)',              name_en: 'English' },
       { code: 'ja', name: '일본어 (日本語)',               name_en: 'Japanese (日本語)' },
-      { code: 'zh', name: '중국어 (中文)',                name_en: 'Chinese (中文)' },
+      /* ⚠ 'zh' 가 아니라 **'zh-CN'** 이다 — 손님 화면의 자막 언어 목록이 `zh-CN`·`zh-TW` 로
+         갈려 있고, 손님은 `line.tr[내 언어]` 를 **그대로** 찾는다(web/listener: 1417).
+         'zh' 로 보내면 중국어 손님은 **영원히 원문만** 본다 — 사전 번역비를 쓰고도 안 닿는다.
+         2026-10-19 에 데모 그림을 찍다가 잡았다. `samples/lang_table_test.js` 가 두 표를 센다(§4). */
+      { code: 'zh-CN', name: '중국어 (中文)',             name_en: 'Chinese (中文)' },
       { code: 'vi', name: '베트남어 (Tiếng Việt)',         name_en: 'Vietnamese (Tiếng Việt)' },
       { code: 'th', name: '태국어 (ไทย)',                 name_en: 'Thai (ไทย)' },
       { code: 'id', name: '인도네시아어 (Bahasa Indonesia)', name_en: 'Indonesian (Bahasa Indonesia)' },
