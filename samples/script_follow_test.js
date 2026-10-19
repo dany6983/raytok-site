@@ -57,6 +57,27 @@ ok(/scriptOffScript\(|offScript\(/.test(host), '보내기 전에 원고 밖인�
  * "원고 밖"이어야 하는 사례가 off=false 로 나오고, 어긋난 수는 **제품이 만든 수**다
  * (시험 안에서 만든 상수를 견주는 ⑨-1 의 그 꼴이 아니다).
  */
+/*
+ * [3-2] **늦게 들어온 청취자**(새 언어) — 앱과 같은 규칙인가 (마스터 10-20 04:45 판정).
+ * 표의 `late` 칸을 그대로 먹인다. 한쪽만 고치면 그쪽이 붉어진다.
+ */
+console.log('[3-2] 늦게 들어온 청취자 — 앱과 같은 답인가');
+const LATE = TABLE.late;
+ok(!!LATE && Array.isArray(LATE.cases) && LATE.cases.length >= 5, `표에 late 칸이 있다 (${(LATE && LATE.cases || []).length}사례)`);
+ok(F.LATE_BATCH === LATE.batch, `묶음 수가 표와 같다 (${F.LATE_BATCH})`);
+for (const c of LATE.cases) {
+  const got = F.latePlan({ total: c.total, cur: c.cur, have: c.have, batch: LATE.batch });
+  ok(JSON.stringify(got) === JSON.stringify(c.want), `${c.name} → ${JSON.stringify(got)}`);
+}
+for (const c of LATE.newLangs) {
+  const got = F.newLangs(c.prev, c.now, c.srcLang);
+  ok(JSON.stringify(got) === JSON.stringify(c.want), `${c.name} → ${JSON.stringify(got)}`);
+}
+/* 호스트 화면이 그 규칙을 **쓰는가** — 모듈만 맞고 화면이 안 쓰면 손님 칸은 여전히 빈다 */
+ok(host.includes('lateTranslate('), '손님이 들어오면 lateTranslate 를 부른다');
+ok(host.includes('F.latePlan(') || host.includes('rtScriptFollow'), '문단 차례는 공용 규칙에서 받는다');
+ok(/late_tr/.test(host), '기록 late_tr 을 적는다 (판정 ③)');
+
 console.log('[4] 되돌림 실증 — 문턱을 없애면 표가 붉다');
 let revertFailed = false;
 let disagreeN = 0;

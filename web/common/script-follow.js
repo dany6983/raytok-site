@@ -125,8 +125,46 @@
     return { off: false, why: 'inside', miss: 0, match: best };
   }
 
+  /* ── 늦게 들어온 청취자(새 언어) — 마스터 2026-10-20 04:45 판정 ───────────
+   *
+   * 앱 `src/lateTr.js` 와 **같은 규칙**이다(저장소가 둘이라 코드를 공유할 수 없다).
+   * 같은 답을 내는지는 `samples/script-follow-cases.json` 의 `late` 칸이 센다.
+   *
+   * ① 지금 읽는 문단부터 앞으로만 ② 실시간이 먼저 · 한 번에 5문단씩 ③ 기록 `late_tr`.
+   */
+  var LATE_BATCH = 5;
+
+  /** 새로 생긴 언어만 — 이미 있던 것·원고 언어·빈 값은 빼고, 두 번 와도 한 번 */
+  function newLangs(prev, now, srcLang) {
+    var had = {};
+    (prev || []).forEach(function (x) { var l = String(x || '').trim(); if (l) had[l] = 1; });
+    var src = String(srcLang || '').trim();
+    var out = [];
+    (now || []).forEach(function (raw2) {
+      var l = String(raw2 || '').trim();
+      if (!l || l === src || had[l] || out.indexOf(l) >= 0) return;
+      out.push(l);
+    });
+    return out;
+  }
+
+  /** 어떤 문단을 어떤 차례로 — 지금 읽는 문단부터, batch 개씩. 이미 있는 것은 뺀다 */
+  function latePlan(opts) {
+    var o = opts || {};
+    var n = Math.max(0, Math.floor(Number(o.total) || 0));
+    var from = Math.max(1, Math.floor(Number(o.cur) || 0) || 1);
+    var skip = {};
+    (o.have || []).forEach(function (x) { var v = Number(x); if (isFinite(v)) skip[v] = 1; });
+    var want = [];
+    for (var i = from; i <= n; i += 1) if (!skip[i]) want.push(i);
+    var b = Math.max(1, Math.floor(Number(o.batch) || LATE_BATCH));
+    var out = [];
+    for (var j = 0; j < want.length; j += b) out.push(want.slice(j, j + b));
+    return out;
+  }
+
   var API = { FOLLOW: FOLLOW, wordsOf: wordsOf, matchRate: matchRate, tailOf: tailOf,
-              offScript: offScript };
+              offScript: offScript, LATE_BATCH: LATE_BATCH, newLangs: newLangs, latePlan: latePlan };
 
   global.rtScriptFollow = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
