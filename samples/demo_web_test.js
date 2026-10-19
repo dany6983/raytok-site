@@ -117,6 +117,34 @@ const overflowX = (page) => page.evaluate(() =>
     srv.close();
   }
 
+  /* ④ 대표님 한 장(`docs/demo-web-1119.md`)이 **코드에 있는 글자**만 인용하는가.
+     화면에 안 나오는 문구를 적어 두면 대표님이 그 줄을 찾다가 데모가 멈춘다 — 그래서
+     인용한 글자를 전부 강사 화면 사전에서 찾는다(§3: 코드의 출력이 사실이다). */
+  const doc = fs.readFileSync(path.join(ROOT, 'docs', 'demo-web-1119.md'), 'utf-8');
+  const hostHtml = fs.readFileSync(path.join(ROOT, 'web', 'host', 'index.html'), 'utf-8');
+  const quoted = [...doc.matchAll(/`([^`\n]{6,})`/g)].map((m) => m[1]);
+  const screenQuotes = quoted.filter((q) => /[가-힣]/.test(q) && !q.includes('\\') && !/^\?/.test(q));
+  ok(screenQuotes.length >= 5, `한 장이 화면 글자를 ${screenQuotes.length}개 인용한다`);
+  /* 대표님이 보는 글자는 두 곳에서 나온다 — 강사 **화면**과 발급 **스크립트**가 찍는 줄. */
+  const tokenScript = fs.readFileSync(path.join(ROOT, 'scripts', 'host-token.mjs'), 'utf-8');
+  const haystack = hostHtml + '\n' + tokenScript;
+  const missing = screenQuotes.filter((q) => !haystack.includes(q.replace(/…$/, '')));
+  ok(missing.length === 0, `인용한 글자가 전부 화면이나 발급 스크립트에 있다 (없는 것: ${missing.join(' / ') || '없음'})`);
+
+  /* 한 장이 적은 명령·주소가 실제로 있는가 */
+  ok(fs.existsSync(path.join(ROOT, 'scripts', 'host-token.mjs')) && doc.includes('host-token.mjs'),
+     '한 장이 가리키는 발급 스크립트가 있다');
+  ok(doc.includes('UNTIL="2026-11-30"') && fs.readFileSync(path.join(ROOT, 'scripts', 'host-token.mjs'), 'utf-8').includes('process.env.UNTIL'),
+     '한 장의 UNTIL 한 줄을 스크립트가 실제로 읽는다');
+  ok(doc.includes('/web/host/') && fs.existsSync(path.join(ROOT, 'web', 'host', 'index.html')), '강사 화면 주소가 있다');
+  ok(doc.includes('/web/listener/') && fs.existsSync(path.join(ROOT, 'web', 'listener', 'index.html')), '손님 화면 주소가 있다');
+  ok(doc.includes('?region=KR') && fs.readFileSync(path.join(ROOT, 'web', 'common', 'region.js'), 'utf-8').includes('region'),
+     '해외에서 🎤 를 켜는 ?region= 이 코드에 있다');
+
+  /* 되돌림 실증 ④ — 없는 글자를 넣으면 위 단언이 잡는가 */
+  const fakeQuote = '이런 문구는 화면에 없습니다';
+  ok(!haystack.includes(fakeQuote), '없는 글자를 한 장에 적으면 위 단언이 잡는다 (되돌림 실증 ④)');
+
   console.log(`\n${fail === 0 ? '전부 통과' : '붉다'} (${pass + fail}건${fail ? `, 실패 ${fail}` : ''})`);
   process.exit(fail === 0 ? 0 : 1);
 })();
