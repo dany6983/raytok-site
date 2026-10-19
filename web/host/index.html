@@ -625,6 +625,43 @@
       return (UI_LANG === 'en' && info.name_en) || info.name;
     }
 
+    /* ── 자막 언어 정본은 **손님 표**다 (마스터 NOW 10-20) ──────────────────────
+       현장교육 손님은 ne·km·my·uz·si·mn… 인데 위 아홉 밖이면 원문이다 — 그러면 웹으로 못 판다.
+       릴레이 `/translate` 는 **언어를 가리지 않는다**(코드 모양만 본다, relay/src/index.js).
+       아홉은 **이 화면에만 박혀 있던 목록**이었다. 그래서 손님 화면과 **같은 파일**을 읽는다:
+         `web/listener/langs.json` (82개) — 한 곳(§4). 못 읽으면 위 아홉으로 선다(§20).
+       ko 는 원고 언어라 뺀다. */
+    const LANGS_URL = '../listener/langs.json';
+    const RTL_LANGS = new Set(['ar', 'he', 'fa', 'ur']);
+
+    async function loadTargetLangs() {
+      try {
+        const res = await fetch(LANGS_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('status ' + res.status);
+        const rows = await res.json();
+        if (!Array.isArray(rows) || rows.length < 20) throw new Error('목록이 너무 짧다');
+        const out = rows
+          .filter((l) => l && typeof l.code === 'string' && l.code !== SRC_LANG)
+          .map((l) => ({
+            code: l.code,
+            name: l.name_ko ? `${l.name_ko} (${l.name_en || l.code})` : l.code,
+            name_en: l.name_en || l.code,
+            rtl: RTL_LANGS.has(l.code)
+          }));
+        trLog.push(`langs_src=json n=${out.length}`);
+        return out;
+      } catch (e) {
+        /* 못 읽으면 **막지 않는다** — 박혀 있던 아홉으로 선다. 왜 그랬는지는 기록에 남긴다(§20). */
+        trLog.push(`langs_src=builtin n=${SUPPORTED_TARGET_LANGS.length} why=${(e && e.message) || e}`);
+        return SUPPORTED_TARGET_LANGS.slice();
+      }
+    }
+
+    /* 한 번에 고를 수 있는 언어 수 — 미리 번역은 **언어마다 한 번** 부르고, 릴레이는
+       **분당 60회**다(sub 당). 30 이면 한 번에 다 부르고도 절반이 남는다.
+       넘기면 막고 한 줄 알린다 — 조용히 자르지 않는다(§20). */
+    const MAX_SELECTED_LANGS = 30;
+
     const urlParams = new URLSearchParams(window.location.search);
     const RELAY_BASE = (urlParams.get('relay') || 'https://raytok-relay.raytok.workers.dev').replace(/\/+$/, '');
     const SRC_LANG = 'ko';   // 원고 언어 — /translate 의 source 와 script.srcLang 이 같은 값을 쓴다
@@ -677,6 +714,9 @@
     // ── 전역 상태 ──
     let hostToken = localStorage.getItem('raytok_host_token') || '';
     let selectedLangs = ['en', 'ja', 'vi'];
+    /* 지금 화면이 쓰는 자막 언어 표 — **읽는 곳은 이 한 칸**이다(§4).
+       처음엔 박혀 있던 아홉이고, 준비 화면을 열 때 정본(82)으로 갈린다. */
+    let targetLangs = SUPPORTED_TARGET_LANGS.slice();
     let paragraphs = []; // { id, src, trans: { [lang]: text } }
 
     // ── DOM 엘리먼트 ──
@@ -760,7 +800,11 @@
       stepAuth.style.display = 'none';
       stepPrepare.style.display = 'block';
       licenseInfo.textContent = `${T('auth_ok')} (${payload && payload.sub ? payload.sub : 'Host'})`;
-      initLangChips();
+      initLangChips();                       // 먼저 박힌 아홉으로 그린다 — 화면이 비어 보이지 않게
+      loadTargetLangs().then((rows) => {     // 정본(82)이 오면 다시 그린다. 못 오면 아홉 그대로(§20)
+        targetLangs = rows;
+        initLangChips();
+      });
       restoreSavedData();
     }
 
@@ -1083,7 +1127,7 @@
     // ── 3. 청취 언어 선택 칩 ──
     function initLangChips() {
       langChips.innerHTML = '';
-      SUPPORTED_TARGET_LANGS.forEach(l => {
+      targetLangs.forEach(l => {
         const isChecked = selectedLangs.includes(l.code);
         const chip = document.createElement('label');
         chip.className = `lang-chip ${isChecked ? 'selected' : ''}`;
@@ -1094,6 +1138,14 @@
         const cb = chip.querySelector('input');
         cb.addEventListener('change', () => {
           if (cb.checked) {
+            /* 상한 — 미리 번역은 언어마다 한 번 부르고 릴레이는 분당 60회다. 넘기면 **막고
+               알린다**. 조용히 자르면 대표님은 고른 줄 알고 그 언어 손님만 원문을 본다(§20). */
+            if (selectedLangs.length >= MAX_SELECTED_LANGS && !selectedLangs.includes(l.code)) {
+              cb.checked = false;
+              trLog.push(`lang_cap hit=${MAX_SELECTED_LANGS}`);
+              alert(T('err_lang_cap').replace('{n}', MAX_SELECTED_LANGS));
+              return;
+            }
             if (!selectedLangs.includes(l.code)) selectedLangs.push(l.code);
             chip.classList.add('selected');
           } else {
@@ -1105,8 +1157,35 @@
       });
     }
 
-    // ── 4. 미리 번역 (relay /translate 호출 및 IndexedDB 저장) ──
-    async function translateText(q, targetLang) {
+    /* ── 4. 미리 번역 (relay /translate 호출 및 IndexedDB 저장) ──
+       ★ 2026-10-19: 여기가 **운영에서 한 번도 안 되는 모양**이었다. 릴레이는
+         · `q` 를 **배열**로 받는다(최대 50개 · 합계 5000자)  · 답은 `{ t: [...] }`
+       인데 이 화면은 **글자 하나**를 보내고 `translatedText` 를 읽고 있었다. 그러면 400 이
+       오고 R-15 되돌림이 **원문을 돌려줘** 아무도 모르게 모든 손님이 원문을 봤다.
+       목업이 글자도 받아 주고 `translatedText` 로 답해서 시험이 못 봤다(D-11) — 목업을
+       운영과 같게 조이자 그 자리에서 붉어졌다. */
+    const TR_MAX_ITEMS = 50;      // 릴레이 규약
+    const TR_MAX_CHARS = 5000;    // 릴레이 규약 (합계)
+
+    /** 문단 묶음을 릴레이 규약에 맞게 자른다. 한 문단이 혼자 5000자를 넘으면 **혼자 보낸다** —
+     *  릴레이가 거절하면 그 문단만 원문으로 남는다(R-15: 하나 때문에 전부를 잃지 않는다). */
+    function chunkForTranslate(texts) {
+      const out = [];
+      let cur = [], chars = 0;
+      for (const t of texts) {
+        const len = String(t || '').length;
+        if (cur.length && (cur.length >= TR_MAX_ITEMS || chars + len > TR_MAX_CHARS)) {
+          out.push(cur); cur = []; chars = 0;
+        }
+        cur.push(t); chars += len;
+      }
+      if (cur.length) out.push(cur);
+      return out;
+    }
+
+    /** 글 여러 개를 **한 번에** 번역한다. 돌려주는 것은 같은 길이의 배열이다.
+     *  못 하면 **받은 그대로** 돌려준다(R-15) — 지어내지 않는다. */
+    async function translateMany(texts, targetLang) {
       try {
         const res = await fetch(`${RELAY_BASE}/translate`, {
           method: 'POST',
@@ -1114,23 +1193,36 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${hostToken}`
           },
-          body: JSON.stringify({
-            q,
-            source: SRC_LANG,
-            target: targetLang
-          })
+          body: JSON.stringify({ q: texts, source: SRC_LANG, target: targetLang })
         });
         if (!res.ok) {
-          console.warn(`[Translate Fail] ${targetLang} status ${res.status}`);
-          return q; // R-15: 실패 시 원문 반환
+          let why = '';
+          try { why = (await res.clone().json()).why || ''; } catch (_) {}
+          console.warn(`[Translate Fail] ${targetLang} status ${res.status} ${why}`);
+          trLog.push(`tr_fail lang=${targetLang} status=${res.status}${why ? ' why=' + why : ''}`);
+          return texts;
         }
         const data = await res.json();
-        return data.translatedText || q;
+        /* 운영은 `t`, 옛 모양은 `translations[].translatedText` — 둘 다 읽고, 길이가 다르면 버린다 */
+        let list = Array.isArray(data.t) ? data.t
+                 : Array.isArray(data.translations) ? data.translations.map(x => (x && x.translatedText) || '')
+                 : null;
+        if (!list || list.length !== texts.length) {
+          console.warn(`[Translate Shape] ${targetLang} — 답의 모양이 다르다`);
+          trLog.push(`tr_shape lang=${targetLang} got=${list ? list.length : 'none'} want=${texts.length}`);
+          return texts;
+        }
+        return list.map((v, i) => (typeof v === 'string' && v) ? v : texts[i]);
       } catch (err) {
         console.warn(`[Translate Err] ${err.message}`);
-        return q; // R-15: 오류 시 원문 반환
+        trLog.push(`tr_err lang=${targetLang} ${err.message}`);
+        return texts;
       }
     }
+
+    /* 부른 횟수를 **센다** — 언어가 늘면 여기서 보인다(마스터 NOW ③). `rtHostTr.log()` 로 읽는다. */
+    const trLog = [];
+    window.rtHostTr = { log: () => trLog.slice(), chunk: chunkForTranslate };
 
     const chkBroadcastRaw = document.getElementById('chkBroadcastRaw');
     if (chkBroadcastRaw) {
@@ -1174,25 +1266,34 @@
       transProgressArea.style.display = 'block';
       readyArea.style.display = 'none';
 
-      const totalJobs = paragraphs.length * selectedLangs.length;
-      let completedJobs = 0;
-
-      for (let i = 0; i < paragraphs.length; i++) {
-        const p = paragraphs[i];
-        p.trans = p.trans || {};
-
-        for (const lang of selectedLangs) {
-          // 이미 번역된 게 없으면 번역
-          if (!p.trans[lang]) {
-            p.trans[lang] = await translateText(p.src, lang);
-          }
-          completedJobs++;
-          const pct = Math.round((completedJobs / totalJobs) * 100);
-          transProgressPercent.textContent = `${pct}%`;
-          transProgressFill.style.width = `${pct}%`;
-          transProgressText.textContent = `${T('prep_tr_busy')} (${completedJobs}/${totalJobs})`;
+      /* ★ 언어 하나에 **한 번**(문단을 묶어서) 부른다. 전에는 문단×언어였다 —
+         문단 10 × 언어 20 이면 200번이고, 릴레이는 분당 60번이다(429). 묶으면 20번이다.
+         이것이 언어를 9개에서 전부로 여는 전제다(마스터 NOW ③). */
+      for (const p of paragraphs) p.trans = p.trans || {};
+      const trJobs = [];
+      for (const lang of selectedLangs) {
+        const need = paragraphs.map((p, i) => ({ p, i })).filter(({ p }) => !p.trans[lang]);
+        if (!need.length) continue;
+        for (const group of chunkForTranslate(need.map(({ p }) => p.src))) {
+          trJobs.push({ lang, group, idx: need.splice(0, group.length).map(({ i }) => i) });
         }
       }
+      const totalJobs = Math.max(1, trJobs.length);
+      let completedJobs = 0;
+      trLog.push(`tr_plan langs=${selectedLangs.length} paras=${paragraphs.length} calls=${trJobs.length}`);
+
+      for (const job of trJobs) {
+        const got = await translateMany(job.group, job.lang);
+        job.idx.forEach((pi, k) => {
+          if (typeof got[k] === 'string' && got[k] && got[k] !== job.group[k]) paragraphs[pi].trans[job.lang] = got[k];
+        });
+        completedJobs++;
+        const pct = Math.round((completedJobs / totalJobs) * 100);
+        transProgressPercent.textContent = `${pct}%`;
+        transProgressFill.style.width = `${pct}%`;
+        transProgressText.textContent = `${T('prep_tr_busy')} (${completedJobs}/${totalJobs})`;
+      }
+      trLog.push(`tr_done calls=${completedJobs}`);
 
       await saveParagraphsToDB(paragraphs);
       renderParagraphs();
@@ -1996,6 +2097,7 @@
         ask_speaking: '말하는 중',
         ask_empty: '대기 중인 질문이 없습니다.',
         err_need_code: '이용권 코드를 입력하세요.',
+        err_lang_cap: '한 번에 고를 수 있는 언어는 {n}개까지입니다. 하나를 빼고 다시 고르세요.',
         err_timeout: '서버 응답 시간 초과 (5초)',
         err_unreachable: '서버에 닿지 않습니다: ',
         err_bad_json: '서버로부터 올바르지 않은(빈) 응답을 받았습니다.',
@@ -2130,6 +2232,7 @@
         ask_speaking: 'Speaking',
         ask_empty: 'No questions waiting.',
         err_need_code: 'Enter the licence code.',
+        err_lang_cap: 'You can pick up to {n} languages at once. Unpick one first.',
         err_timeout: 'The server did not answer within 5 seconds.',
         err_unreachable: 'Cannot reach the server: ',
         err_bad_json: 'The server returned an empty or invalid response.',
@@ -2356,7 +2459,7 @@
       const keep = repLang.value;
       repLang.innerHTML = '';
       for (const code of reportLangCodes()) {
-        const info = SUPPORTED_TARGET_LANGS.find(l => l.code === code);
+        const info = targetLangs.find(l => l.code === code);
         const opt = document.createElement('option');
         opt.value = code;
         opt.textContent = langName(info, code);
@@ -2433,7 +2536,7 @@
       if (!lines.length) { endStatus.textContent = T('rep_none'); return false; }
       const s = live.finalSummary || sessionSummary(Date.now());
       const code = repLang.value || reportLangCodes()[0];
-      const info = SUPPORTED_TARGET_LANGS.find(l => l.code === code);
+      const info = targetLangs.find(l => l.code === code);
       return window.RayTokReport.downloadReport({
         lines,
         srcLang: SRC_LANG,

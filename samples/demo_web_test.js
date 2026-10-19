@@ -113,6 +113,56 @@ const overflowX = (page) => page.evaluate(() =>
     await bare.close();
     await guest.close();
 
+  /* ⑤ 자막 언어가 **정본 81개**로 열렸나 · 상한이 도나 (마스터 NOW 10-20) */
+  {
+    const hp = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const alerts = [];
+    hp.on('dialog', async (d) => { alerts.push(d.message()); await d.accept(); });
+    await hp.goto(`${base}/web/host/`);
+    await hp.evaluate(() => showPrepareScreen({ sub: 'demo' }));
+    await hp.waitForFunction(() => document.querySelectorAll('#langChips input').length > 50, null, { timeout: 8000 });
+    const n = await hp.evaluate(() => document.querySelectorAll('#langChips input').length);
+    const canon = JSON.parse(fs.readFileSync(path.join(ROOT, 'web', 'listener', 'langs.json'), 'utf-8'));
+    ok(n === canon.length - 1, `강사 화면 자막 언어 ${n}개 — 손님 정본 ${canon.length} 에서 ko 를 뺀 수`);
+    const srcLog = await hp.evaluate(() => window.rtHostTr.log());
+    ok(srcLog.some((l) => l.startsWith('langs_src=json')), `정본 파일에서 읽었다 (${srcLog[0] || '없음'})`);
+
+    const want = ['ne', 'km', 'my', 'uz', 'si', 'mn'];   // 현장교육에서 실제로 필요한 언어
+    const have = await hp.evaluate(() => [...document.querySelectorAll('#langChips input')].map((c) => c.value));
+    const miss = want.filter((c) => !have.includes(c));
+    ok(miss.length === 0, `현장교육 언어가 들어 있다 — ne·km·my·uz·si·mn (빠진 것: ${miss.join(',') || '없음'})`);
+    ok(!have.includes('ko'), '원고 언어(ko)는 고를 수 없다 — 자기 자신으로 번역하지 않는다');
+
+    const cap = await hp.evaluate(() => MAX_SELECTED_LANGS);
+    const picked = await hp.evaluate(async (max) => {
+      const boxes = [...document.querySelectorAll('#langChips input')];
+      for (const b of boxes) {
+        if (!b.checked) { b.checked = true; b.dispatchEvent(new Event('change', { bubbles: true })); }
+        if (selectedLangs.length > max) break;
+      }
+      return selectedLangs.length;
+    }, cap);
+    ok(picked === cap, `상한 ${cap}개에서 멈춘다 (지금 ${picked})`);
+    ok(alerts.some((m) => m.includes(String(cap))), `넘기면 **알린다** — "${alerts[0] || '없음'}"`);
+    ok((await hp.evaluate(() => window.rtHostTr.log())).some((l) => l.startsWith('lang_cap')),
+       '상한에 닿은 것이 기록에 남는다');
+    await hp.close();
+  }
+
+  /* ⑥ 정본을 못 읽으면 **막지 않고** 박힌 목록으로 선다 (§20) */
+  {
+    const hp = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await hp.route('**/listener/langs.json', (r) => r.fulfill({ status: 404, body: 'x' }));
+    await hp.goto(`${base}/web/host/`);
+    await hp.evaluate(() => showPrepareScreen({ sub: 'demo' }));
+    await hp.waitForFunction(() => window.rtHostTr.log().some((l) => l.startsWith('langs_src=')), null, { timeout: 8000 });
+    const n = await hp.evaluate(() => document.querySelectorAll('#langChips input').length);
+    const why = await hp.evaluate(() => window.rtHostTr.log().find((l) => l.startsWith('langs_src=')));
+    ok(n > 0 && n < 20, `정본을 못 읽어도 화면이 선다 — 박힌 ${n}개 (되돌림 실증 ⑥)`);
+    ok(/^langs_src=builtin/.test(why), `왜 그랬는지 기록에 남는다 — ${why}`);
+    await hp.close();
+  }
+
   /* ⑤ 링크의 `?lang=` 이 **자막 언어까지** 맞추는가 (2026-10-19).
      10-19 까지 링크와 저장값은 **딱 맞는 코드**만 봤다. 목록이 `zh-CN`·`zh-TW` 로 갈려 있어
      `?lang=zh` 는 아무것도 못 맞추고 **조용히 영어**가 됐다 — 글자는 중국어, 자막은 영어.

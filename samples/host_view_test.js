@@ -54,10 +54,15 @@ const srv = http.createServer(async (req, res) => {
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       const data = JSON.parse(body || '{}');
+      /* ★ 운영 릴레이와 **같은 규칙**이다(D-11). 2026-10-19 까지 이 가짜가 글자 q 를 받아 주고
+         `translatedText` 로 답해서, 강사 화면이 **운영에서는 400 만 받는 모양**으로 부르고
+         있는 것을 시험이 못 봤다. 운영: q 는 배열(≤50개·≤5000자) · 답은 { t: [...] }. */
+      if (!Array.isArray(data.q)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'bad_request', why: 'q_not_array' }));
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        translatedText: `[${data.target}] ` + data.q
-      }));
+      res.end(JSON.stringify({ t: data.q.map((t) => `[${data.target}] ` + t) }));
     });
     return;
   }

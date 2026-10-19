@@ -133,9 +133,23 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
       httpLog.push('POST /translate');
       counters.translate++;
       return readBody((data) => {
+        /* ★ 운영 릴레이와 **같은 규칙**이다(D-11 — 가짜가 느슨하면 시험이 거짓말을 한다).
+           2026-10-19 에 이 가짜가 글자 q 를 받아 주고 `translatedText` 로 답해서,
+           강사 화면이 **운영에서는 한 번도 안 되는 모양**으로 부르고 있는 것을 시험이 못 봤다.
+           운영: q 는 배열(최대 50개·합계 5000자) · 답은 { t: [...] }  (relay/src/index.js) */
+        if (!Array.isArray(data.q)) {
+          return json(400, { error: 'bad_request', message: 'q must be an array', why: 'q_not_array' });
+        }
+        if (data.q.length > 50) {
+          return json(400, { error: 'bad_request', message: 'q cannot exceed 50 items', why: 'q_too_many' });
+        }
+        const chars = data.q.reduce((a, t) => a + String(t == null ? '' : t).length, 0);
+        if (chars > 5000) {
+          return json(400, { error: 'too_long', message: 'Total characters in q cannot exceed 5000', why: 'chars_exceed_5000' });
+        }
         // vi 는 일부러 실패시킨다(503) — 그 언어는 trans 에서 빠져야 한다(R-15)
         if (data.target === 'vi') return json(503, {});
-        json(200, { translatedText: `[${data.target}] ` + data.q });
+        json(200, { t: data.q.map((t) => `[${data.target}] ` + t) });
       });
     }
 

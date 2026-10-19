@@ -55,7 +55,14 @@ const { rooms, hostReceived } = relay;
   await host.click('#btnPreTranslate');
   await host.waitForSelector('#readyArea', { state: 'visible', timeout: 10000 });
   const callsAfterPrep = relay.counters.translate;
-  ok(callsAfterPrep === 4 * 3, `미리 번역: /translate ${callsAfterPrep}회 (문단 4 × 언어 3)`);
+  /* ★ 2026-10-19: 전에는 **문단 × 언어**(12회)였다. 지금은 **언어마다 한 번**(3회) —
+     문단을 묶어 보낸다. 릴레이는 분당 60회라, 문단 10 × 언어 20 이면 200회로 429 가 난다.
+     언어를 9개에서 전부로 여는 전제가 이 묶기다(마스터 NOW ③).
+     이 줄은 **돈과 한도를 지키는 자물쇠**다 — 늘어나면 그만큼 비싸진다. */
+  ok(callsAfterPrep === 3, `미리 번역: /translate ${callsAfterPrep}회 — 언어마다 한 번(문단 4개를 묶어서)`);
+  const trPlan = await host.evaluate(() => window.rtHostTr.log());
+  ok(trPlan.some(l => /^tr_plan langs=3 paras=4 calls=3$/.test(l)),
+     `부른 횟수를 기록에 남긴다 — ${trPlan.filter(l => l.startsWith('tr_')).join(' · ') || '없음'}`);
 
   await host.click('#btnStartLecture');
   await host.waitForSelector('#step-live', { state: 'visible', timeout: 5000 });
