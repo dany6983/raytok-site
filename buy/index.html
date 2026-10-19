@@ -235,6 +235,11 @@
         <input type="email" id="buyer-email" placeholder="email@example.com">
       </div>
 
+      <div class="form-group">
+        <label for="buyer-phone">휴대폰 번호 (결제 필수)</label>
+        <input type="tel" id="buyer-phone" placeholder="010-0000-0000" inputmode="tel">
+      </div>
+
       <button type="button" class="btn-pay" id="btn-pay">3,300원 결제하기</button>
 
       <!-- 11번 환불·청약철회 고지 (전자상거래법 제17조) -->
@@ -312,7 +317,14 @@
     btnPay.addEventListener('click', async () => {
       const name = document.getElementById('buyer-name').value.trim() || 'Guest';
       const email = document.getElementById('buyer-email').value.trim();
-      const paymentId = 'pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      const phone = (document.getElementById('buyer-phone').value || '').replace(/[^0-9]/g, '');
+      // KCP: paymentId 는 영문·숫자만, 최대 40자(포트원 KCP V2 안내). 밑줄·하이픈을 넣으면 결제창 호출이 파싱 오류로 죽는다(10-19 PG 심사).
+      const paymentId = 'pay' + Date.now() + Math.random().toString(36).replace(/[^a-z0-9]/g, '').substring(0, 8);
+      // KCP: 모바일 결제와 일부 카드사 PC 직접 호출은 구매자 연락처가 필수다.
+      if (!/^01[0-9]{8,9}$/.test(phone)) {
+        alert('휴대폰 번호를 정확히 입력해 주세요. (예: 010-1234-5678)');
+        return;
+      }
 
       btnPay.disabled = true;
       btnPay.textContent = '결제창을 여는 중...';
@@ -335,7 +347,7 @@
           totalAmount: selectedProduct.price,
           currency: 'CURRENCY_KRW',
           payMethod: 'CARD',
-          customer: { fullName: name, email: email }
+          customer: Object.assign({ fullName: name, phoneNumber: phone }, email ? { email: email } : {})
         });
 
         if (paymentResponse && paymentResponse.code != null && paymentResponse.code !== 0) {
