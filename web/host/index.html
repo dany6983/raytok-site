@@ -417,7 +417,7 @@
           <span data-t="enable_postasr_title">사후 정확본 칸 보이기</span>
         </label>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4;" data-t="enable_postasr_desc">
-          강의가 끝난 뒤 녹음을 다시 받아써 더 정확한 기록을 만드는 기능의 자리입니다. 끝 화면 리포트 칸에 상태 한 줄이 생깁니다 (기본 켬 — 보지 않으려면 끄세요).
+          끝 화면 리포트 칸에 「정확본」 상태 한 줄이 생깁니다 (기본 켬 — 보지 않으려면 끄세요).
         </div>
       </div>
 
@@ -569,7 +569,8 @@
         <button id="btnReport" class="btn" data-t="rep_save"></button>
 
         <!-- B 31 사후 정확본 자리 (마스터 NOW). **꺼진 스위치면 이 칸이 아예 없다.**
-             상태는 지어내지 않는다 — 녹음이 있는 길(앱·Desk)에서 올 때 처리 중/끝으로 바뀐다.
+             상태는 지어내지 않는다 — 앱·Desk 쪽에서 올 때 처리 중/끝으로 바뀐다.
+             (방법은 적지 않는다, §9 — 비공개 설계: raytok-native1/docs/design/post-asr.md)
              구조: #step-end > .form-group(리포트) > #postasrBox (btnReport 바로 다음 형제) -->
         <div id="postasrBox" style="display: none; margin-top: 14px; padding: 10px 12px; background: rgba(21, 128, 61, 0.06); border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem;">
           <strong data-t="acc_title"></strong>
@@ -1231,7 +1232,7 @@
       endedAt: null,      // 끝내기를 누른 때(진행으로 돌아가면 비운다)
       sent: [],           // 실제로 나간 script 메시지(시간 순) — 요약·리포트는 이것 하나에서 나온다
       postasr: null,      // B 31 사후 정확본 상태 {state:'running'|'done', lines?} — **쓰는 곳**은 아직 없다.
-                          //   녹음이 있는 길(앱·Desk)이 생기면 여기 한 자리에 적는다(§4: 쓰는 곳도 센다)
+                          //   앱·Desk 쪽이 생기면 여기 한 자리에 적는다(§4: 쓰는 곳도 센다)
       att: null,          // 릴레이가 준 마지막 참석 집계(숫자뿐)
       ended: false,       // 끝 화면을 보는 중
       closed: false,      // 방을 닫았다
@@ -2064,7 +2065,7 @@
         rep_save: '리포트 저장',
         rep_none: '보낸 원고 문단이 없어 리포트를 만들지 않았습니다.',
         acc_title: '정확본',
-        acc_none: '아직 없음 — 녹음이 있는 길(앱·Desk)에서 옵니다',
+        acc_none: '아직 없음 — 앱·Desk 쪽에서 옵니다',
         acc_running: '처리 중',
         acc_done: '끝',
         src_script: '원고',
@@ -2083,7 +2084,7 @@
         broadcast_raw_title: '번역 없이 방송 (원문 브로드캐스팅)',
         broadcast_raw_desc: '한국인 가이드·강연 등 같은 언어로 방송할 때 번역 API를 부르지 않고 원문 그대로 청취자에게 전송합니다 (번역 비용 0원, 지연 없음).',
         enable_postasr_title: '사후 정확본 칸 보이기',
-        enable_postasr_desc: '강의가 끝난 뒤 녹음을 다시 받아써 더 정확한 기록을 만드는 기능의 자리입니다. 끝 화면 리포트 칸에 상태 한 줄이 생깁니다 (기본 켬 — 보지 않으려면 끄세요).',
+        enable_postasr_desc: '끝 화면 리포트 칸에 「정확본」 상태 한 줄이 생깁니다 (기본 켬 — 보지 않으려면 끄세요).',
         enable_question_title: '참여자 질문 받기 (N:1 손들기 대기열)',
         enable_question_desc: '청취자가 질문을 청하고 강사가 **직접 지명**해 답변합니다. 지명된 청취자는 글자 또는 폰 마이크로 묻습니다 (기본 켬 — 받지 않으려면 끄세요).',
         mic_start: '🎤 실시간 말하기 시작',
@@ -2198,7 +2199,7 @@
         rep_save: 'Save report',
         rep_none: 'No script paragraph was sent, so no report was made.',
         acc_title: 'Accurate version',
-        acc_none: 'Not yet — it comes from the paths that record audio (app, Desk)',
+        acc_none: 'Not yet — it comes from the app or Desk',
         acc_running: 'Processing',
         acc_done: 'Done',
         src_script: 'Script',
@@ -2217,7 +2218,7 @@
         broadcast_raw_title: 'Broadcast without translation (Original broadcast)',
         broadcast_raw_desc: 'Broadcast the original text directly to listeners without calling translation APIs when lecturing in the same language (Zero cost, no delay).',
         enable_postasr_title: 'Show the accurate-version slot',
-        enable_postasr_desc: 'A slot for the feature that re-transcribes the recording after the session for a more accurate record. A status line appears in the report box on the end screen (Default ON — uncheck to hide it).',
+        enable_postasr_desc: 'A status line for the accurate version appears in the report box on the end screen (Default ON — uncheck to hide it).',
         enable_question_title: 'Allow attendee questions (N:1 Queue)',
         enable_question_desc: 'Listeners raise a hand and the instructor grants the turn manually; the chosen listener asks by text or phone mic (Default ON — uncheck to decline questions).',
         mic_start: '🎤 Start live speaking',

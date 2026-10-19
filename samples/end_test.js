@@ -210,7 +210,7 @@ const ttsStub = () => {
      '구조: #step-end 안, 「리포트 저장」 단추 **바로 다음 형제** (§12 구조 단언)');
   ok(accBox.title === '정확본', `칸 이름이 글자 표에서 나온다 (${accBox.title})`);
   ok(accBox.state.includes('아직 없음'),
-     `지금 상태는 **아직 없음** — 녹음이 있는 길이 웹 강사에 없다. 지어낸 상태를 적지 않는다 (${accBox.state})`);
+     `지금 상태는 **아직 없음** — 그 길이 웹 강사 화면에 아직 없다. 지어낸 상태를 적지 않는다 (${accBox.state})`);
 
   /* 스위치를 끄면 칸이 **없다**.
      스위치는 준비 화면(`#step-prepare`)에 있고 끝 화면에서는 숨어 있어 클릭이 안 된다 —
@@ -228,6 +228,25 @@ const ttsStub = () => {
   ok(accLog.length >= 3 && accLog[0] === 'postasr_box on=1 state=none',
      `첫 걸음(열림)에 기록 한 줄 (§12) — ${accLog.slice(0, 3).join(' > ')}`);
   ok(accLog.includes('postasr_box on=0 state=none'), '끈 것도 기록에 남는다 — 왜 칸이 없었는지 뒤에서 안다');
+
+  /* §9 출원 전 공개 금지 — 이 저장소와 이 화면은 **공개**다. 사후 정확본은 출원된 여섯
+     (홈 화면에 번호가 적힌 그것들)에 **없는 개선**이라, 공개 글자는 **이름과 어디서 보나**
+     까지다. 방법은 비공개 설계(`raytok-native1/docs/design/post-asr.md`)에 둔다.
+     10-19 에 내가 "끝난 뒤 녹음을 다시 받아써…" 를 화면 글자에 적었다가 지웠다 —
+     사람 조심이 아니라 여기서 센다. */
+  {
+    const hostSrc = fs.readFileSync(path.join(__dirname, '..', 'web', 'host', 'index.html'), 'utf-8');
+    const method = ['녹음을 다시', '다시 받아써', '재인식', 're-transcrib', 'retranscrib'];
+    const found = method.filter((w) => hostSrc.includes(w));
+    ok(found.length === 0, `강사 화면에 정확본의 **방법**이 적혀 있지 않다 (${found.join(', ') || '없음'})`);
+    ok(/acc_title:\s*'정확본'/.test(hostSrc) && /enable_postasr_desc:\s*'끝 화면 리포트 칸에/.test(hostSrc),
+       '이름과 **어디서 보나**는 적혀 있다 — 숨기는 것이 아니라 방법만 안 적는다');
+    /* 되돌림 실증 — 10-19 에 실제로 적었던 그 글을 넣으면 위 단언이 잡는가 (파일은 안 건드린다) */
+    const bent = hostSrc.replace("enable_postasr_desc: '끝 화면",
+                                 "enable_postasr_desc: '강의가 끝난 뒤 녹음을 다시 받아써 더 정확한 기록을 만드는 자리입니다. 끝 화면");
+    ok(bent !== hostSrc && method.some((w) => bent.includes(w)),
+       '10-19 의 그 글을 되돌리면 잡힌다 (되돌림 실증 · §9)');
+  }
 
   ok(!hostReceived.some(m => m.end), '끝내기만으로는 방을 닫지 않는다(end 미송출)');
   ok(!(await A.p.isVisible('#end-modal')), '끝내기만으로는 청취자 화면이 끝나지 않는다');
