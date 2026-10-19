@@ -69,7 +69,12 @@ const { token } = await mintLicense('cust_ALL', 30, 0x3f, mockEnv.LICENSE_SECRET
 const bodies = {
   '/translate': { q: ['안녕하세요'], target: 'en' },
   '/room': { kind: 'guide' },
-  '/asr/batch': { manifest: [{ file: 'a.wav', t0: 0, t1: 10 }], bytes: 10 },
+  /* 정본 1장 꼴이어야 **성공 경로**를 돈다. 옛 배열 꼴로 두면 400 bad_manifest 만 돌고
+     "소리를 안 보낸다"가 **빈 사례**가 된다 (AGENTS §4: 꼴을 바꾸면 읽는 곳을 전부 센다). */
+  '/asr/batch': {
+    manifest: { sessionId: 's#1', lang: 'ko', clockBaseMs: 0, segments: [{ file: 'a.wav', t0: 0, t1: 10 }] },
+    bytes: 10
+  },
   '/license/redeem': { code: '0000-0000-0000-0000', deviceId: 'd1' },
   '/license/issue': { device: 'd1' },
   '/pay/complete': { paymentId: 'x', productId: 'pass_1d', amount: 3300 }

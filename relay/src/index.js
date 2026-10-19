@@ -867,7 +867,8 @@ export default {
 
     /* `POST /asr/batch` — 설계(비공개): raytok-native1/docs/design/post-asr.md · 마스터 10-17 12:45
        뼈대만이다: 문(0x20)·상한·크기·보관 0 은 여기, 줄을 만드는 엔진은 **가짜**(E-8 뒤 진짜).
-       `ASR_ENABLED` 가 켜져 있지 않으면 서지 않는다. 키는 secret 에만 둔다. */
+       `ASR_ENABLED` 가 켜져 있지 않으면 서지 않는다. 키는 secret 에만 둔다.
+       줄 JSON 꼴은 엔진 저장소 `postasr/` 가 정본이고, 검사기를 `src/postasr-shape.js` 로 가져왔다. */
     if (url.pathname === '/asr/batch' && request.method === 'POST') {
       const enabled = /^(1|true|yes|on)$/i.test(String(env.ASR_ENABLED || '').trim());
       const licenseRes = await verifyLicense(request, env.LICENSE_SECRET, ASR_PRO_FLAG);
@@ -879,24 +880,26 @@ export default {
       }
 
       /* 소리와 목록을 읽는다. 두 모양을 받는다:
-           · multipart/form-data — `manifest`(JSON 글자) + 토막 파일들 (앱이 보내는 모양)
-           · application/json    — `{manifest}` 만 (소리 없이 문·상한만 먼저 묻는 길) */
-      let manifest = null, totalBytes = 0;
+           · multipart/form-data — `manifest`(정본 1장의 JSON) + 토막 파일들 (앱이 보내는 모양)
+           · application/json    — `{manifest}` 만 (소리 없이 문·상한만 먼저 묻는 길)
+         `manifest` 는 **정본 1장의 객체**(`{sessionId, lang, clockBaseMs, segments[]}`)다.
+         꼴을 세는 곳은 `handleAsrBatch` 안의 정본 검사기 한 자리다(§4) — 여기서 또 세지 않는다. */
+      let asrReq = null, totalBytes = 0;
       try {
         const ctype = (request.headers.get('Content-Type') || '').toLowerCase();
         if (ctype.includes('multipart/form-data')) {
           const form = await request.formData();
-          manifest = JSON.parse(String(form.get('manifest') || 'null'));
+          asrReq = JSON.parse(String(form.get('manifest') || 'null'));
           for (const [, v] of form.entries()) {
             if (v && typeof v === 'object' && typeof v.size === 'number') totalBytes += v.size;
           }
         } else {
           const body = await request.json();
-          manifest = body && body.manifest;
+          asrReq = body && body.manifest;
           totalBytes = Number((body && body.bytes) || 0);
         }
       } catch (e) {
-        return jsonError('bad_request', `본문을 읽지 못했습니다: ${e.message}`, 400, { why: 'bad_body' });
+        return jsonError('bad_manifest', `본문을 읽지 못했습니다: ${e.message}`, 400, { why: 'bad_manifest' });
       }
 
       const capUsd = Number(env.ASR_DAILY_CAP_USD || ASR_DEFAULT_CAP_USD);
@@ -915,7 +918,7 @@ export default {
       const result = await handleAsrBatch({
         enabled,
         licFlags: Number((licenseRes.payload && licenseRes.payload.flags) || 0),
-        manifest,
+        req: asrReq,
         totalBytes,
         capUsd,
         spentToday,
