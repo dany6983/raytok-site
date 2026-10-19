@@ -120,5 +120,56 @@ const mockLines = [
   ok(revertCrlfFailed === true, 'CRLF 를 LF 로 바꾸면 붉어진다 — 메모장에서 한 줄로 붙는다 (되돌림 실증 2)');
 }
 
+
+/* ── B 31 사후 정확본 자리 (2026-10-19, 마스터 NOW) ───────────────────────────
+ * 보는 것 셋:
+ *   ① `accurate` 를 **안 주면** 전과 글자 하나 다르지 않다 (= 꺼진 스위치면 칸 없음)
+ *   ② 주면 머리글에 상태 한 줄 · 줄에 `acc` 가 있으면 **원문 바로 아래**
+ *   ③ 모르는 상태는 **적지 않는다** (지어내지 않는다, §20)
+ */
+console.log('\n=== B 31 사후 정확본 자리 ===');
+const accLines = [
+  { at: 1759800000000, text: '십오 미터입니다', acc: '十五米입니다', tr: { en: 'It is fifteen metres.' } },
+  { at: 1759800060000, text: '다음으로 넘어갑니다', tr: { en: 'Moving on.' } }
+];
+const bare = accLines.map(({ acc, ...rest }) => rest);
+
+/* ① 안 주면 전과 같다 — 같은 줄로 두 번 만들어 **글자 단위로** 견준다 */
+const before = buildReportText({ lines: bare, targetLang: 'en' });
+const afterNoAcc = buildReportText({ lines: bare, targetLang: 'en', accurate: null });
+ok(before === afterNoAcc, 'accurate 를 안 주면 글자 하나 다르지 않다 (칸 없음)');
+ok(!/Accurate/.test(before), '머리글에 정확본 줄이 없다');
+const htmlNoAcc = buildReportHtml({ lines: bare, targetLang: 'en' });
+/* `.line-acc` **스타일 규칙**은 늘 있다(쓰지 않아도 해롭지 않다). 없어야 하는 것은 **칸**이다 —
+   `<div class="line-acc">` 요소와 머리글의 정확본 칸. 처음에 스타일까지 금지해 붉어졌다. */
+ok(!/<div class="line-acc">/.test(htmlNoAcc) && !/<strong>정확본:<\/strong>/.test(htmlNoAcc),
+   'HTML(PDF·DOC)에도 정확본 칸이 없다 (스타일 규칙은 쓰지 않을 뿐 남아 있다)');
+
+/* ② 주면 머리글 + 줄 */
+const running = buildReportText({ lines: accLines, targetLang: 'en', accurate: { state: 'running' } });
+ok(running.includes('Accurate: processing'), '처리 중이면 머리글에 한 줄');
+const doneTxt = buildReportText({ lines: accLines, targetLang: 'en', accurate: { state: 'done', lines: 2 } });
+ok(doneTxt.includes('Accurate: done (2 lines)'), '끝이면 줄 수까지 적는다');
+ok(/십오 미터입니다[\s\S]*※ 十五米입니다/.test(doneTxt),
+   '정확본 글이 **실시간 줄 바로 아래**에 붙는다 (원문 자리 — 번역이 아니다)');
+const trOnly = buildReportText({ lines: accLines, targetLang: 'en', contentMode: 'trans', accurate: { state: 'done' } });
+ok(!trOnly.includes('十五米'), '번역만 보기에서는 정확본을 넣지 않는다 (원문 자리이므로)');
+const srcOnly = buildReportText({ lines: accLines, targetLang: 'en', contentMode: 'src', accurate: { state: 'done' } });
+ok(srcOnly.includes('※ 十五米입니다'), '원문만 보기에는 들어간다');
+const htmlAcc = buildReportHtml({ lines: accLines, targetLang: 'en', accurate: { state: 'running' } });
+ok(/class="line-acc"/.test(htmlAcc) && htmlAcc.includes('十五米입니다'), 'HTML 에도 정확본 줄이 있다');
+ok(/<strong>정확본:<\/strong>/.test(htmlAcc), 'HTML 머리글에 정확본 상태');
+
+/* ③ 모르는 상태·빈 글은 적지 않는다 */
+const weird = buildReportText({ lines: bare, targetLang: 'en', accurate: { state: 'maybe' } });
+ok(!/Accurate/.test(weird), "모르는 상태('maybe')는 적지 않는다 — 지어내지 않는다 (§20)");
+const blankAcc = buildReportText({ lines: [{ at: 1759800000000, text: '가', acc: '   ' }], targetLang: 'en', accurate: { state: 'done' } });
+ok(!blankAcc.includes('※'), '정확본이 빈 글이면 칸을 만들지 않는다 (D-70: 모름을 "없음"으로 적지 않는다)');
+
+/* 되돌림 실증 (D-09) — 정확본 글을 **값으로** 넣었다 빼면 결과가 달라진다 */
+const withAcc = buildReportText({ lines: accLines, targetLang: 'en', accurate: { state: 'done' } });
+ok(withAcc !== buildReportText({ lines: bare, targetLang: 'en', accurate: { state: 'done' } }),
+   'acc 를 떼면 결과가 달라진다 — 위 단언들이 글자 비교가 아니라 **값**에 걸려 있다 (되돌림 실증)');
+
 console.log(`\n전부 통과 (${passCount}건)`);
 process.exit(0);

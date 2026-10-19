@@ -1,4 +1,8 @@
 // web/common/report.js — RayTok 청취 페이지 및 웹 강사 화면 공통 기록 저장 모듈
+// B 31 (2026-10-19): **사후 정확본 자리**. 줄에 `acc`(정확본 글)가 있으면 실시간 줄 **바로 아래**
+//   에 표시하고, `accurate` 를 주면 머리글에 상태 한 줄(`처리 중`·`끝`)을 적는다.
+//   **안 주면 그 줄이 아예 없다** — 꺼진 스위치면 칸 없음(마스터 NOW). 전과 글자 하나 안 바뀐다.
+//   꼴 정본은 엔진 저장소 `postasr/`(릴레이 쪽은 `relay/src/postasr-shape.js`) — 여기선 **표시만** 한다.
 // 외부 의존성 0건. 내용 3종(both, src, trans) × 형식 3종(TXT, DOC, PDF)
 // L4-3: 줄에 label(출처 표시, 예 "(원고 3)")이 있으면 내용 앞에 붙이고, footer(글 줄 배열)가 있으면 본문 뒤에 적는다
 //       (원고 모드 리포트 — 건너뛴 문단). 둘 다 없으면 출력은 전과 글자 하나 다르지 않다.
@@ -8,6 +12,24 @@
 
 function labelOf(l) {
   return (l && typeof l.label === 'string' && l.label) ? l.label + ' ' : '';
+}
+
+/* 정확본 글 — 없으면 **빈 글자**다. 모름을 "없음" 으로 적지 않는다(D-70): 칸을 안 만든다. */
+function accOf(l) {
+  return (l && typeof l.acc === 'string' && l.acc.trim()) ? l.acc.trim() : '';
+}
+
+/* 머리글 한 줄. `accurate` 가 없으면 **null** — 부르는 쪽이 그 줄을 아예 넣지 않는다.
+   `{ state: 'running'|'done', lines?: n }`. 모르는 state 는 적지 않는다(지어내지 않는다). */
+function accurateLine(accurate) {
+  if (!accurate || typeof accurate !== 'object') return null;
+  const st = String(accurate.state || '');
+  if (st === 'running') return 'Accurate: processing';
+  if (st === 'done') {
+    const n = Number(accurate.lines);
+    return Number.isFinite(n) ? `Accurate: done (${n} lines)` : 'Accurate: done';
+  }
+  return null;
 }
 
 function footerLines(footer) {
@@ -32,13 +54,15 @@ function escapeHtml(str) {
 /**
  * TXT 보고서 문자열 생성
  */
-function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', footer = null }) {
+function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', footer = null, accurate = null }) {
   const first = lines.length ? new Date(lines[0].at) : new Date();
   const out = [];
   out.push('RayTok');
   out.push(`${first.getFullYear()}-${pad2(first.getMonth() + 1)}-${pad2(first.getDate())} ${pad2(first.getHours())}:${pad2(first.getMinutes())}`);
   out.push(`${(srcLang || 'ko').toUpperCase()} → ${langName || targetLang} (${targetLang})`);
   out.push(`Lines: ${lines.length}`);
+  const accHead = accurateLine(accurate);
+  if (accHead) out.push(accHead);        // 없으면 **줄이 없다** (칸 없음)
   out.push('');
 
   for (const l of lines) {
@@ -47,13 +71,16 @@ function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
     const tr = (l.tr && l.tr[targetLang]) ? l.tr[targetLang] : '';
     const label = labelOf(l);
 
+    const acc = accOf(l);
     if (contentMode === 'src') {
       out.push(`${timeStr} ${label}${l.text}`);
+      if (acc) out.push(`  ※ ${acc}`);
     } else if (contentMode === 'trans' || contentMode === 'tr') {
       out.push(`${timeStr} ${label}${tr || l.text}`);
     } else {
       // both (기본)
       out.push(`${timeStr} ${label}${l.text}`);
+      if (acc) out.push(`  ※ ${acc}`);    // 정확본은 **원문 자리**에 붙는다(번역이 아니다)
       if (tr) out.push(tr);
     }
     out.push('');
@@ -70,7 +97,7 @@ function buildReportText({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
 /**
  * HTML/DOC/PDF 인쇄용 HTML 문서 문자열 생성
  */
-function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', isRtl = false, footer = null }) {
+function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', isRtl = false, footer = null, accurate = null }) {
   const first = lines.length ? new Date(lines[0].at) : new Date();
   const dateStr = `${first.getFullYear()}-${pad2(first.getMonth() + 1)}-${pad2(first.getDate())} ${pad2(first.getHours())}:${pad2(first.getMinutes())}`;
   const langPairStr = `${(srcLang || 'ko').toUpperCase()} → ${langName || targetLang} (${targetLang})`;
@@ -81,13 +108,15 @@ function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
     const tr = (l.tr && l.tr[targetLang]) ? l.tr[targetLang] : '';
     const label = escapeHtml(labelOf(l));
 
+    const acc = accOf(l);
+    const accHtml = acc ? `<div class="line-acc">※ ${escapeHtml(acc)}</div>` : '';
     let contentHtml = '';
     if (contentMode === 'src') {
-      contentHtml = `<div class="line-src">${label}${escapeHtml(l.text)}</div>`;
+      contentHtml = `<div class="line-src">${label}${escapeHtml(l.text)}</div>${accHtml}`;
     } else if (contentMode === 'trans' || contentMode === 'tr') {
       contentHtml = `<div class="line-tr" ${isRtl ? 'dir="rtl"' : ''}>${label}${escapeHtml(tr || l.text)}</div>`;
     } else {
-      contentHtml = `<div class="line-src">${label}${escapeHtml(l.text)}</div>`;
+      contentHtml = `<div class="line-src">${label}${escapeHtml(l.text)}</div>${accHtml}`;
       if (tr) {
         contentHtml += `<div class="line-tr" ${isRtl ? 'dir="rtl"' : ''}>${escapeHtml(tr)}</div>`;
       }
@@ -126,6 +155,7 @@ function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
     .col-content { }
     .line-src { color: #0f172a; margin-bottom: 4px; }
     .line-tr { color: #0369a1; font-weight: 500; }
+    .line-acc { color: #15803d; font-size: 13px; margin-bottom: 4px; }
     @media print {
       body { padding: 0; }
       .line-row { page-break-inside: avoid; }
@@ -139,6 +169,7 @@ function buildReportHtml({ lines = [], srcLang = 'ko', targetLang = 'en', langNa
       <span><strong>일시:</strong> ${dateStr}</span>
       <span><strong>언어:</strong> ${escapeHtml(langPairStr)}</span>
       <span><strong>라인 수:</strong> ${lines.length}줄</span>
+      ${accurateLine(accurate) ? `<span><strong>정확본:</strong> ${escapeHtml(accurateLine(accurate))}</span>` : ''}
     </div>
   </div>
   <table>
@@ -179,13 +210,13 @@ function generateReportFilename({ date, contentMode = 'both', langCode = 'en', e
 /**
  * 브라우저 다운로드 트리거
  */
-function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', format = 'txt', isRtl = false, footer = null }) {
+function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langName = 'English', contentMode = 'both', format = 'txt', isRtl = false, footer = null, accurate = null }) {
   if (!lines || !lines.length) return false;
   const first = lines.length ? new Date(lines[0].at) : new Date();
 
   if (format === 'pdf') {
     // PDF: 인쇄용 iframe 생성 후 window.print()
-    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl, footer });
+    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl, footer, accurate });
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -214,7 +245,7 @@ function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langNam
 
   if (format === 'doc') {
     // DOC: application/msword
-    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl, footer });
+    const html = buildReportHtml({ lines, srcLang, targetLang, langName, contentMode, isRtl, footer, accurate });
     const blob = new Blob(['\uFEFF' + html], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const filename = generateReportFilename({ date: first, contentMode, langCode: targetLang, ext: 'doc' });
@@ -229,7 +260,7 @@ function downloadReport({ lines = [], srcLang = 'ko', targetLang = 'en', langNam
   }
 
   // TXT (기본)
-  const text = buildReportText({ lines, srcLang, targetLang, langName, contentMode, footer });
+  const text = buildReportText({ lines, srcLang, targetLang, langName, contentMode, footer, accurate });
   const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const filename = generateReportFilename({ date: first, contentMode, langCode: targetLang, ext: 'txt' });

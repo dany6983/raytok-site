@@ -189,6 +189,46 @@ const ttsStub = () => {
   ok(/^\d+:\d\d:\d\d$/.test(sum.dur), `요약: 진행 시간 h:mm:ss (${sum.dur})`);
   ok(sum.read === '3' && sum.total === '4', `요약: 읽은 문단 3 / 4 (${sum.read} / ${sum.total})`);
   ok(sum.skip === '1' && sum.skipList === '4', `요약: 건너뛴 문단 1 — 4번 (${sum.skip} · ${sum.skipList})`);
+  /* ── B 31 사후 정확본 자리 (마스터 NOW) — **칸이 화면에 있나**, 끄면 **없나** ──
+     §12: 덮개·칸을 넣으면 구조 단언을 같이 넣는다. testID 는 통과하고 화면엔 안 보이던 사고가
+     있었다. 그래서 보이는지(offsetParent)와 **어느 부모의 어느 형제인지**를 같이 센다. */
+  const accBox = await host.evaluate(() => {
+    const box = document.getElementById('postasrBox');
+    if (!box) return { exists: false };
+    const vis = getComputedStyle(box).display !== 'none' && box.offsetParent !== null;
+    const prev = box.previousElementSibling;
+    return {
+      exists: true, vis,
+      inEnd: !!box.closest('#step-end'),
+      afterReportBtn: !!(prev && prev.id === 'btnReport'),
+      state: (document.getElementById('postasrState') || {}).textContent || '',
+      title: (box.querySelector('[data-t="acc_title"]') || {}).textContent || ''
+    };
+  });
+  ok(accBox.exists && accBox.vis, '정확본 칸이 끝 화면에 **보인다** (기본 켬 — §24)');
+  ok(accBox.inEnd && accBox.afterReportBtn,
+     '구조: #step-end 안, 「리포트 저장」 단추 **바로 다음 형제** (§12 구조 단언)');
+  ok(accBox.title === '정확본', `칸 이름이 글자 표에서 나온다 (${accBox.title})`);
+  ok(accBox.state.includes('아직 없음'),
+     `지금 상태는 **아직 없음** — 녹음이 있는 길이 웹 강사에 없다. 지어낸 상태를 적지 않는다 (${accBox.state})`);
+
+  /* 스위치를 끄면 칸이 **없다**.
+     스위치는 준비 화면(`#step-prepare`)에 있고 끝 화면에서는 숨어 있어 클릭이 안 된다 —
+     그래서 값을 바꾸고 `change` 를 보낸다(사람이 준비 화면에서 끄는 것과 같은 길). */
+  const toggleAcc = (on) => host.evaluate((v) => {
+    const chk = document.getElementById('chkEnablePostAsr');
+    chk.checked = v;
+    chk.dispatchEvent(new Event('change'));
+    const box = document.getElementById('postasrBox');
+    return getComputedStyle(box).display !== 'none' && box.offsetParent !== null;
+  }, on);
+  ok((await toggleAcc(false)) === false, '스위치를 끄면 칸이 없다 (마스터: 꺼진 스위치면 칸 없음)');
+  ok((await toggleAcc(true)) === true, '다시 켜면 칸이 돌아온다 — 스위치가 **양쪽으로** 움직인다 (되돌림 실증)');
+  const accLog = await host.evaluate(() => window.rtHostPostAsr.log());
+  ok(accLog.length >= 3 && accLog[0] === 'postasr_box on=1 state=none',
+     `첫 걸음(열림)에 기록 한 줄 (§12) — ${accLog.slice(0, 3).join(' > ')}`);
+  ok(accLog.includes('postasr_box on=0 state=none'), '끈 것도 기록에 남는다 — 왜 칸이 없었는지 뒤에서 안다');
+
   ok(!hostReceived.some(m => m.end), '끝내기만으로는 방을 닫지 않는다(end 미송출)');
   ok(!(await A.p.isVisible('#end-modal')), '끝내기만으로는 청취자 화면이 끝나지 않는다');
   await host.keyboard.press('ArrowRight');
