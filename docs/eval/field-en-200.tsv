@@ -1,0 +1,205 @@
+# RayTok 엔진 평가용 현장 문장 200 — **영어 기준 번역** (B 28, 2026-10-17)
+# ⚠ **기계 초안이다. 사람 검수 전이다.** 원어민이 보지 않았다. 점수의 기준선으로 쓰기 전에 검수한다.
+# 쓰임: E-11 피벗 비교(ko→en→대상 vs ko→대상). 설계: raytok-engine/docs/design/langpack-v1.md
+# 꼴: docs/eval/field-ko-200.tsv 와 **같은 순서·같은 분야 꼬리표**. n번째 줄이 그 파일 n번째 줄의 번역이다.
+# 분야: 안전교육 80 · 가이드박물관 60 · 강의 60 = 200
+안전교육	Today's pre-work safety check starts at 7:30 a.m. in front of Plant 1.
+안전교육	On the scaffold, always clip your harness lanyard to the horizontal lifeline before moving.
+안전교육	Do not remove the opening cover on the 2nd floor; if you do remove it, put it back immediately after the work.
+안전교육	In aisles where forklifts pass, walk only inside the pedestrian lane.
+안전교육	We identified three hazards in today's TBM: falls, pinch points, and electric shock.
+안전교육	If you do not tighten the chin strap, your hard hat will come off your head in a fall.
+안전교육	Keep flammable materials out of a 5-meter radius around welding work.
+안전교육	Before entering a confined space, measure the oxygen level and confirm it is 18 percent or higher.
+안전교육	Appoint only one crane signaler, and follow that person's signals only.
+안전교육	If you feel unwell during work, do not endure it; tell your team leader right away.
+안전교육	Working across the guardrail of an aerial work platform means an immediate work stoppage.
+안전교육	Before using a power tool, run your hand along the cable to check for stripped insulation.
+안전교육	Keep the distribution panel door closed and locked; when it must be opened, call the electrical supervisor.
+안전교육	Lay scaffold boards at least two deep and keep gaps under 3 centimeters.
+안전교육	Do ladder work in pairs, with one person holding the ladder from below.
+안전교육	Never run a grinder with the wheel guard removed.
+안전교육	On steel beams both hands must be free, so always hoist materials with a rope.
+안전교육	The area around the sump pit on basement level 2 is slippery, so wear rubber boots when you go in.
+안전교육	If a fire starts, shout to warn others first, press the emergency bell, and then evacuate.
+안전교육	The assembly point is the safe zone in the main gate parking lot, and the team leader counts heads.
+안전교육	Pull the safety pin on the extinguisher, squeeze the handle, and aim at the base of the fire.
+안전교육	5 minutes of stretching before work greatly reduces back injuries.
+안전교육	Do not lift materials over 20 kilograms alone; split the load between two people.
+안전교육	When lifting something heavy, bend your knees, keep your back straight, and hold it close to your body.
+안전교육	Do not wear cotton gloves when using a cutter, because the gloves can be caught by the blade.
+안전교육	Near rotating machinery, always tuck in sleeves and straps so they stay against your body.
+안전교육	Wear earplugs in areas where the noise level exceeds 85 decibels.
+안전교육	Do not cover the warning label on a hazardous chemical container, and keep the lid firmly closed.
+안전교육	In areas where thinner is used, turn on the ventilation fan and keep the door open.
+안전교육	Write the date of first use on the respirator cartridge and replace it once the period has passed.
+안전교육	When repairing a machine, cut the power and attach a lock so that no one else can switch it on.
+안전교육	The person doing the repair keeps that lock's key in their own pocket.
+안전교육	Do not reach into a conveyor just because it has stopped; always confirm the power is isolated.
+안전교육	A press requires both hands on the two-hand buttons, so never tape one button down.
+안전교육	Riding on forklift forks is forbidden in every case.
+안전교육	Do not stack loads above eye level, and keep heavier items at the bottom.
+안전교육	If a pallet is cracked, do not use it; collect it separately in the disposal area.
+안전교육	Materials left in an aisle block escape routes in an emergency, so clear them right after work.
+안전교육	If oil spills on the floor, spread absorbent immediately and put up a warning sign.
+안전교육	Do not run on the stairs, hold the handrail, and do not climb with materials in both hands.
+안전교육	Do not put a utility knife in your pocket with the blade out.
+안전교육	Today's temperature is above 33 degrees, so we rest 10 minutes in the shade every hour.
+안전교육	Drink a cup of water every 20 minutes, and taking it with salt is even better.
+안전교육	Dizziness or a headache is an early sign of heat illness, so tell us immediately.
+안전교육	In winter, spread sand on icy stretches and check for slipperiness before work.
+안전교육	If it rains, stop steel and scaffold work and switch to indoor tasks.
+안전교육	Stop tower crane work when the wind speed exceeds 10 meters per second.
+안전교육	Welding sparks fly up to 10 meters, so lay spark blankets on the floor below.
+안전교육	After work, hang the tools in their places, count them, and report the number to your team leader.
+안전교육	If you find an injured person, first prevent a second accident and then call 119.
+안전교육	The first aid kit is on the wall to the left of the office entrance, and the defibrillator is next to it.
+안전교육	For bleeding, press with a clean cloth and raise the wound above the level of the heart.
+안전교육	If a chemical gets in your eyes, rinse with running water for at least 15 minutes.
+안전교육	Do not pull an electrocuted person with bare hands; cut the power first.
+안전교육	If an accident happens during work, record it without fail, however small it is.
+안전교육	Confirm today's training with your signature, and we will take questions after the session.
+안전교육	If Korean is difficult, please raise your hand. We will explain again through interpretation.
+안전교육	The most frequent accident at this site is slips and falls, and the next is pinch injuries.
+안전교육	Hot work cannot start without a work permit.
+안전교육	Before high-risk work, the work supervisor stays on site with you until the end.
+안전교육	In 2-person work, if your partner leaves the spot, stop work and wait.
+안전교육	Do not walk while looking at your phone, and take calls in the safe zone.
+안전교육	You cannot come to work after drinking, and if you have taken medication, tell us in advance.
+안전교육	Smoking outside the designated area carries a very high fire risk.
+안전교육	Safety training for foreign workers becomes a legal requirement on January 8, 2027.
+안전교육	Today's session is 50 minutes with a 10-minute break in the middle.
+안전교육	Before work, check your own five pieces of protective equipment yourself.
+안전교육	If the soles of your safety shoes are worn, apply for a replacement rather than keep wearing them.
+안전교육	Wear safety glasses underneath the welding mask as well.
+안전교육	Do not sweep metal filings from cutting work with bare hands; use a broom.
+안전교육	Do not walk under an overhead crane; go around it.
+안전교육	Before work, inspect lifting gear and wire rope for broken strands.
+안전교육	If broken strands exceed 10 percent in one lay of a wire rope, do not use it.
+안전교육	If a hoist remote button sticks while pressed, cut the power immediately and report it.
+안전교육	Tools left on a work platform fall and injure the people below.
+안전교육	Tie tools used at height to your wrist or harness with a lanyard.
+안전교육	Cap the ends of rebar to prevent puncture injuries.
+안전교육	Pull the nails out of timber right away and collect them in one place.
+안전교육	When work ends, shut off the electricity and gas, and the team leader checks last.
+안전교육	Tomorrow we have scaffold dismantling work, so we will practice two-lanyard hook-up.
+가이드박물관	Hello. I am your guide for today. Please put the earphone in your left ear.
+가이드박물관	The gate you see now is Gwanghwamun, the main gate of Gyeongbokgung Palace.
+가이드박물관	Geunjeongjeon is where the Joseon royal court held its largest ceremonies.
+가이드박물관	The broad flat stones on the ground are called bakseok, and they reduce glare from the sun.
+가이드박물관	Gyeonghoeru is a pavilion built over an artificial pond, and it is especially beautiful in spring.
+가이드박물관	Take your photos here and gather under this pine tree in 10 minutes.
+가이드박물관	The restroom is 30 meters along the wall on your right.
+가이드박물관	The stairs are narrow, so please go up slowly in a single line.
+가이드박물관	Keeping about two steps from the person ahead will keep you from tripping.
+가이드박물관	People still live in Bukchon Hanok Village, so you must walk quietly.
+가이드박물관	The inner alleys are private property, so please take photos only from the street.
+가이드박물관	We will have lunch at 1 p.m. and meet again here at 2 p.m.
+가이드박물관	At Gwangjang Market, the most famous dishes are mung bean pancake and mayak gimbap.
+가이드박물관	Some shops take cash only, so please have about 10,000 won (1 man won) ready.
+가이드박물관	If you are worried about spicy food, I will ask the shop to make it milder.
+가이드박물관	The bus is parked in front of Exit 3, and its number is 1234.
+가이드박물관	If you leave your bags on the bus, take only your valuables with you.
+가이드박물관	The ride takes 40 minutes, so feel free to rest.
+가이드박물관	The wind is strong at Seongsan Ilchulbong in Jeju, so it is better to carry your hat.
+가이드박물관	There are 580 steps to the top, and the round trip takes 50 minutes.
+가이드박물관	If your knees bother you, going only as far as the middle viewpoint is fine.
+가이드박물관	At Bulguksa Temple, we do not take photographs inside the main hall.
+가이드박물관	Some places require taking off your shoes, so wearing socks is a good idea.
+가이드박물관	The full wall trail of Hwaseong Fortress in Suwon is 5.7 kilometers around.
+가이드박물관	Today we will walk only 1.5 kilometers of it.
+가이드박물관	You can rent a bicycle on Nami Island, and it costs 10,000 won per hour.
+가이드박물관	The last boat leaving the island is at 6:40 p.m.
+가이드박물관	If you lose the group, call my number and wait where you are.
+가이드박물관	Keep your passport in an inner pocket of your bag and do not carry it in your hand.
+가이드박물관	Pickpockets are rare, but in crowded markets please wear your bag in front of you.
+가이드박물관	This museum is closed on Mondays, and today it is open until 6 p.m.
+가이드박물관	In the exhibition rooms, please stay one step back from the artworks.
+가이드박물관	This is a room where photography is allowed if you turn off the flash.
+가이드박물관	This piece is 12th-century Goryeo celadon, and its blue-green bisaek color is its hallmark.
+가이드박물관	If you look at the number under an artifact, you can find its description in the exhibition booklet.
+가이드박물관	This painting was done on silk and fades easily, so the lighting is kept dim.
+가이드박물관	The room you see now is on the 2nd floor, and the next talk will be in the sculpture hall on the 3rd.
+가이드박물관	The elevator is behind the information desk, and a wheelchair fits inside.
+가이드박물관	The special exhibition runs only until the 15th of next month, and after that you cannot see it.
+가이드박물관	Drinks may be had only in the lounge outside the exhibition rooms.
+가이드박물관	If your bag is large, please put it in a locker at the entrance, and do not lose the key.
+가이드박물관	Today's talk is 40 minutes, and I will take questions at the end.
+가이드박물관	If you can hear my voice clearly, please raise your hand once.
+가이드박물관	If the sound cuts out, the text keeps appearing on your screen, so you can read that instead.
+가이드박물관	These subtitles appear in the language you chose, while I speak only Korean.
+가이드박물관	There is no shade once we go out to the outdoor site, so you will need a parasol or a hat.
+가이드박물관	The ground on the fortress wall is uneven, so I recommend sneakers.
+가이드박물관	When it rains the stone paving is very slippery, so please hold the handrail.
+가이드박물관	The hanok village talk is given while walking, so please stay within three steps behind me.
+가이드박물관	Group photos come out best in front of these stairs.
+가이드박물관	The gift shop is next to the exit, and a postcard is 2,000 won.
+가이드박물관	You do not need to return the earphone to me after the tour. It is yours.
+가이드박물관	We walked about 4 kilometers today, roughly 20,000 steps.
+가이드박물관	The next item is a 7 p.m. performance, and our seats are in the middle of the second floor.
+가이드박물관	Please switch your phone to silent inside the theater.
+가이드박물관	I would be grateful if each of you shared a word at the end about today's tour.
+가이드박물관	Tomorrow we leave from the hotel lobby at 8:30 a.m.
+가이드박물관	It will get colder, so please bring one more layer.
+가이드박물관	You may ask questions now, or ask while we walk.
+가이드박물관	Thank you for joining us today. I hope you travel home safely.
+강의	All right, let's begin. Today we start with Chapter 3, reading financial statements.
+강의	Let me sum up the income statement we covered last time in one sentence.
+강의	Please open your textbook to page 47. We will look at Table 3-2 together.
+강의	In this table the horizontal axis is the quarter and the vertical axis is revenue.
+강의	The unit is millions of won, so think of 6 zeros after each number.
+강의	This concept will definitely appear on the midterm, so be sure to write it down.
+강의	If I am going too fast, please raise your hand. I will say it again.
+강의	If Korean is difficult, it helps to follow the subtitles on your screen.
+강의	I will also say the English term for technical words: gamgasanggak, depreciation.
+강의	The assignment is due by next Tuesday, and late work loses 10 percent.
+강의	Keep the assignment under 2,000 characters and cite at least three references.
+강의	Copying someone else's text is plagiarism and will be graded 0.
+강의	When you quote, put the author and the year in parentheses as the source.
+강의	Group projects are in teams of four, and we will form the teams next session.
+강의	Each team presents for 8 minutes, plus 2 minutes of questions, for 10 minutes total.
+강의	Keep your slides to ten pages and make the text nice and large.
+강의	I will take attendance by QR code at the end of class today.
+강의	Three absences mean an F under school rules, so please keep that in mind.
+강의	If you cannot come because you are ill, let me know by email in advance.
+강의	The exam has 20 multiple-choice questions and 2 written questions.
+강의	You may bring a calculator, but a phone cannot be on your desk.
+강의	I will print the formulas on the first page of the exam. You do not have to memorize them.
+강의	But you do have to know where to apply them in order to solve the problems.
+강의	Let's work through this problem together. First we organize the given values.
+강의	If revenue is 12 billion won and costs are 9.5 billion, operating profit is 2.5 billion.
+강의	As a ratio, the operating margin is about 20.8 percent.
+강의	Here we will keep only two decimal places.
+강의	If you do not write out the steps, you will not get full credit even with the right answer.
+강의	In this graph, the slope means the speed of change.
+강의	The point where the graph bends is called the inflection point.
+강의	That is enough theory; let's look at one case.
+강의	Look at how this indicator moved during the 2008 financial crisis.
+강의	At that time unemployment rose from 3.2 percent to 4.0 percent within a year.
+강의	Do not memorize the numbers; remember the direction and the reason.
+강의	Let me summarize today in three sentences.
+강의	First, a financial statement is less a photograph of a company than a video.
+강의	Second, cash flow is the number to read before profit.
+강의	Third, a ratio means nothing on its own and only gains meaning in comparison.
+강의	Any questions? If not, we take 10 minutes and start the second hour.
+강의	During the break, read practice problems 1 through 5 at the back of the textbook.
+강의	Let's resume. I will check whether the back rows can hear me well.
+강의	If the microphone is too quiet, tell me and I will turn it up a little.
+강의	If the writing on the board is too small, you may take a photo.
+강의	I will upload the class materials to the learning management system this evening.
+강의	Let me explain the two mistakes that came up most in the last assignment.
+강의	One was leaving out the units, and the other was omitting the source.
+강의	Next time we cover Chapter 4, cost calculation, so please read it beforehand.
+강의	If you mark the parts that are hard to read, I will explain those first.
+강의	My office is room 305 on the third floor of the engineering building, and office hours are Wednesdays from 2 to 4 p.m.
+강의	When you email me, please put the course name and your student number in the subject line.
+강의	Use today's recording for review only and do not post it anywhere.
+강의	This course is 30 percent midterm, 40 percent final, 20 percent assignments, and 10 percent attendance.
+강의	Grade appeals are accepted only within 3 days of the announcement.
+강의	International students can get assignment feedback at the Korean writing support center.
+강의	The center is on the 2nd floor of the library, and you book it on its website.
+강의	If you get nervous while presenting, speak slowly. That is better than speaking fast.
+강의	You do not have to answer my question right away. Taking 1 minute to think is fine.
+강의	Today's lecture notes will remain on your phone after class ends.
+강의	Those notes contain both my original words and the translation in your language.
+강의	That is all for today. Thank you for your work.
