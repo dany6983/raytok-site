@@ -61,7 +61,15 @@ if (CHECK) {
     console.error(`[FAIL] README 빠짐 ${missing.map(x => x[0]).join(',') || '없음'} · 그림 빠짐 ${noFile.map(x => x[0]).join(',') || '없음'}`);
     process.exit(1);
   }
-  console.log(`[OK] 장면 ${SCENES.length}개 — README 와 PNG 가 목록과 같다`);
+  /* 되돌림 실증 (D-09) — 위 비교가 **정말 비교인지** 본다. 장면 하나를 뺀 README 를 만들어
+     같은 셈에 넣는다(파일은 건드리지 않는다). 못 잡으면 위 [OK] 는 빈 말이다. */
+  const bent = have.replace(`\`${SCENES[0][0]}.png\``, '`없는-장면.png`');
+  const bentMissing = SCENES.filter(([f]) => !bent.includes(`\`${f}.png\``));
+  if (bent === have || bentMissing.length !== 1) {
+    console.error('[FAIL] 장면 하나를 뺀 README 를 못 잡는다 — 이 검사는 증거가 아니다 (되돌림 실증)');
+    process.exit(1);
+  }
+  console.log(`[OK] 장면 ${SCENES.length}개 — README 와 PNG 가 목록과 같다 (되돌림 실증: 한 장을 빼면 잡힌다)`);
   process.exit(0);
 }
 
