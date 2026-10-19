@@ -14,3 +14,6 @@ desk-license.txt
 relay/keys/
 
 .claude/stopwait.count
+
+# 데모 장면 찍을 때의 임시 영상 자리 — 스크립트가 치우지만 겹쳐 돌면 남는다
+docs/demo-shots/.video-*/
