@@ -52,5 +52,22 @@ const revertedCodes = hostCodes(reverted);
 ok(revertedCodes.includes('zh') && revertedCodes.filter((c) => !gset.has(c)).length === 1,
    "10-19 의 값('zh')으로 되돌리면 닿지 않는 코드가 1개로 잡힌다 (되돌림 실증)");
 
+/* ── 대표님 한 장이 **같은 아홉**을 적고 있나 ──────────────────────────────
+   데모 때 그 한 장만 보신다. 거기 적힌 언어가 강사 표와 다르면 그 자리에서 원문이 나온다.
+   이름으로 센다(코드가 아니라 사람이 읽는 말이 적혀 있다). */
+const onePager = fs.readFileSync(path.join(ROOT, 'docs', 'demo-web-1119.md'), 'utf-8');
+const names = [...hostHtml.match(/SUPPORTED_TARGET_LANGS\s*=\s*\[([\s\S]*?)\n\s*\];/)[1]
+  .matchAll(/name:\s*'([^(']+)\s*\(/g)].map((x) => x[1].trim());
+ok(names.length === host.length, `강사 표에서 언어 이름 ${names.length}개를 읽었다 (${names.join(' ')})`);
+const notInDoc = names.filter((n) => !onePager.includes(n));
+ok(notInDoc.length === 0, `한 장이 아홉을 다 적는다 (빠진 것: ${notInDoc.join(', ') || '없음'})`);
+ok(/이 아홉 밖을 고르면 원문/.test(onePager),
+   '한 장이 **그 밖이면 원문**이라고 적는다 — 데모 때 스페인어를 고르시면 안 된다');
+
+/* 되돌림 실증 — 한 장에서 한 언어를 빼면 위 단언이 잡는가 (파일은 안 건드린다) */
+const bentDoc = onePager.replace(names[names.length - 1], '§없는언어§');
+ok(bentDoc !== onePager && names.filter((n) => !bentDoc.includes(n)).length === 1,
+   `한 장에서 한 언어(${names[names.length - 1]})를 빼면 잡힌다 (되돌림 실증)`);
+
 console.log(`\n${fail === 0 ? '전부 통과' : '붉다'} (${pass + fail}건${fail ? `, 실패 ${fail}` : ''})`);
 process.exit(fail === 0 ? 0 : 1);
