@@ -1,7 +1,33 @@
-# PG 실결제 전환 — 한 장 (포트원 · KCP 채널)
+# PG 실결제 전환 — 한 장 (포트원 · KCP 채널 · **V1 모듈**)
 
-대표님이 **포트원 콘솔에서 두 값**(Store ID · Channel Key)과 **비밀값 둘**(API Secret · Webhook Secret)을
-받으시면, 이 문서 하나로 전환이 끝난다. 값은 **어디에도 적지 않는다** — 이 저장소는 공개다.
+## ★ 2026-10-19 현재 — 전환은 **끝났다.** 남은 것은 카드사 심사뿐이다
+
+| 무엇 | 상태 |
+|---|---|
+| 공개 식별자 셋 (`storeId`·`channelKey`·`impCode`) | **들어갔다** — `buy/pg.js` (`d40bda2`·`188d2f3`·`93a27bc`) |
+| 비밀값 (`IMP_API_KEY`·`IMP_API_SECRET`·`MINT_PRIVATE_KEY` 등) | **들어갔다** — 대표님 PC, Worker secret |
+| 릴레이 배포 | **됐다** — 10-19 19:32, version `8a69f0b0` |
+| 릴레이 확인 | `node scripts/prod-license-e2e.mjs` **8건 PASS** (대표님 PC) |
+| **실카드 1회 결제** | **아직. 카드사 심사가 끝나야 된다** ↓ |
+
+**NHN KCP 카드사 심사 중이다** (10-19 회신): 영업일 **3~15일**, **"완료"로 표기되는 카드사부터
+결제가 된다.** 심사 중에 ① 사이트 하단 정보("전화번호" 등) ② 상품 구매 불가 처리(품절)
+③ 사이트 URL 이 바뀌면 **심사불가**다. 그래서 **지금 `buy/` 를 건드리지 않는다** —
+자물쇠가 지킨다(`samples/kcp_freeze_test.js` · 사실은 `docs/kcp-card-review.md`).
+확인: `partner.kcp.co.kr` → 상점정보관리 → 카드사심사 등록현황 (미등록 → 심사중 → 완료).
+
+## ★★ 이 채널은 **V1 모듈**이다 (10-19 실측)
+
+포트원 V2 `requestPayment` 로 부르면 **"KCP 에 대해 지원하지 않는 기능입니다"** 로 죽는다.
+그래서 결제창은 **V1 SDK**(`IMP.request_pay`)로 뜨고, 손님 쪽이 주는 열쇠는 **`imp_uid`** 다.
+릴레이는 그것을 **V1 REST**(`POST /users/getToken` → `GET /payments/{imp_uid}`)로 확인한다(B 30).
+→ 그래서 비밀값이 **`PORTONE_API_SECRET`(V2)이 아니라 `IMP_API_KEY`·`IMP_API_SECRET`(V1)** 이다.
+V2 쪽 코드와 비밀값은 **지우지 않았다** — 채널이 V2 로 바뀌면 `impUid` 가 안 오고 그 길로 간다.
+
+---
+
+아래는 전환 자체의 절차다(되돌릴 때·채널을 또 바꿀 때 그대로 쓴다).
+값은 **어디에도 적지 않는다** — 이 저장소는 공개다.
 
 | | 어디에 | 누가 |
 |---|---|---|
@@ -9,9 +35,9 @@
 | 비밀값 셋 (`PORTONE_API_SECRET`·`PORTONE_WEBHOOK_SECRET`·`MINT_PRIVATE_KEY`) | **Cloudflare Worker secret 에만** | 대표님 PC |
 | 배포 (`wrangler deploy`) | 릴레이 | **대표님** (세션은 배포하지 않는다) |
 
-**⚠ 지금 비밀값 둘(`PORTONE_API_SECRET`·`PORTONE_WEBHOOK_SECRET`)에는 포트원 발급값이 아닌 값이 들어 있다**
-(마스터 2026-10-17 09:05). 아래 2단계에서 **덮어쓴다.** 덮어쓰기 전에 프론트를 운영 키로 바꾸면
-손님이 돈을 내고 코드를 못 받는다(아래 "왜 백엔드가 먼저인가").
+**(끝난 경고 — 남겨 둔다)** 2026-10-17 까지 비밀값 둘에 포트원 발급값이 아닌 값이 들어 있었다.
+10-19 에 대표님이 V1 열쇠 둘을 넣고 배포하셨다. 덮어쓰기 전에 프론트를 운영 키로 바꾸면
+손님이 돈을 내고 코드를 못 받는다(아래 "왜 백엔드가 먼저인가") — 그 순서는 그대로다.
 
 ---
 
@@ -26,6 +52,8 @@
 |---|---|---|
 | `storeId` | `store-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | 상점 정보 |
 | `channelKey` | `channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | 결제 연동 → **KCP 채널** |
+| `impCode` | `imp########` (V1 고객사 식별코드) | 결제 연동 → **식별코드·API Keys** |
+| `sdk` | `'v1'` (V1 모듈 채널) · `'v2'` | — 채널이 V1 모듈이면 `'v1'` |
 | `provider` | `'kcp'` | — (바꿀 때 눈으로 한 번 더 보는 칸) |
 
 - `isTest` 는 **값에서 저절로** 갈린다(`storeId`·`channelKey` 에 `test` 글자가 있으면 테스트).
@@ -37,7 +65,9 @@
 
 | 이름 | 무엇에 쓰나 | 없으면 |
 |---|---|---|
-| `PORTONE_API_SECRET` | `/pay/complete` 가 포트원에 "이 결제가 진짜 됐나" 묻는다 (`GET /payments/{id}`) | `/pay/complete` → **503 `pg_secret_missing`** (아예 서지 않는다) |
+| `IMP_API_KEY` ★ | **지금 쓰는 길.** `/pay/complete` 가 V1 REST 로 "이 결제가 진짜 됐나" 묻는다 | `/pay/complete` → **503 `pg_secret_missing`** · `why=imp_secret_missing` (돈만 빠지지 않게 아예 서지 않는다) |
+| `IMP_API_SECRET` ★ | 위와 한 쌍 (둘 다 있어야 한다) | 같음 |
+| `PORTONE_API_SECRET` | **V2 채널일 때만.** `GET /payments/{id}` | V2 결제(`impUid` 없음)에서 **503 `pg_secret_missing`** |
 | `PORTONE_WEBHOOK_SECRET` | `/pay/webhook` 서명 검증 (`x-portone-signature`, HMAC-SHA256) | `/pay/webhook` → **503 `pg_secret_missing`** |
 | `MINT_PRIVATE_KEY` | 운영 쿠폰 Ed25519 서명 개인키(시드 32바이트 hex) | **시험 키(0)로 찍힌다** — 정식 앱이 거부한다 (`testKey = !env.MINT_PRIVATE_KEY`) |
 
@@ -62,7 +92,9 @@
 ### ② 비밀값 덮어쓰기 + 배포 (대표님 PC)
 ```bash
 cd relay
-npx wrangler secret put PORTONE_API_SECRET       # 포트원 발급 API Secret (지금 값은 틀렸다 — 덮어쓴다)
+npx wrangler secret put IMP_API_KEY               # ★ V1 — 결제 연동 → 식별코드·API Keys
+npx wrangler secret put IMP_API_SECRET            # ★ V1 — 위와 한 쌍
+npx wrangler secret put PORTONE_API_SECRET       # V2 채널로 바꿀 때만
 npx wrangler secret put PORTONE_WEBHOOK_SECRET   # 포트원 발급 Webhook Secret (같음)
 npx wrangler secret put MINT_PRIVATE_KEY         # 운영 쿠폰 서명 시드 (10-13 12:35 에 지운 그것)
 npx wrangler deploy
@@ -73,8 +105,14 @@ npx wrangler deploy
 ```javascript
 storeId:    '<포트원 Store ID>',
 channelKey: '<KCP Channel Key>',
+impCode:    '<V1 고객사 식별코드>',   // 채널이 V1 모듈이면 이것도. sdk: 'v1'
 ```
 `test` 글자가 사라지면 `isTest` 가 저절로 `false` 가 된다. **그 외에 손댈 곳은 없다.**
+
+⚠ **찾은 구멍 하나(아직 안 고쳤다)**: `PG.ready()` 는 `storeId`·`channelKey` 만 센다 —
+`sdk: 'v1'` 인데 `impCode` 가 비면 결제창이 **까닭 없이** 실패한다(`IMP.init(undefined)`).
+§20(빈 답은 없음이 아니다) 자리다. **카드사 심사 중이라 `buy/` 를 건드리지 않는다** — 심사
+"완료" 뒤에 `ready()` 가 `sdk==='v1'` 일 때 `impCode` 도 세게 고친다.
 
 ### ④ 밀기
 ```bash
@@ -109,8 +147,11 @@ GitHub Pages 라 **밀면 바로 산다.** 되돌릴 때도 같다(3장).
 
 ## 4. 전환 직후 확인 셋
 
-1. **실카드 1회 결제 + 당일 환불**
-   `https://raytok.kr/buy/` 에서 손님 1일권(3,300원)을 실제 카드로. 포트원·KCP 관리자에서
+1. **실카드 1회 결제 + 당일 환불** — **카드사 심사 "완료" 가 뜬 뒤에 한다**(위 ★).
+   `https://raytok.kr/buy/` 에서 손님 1일권(3,300원)을 실제 카드로.
+   막히면 다른 창에 `cd relay && npx wrangler tail` 을 켜 두고 한 번 더 — `why=` 한 줄이
+   어디서 막혔는지 바로 말한다(`imp_status`·`imp_amount`·`imp_merchant`·`imp_product`·
+   `imp_token`·`imp_unavailable`·`imp_secret_missing`). 표는 `docs/deploy-2026-10-17.md` 확인 ⑤. 포트원·KCP 관리자에서
    승인·거래번호 확인 → 당일 취소(환불).
 2. **코드·입장 링크가 화면에 뜬다**
    결제 직후 16자리 코드(`0000-0000-0000-0000`)와 입장 링크(`https://raytok.kr/web/listener/?room=…`).
@@ -132,5 +173,11 @@ GitHub Pages 라 **밀면 바로 산다.** 되돌릴 때도 같다(3장).
   운영에서는 404 다(돈이 빠진 뒤 "결제 처리 중 오류"). 시험의 모의 릴레이가 구매 화면도 같이
   서빙해서 통과하고 있었다(D-11). 지금은 릴레이 주소로 가고 `samples/pay_test.js` 가 운영 호스트
   이름을 넣어서 센다.
-- 릴레이 운영 배포 시각: 2026-10-16 11:53 KST (deployment 0d2b7fbc). 그 뒤 코드 변경은
-  배포되지 않은 상태 — 전환 때 ② 의 `wrangler deploy` 가 같이 올린다.
+- 릴레이 운영 배포: **2026-10-19 19:32 KST, version `8a69f0b0`** (B 30 V1 확인 포함).
+  그 전 배포 `e2db74b3`(같은 날 낮)에는 B 30 이 **없었다** — 대표님 PC 의 clone 이 10-16 전이라
+  `git pull` 없이 배포됐기 때문이다. 배포 전에 `git pull` 이 실제로 됐는지 보는 법:
+  `node scripts/prod-license-e2e.mjs` 가 **있는지** (그 파일은 10-16 에 들어왔다).
+- `storeId`·`channelKey`·`impCode` 는 2026-10-19 에 **실값이 커밋됐다**(공개 식별자다).
+  `samples/pay_test.js` 는 그래서 "저장소에 시험값만 있다"를 세지 않는다 — 대신 비밀값처럼
+  보이는 이름이 `pg.js` 에 없는지, 두 값이 **같은 쪽**(둘 다 운영 또는 둘 다 테스트)인지,
+  `isTest` 가 값에서 갈리는지를 센다(절반만 바뀌면 테스트 채널로 실결제를 받는다, D-32).
