@@ -1,3 +1,41 @@
+[B] NOW 5 (B 23) — 실서버 재측정 **막혔다**: 이 컨테이너가 `raytok.kr` 에 못 닿는다
+2026-10-19 · 코드 변경 없음 (확인만)
+
+### 무엇을 하려 했나
+NOW 5 둘 — ① `/pay/complete` 빈 요청이 **400** 인지(열쇠 없음 503 이 아닌지) ②
+청취자 데이터량 재측정(`scripts/measure-first-load.mjs`).
+
+### 왜 못 했나 — 사실 한 줄
+이 세션의 네트워크 정책이 두 주소를 **CONNECT 403** 으로 막는다:
+`raytok-relay.raytok.workers.dev:443` · `raytok.kr:443`.
+(같은 정책이 `cdn.iamport.kr`·`cdn.jsdelivr.net` 도 막는다 — 시험이 CDN 을 가로채는 까닭이다.)
+**릴레이가 고장난 것이 아니다.** 대표님 PC 에서는 10-19 19:32 배포 뒤 `prod-license-e2e.mjs`
+**8건 PASS** 가 났다. 여기서 밖으로 나가는 길만 없다.
+
+### 대표님 PC 에서 1분 (둘 다 비밀값 필요 없음)
+```powershell
+cd C:\github\raytok-site
+
+# ① 빈 요청 — 400 이어야 한다 (503 이면 열쇠 쪽 문제)
+curl.exe -s -o NUL -w "%{http_code}`n" -X POST https://raytok-relay.raytok.workers.dev/pay/complete -H "Content-Type: application/json" -d "{}"
+
+# ② 청취자 데이터량
+node scripts\measure-first-load.mjs --base https://raytok.kr --out docs\first-load.md
+```
+①은 **400**(`bad_request`)이 맞다. **503** 이 나오면 `pg_secret_missing` 이고 그때 열쇠를 본다.
+②는 `docs/first-load.md` 를 덮어쓰니 그 파일만 커밋하시면 그대로 받습니다.
+
+### 열어 주시려면
+세션 제목줄의 클라우드 환경 메뉴 → **Edit** → **Network access**: 접근 수준을 넓히거나,
+**Allowed domains** 에 `raytok.kr` · `raytok-relay.raytok.workers.dev` 를 넣고
+(Allow package managers 는 켠 채로). 설명: https://code.claude.com/docs/en/cloud-environments#network-access
+그러면 B 23 을 제가 여기서 돌립니다.
+
+### 남은 것
+NOW 판에 제 줄이 없다. `mailwait` 로 들어간다.
+
+---
+
 [B] NOW 0~4 — PR #1 합침 · KCP 카드사 심사 동결 자물쇠 · 배포 한 장 둘 (실결제는 심사 완료 뒤)
 2026-10-19 · 커밋 `237dc83`(PR #1 merge) · `90362bd`(KCP 동결) · `84a896c`·`68128ad`(배포 한 장) · `npm test` 종료코드 0 **3회** (묶음마다)
 
