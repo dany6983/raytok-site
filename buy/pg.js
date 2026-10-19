@@ -18,10 +18,15 @@
 
   var PG = {
     /* 포트원 콘솔의 상점 아이디. 운영값 형식: store-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx */
-    storeId: 'store-raytok-test',
+    storeId: 'store-474365e4-51bf-4907-a06f-a013abe007e4',
 
     /* 포트원 콘솔의 채널 키(KCP). 운영값 형식: channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx */
-    channelKey: 'channel-key-test',
+    channelKey: 'channel-key-1319ee61-bc5e-4ee0-8e1c-68b9db4d5551',
+
+    /* 포트원 V1 고객사 식별코드(공개값). 이 채널은 V1 모듈 KCP 라서 V2 SDK 로는 결제창이 안 뜬다
+       ("KCP 에 대해 지원하지 않는 기능입니다", 10-19 PG 심사). V1 SDK(IMP.request_pay) + channelKey 로 부른다. */
+    impCode: 'imp26838316',
+    sdk: 'v1',
 
     /* 어느 PG 를 쓰는 채널인지 — 바꿀 때 눈으로 한 번 더 보는 칸 */
     provider: 'kcp'
