@@ -48,8 +48,13 @@ const FAKE_SPEECH = `
     constructor() { this.lang=''; this.continuous=false; this.interimResults=false; this.running=false; }
     start() {
       if (this.running) throw new Error('already started');
+      /* 시험이 "이번 한 번은 던져라"를 시킬 수 있다 — 진짜 크롬도 겹쳐 열면 던진다 (A1 10-19) */
+      if (window.__failNextStart) { window.__failNextStart = false; window.__recLog.push('throw'); throw new Error('start failed'); }
       this.running = true; window.__recLog.push('start');
       window.__rec = this;
+      /* ★ 진짜 크롬은 열리면 **onstart** 를 낸다. 가짜가 안 내면 페이지의 "살아 있나" 판단이
+         실기와 달라진다 — 가짜가 실기와 다르면 시험이 거짓말을 한다 (D-11) */
+      if (this.onstart) this.onstart();
     }
     stop() { this.running = false; window.__recLog.push('stop'); if (this.onend) this.onend(); }
     /* 시험이 부른다 — 말이 끝난 문장 하나 */
@@ -190,6 +195,48 @@ async function openHost(browser, base, { speech, region, locale, question }) {
     await host.page.waitForTimeout(200);
     const reopened = await host.page.evaluate(() => window.__recLog.filter(x => x === 'start').length);
     ok(reopened >= 2, `iOS 처럼 혼자 끝나도 다시 연다 (start ${reopened}번, log: ${(await host.page.evaluate(() => window.__recLog.join('>')))})`);
+
+    /* ───────── A1 2026-10-19 — **60분 무중단**: 끊기는 세 가지를 하나씩 ─────────
+       ① 다시 열다가 `start()` 가 던진다 → 전 판은 `catch(_){}` 로 **거기서 끝**이었다.
+       ② 소켓이 닫힌 동안 말한다 → 전 판은 그 줄을 **버렸다**(R-15).
+       ③ 왜 끊겼는지 기록이 없다 → 끝난 뒤 "안 됐다"만 남는다. */
+    console.log('\n[4-b] 60분 무중단 — 던져도 다시 열고, 끊겨도 안 버리고, 왜인지 적는다');
+
+    /* ① start() 가 한 번 던져도 포기하지 않는다 */
+    const startsBefore = await host.page.evaluate(() => window.__recLog.filter(x => x === 'start').length);
+    await host.page.evaluate(() => { window.__failNextStart = true; window.__rec.dieQuietly(); });
+    await host.page.waitForTimeout(1600);                       // 물러서는 간격(0→300→900)을 넘긴다
+    const threw = await host.page.evaluate(() => window.__recLog.includes('throw'));
+    const startsAfter = await host.page.evaluate(() => window.__recLog.filter(x => x === 'start').length);
+    ok(threw && startsAfter > startsBefore,
+       `start() 가 던져도 다시 연다 (던짐 ${threw}, start ${startsBefore}→${startsAfter})`);
+    ok(await host.page.evaluate(() => window.rtHostMic.log().some(l => l.indexOf('start_threw') >= 0)),
+       '왜 다시 열었는지 기록에 남는다 — start_threw');
+
+    /* 그리고 **살아 있다**: 다시 말하면 그대로 나간다 */
+    const gotBefore = room.received.filter(m => m.broadcast).length;
+    await host.page.evaluate(() => window.__rec.say('다시 열린 뒤에도 말이 나간다', true));
+    await host.page.waitForTimeout(300);
+    ok(room.received.filter(m => m.broadcast).length > gotBefore, '다시 연 뒤에도 말한 줄이 릴레이에 닿는다');
+
+    /* ② 소켓이 닫힌 동안 말한 줄은 **버리지 않는다** — 다시 붙으면 순서대로 */
+    await host.page.evaluate(() => { live.ws.close(); });
+    await host.page.waitForTimeout(150);
+    await host.page.evaluate(() => {
+      window.__rec.say('끊긴 동안 1', true);
+      window.__rec.say('끊긴 동안 2', true);
+    });
+    const held = await host.page.evaluate(() => window.rtHostMic.state.pending.length);
+    ok(held === 2, `소켓이 닫힌 동안 말한 줄을 쥐고 있다 (held=${held})`);
+    ok(await host.page.evaluate(() => window.rtHostMic.log().some(l => l.indexOf('mic_queue') === 0)),
+       '쥐고 있다는 것을 기록에 적는다 — mic_queue');
+    await host.page.waitForTimeout(3600);                       // ws.onclose 는 3초 뒤에 다시 붙는다
+    const heldAfter = await host.page.evaluate(() => window.rtHostMic.state.pending.length);
+    const texts = room.received.filter(m => m && m.text).map(m => m.text);
+    ok(heldAfter === 0, `다시 붙으면 쥐고 있던 것을 보낸다 (남은 것 ${heldAfter})`);
+    ok(texts.indexOf('끊긴 동안 1') >= 0 && texts.indexOf('끊긴 동안 2') >= 0,
+       '끊긴 동안의 말이 **유실 0** 으로 도착한다 (R-15)');
+    ok(texts.indexOf('끊긴 동안 1') < texts.indexOf('끊긴 동안 2'), '보낸 차례가 지켜진다');
 
     /* 사람이 멈추면 — 다시 열지 않고 마이크·wakeLock 을 놓는다 */
     await host.page.click('#btnMic');
