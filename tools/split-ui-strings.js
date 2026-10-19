@@ -59,7 +59,15 @@ for (const d of DICTS) {
     const p = path.join(outDir, name);
     if (CHECK) {
       const cur = fs.existsSync(p) ? fs.readFileSync(p, 'utf-8') : null;
-      if (cur !== body) { diffs += 1; console.log(`다름: ${d.out}/${name}${cur === null ? ' (없다)' : ''}`); }
+      /*
+       * ★ **줄바꿈은 세지 않는다** (2026-10-20, A1). 이 도구는 늘 LF 로 쓰는데, 윈도
+       * 체크아웃의 조각 파일은 CRLF 다(`core.autocrlf`). 바이트로 견주면 **윈도에서는
+       * 163개가 늘 "다름"** 이고 리눅스에서는 늘 초록이다 — 같은 저장소가 기계에 따라
+       * 다른 답을 내면 그 검사는 아무것도 지키지 않는다(10-20 에 `npm test` 가 여기서
+       * 멈춰 뒤 묶음이 안 돌았다). 글자가 하나라도 다르면 여전히 "다름"이다.
+       */
+      const nl = (x) => (x == null ? null : x.replace(/\r\n/g, '\n'));
+      if (nl(cur) !== nl(body)) { diffs += 1; console.log(`다름: ${d.out}/${name}${cur === null ? ' (없다)' : ''}`); }
     } else {
       fs.writeFileSync(p, body);
       wrote += 1;
