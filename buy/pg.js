@@ -21,7 +21,7 @@
     storeId: 'store-raytok-test',
 
     /* 포트원 콘솔의 채널 키(KCP). 운영값 형식: channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx */
-    channelKey: 'channel-key-test',
+    channelKey: 'channel-key-1319ee61-bc5e-4ee0-8e1c-68b9db4d5551',
 
     /* 어느 PG 를 쓰는 채널인지 — 바꿀 때 눈으로 한 번 더 보는 칸 */
     provider: 'kcp'
