@@ -1215,8 +1215,11 @@
       if (voice) {
         uttr.voice = voice;
         uttr.lang = voice.lang;
-        speechSynthesis.speak(uttr);
+      } else {
+        // 목록이 아직 비었거나(안드로이드 크롬은 늦게 찬다) 이름이 안 맞아도 말은 한다 — 언어만 주고 폰이 고르게(10-20 실기: 영어 소리 없음)
+        uttr.lang = targetLang;
       }
+      speechSynthesis.speak(uttr);
     }
 
     function connect() {
