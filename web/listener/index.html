@@ -975,7 +975,9 @@
         return;
       }
 
-      const have = voices.some(v => v.lang && normalizeLangCode(v.lang) === target);
+      // 브라우저마다 꼴이 다르다(en-US · en_US · eng-USA) — 앞 마디로도 본다(10-20 실기: 삼성 브라우저 영어에 '음성 없음')
+      const base = (c) => String(c || '').toLowerCase().split(/[-_]/)[0];
+      const have = voices.some(v => v.lang && (normalizeLangCode(v.lang) === target || base(v.lang) === base(target)));
       voiceCheckedFor = target;
       voiceLog(target, have ? 1 : 0);
       showVoiceNotice(!have);
@@ -1215,8 +1217,11 @@
       if (voice) {
         uttr.voice = voice;
         uttr.lang = voice.lang;
-        speechSynthesis.speak(uttr);
+      } else {
+        // 목록이 아직 비었거나(안드로이드 크롬은 늦게 찬다) 이름이 안 맞아도 말은 한다 — 언어만 주고 폰이 고르게(10-20 실기: 영어 소리 없음)
+        uttr.lang = targetLang;
       }
+      speechSynthesis.speak(uttr);
     }
 
     function connect() {
