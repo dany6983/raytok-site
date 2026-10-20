@@ -867,15 +867,29 @@
       const qLang = params.get('lang');
       const savedLang = localStorage.getItem('raytok_lang');
 
+      const SCRIPT_PICK = { hant: 'zh-TW', hans: 'zh-CN' };
+
       function pickLang(want) {
         const w = String(want || '').trim();
         if (!w) return null;
         const exact = langs.find(l => l.code === w);
         if (exact) return exact.code;                      // 딱 맞는 것이 먼저다 (zh-TW 를 zh-CN 으로 보내지 않는다)
         const norm = normalizeLangCode(w);
-        const near = langs.find(l => l.code === norm) || langs.find(l => normalizeLangCode(l.code) === norm);
-        if (near) { try { console.log(`lang_pick want=${w} use=${near.code}`); } catch (_) {} return near.code; }
-        return null;                                        // 모르면 **고르지 않는다** — 다음 자리가 본다(D-70)
+        const say = (code, by) => {
+          try { console.log(`lang_pick want=${w} use=${code} by=${by}`); } catch (_) {}
+          return code;
+        };
+        const pool = langs.filter(l => l.code === norm || normalizeLangCode(l.code) === norm);
+        if (!pool.length) return null;                     // 모르면 **고르지 않는다** — 다음 자리가 본다(D-70)
+        if (pool.length === 1) return say(pool[0].code, 'base');
+        const tags = w.toLowerCase().split('-').slice(1);   // 뿌리 뒤의 조각들 (hant·tw·hk …)
+        const shared = pool.find(l => l.code.toLowerCase().split('-').slice(1).some(t => tags.includes(t)));
+        if (shared) return say(shared.code, 'tag');
+        for (const t of tags) {
+          const want2 = SCRIPT_PICK[t];
+          if (want2 && pool.some(l => l.code === want2)) return say(want2, 'script');
+        }
+        return say(pool[0].code, 'base');
       }
 
       selectedLang = pickLang(qLang) || pickLang(savedLang) || pickLang(navigator.language) || 'en';
