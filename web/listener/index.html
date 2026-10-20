@@ -410,6 +410,9 @@
   </div>
 
   <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 — 말하는 짝 호스트와 같은 표 -->
+  <!-- 대체어 음성 표 (site NOW 1) — **앱 src/offlineLangs.js 에서 생성된 파일**이다.
+       손으로 고치지 않는다: node tools/build-voice-fallback.js --write -->
+  <script src="../common/voice-fallback.js"></script>
   <script>
     const LISTENER_VER = '1.1.4'; // v1.1.4 — ④ 빈 방 문구·글자 크기
     document.getElementById('ver-text').textContent = LISTENER_VER;
@@ -931,6 +934,9 @@
     window.__rtVoiceCheck = [];                  // 마지막 판정들 — 시험과 개발자 창이 읽는 자리
     let voiceCheckedFor = null;                  // 어느 언어까지 알렸나 (언어마다 한 번)
     let voiceWaitTimer = null;
+    let voiceVia = '';
+    const voiceFbSeen = {};
+    window.__rtVoiceFallback = [];          // 시험과 개발자 창이 읽는 자리
 
     function voiceLog(lang, have) {
       const line = { lang, have, at: Date.now() };
@@ -978,7 +984,32 @@
       const have = voices.some(v => v.lang && normalizeLangCode(v.lang) === target);
       voiceCheckedFor = target;
       voiceLog(target, have ? 1 : 0);
-      showVoiceNotice(!have);
+      voiceVia = have ? '' : pickVoice(target, '').via;
+      showVoiceNotice(!have && !voiceVia);
+    }
+
+    function pickVoice(lang, via) {
+      if (typeof window.speechSynthesis === 'undefined') return { voice: null, via: '' };
+      const voices = speechSynthesis.getVoices() || [];
+      const want = normalizeLangCode(via || lang || '');
+      let voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(want));
+      if (!voice && via) {
+        const back = normalizeLangCode(lang || '');
+        voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(back));
+      }
+      if (voice) return { voice, via: '' };
+      const table = window.rtVoiceFallback;
+      const use = table ? table.voiceFallbackFor(lang) : '';
+      if (!use) return { voice: null, via: '' };
+      voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(use));
+      if (!voice) return { voice: null, via: '' };
+      const key = normalizeLangCode(lang || '') + '>' + use;
+      if (!voiceFbSeen[key]) {
+        voiceFbSeen[key] = 1;
+        window.__rtVoiceFallback.push({ lang: normalizeLangCode(lang || ''), use, at: Date.now() });
+        try { console.log(`voice_fallback lang=${normalizeLangCode(lang || '')} use=${use}`); } catch (e) {}
+      }
+      return { voice, via: use };
     }
 
     function getRankedVoicesForLang(lang) {
@@ -1007,6 +1038,11 @@
         currentVoice = ranked.find(v => v.voiceURI === savedUri) || ranked[0] || null;
       } else {
         currentVoice = ranked[0] || null;
+      }
+      voiceVia = '';
+      if (!currentVoice) {
+        const got = pickVoice(selectedLang, '');
+        if (got.voice) { currentVoice = got.voice; voiceVia = got.via; }
       }
       checkOsVoiceSupport(selectedLang);
     }
@@ -1198,23 +1234,10 @@
       if (!text) return;
       const uttr = new SpeechSynthesisUtterance(text);
 
-      const voices = speechSynthesis.getVoices();
-
-      let targetLang = selectedLang;
-      if (via) targetLang = via;
-
-      let voice = voices.find(v => v.lang.startsWith(targetLang));
-      if (!voice && via) voice = voices.find(v => v.lang.startsWith(selectedLang));
-      if (!voice) {
-        const langObj = langs.find(l => l.code === selectedLang);
-        if (langObj && langObj.fallback) {
-          voice = voices.find(v => v.lang.startsWith(langObj.fallback));
-        }
-      }
-
-      if (voice) {
-        uttr.voice = voice;
-        uttr.lang = voice.lang;
+      const got = pickVoice(selectedLang, via);
+      if (got.voice) {
+        uttr.voice = got.voice;
+        uttr.lang = got.voice.lang;      // 대체어로 읽을 때는 **그 언어로** 말해야 목소리가 유지된다
         speechSynthesis.speak(uttr);
       }
     }
@@ -1537,20 +1560,7 @@
       const trText = line.tr[selectedLang] || '';
       trDiv.textContent = trText;
 
-      const voices = speechSynthesis.getVoices();
-      let hasVoice = false;
-      let targetLang = selectedLang;
-      if (line.via) targetLang = line.via;
-
-      let voice = voices.find(v => v.lang.startsWith(targetLang));
-      if (!voice && line.via) voice = voices.find(v => v.lang.startsWith(selectedLang));
-      if (!voice) {
-        const langObj = langs.find(l => l.code === selectedLang);
-        if (langObj && langObj.fallback) {
-          voice = voices.find(v => v.lang.startsWith(langObj.fallback));
-        }
-      }
-      if (voice) hasVoice = true;
+      const hasVoice = !!pickVoice(selectedLang, line.via).voice;
 
       if (line.pending) {
         const badge = document.createElement('span');

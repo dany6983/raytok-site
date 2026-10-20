@@ -421,6 +421,9 @@
   </div>
 
   <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 — 말하는 짝 호스트와 같은 표 -->
+  <!-- 대체어 음성 표 (site NOW 1) — **앱 src/offlineLangs.js 에서 생성된 파일**이다.
+       손으로 고치지 않는다: node tools/build-voice-fallback.js --write -->
+  <script src="../common/voice-fallback.js"></script>
   <script>
     const LISTENER_VER = '1.1.4'; // v1.1.4 — ④ 빈 방 문구·글자 크기
     document.getElementById('ver-text').textContent = LISTENER_VER;
@@ -983,6 +986,18 @@
     window.__rtVoiceCheck = [];                  // 마지막 판정들 — 시험과 개발자 창이 읽는 자리
     let voiceCheckedFor = null;                  // 어느 언어까지 알렸나 (언어마다 한 번)
     let voiceWaitTimer = null;
+    /*
+     * **대체어 음성으로 읽는 중인가** (site NOW 1). '' 면 그 언어 음성으로 읽는다.
+     * 알림을 가리는 데 쓰인다 — 소리가 나는데 "음성이 없습니다"를 띄우면 그것이 거짓이다.
+     */
+    let voiceVia = '';
+    /*
+     * 기록은 **짝마다 한 번**이다 — 줄마다 찍으면 300줄 세션이 300줄의 같은 기록이 된다.
+     * 자리가 여기인 까닭: `pickVoice` 는 `initApp()` 안에서 먼저 불릴 수 있어(QR 진입),
+     * 선언이 그 아래 있으면 그 순간 **아직 없는 값**을 보게 된다.
+     */
+    const voiceFbSeen = {};
+    window.__rtVoiceFallback = [];          // 시험과 개발자 창이 읽는 자리
 
     function voiceLog(lang, have) {
       const line = { lang, have, at: Date.now() };
@@ -1030,7 +1045,56 @@
       const have = voices.some(v => v.lang && normalizeLangCode(v.lang) === target);
       voiceCheckedFor = target;
       voiceLog(target, have ? 1 : 0);
-      showVoiceNotice(!have);
+      /*
+       * ★ 대체어를 **여기서** 묻는다 (site NOW 1).
+       *
+       * 처음엔 `updateVoice` 에만 넣었는데, 그 함수는 **줄이 그려질 때**(방에 들어간 뒤)
+       * 돈다. QR 로 들어온 그 자리에서는 이 함수만 돌아서, 손님은 소리가 날 수 있는데도
+       * "음성이 없습니다"를 먼저 봤다. 시험이 그것을 잡았다 — §4 그대로다(읽는 곳을 전부).
+       *
+       * 기록은 **사실**이다(`have=0` 은 그 언어 음성이 없다). 그러나 **알림**은 "소리가
+       * 안 납니다"라는 뜻이므로, 대체어로 읽을 수 있으면 가린다 — 둘을 한 값으로 묶으면
+       * 기록이 거짓이 되거나 알림이 거짓이 된다.
+       */
+      voiceVia = have ? '' : pickVoice(target, '').via;
+      showVoiceNotice(!have && !voiceVia);
+    }
+
+    /*
+     * ★ 이 줄을 **어떤 목소리로 읽나** — 자리는 하나다 (D-193, site NOW 1).
+     *
+     * 전에는 같은 셈이 **세 곳**에 있었다(읽어 주기·줄 그리기·목소리 고르기). 그래서
+     * 「대체어로 읽기」를 하려면 세 곳을 같이 고쳐야 했고, 그것이 §4 가 말하는 사고다.
+     *
+     * 차례 셋: ① 자막 언어(또는 번역이 거쳐 온 `via`) 음성 ② via 가 있으면 자막 언어로
+     * 되돌려 보기 ③ 그래도 없으면 **대체어 음성**(표는 앱에서 생성된 `rtVoiceFallback` 하나).
+     *
+     * 표가 꼴까지 본다 — 타이 음성은 라오 글자를 못 읽으므로 `lo` 는 '' 가 온다.
+     * 그래서 **침묵이 소리로 둔갑하지 않는다**(§20). 대체어로 읽는 중이면 `via` 를 채워
+     * 돌려주고, 부르는 쪽은 그것으로 알림을 가린다.
+     */
+    function pickVoice(lang, via) {
+      if (typeof window.speechSynthesis === 'undefined') return { voice: null, via: '' };
+      const voices = speechSynthesis.getVoices() || [];
+      const want = normalizeLangCode(via || lang || '');
+      let voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(want));
+      if (!voice && via) {
+        const back = normalizeLangCode(lang || '');
+        voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(back));
+      }
+      if (voice) return { voice, via: '' };
+      const table = window.rtVoiceFallback;
+      const use = table ? table.voiceFallbackFor(lang) : '';
+      if (!use) return { voice: null, via: '' };
+      voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(use));
+      if (!voice) return { voice: null, via: '' };
+      const key = normalizeLangCode(lang || '') + '>' + use;
+      if (!voiceFbSeen[key]) {
+        voiceFbSeen[key] = 1;
+        window.__rtVoiceFallback.push({ lang: normalizeLangCode(lang || ''), use, at: Date.now() });
+        try { console.log(`voice_fallback lang=${normalizeLangCode(lang || '')} use=${use}`); } catch (e) {}
+      }
+      return { voice, via: use };
     }
 
     // 8번: 청취 페이지 「목소리」 — 그 언어 음성 최대 3개 + ▶ 미리듣기, localStorage 기억
@@ -1061,6 +1125,15 @@
         currentVoice = ranked.find(v => v.voiceURI === savedUri) || ranked[0] || null;
       } else {
         currentVoice = ranked[0] || null;
+      }
+      /*
+       * 그 언어 음성이 아예 없으면 **대체어 음성**을 집는다 (site NOW 1).
+       * 자막은 손대지 않는다 — 글은 그 언어 그대로고, 바뀌는 것은 **목소리뿐**이다.
+       */
+      voiceVia = '';
+      if (!currentVoice) {
+        const got = pickVoice(selectedLang, '');
+        if (got.voice) { currentVoice = got.voice; voiceVia = got.via; }
       }
       checkOsVoiceSupport(selectedLang);
     }
@@ -1269,23 +1342,15 @@
       if (!text) return;
       const uttr = new SpeechSynthesisUtterance(text);
 
-      const voices = speechSynthesis.getVoices();
-
-      let targetLang = selectedLang;
-      if (via) targetLang = via;
-
-      let voice = voices.find(v => v.lang.startsWith(targetLang));
-      if (!voice && via) voice = voices.find(v => v.lang.startsWith(selectedLang));
-      if (!voice) {
-        const langObj = langs.find(l => l.code === selectedLang);
-        if (langObj && langObj.fallback) {
-          voice = voices.find(v => v.lang.startsWith(langObj.fallback));
-        }
-      }
-
-      if (voice) {
-        uttr.voice = voice;
-        uttr.lang = voice.lang;
+      /*
+       * 목소리를 고르는 자리는 `pickVoice` **하나**다 (site NOW 1 · D-193).
+       * 전에는 여기와 `updateLineUI` 가 같은 셈을 따로 들고 있었고, 대체어 표도
+       * `langs.json` 의 `fallback` 칸을 읽었다 — **앱 표와 값이 다른 표**였다(§4).
+       */
+      const got = pickVoice(selectedLang, via);
+      if (got.voice) {
+        uttr.voice = got.voice;
+        uttr.lang = got.voice.lang;      // 대체어로 읽을 때는 **그 언어로** 말해야 목소리가 유지된다
         speechSynthesis.speak(uttr);
       }
     }
@@ -1621,20 +1686,8 @@
       const trText = line.tr[selectedLang] || '';
       trDiv.textContent = trText;
 
-      const voices = speechSynthesis.getVoices();
-      let hasVoice = false;
-      let targetLang = selectedLang;
-      if (line.via) targetLang = line.via;
-
-      let voice = voices.find(v => v.lang.startsWith(targetLang));
-      if (!voice && line.via) voice = voices.find(v => v.lang.startsWith(selectedLang));
-      if (!voice) {
-        const langObj = langs.find(l => l.code === selectedLang);
-        if (langObj && langObj.fallback) {
-          voice = voices.find(v => v.lang.startsWith(langObj.fallback));
-        }
-      }
-      if (voice) hasVoice = true;
+      /* 읽을 수 있나 — 읽어 주는 쪽과 **같은 자리**에 묻는다(`pickVoice`, D-193) */
+      const hasVoice = !!pickVoice(selectedLang, line.via).voice;
 
       if (line.pending) {
         const badge = document.createElement('span');
