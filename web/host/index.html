@@ -853,6 +853,13 @@
       }));
     }
 
+    /*
+     * 이 문단에서 **번역이 없는** 손님 언어 — 준비 화면에서 고른 목록 기준이다.
+     * 고르지 않은 언어는 "없는 것이 맞는" 자리라 세지 않는다(§20).
+     */
+    function missingFor(p) {
+      return (selectedLangs || []).filter((c) => c && c !== SRC_LANG && !(p.trans || {})[c]);
+    }
     function renderParagraphs() {
       paraCount.textContent = paragraphs.length;
       if (paragraphs.length === 0) {
@@ -879,6 +886,19 @@
               ${Object.entries(p.trans).map(([code, t]) => `<div><strong>${code.toUpperCase()}:</strong> ${escapeHtml(t)}</div>`).join('')}
             </div>
           ` : ''}
+          ${(() => {
+            /*
+             * ★ **번역 안 된 언어를 문단 옆에 적는다** (마스터 2026-10-20 14:22 (a)).
+             * 전에는 실패해도 이 칸이 **그냥 비어** 있었다 — 대표님 실기에서 "번역문이 안
+             * 붙는다"를 화면이 한마디도 안 한 자리다. 까닭은 `trFailWhy` 에서 읽는다.
+             */
+            const miss = missingFor(p);
+            if (!miss.length) return '';
+            const why = miss.map((c) => trFailWhy[c]).filter(Boolean)[0] || '';
+            return `<div class="para-no-tr" style="margin-top: 6px; font-size: 0.85rem; color: var(--warning);">`
+                 + `${T('prep_tr_missing')} ${miss.map((c) => escapeHtml(c.toUpperCase())).join(', ')}`
+                 + `${why ? ` (${escapeHtml(why)})` : ''}</div>`;
+          })()}
         `;
         paraList.appendChild(el);
       });
@@ -1228,6 +1248,14 @@
       }
     }
 
+    /*
+     * ★ **왜 안 됐는지**를 언어별로 들고 있는다 (마스터 2026-10-20 14:22 (a)).
+     * 기록(`trLog`)에도 남지만 그것은 개발자 창을 열어야 보인다. 문단 옆에 한 줄로 보이려면
+     * **읽을 수 있는 자리**에 있어야 한다. 성공하면 지운다 — 지난 실패가 남아 "지금도 안 되는
+     * 것"처럼 보이면 그 표시가 또 거짓이 된다(§20).
+     */
+    const trFailWhy = {};
+
     async function translateMany(texts, targetLang) {
       try {
         const res = await fetch(`${RELAY_BASE}/translate`, {
@@ -1243,6 +1271,7 @@
           try { why = (await res.clone().json()).why || ''; } catch (_) {}
           console.warn(`[Translate Fail] ${targetLang} status ${res.status} ${why}`);
           trLog.push(`tr_fail lang=${targetLang} status=${res.status}${why ? ' why=' + why : ''}`);
+          trFailWhy[targetLang] = `${res.status}${why ? ' ' + why : ''}`;
           return texts;
         }
         const data = await res.json();
@@ -1253,12 +1282,15 @@
         if (!list || list.length !== texts.length) {
           console.warn(`[Translate Shape] ${targetLang} — 답의 모양이 다르다`);
           trLog.push(`tr_shape lang=${targetLang} got=${list ? list.length : 'none'} want=${texts.length}`);
+          trFailWhy[targetLang] = 'shape';
           return texts;
         }
+        delete trFailWhy[targetLang];          // 됐으면 지난 까닭을 지운다
         return list.map((v, i) => (typeof v === 'string' && v) ? v : texts[i]);
       } catch (err) {
         console.warn(`[Translate Err] ${err.message}`);
         trLog.push(`tr_err lang=${targetLang} ${err.message}`);
+        trFailWhy[targetLang] = String(err.message || 'err').slice(0, 40);
         return texts;
       }
     }
@@ -2277,6 +2309,7 @@
         prep_raw_ready: '🚀 원문 방송 준비 완료 (번역 없음)',
         prep_tr_busy: '번역 중...',
         prep_tr_done: '번역 완료!',
+        prep_tr_missing: '번역 안 됨:',
         prep_para: '문단',
         live_qr_show: 'QR 보기',
         live_qr_hide: 'QR 닫기',
@@ -2413,6 +2446,7 @@
         prep_raw_ready: '🚀 Ready to broadcast the original (no translation)',
         prep_tr_busy: 'Translating…',
         prep_tr_done: 'Translation finished',
+        prep_tr_missing: 'Not translated:',
         prep_para: 'Paragraph',
         live_qr_show: 'Show QR',
         live_qr_hide: 'Hide QR',

@@ -64,6 +64,18 @@ const { rooms, hostReceived } = relay;
   ok(trPlan.some(l => /^tr_plan langs=3 paras=4 calls=3$/.test(l)),
      `부른 횟수를 기록에 남긴다 — ${trPlan.filter(l => l.startsWith('tr_')).join(' · ') || '없음'}`);
 
+  /*
+   * ★ 2026-10-20 (마스터 14:22 (a)) — **실패를 화면이 말한다.** 가짜 릴레이는 vi 를 503 으로
+   * 떨어뜨린다(운영과 같은 모양). 전에는 그 칸이 **그냥 비어** 있었고, 대표님 실기에서
+   * "번역문이 안 붙는다"를 화면이 한마디도 안 했다. 기록(`tr_fail`)은 있었지만 그것은
+   * 개발자 창을 열어야 보이는 것이다.
+   */
+  const noTr = await host.$$eval('.para-item .para-no-tr', (els) => els.map((e) => e.textContent.trim()));
+  ok(noTr.length === 4 && noTr.every((t) => /VI/.test(t)),
+     `되돌림 실증: 문단마다 「번역 안 됨: VI」 한 줄 (${noTr.length}개 · 예: "${(noTr[0] || '').slice(0, 40)}")`);
+  ok(/503/.test(noTr[0] || ''), `까닭도 같이 적힌다 — "${(noTr[0] || '').slice(0, 40)}"`);
+  ok(!/\bEN\b|\bJA\b/.test(noTr[0] || ''), '된 언어(en·ja)는 그 줄에 없다 — 안 된 것만 적는다');
+
   await host.click('#btnStartLecture');
   await host.waitForSelector('#step-live', { state: 'visible', timeout: 5000 });
   ok(await host.isVisible('#step-live'), '강의 시작 → 진행 화면 표시');
