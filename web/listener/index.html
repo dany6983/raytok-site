@@ -963,7 +963,10 @@
       const el = document.getElementById('voice-notice');
       if (!el) return;
       if (show) {
-        el.textContent = 'ℹ️ ' + (t('voice_absent_notice', normalizeLangCode(selectedLang)) || t('voice_absent_notice'));
+        const code = normalizeLangCode(selectedLang);
+        const what = t('voice_absent_notice', code) || t('voice_absent_notice');
+        const how = t('voice_absent_howto', code) || t('voice_absent_howto') || '';
+        el.textContent = 'ℹ️ ' + what + (how ? ' ' + how : '');
         el.style.display = 'block';
       } else {
         el.style.display = 'none';
