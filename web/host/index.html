@@ -853,6 +853,13 @@
       }));
     }
 
+    /*
+     * 이 문단에서 **번역이 없는** 손님 언어 — 준비 화면에서 고른 목록 기준이다.
+     * 고르지 않은 언어는 "없는 것이 맞는" 자리라 세지 않는다(§20).
+     */
+    function missingFor(p) {
+      return (selectedLangs || []).filter((c) => c && c !== SRC_LANG && !(p.trans || {})[c]);
+    }
     function renderParagraphs() {
       paraCount.textContent = paragraphs.length;
       if (paragraphs.length === 0) {
@@ -879,6 +886,19 @@
               ${Object.entries(p.trans).map(([code, t]) => `<div><strong>${code.toUpperCase()}:</strong> ${escapeHtml(t)}</div>`).join('')}
             </div>
           ` : ''}
+          ${(() => {
+            /*
+             * ★ **번역 안 된 언어를 문단 옆에 적는다** (마스터 2026-10-20 14:22 (a)).
+             * 전에는 실패해도 이 칸이 **그냥 비어** 있었다 — 대표님 실기에서 "번역문이 안
+             * 붙는다"를 화면이 한마디도 안 한 자리다. 까닭은 `trFailWhy` 에서 읽는다.
+             */
+            const miss = missingFor(p);
+            if (!miss.length) return '';
+            const why = miss.map((c) => trFailWhy[c]).filter(Boolean)[0] || '';
+            return `<div class="para-no-tr" style="margin-top: 6px; font-size: 0.85rem; color: var(--warning);">`
+                 + `${T('prep_tr_missing')} ${miss.map((c) => escapeHtml(c.toUpperCase())).join(', ')}`
+                 + `${why ? ` (${escapeHtml(why)})` : ''}</div>`;
+          })()}
         `;
         paraList.appendChild(el);
       });
@@ -1228,6 +1248,14 @@
       }
     }
 
+    /*
+     * ★ **왜 안 됐는지**를 언어별로 들고 있는다 (마스터 2026-10-20 14:22 (a)).
+     * 기록(`trLog`)에도 남지만 그것은 개발자 창을 열어야 보인다. 문단 옆에 한 줄로 보이려면
+     * **읽을 수 있는 자리**에 있어야 한다. 성공하면 지운다 — 지난 실패가 남아 "지금도 안 되는
+     * 것"처럼 보이면 그 표시가 또 거짓이 된다(§20).
+     */
+    const trFailWhy = {};
+
     async function translateMany(texts, targetLang) {
       try {
         const res = await fetch(`${RELAY_BASE}/translate`, {
@@ -1243,6 +1271,7 @@
           try { why = (await res.clone().json()).why || ''; } catch (_) {}
           console.warn(`[Translate Fail] ${targetLang} status ${res.status} ${why}`);
           trLog.push(`tr_fail lang=${targetLang} status=${res.status}${why ? ' why=' + why : ''}`);
+          trFailWhy[targetLang] = `${res.status}${why ? ' ' + why : ''}`;
           return texts;
         }
         const data = await res.json();
@@ -1253,12 +1282,15 @@
         if (!list || list.length !== texts.length) {
           console.warn(`[Translate Shape] ${targetLang} — 답의 모양이 다르다`);
           trLog.push(`tr_shape lang=${targetLang} got=${list ? list.length : 'none'} want=${texts.length}`);
+          trFailWhy[targetLang] = 'shape';
           return texts;
         }
+        delete trFailWhy[targetLang];          // 됐으면 지난 까닭을 지운다
         return list.map((v, i) => (typeof v === 'string' && v) ? v : texts[i]);
       } catch (err) {
         console.warn(`[Translate Err] ${err.message}`);
         trLog.push(`tr_err lang=${targetLang} ${err.message}`);
+        trFailWhy[targetLang] = String(err.message || 'err').slice(0, 40);
         return texts;
       }
     }
@@ -1483,6 +1515,16 @@
       const isQuestion = chkQ && chkQ.checked;
       live.raw = isRaw;
       live.questionEnabled = isQuestion;
+      /*
+       * ★ **어떤 스위치로 열었는지 적는다** (마스터 2026-10-20 14:22 (c)).
+       *
+       * 대표님 실기에서 「번역 없음(원문만)」이 **켜져 있었다**. 코드의 기본값은 **꺼짐**이다
+       * (`index.html` 의 그 칸에 `checked` 가 없고 `autocomplete="off"` 다) — 그러니 그것은
+       * 기본값이 아니라 **그 세션에서 켜져 있던 것**이다(브라우저가 되살렸거나 사람이 켰다).
+       * 다음부터는 추측할 필요가 없게 **열 때의 값**을 기록에 남긴다. 기본값은 **안 바꿨다** —
+       * 바꾸려면 장부(기본 켬)와 부딪히는지 마스터가 먼저 가른다.
+       */
+      micNote('room_open', { raw: isRaw ? 1 : 0, q: isQuestion ? 1 : 0, langs: (selectedLangs || []).length });
       const askBoxEl = document.getElementById('askBox');
       if (askBoxEl) askBoxEl.style.display = isQuestion ? 'block' : 'none';
 
@@ -1532,8 +1574,12 @@
        B 9 — 실시간 말하기 (브라우저 음성 인식). MASTER 2026-10-14 22:55.
 
        지키는 선 셋:
-        · P-14 — 호스트 브라우저는 **번역하지 않는다.** 확정 문장을 원문+언어만 보낸다.
-                 번역은 지금처럼 청취자 쪽/릴레이 `/translate` 가 한다.
+        · 번역은 **이 화면이** 한다 (마스터 2026-10-20 14:35) — 확정 문장을 방에 붙어 있는
+                 손님 언어로 번역해 `{seq, tr}` 로 올린다. 받는 쪽은 번역을 **요청하지
+                 않는다**(RULE: P-16 ①) — 그래서 여기서 안 하면 **아무도 안 한다.**
+                 10-20 웹 실기가 그 자리였다: 원문만 가서 손님은 번역을 한 줄도 못 봤다.
+                 「번역 없음(원문만)」 모드에서는 전과 같이 원문만 보낸다.
+                 기기 간 통역(투폰·손들기 양방향)의 와이어는 **이 길과 다르다**(RULE: P-14).
         · P-16 — 브라우저 인식은 클라우드다. 🎤 는 **국내에서만** 켠다.
                  조건은 `web/common/region.js` 한 곳 (RULE: P-16).
         · 원고 모드와 **같은 방**에서 섞어 쓴다 — 말한 줄도 `mic.sent` 에 적는다.
@@ -1637,7 +1683,67 @@
       return r;
     }
 
-    /** 말한 문장 하나 — **원문+언어만**. 번역 칸을 만들지 않는다 (P-14). */
+    /**
+     * 방에 **지금 붙어 있는** 손님 언어 — 말한 줄을 번역할 목록 (마스터 10-20 14:35).
+     *
+     * 준비 화면에서 고른 목록(`selectedLangs`)이 아니라 **명단**(`live.roster`)을 본다:
+     * 고른 적 없는 언어로 들어온 손님도 받아야 하고, 아무도 안 쓰는 언어로 번역을
+     * 부르면 그만큼 돈과 시간이 샌다. 호스트 언어는 뺀다(번역할 것이 없다).
+     */
+    function roomLangs() {
+      const out = [];
+      for (const p of Object.values(live.roster || {})) {
+        if (!rosterIsOpen(p)) continue;
+        const l = String((p && p.lang) || '').trim();
+        if (!l || l === SRC_LANG || out.includes(l)) continue;
+        out.push(l);
+      }
+      return out;
+    }
+
+    /**
+     * 말한 줄을 **손님 언어로 번역해 올린다** (마스터 10-20 14:35 · 대표님 웹 실기).
+     *
+     * ★ 왜 이것이 없었나: 보내는 쪽은 원문만 보냈고(`broadcast`), 받는 쪽은 번역을
+     * **요청하지 않는다**(RULE: P-16 ①). 그래서 🎤 로 말한 문장은 **어느 손님에게도
+     * 번역돼 가지 않았다** — 주석에는 "청취자 쪽/릴레이가 한다"고 적혀 있었지만 둘 다
+     * 하지 않았다. 번역을 하는 자리는 **강사 쪽**이다(RULE: P-16 ①).
+     *
+     * 차례: ① 원문을 **먼저** 보낸다(R-15 — 번역을 기다리다 줄을 잃지 않는다)
+     *       ② 언어마다 한 번 번역해 `{seq, tr}` 로 **같은 줄에 붙인다**(받는 쪽이
+     *          이미 그 모양을 읽는다 — `'tr' in msg && !('text' in msg)`)
+     *       ③ 실패한 언어는 `tr` 에서 **빠진다**. 손님은 원문을 본다(R-15) — 그리고
+     *          **강사 화면이 그 사실을 말한다**(아래 `showTrFail`). 조용히 넘어가면
+     *          "번역이 안 된다"를 아무도 모른다(대표님 실기가 그 자리였다).
+     */
+    async function micTranslate(seq, text, langs) {
+      const t0 = Date.now();
+      const tr = {};
+      const fail = [];
+      for (const lang of langs) {
+        let got = null;
+        try { got = await translateMany([text], lang); } catch (_) { got = null; }
+        const v = got && got[0];
+        /* 실패하면 `translateMany` 가 **원문을 그대로** 돌려준다 — 그것은 번역이 아니다 */
+        if (typeof v === 'string' && v.trim() && v !== text) tr[lang] = v;
+        else fail.push(lang);
+      }
+      /* 빈 칸이어도 보낸다 — 받는 쪽의 「번역 중」 표시를 풀어야 한다 */
+      wsSend({ seq, tr });
+      micNote('mic_tr', { seq, langs: langs.length, ok: Object.keys(tr).length,
+                          fail: fail.join(','), ms: Date.now() - t0 });
+      if (fail.length) showTrFail(fail);
+      return tr;
+    }
+
+    /** 번역이 안 된 사실을 **화면에 적는다** (마스터 10-20 14:22 (a)). 까닭은 기록에 */
+    function showTrFail(langs) {
+      const why = (trLog.filter((l) => /^tr_(fail|err|shape)/.test(l)).pop() || '').slice(0, 60);
+      micStatus.textContent = T('mic_tr_fail') + ' ' + langs.join(',') + (why ? ` (${why})` : '');
+      micStatus.style.color = 'var(--warning)';
+    }
+
+    /** 말한 문장 하나 — 원문을 먼저 올리고, 손님 언어 번역을 뒤따라 붙인다 */
     function sendSpokenLine(text) {
       const clean = (text || '').trim();
       if (!clean) return false;
@@ -1653,14 +1759,32 @@
         return false;
       }
       mic.seq += 1;
+      const seq = 10000 + mic.seq;        // 원고 줄(para)과 섞이지 않게
+      /*
+       * ★ `broadcast` 는 **「번역 없음(원문만)」 모드**일 때만 붙인다 (마스터 14:35).
+       *
+       * 받는 쪽은 `broadcast` 줄의 번역 칸을 **아예 감춘다**(그 모드의 뜻이 그것이다).
+       * 전 판은 그것을 **늘** 붙여서, 번역이 있어도 손님이 못 보는 모양이었다.
+       * 꺼져 있으면 보통 줄로 보내고(번역이 따라붙는다), 켜져 있으면 전과 같다.
+       */
+      const raw = !!live.raw;
+      const langs = raw ? [] : roomLangs();
       const msg = {
-        seq: 10000 + mic.seq,     // 원고 줄(para)과 섞이지 않게
+        seq,
         text: clean,
         src_lang: SRC_LANG,
-        broadcast: true           // 번역 없이 원문 그대로
+        ...(raw ? { broadcast: true } : {}),
+        /* 번역이 **따라올 것**이면 「번역 중」으로 보인다 — 올 것이 없으면 붙이지 않는다 */
+        ...(langs.length ? { pending: 1 } : {})
       };
       const sent = wsSend(msg);
-      if (sent) { mic.sent.push(msg); return true; }
+      if (sent) {
+        mic.sent.push(msg);
+        /* 번역은 **보낸 뒤에** — 기다리다 줄을 잃지 않는다(R-15). 실패는 화면이 말한다 */
+        if (langs.length) micTranslate(seq, clean, langs).catch(() => {});
+        else micNote('mic_tr_skip', { seq, why: raw ? 'raw' : 'no_guest_lang' });
+        return true;
+      }
       /*
        * ★ 못 보냈다고 **버리지 않는다** (R-15). 소켓은 3초 뒤에 다시 붙는다(`ws.onclose`) —
        * 그동안 말한 문장은 쥐고 있다가 붙는 즉시 **순서대로** 보낸다. 전 판은 여기서
@@ -2185,6 +2309,7 @@
         prep_raw_ready: '🚀 원문 방송 준비 완료 (번역 없음)',
         prep_tr_busy: '번역 중...',
         prep_tr_done: '번역 완료!',
+        prep_tr_missing: '번역 안 됨:',
         prep_para: '문단',
         live_qr_show: 'QR 보기',
         live_qr_hide: 'QR 닫기',
@@ -2293,6 +2418,7 @@
         mic_stop: '🎤 말하기 멈춤',
         mic_idle: '원고 없이 말한 대로 청취자에게 보냅니다.',
         mic_listening: '듣는 중 — 말하면 문장 단위로 나갑니다.',
+        mic_tr_fail: '번역 안 됨 —',
         mic_denied: '마이크를 쓸 수 없습니다. 브라우저 주소창의 자물쇠에서 마이크를 허용해 주세요.',
         mic_unsupported: '이 브라우저는 음성 인식이 없습니다. 원고 모드로 진행해 주세요 (Chrome·Edge·Safari 16.4 이상·삼성 인터넷에서 됩니다).',
         mic_region_off: '실시간 말하기는 지금 국내에서만 켭니다. 원고 모드로 진행해 주세요.'
@@ -2320,6 +2446,7 @@
         prep_raw_ready: '🚀 Ready to broadcast the original (no translation)',
         prep_tr_busy: 'Translating…',
         prep_tr_done: 'Translation finished',
+        prep_tr_missing: 'Not translated:',
         prep_para: 'Paragraph',
         live_qr_show: 'Show QR',
         live_qr_hide: 'Hide QR',
@@ -2428,6 +2555,7 @@
         mic_stop: '🎤 Stop speaking',
         mic_idle: 'Speak without a script — your words go to listeners.',
         mic_listening: 'Listening — each finished sentence is sent.',
+        mic_tr_fail: 'Not translated —',
         mic_denied: 'Microphone unavailable. Allow the microphone from the lock icon in the address bar.',
         mic_unsupported: 'This browser has no speech recognition. Please use script mode (works on Chrome, Edge, Safari 16.4+, Samsung Internet).',
         mic_region_off: 'Live speaking is available in Korea only for now. Please use script mode.'
