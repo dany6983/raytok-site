@@ -1160,7 +1160,6 @@
     let ttsTouched = false;   // 청취자가 단추를 직접 눌렀나 (L4-3: 원고 줄 기본 끔을 가를 때 본다)
     function setTtsEnabled(on) {
       isTtsEnabled = !!on;
-      if (!isTtsEnabled) { try { speechSynthesis.cancel(); } catch (_) {} }   // 끄면 지금 읽던 것과 줄 선 것도 멈춘다(10-20 실기: 꺼도 안 꺼짐)
       btnToggleTts.textContent = isTtsEnabled ? t('tts_on', currentUiLang) : t('tts_off', currentUiLang);
       btnToggleTts.classList.toggle('active', !isTtsEnabled);
     }
