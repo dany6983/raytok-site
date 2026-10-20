@@ -1225,7 +1225,10 @@
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const params = new URLSearchParams(location.search);
       const wsPort = params.get('ws') || '8081';
-      const relayHost = params.get('relay') || (location.port === '8788' ? `${location.hostname}:8787` : location.host);
+      // 운영(raytok.kr)은 정적 사이트라 /ws 가 없다 — 릴레이 주소로 간다. 시험·로컬만 같은 호스트(10-20 실기: connecting↔reconnecting 반복).
+      const PROD_RELAY = 'raytok-relay.raytok.workers.dev';
+      const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /\.(localhost|test)$/.test(location.hostname);
+      const relayHost = params.get('relay') || (location.port === '8788' ? `${location.hostname}:8787` : (isLocal ? location.host : PROD_RELAY));
       const wsUrl = params.get('ws') ? `ws://${location.hostname}:${wsPort}` : `${protocol}//${relayHost}/ws?room=${roomCode}&role=listener`;
 
       setStatus('status_connecting', 'status-dot reconnecting');

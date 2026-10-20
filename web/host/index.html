@@ -1391,7 +1391,7 @@
       u.searchParams.set('room', code);
       if (live.raw) u.searchParams.set('raw', '1');
       if (live.questionEnabled) u.searchParams.set('q', '1');
-      if (urlParams.get('relay')) u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));
+      u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));  // 운영에서도 늘 넘긴다(10-20 실기)
       return u.toString();
     }
 
