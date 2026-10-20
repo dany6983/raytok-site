@@ -170,7 +170,16 @@ const { rooms, hostReceived } = relay;
   await lis2.goto(`${base}/web/listener/?room=ABC123&lang=vi&auto=1&relay=localhost:${port}`);
   await lis2.waitForFunction(() => document.querySelectorAll('#chat-list .msg-line.msg-script').length === 4, null, { timeout: 8000 });
   const vi = await lis2.$$eval('#chat-list .msg-line.msg-script', els => els.map(e => ({ src: e.querySelector('.msg-text').textContent, tr: e.querySelector('.msg-tr').textContent.trim() })));
-  ok(vi[0].src === '안전 교육을 시작하겠습니다.' && vi[0].tr === '', '청취자(vi, 번역 없음): 원문만 — 줄을 빼지 않는다');
+  /*
+   * 2026-10-20 (마스터 14:22 (b)) — 번역이 없는 줄에 **「번역 없음」 작은 표시**가 붙는다.
+   * 전에는 번역 칸이 **빈 채**였고(이 줄도 `tr === ''` 을 셌다), 그래서 손님은 "이게 번역된
+   * 글인가"를 알 수 없었다. 원문은 그대로 보인다(R-15) — 바뀐 것은 **표시 하나**다.
+   * 글자는 손님 글자 표에서 읽는다(81개 언어) — 여기에 글자를 베껴 적지 않는다(§4).
+   */
+  const NO_TR_VI = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'web/listener/ui-strings.json'), 'utf-8'))
+    .strings.badge_no_tr.vi;
+  ok(vi[0].src === '안전 교육을 시작하겠습니다.' && vi[0].tr === NO_TR_VI,
+     `청취자(vi, 번역 없음): 원문 + 「${NO_TR_VI}」 표시 — 줄을 빼지 않는다`);
   await host.waitForFunction(() => document.getElementById('attNow').textContent === '2', null, { timeout: 5000 });
   ok(/vi\s*1/.test(await host.textContent('#attLangs')), '호스트: 언어별 인원 vi 1 추가');
 

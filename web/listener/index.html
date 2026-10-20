@@ -975,9 +975,7 @@
         return;
       }
 
-      // 브라우저마다 꼴이 다르다(en-US · en_US · eng-USA) — 앞 마디로도 본다(10-20 실기: 삼성 브라우저 영어에 '음성 없음')
-      const base = (c) => String(c || '').toLowerCase().split(/[-_]/)[0];
-      const have = voices.some(v => v.lang && (normalizeLangCode(v.lang) === target || base(v.lang) === base(target)));
+      const have = voices.some(v => v.lang && normalizeLangCode(v.lang) === target);
       voiceCheckedFor = target;
       voiceLog(target, have ? 1 : 0);
       showVoiceNotice(!have);
@@ -1217,11 +1215,8 @@
       if (voice) {
         uttr.voice = voice;
         uttr.lang = voice.lang;
-      } else {
-        // 목록이 아직 비었거나(안드로이드 크롬은 늦게 찬다) 이름이 안 맞아도 말은 한다 — 언어만 주고 폰이 고르게(10-20 실기: 영어 소리 없음)
-        uttr.lang = targetLang;
+        speechSynthesis.speak(uttr);
       }
-      speechSynthesis.speak(uttr);
     }
 
     function connect() {
@@ -1230,10 +1225,7 @@
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const params = new URLSearchParams(location.search);
       const wsPort = params.get('ws') || '8081';
-      // 운영(raytok.kr)은 정적 사이트라 /ws 가 없다 — 릴레이 주소로 간다. 시험·로컬만 같은 호스트(10-20 실기: connecting↔reconnecting 반복).
-      const PROD_RELAY = 'raytok-relay.raytok.workers.dev';
-      const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /\.(localhost|test)$/.test(location.hostname);
-      const relayHost = params.get('relay') || (location.port === '8788' ? `${location.hostname}:8787` : (isLocal ? location.host : PROD_RELAY));
+      const relayHost = params.get('relay') || (location.port === '8788' ? `${location.hostname}:8787` : location.host);
       const wsUrl = params.get('ws') ? `ws://${location.hostname}:${wsPort}` : `${protocol}//${relayHost}/ws?room=${roomCode}&role=listener`;
 
       setStatus('status_connecting', 'status-dot reconnecting');
@@ -1582,6 +1574,15 @@
         badge.style.backgroundColor = 'var(--danger)';
         badge.style.color = '#fff';
         badge.textContent = t('no_voice_badge', currentUiLang);
+        trDiv.appendChild(badge);
+      }
+
+      if (!trText && !line.pending) {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.style.backgroundColor = 'var(--warning)';
+        badge.style.color = '#111';
+        badge.textContent = t('badge_no_tr', currentUiLang);
         trDiv.appendChild(badge);
       }
     }

@@ -1660,6 +1660,26 @@
         badge.textContent = t('no_voice_badge', currentUiLang);
         trDiv.appendChild(badge);
       }
+
+      /*
+       * ★ **번역이 안 온 줄에 작은 표시** (마스터 2026-10-20 14:22 (b) · 대표님 웹 실기).
+       *
+       * 번역이 실패하면 강사 쪽이 그 언어를 `tr` 에서 빼고 보낸다 — 손님은 **원문**을 본다
+       * (R-15: 줄을 잃는 것보다 낫다). 그런데 아무 표시가 없으면 "이게 번역된 글인가"를
+       * 알 수 없다. 「번역 중」(`pending`)과는 **다른 말**이다 — 그것은 기다리면 오는 것이고
+       * 이것은 **안 온 것**이다. 그래서 글자를 따로 둔다(`badge_no_tr`, 81개 언어).
+       *
+       * 방송 줄(원문만 모드)과 호스트 언어와 같은 손님은 이 함수 위에서 이미 돌아갔다 —
+       * 그 둘은 번역이 **없는 것이 맞는** 자리라 표시하지 않는다(§20: 없음과 모름을 가린다).
+       */
+      if (!trText && !line.pending) {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.style.backgroundColor = 'var(--warning)';
+        badge.style.color = '#111';
+        badge.textContent = t('badge_no_tr', currentUiLang);
+        trDiv.appendChild(badge);
+      }
     }
 
     function renderAllLines() {

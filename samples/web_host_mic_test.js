@@ -86,7 +86,13 @@ const NO_SPEECH = `
   Object.defineProperty(window, 'webkitSpeechRecognition', { value: undefined, configurable: true });
 `;
 
-async function openHost(browser, base, { speech, region, locale, question }) {
+/*
+ * `raw` 는 「번역 없음(원문만)」 스위치다. **기본 true 로 둔 것이 이 시험의 눈가림이었다** —
+ * 2026-10-20 실기까지 이 틀은 **늘 원문만 모드**로 돌아서, 보통 모드에서 번역이 하나도
+ * 안 가던 것을 못 봤다(D-11: 틀이 실기와 다르면 시험이 거짓말을 한다).
+ * 그래서 아래 [4-c] 는 `raw: false` 로 **보통 모드**를 돈다.
+ */
+async function openHost(browser, base, { speech, region, locale, question, raw = true }) {
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 850 }, locale: locale || 'ko-KR' });
   await ctx.addInitScript(speech);
   const page = await ctx.newPage();
@@ -107,7 +113,7 @@ async function openHost(browser, base, { speech, region, locale, question }) {
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await page.waitForFunction(() => document.querySelectorAll('.para-item').length === 1);
-  await page.check('#chkBroadcastRaw');
+  if (raw) await page.check('#chkBroadcastRaw');
   if (question) await page.check('#chkEnableQuestion');   // 켜야 질문 대기열 칸이 보인다
   await page.click('#btnPreTranslate');
   await page.waitForSelector('#readyArea', { state: 'visible', timeout: 5000 });
@@ -185,10 +191,11 @@ async function openHost(browser, base, { speech, region, locale, question }) {
     const line = spoken[0];
     ok(line.text === '안전모를 반드시 착용하십시오.', '원문 그대로');
     ok(line.src_lang === 'ko', `언어가 실린다 (src_lang=${line.src_lang})`);
-    ok(line.broadcast === true, 'broadcast 표시 — 청취자는 원문을 그 자리에 보고 읽는다');
+    /* 이 묶음은 **「번역 없음(원문만)」 모드**다 — 그 모드의 뜻이 아래 셋이다 */
+    ok(line.broadcast === true, '원문만 모드: broadcast 표시 — 청취자는 원문을 그 자리에 보고 읽는다');
     ok(!('tr' in line) && !('trans' in line),
-       `P-14: 호스트 브라우저가 **번역하지 않는다** — 번역 칸이 없다 (칸: ${Object.keys(line).join(',')})`);
-    ok(relay.counters.translate === 0, '말하기로는 /translate 를 한 번도 안 부른다');
+       `원문만 모드: 번역 칸이 없다 (칸: ${Object.keys(line).join(',')})`);
+    ok(relay.counters.translate === 0, '원문만 모드: 말하기로는 /translate 를 안 부른다');
 
     /* iOS 재열기 — 브라우저가 혼자 끝내도 사람이 멈추지 않았으면 다시 연다 */
     await host.page.evaluate(() => window.__rec.dieQuietly());
@@ -247,6 +254,92 @@ async function openHost(browser, base, { speech, region, locale, question }) {
     await host.page.waitForTimeout(200);
     ok(await host.page.evaluate(() => window.__recLog.filter(x => x === 'start').length) === startsAfterStop,
        '사람이 멈춘 뒤에는 다시 열지 않는다');
+
+    /* ──────────────────────────────────────────────────────────────────────
+       4-c. ★★★ **보통 모드에서 말한 줄이 손님 언어로 간다** (마스터 2026-10-20 14:35)
+
+       대표님 웹 실기: 🎤 로 말해도 손님은 **원문만** 봤다. 까닭 둘이 겹쳤다:
+         ① 보내는 쪽이 늘 `broadcast`(원문만) 로 보냈다 — 받는 쪽은 그 줄의 번역 칸을 **감춘다**
+         ② 번역을 **아무도 안 했다** — 받는 쪽은 요청하지 않고(RULE: P-16 ①), 보내는 쪽도 안 했다
+       그리고 **이 시험 틀이 늘 「원문만」 모드로 돌아서** 그 자리를 못 봤다(D-11).
+       여기서는 `raw: false` 로 **보통 모드**를 돌고, 손님 셋(en·ne·vi)을 붙인다.
+       vi 는 가짜 릴레이가 **503 으로 실패**시킨다 — 그 언어는 빠지고 **화면이 그것을 말한다**.
+       ────────────────────────────────────────────────────────────────────── */
+    console.log('\n[4-c] 보통 모드 — 말한 줄이 **손님 언어로** 간다 (실패한 언어는 화면에 적힌다)');
+    {
+      const trBefore = relay.counters.translate;
+      const h2 = await openHost(browser, base, { speech: FAKE_SPEECH, region: 'KR', raw: false });
+      const code2 = (await h2.page.textContent('#roomCode')).trim();
+      const room2 = relay.rooms.get(code2);
+      ok(!!room2, `보통 모드 방 ${code2} 열림`);
+
+      /* 손님 셋 — 각자 언어로 hello */
+      const guests = [];
+      for (const lang of ['en', 'ne', 'vi']) {
+        const c = new WsClient(`${base.replace('http', 'ws')}/ws?room=${code2}&role=listener`);
+        await c.open();
+        c.send({ hello: 1, lang, name: 'g-' + lang });
+        guests.push(c);
+      }
+      await h2.page.waitForFunction(() => Object.keys((window.live && live.roster) || {}).length >= 3,
+                                    null, { timeout: 5000 }).catch(() => {});
+      /*
+       * (c) 「번역 없음(원문만)」 스위치의 **코드 기본값은 꺼짐**이다 (마스터 14:22 (c)).
+       * 대표님 실기에서 켜져 있던 것은 기본값이 아니라 그 세션의 상태다 — 다음부터는
+       * **열 때의 값**이 기록에 남는다. 기본값 자체는 바꾸지 않았다(장부와 부딪히는지 먼저).
+       */
+      ok(await h2.page.evaluate(() => document.getElementById('chkBroadcastRaw').checked) === false,
+         '(c) 「원문만」 스위치의 코드 기본값은 **꺼짐**이다');
+      ok(await h2.page.evaluate(() => window.rtHostMic.log().some((l) => /room_open raw=0/.test(l.line || l))),
+         '(c) 방을 열 때의 스위치 값이 기록에 남는다 — room_open raw=0');
+
+      const langsSeen = await h2.page.evaluate(() => (typeof roomLangs === 'function' ? roomLangs() : null));
+      ok(Array.isArray(langsSeen) && ['en', 'ne', 'vi'].every((l) => langsSeen.includes(l)),
+         `방에 붙은 손님 언어를 센다 (${JSON.stringify(langsSeen)})`);
+
+      await h2.page.click('#btnMic');
+      await h2.page.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 3000 });
+      await h2.page.evaluate(() => window.__rec.say('비상구는 왼쪽에 있습니다.', true));
+
+      /* 원문이 **먼저** 간다 — 번역을 기다리다 줄을 잃지 않는다 (R-15) */
+      await h2.page.waitForTimeout(150);
+      const first = room2.received.filter((m) => m.text).pop();
+      ok(first && first.text === '비상구는 왼쪽에 있습니다.' && !first.broadcast,
+         `원문이 먼저 간다 · 보통 모드라 broadcast 가 아니다 (${JSON.stringify(Object.keys(first || {}))})`);
+      ok(first && first.pending === 1, '번역이 따라올 것이므로 「번역 중」으로 보인다');
+
+      /* 그 뒤에 번역이 같은 seq 로 붙는다 */
+      await h2.page.waitForFunction(() => true, null, { timeout: 100 }).catch(() => {});
+      let trMsg = null;
+      for (let i = 0; i < 40 && !trMsg; i += 1) {
+        await h2.page.waitForTimeout(100);
+        trMsg = room2.received.filter((m) => m.tr && !m.text).pop() || null;
+      }
+      ok(!!trMsg, '번역이 같은 줄(seq)에 붙어 온다');
+      ok(trMsg && trMsg.seq === first.seq, `같은 seq 다 (${trMsg && trMsg.seq} = ${first.seq})`);
+      ok(trMsg && trMsg.tr && trMsg.tr.en && /^\[en\]/.test(trMsg.tr.en),
+         `en 손님의 언어가 있다 (${trMsg && trMsg.tr && trMsg.tr.en})`);
+      ok(trMsg && trMsg.tr && trMsg.tr.ne && /^\[ne\]/.test(trMsg.tr.ne),
+         `ne 손님의 언어가 있다 — 준비 화면에서 고르지 않은 언어도 받는다 (${trMsg && trMsg.tr && trMsg.tr.ne})`);
+      /* ★ 되돌림 실증: 번역을 안 올리면 `tr` 자체가 없다 — 실기에 찍힌 그 모양이다 */
+      ok(trMsg && Object.keys(trMsg.tr).length >= 2,
+         `되돌림 실증: 번역 칸이 비어 있지 않다 (${JSON.stringify(trMsg && trMsg.tr)})`);
+      ok(relay.counters.translate > trBefore,
+         `/translate 를 불렀다 (${trBefore} → ${relay.counters.translate})`);
+
+      /* 실패한 언어(vi=503)는 빠지고, 화면이 그 사실을 말한다 (마스터 14:22 (a)) */
+      ok(trMsg && !('vi' in trMsg.tr), 'vi 는 실패했으니 번역 칸에서 **빠진다** (원문을 본다 — R-15)');
+      const micTxt = (await h2.page.textContent('#micStatus')).trim();
+      ok(/번역 안 됨/.test(micTxt) && /vi/.test(micTxt),
+         `강사 화면이 **번역 안 된 언어를 말한다** ("${micTxt.slice(0, 60)}")`);
+      ok(await h2.page.evaluate(() => window.rtHostTr.log().some((l) => /^tr_fail lang=vi/.test(l))),
+         '기록에 까닭이 남는다 — tr_fail lang=vi status=503');
+      ok(await h2.page.evaluate(() => window.rtHostMic.log().some((l) => /mic_tr /.test(l.line || l))),
+         '기록에 셈이 남는다 — mic_tr seq= langs= ok= fail=');
+
+      for (const g of guests) g.close();
+      await h2.ctx.close();
+    }
 
     /* ── 5. 청취자: 말한 줄을 원문으로 받고, 「화면 꺼도 듣기」가 기본 켬 ── */
     console.log('\n[5] 청취자 — 말한 줄 수신 · 「화면 꺼도 듣기」 기본 켬 · 첫 탭 소리');
