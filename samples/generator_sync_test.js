@@ -41,11 +41,26 @@ for (const rel of PAGES) {
   if (fs.existsSync(p)) before.set(rel, bytes(p));
 }
 
+/*
+ * ★ **파이썬 이름은 OS 마다 다르다** (2026-10-20, A1).
+ *
+ * 윈도의 공식 설치판은 `python`(그리고 `py`)만 둔다 — `python3` 은 없다. 리눅스·맥은
+ * 그 반대다. 이름을 하나로 박아 두면 **한쪽에서는 `npm test` 가 이 줄에서 멈추고
+ * 뒤의 묶음이 아예 안 돈다** — 10-20 에 합치기 조건("3회 초록")을 확인할 수 없던 까닭
+ * 둘 중 하나가 이것이었다(다른 하나는 `host_token` 의 ESM 경로).
+ *
+ * 있는 것을 **찾아서** 쓴다. 셋 다 없으면 지금처럼 "안 돌았다"로 붉는다 — 그 판정은
+ * 그대로 둔다(파이썬이 없는 자리에서 조용히 넘어가면 생성기가 썩는다).
+ */
+const PY = ['python3', 'python', 'py'].find((bin) => {
+  try { execFileSync(bin, ['--version'], { stdio: 'pipe' }); return true; } catch { return false; }
+}) || 'python3';
+
 /* 생성기를 **다른 곳**에 돌린다 — 저장소 파일은 건드리지 않는다(시험이 작업물을 고치면 안 된다) */
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'genout-'));
 let ran = true, runErr = '';
 try {
-  execFileSync('python3', [GEN, '--out', tmp], { cwd: ROOT, stdio: 'pipe' });
+  execFileSync(PY, [GEN, '--out', tmp], { cwd: ROOT, stdio: 'pipe' });
 } catch (e) { ran = false; runErr = String(e.stderr || e.message).slice(0, 300); }
 
 const touched = [...before.keys()].filter((rel) => !bytes(path.join(ROOT, rel)).equals(before.get(rel)));
@@ -58,7 +73,20 @@ for (const rel of PAGES) {
   const kept = path.join(ROOT, rel);
   ok(fs.existsSync(made), `${rel}: 생성기가 만들었다`);
   ok(fs.existsSync(kept), `${rel}: 저장소에 있다`);
-  const same = bytes(made).equals(bytes(kept));
+  /*
+   * ★ **줄바꿈은 세지 않는다** (2026-10-20, A1).
+   *
+   * 생성기는 늘 LF 로 쓰는데, 윈도 체크아웃의 저장소 파일은 CRLF 다(`core.autocrlf`).
+   * 바이트로 견주면 **윈도에서는 늘 붉고** 리눅스에서는 늘 초록이다 — 같은 저장소가
+   * 기계에 따라 다른 답을 내면 그 시험은 아무것도 지키지 않는 것과 같다(실제로 10-20
+   * 에 `npm test` 가 여기서 멈춰 뒤 묶음이 안 돌았다). 재서 확인했다: 다른 것은
+   * **줄바꿈뿐**이었다(16208 대 16342 바이트, 줄바꿈을 맞추면 **한 글자도** 안 다르다).
+   *
+   * 지키려는 것은 "생성기 출력과 저장소 쪽이 **같은 글**인가"다 — 줄바꿈은 그 글이
+   * 아니다. 글자가 하나라도 다르면 여전히 붉다.
+   */
+  const nl = (b) => b.toString('utf8').replace(/\r\n/g, '\n');
+  const same = nl(bytes(made)) === nl(bytes(kept));
   if (!same) different.push(rel);
   ok(same, `${rel}: 생성기 출력 == 저장소 (글자 하나까지)`);
 }
@@ -75,7 +103,13 @@ ok(revertFailed === true, '한 쪽이 한 줄이라도 다르면 붉어진다 (�
 
 /* 사람이 쓰는 길 — `--check` 는 쓰지 않고 센다. 초록이면 종료코드 0 */
 let checkCode = 0, checkOut = '';
-try { checkOut = execFileSync('python3', [GEN, '--check'], { cwd: ROOT, encoding: 'utf-8' }); }
+/*
+ * ★ 파이썬 **출력 인코딩**을 못 박는다 (2026-10-20, A1). 윈도의 파이썬은 콘솔
+ * 코드페이지(cp949 등)로 쓰기 때문에 한글이 깨져 돌아왔다(`������`) — 그러면 아래
+ * "같다고 말하나" 가 글자를 못 찾아 붉는다. 재서 확인했다: 깨진 글자만 문제였다.
+ */
+const PYENV = { ...process.env, PYTHONIOENCODING: 'utf-8' };
+try { checkOut = execFileSync(PY, [GEN, '--check'], { cwd: ROOT, encoding: 'utf-8', env: PYENV }); }
 catch (e) { checkCode = e.status || 1; checkOut = String(e.stdout || ''); }
 ok(checkCode === 0, `--check 가 종료코드 0 (${checkOut.trim().split('\n').pop()})`);
 ok(/생성기 출력 == 저장소/.test(checkOut), '--check 가 "같다" 고 말한다');

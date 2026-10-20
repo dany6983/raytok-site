@@ -97,8 +97,18 @@ console.log('\n[7] UNTIL=YYYY-MM-DD — 데모 토큰이 그 날까지 덮나 (�
 (async () => {
   const http = require('http');
   const { execFile } = require('child_process');
-  const { verifyCode } = await import(path.join(ROOT, 'relay', 'src', 'mint-core.js'));
-  const { mintLicenseToken } = await import(path.join(ROOT, 'relay', 'tools', 'mint-license.mjs'));
+  /*
+   * ★ **윈도에서는 `import()` 에 파일 URL 을 준다** (2026-10-20, A1).
+   *
+   * `path.join` 은 `C:\...` 를 준다. 리눅스에서는 그대로 돌지만 윈도에서는 ESM 로더가
+   * `c:` 를 **프로토콜**로 읽어 던진다("absolute paths must be valid file:// URLs").
+   * 그 바람에 `npm test` 가 이 줄에서 멈춰 **뒤의 60여 묶음이 아예 안 돌았다** — 합치기
+   * 조건("3회 초록")을 확인할 길이 없었다. `pathToFileURL` 로 감싼다(두 OS 다 돈다).
+   */
+  const { pathToFileURL } = require('url');
+  const mod = (...parts) => pathToFileURL(path.join(ROOT, ...parts)).href;
+  const { verifyCode } = await import(mod('relay', 'src', 'mint-core.js'));
+  const { mintLicenseToken } = await import(mod('relay', 'tools', 'mint-license.mjs'));
 
   const SECRET = 'host_token_test_secret';
   const devices = new Map();                       // deviceId → { untilMs }

@@ -415,6 +415,45 @@ async function openHost(browser, base, { speech, region, locale, question }) {
     ok(st.logN <= 200, `기록이 부풀지 않는다 (${st.logN}줄, 상한 200)`);
     await long.ctx.close();
 
+    /* ───────────── [8] 원고 겹침 — 읽는 중인 문단은 발화로 또 보내지 않는다 ─────────────
+       마스터 2026-10-20 02:45 판정 ⓐ "웹도 같게". 그 전까지 🎤 는 확정 줄을 **전부** 보냈고,
+       🎤 를 켠 채 원고를 읽으면 손님에게 그 문단이 **두 번** 갔다: 「다음」으로 보낸 검수
+       번역문 한 번, 번역 없는 원문 한 번. 가리는 자리는 web/common/script-follow.js 한 곳이고
+       앱과 **같은 사례 표**로 센다(samples/script_follow_test.js).
+
+       ⚠ 여기서 같이 세는 것: **읽기 전에는 전부 보낸다.** 앱은 첫 문단과 겹치면 그 문단을
+       대신 보내지만 웹은 사람이 눌러야 가므로, 읽기 전에 막으면 그 말이 사라진다(R-15). */
+    console.log('');
+    console.log('[8] 원고 겹침 — 읽는 중인 문단은 발화로 안 간다 (10-20 판정 ⓐ)');
+    const dup = await openHost(browser, base, { speech: FAKE_SPEECH, region: 'KR' });
+    const dupRoom = relay.rooms.get((await dup.page.textContent('#roomCode')).trim());
+    await dup.page.click('#btnMic');
+    await dup.page.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 3000 });
+    /* 읽기 전 — 첫 문단과 낱말이 겹치는 말도 **간다** */
+    await dup.page.evaluate(() => window.__rec.say('원고 한 문단만 미리 보겠습니다', true));
+    await dup.page.waitForTimeout(150);
+    ok(dupRoom.received.some(m => m && m.text === '원고 한 문단만 미리 보겠습니다'),
+       '읽기 전에는 겹치는 말도 보낸다 (문단을 아직 아무도 못 받았다 — R-15)');
+    /* 「다음」을 눌러 1 번 문단을 보낸다 */
+    await dup.page.click('#btnNext');
+    await dup.page.waitForTimeout(150);
+    ok(dupRoom.received.some(m => m && m.kind === 'script' && m.para === 1), '문단 1 이 손님에게 갔다');
+    const beforeDup = dupRoom.received.length;
+    /* 그 문단을 **소리내어 읽는다** — 발화로 또 가면 겹친다 */
+    await dup.page.evaluate(() => window.__rec.say('원고 한 문단입니다.', true));
+    await dup.page.waitForTimeout(200);
+    const after = dupRoom.received.slice(beforeDup).filter(m => m && m.text);
+    ok(after.length === 0, `읽는 중인 문단은 발화로 안 간다 (그 뒤 줄 ${after.length}건)`);
+    const skipLog = await dup.page.evaluate(() => window.rtHostMic.log().filter(l => /mic_script_skip/.test(l)));
+    ok(skipLog.length === 1, `왜 안 갔는지 기록에 남는다 — mic_script_skip (${skipLog.length}줄)`);
+    ok(/match=/.test(skipLog[0] || ''), `얼마나 겹쳤는지도 적는다 (${skipLog[0] || ''})`);
+    /* 원고에 없는 말은 그대로 간다 — 이쪽이 막히면 손님이 설명을 못 듣는다 */
+    await dup.page.evaluate(() => window.__rec.say('어제 사고 이야기를 잠깐 하겠습니다 아주 중요한 겁니다', true));
+    await dup.page.waitForTimeout(200);
+    ok(dupRoom.received.some(m => m && m.text && /어제 사고 이야기/.test(m.text)),
+       '원고에 없는 말은 그대로 간다 (막으면 손님이 설명을 못 듣는다)');
+    await dup.ctx.close();
+
     await host.ctx.close();
     console.log(`\n전부 통과 (${passCount}건)`);
   } finally {

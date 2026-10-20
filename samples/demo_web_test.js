@@ -38,7 +38,17 @@ const overflowX = (page) => page.evaluate(() =>
 (async () => {
   console.log('=== 11월 웹 데모 실측 — 강사·손님 화면 폭과 QR 링크 ===\n');
   const { srv, base } = await serve();
-  const browser = await chromium.launch();
+  /*
+   * ★ **`CHROME` 이 있으면 그 크롬을 쓴다** (2026-10-20, A1).
+   *
+   * 이 저장소의 다른 playwright 시험 **스물 남짓은 전부** 그렇게 하는데 이 파일만
+   * 빠져 있었다. Playwright 브라우저를 따로 받지 않은 자리에서는 `chromium.launch()` 가
+   * "headless shell 이 없다"로 던져 **`npm test` 가 여기서 멈춘다** — 10-20 에 합치기
+   * 조건("3회 초록")을 확인할 수 없던 다섯째 까닭이었다.
+   */
+  const browser = await chromium.launch(process.env.CHROME
+    ? { executablePath: process.env.CHROME, args: ['--no-sandbox'] }
+    : { args: ['--no-sandbox'] });
   try {
     /* ① 강사 화면 — PC 와 폰 둘 */
     for (const [name, width, height] of [['PC 1280', 1280, 900], ['폰 390', 390, 844], ['폰 360', 360, 740]]) {

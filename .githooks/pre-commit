@@ -1,0 +1,3 @@
+#!/bin/sh
+# 생성물만 고친 커밋을 막는다 (A1 2026-10-20 — 하루에 다섯 번 났다)
+node scripts/precommit.js || exit 1

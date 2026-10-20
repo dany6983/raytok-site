@@ -89,7 +89,15 @@ const saved = Buffer.byteLength(src) - Buffer.byteLength(built);
 console.log(`주석 줄 ${dropped}개 · ${Buffer.byteLength(src)} → ${Buffer.byteLength(built)} B (−${saved})`);
 
 if (CHECK) {
-  if (cur !== built) {
+  /*
+   * ★ **줄바꿈은 세지 않는다** (2026-10-20, A1). 이 도구는 LF 로 쓰는데 윈도 체크아웃의
+   * `index.html` 은 CRLF 다(`core.autocrlf`) — 바이트로 견주면 **윈도에서는 늘 "다름"**,
+   * 리눅스에서는 늘 초록이다. 같은 저장소가 기계에 따라 다른 답을 내면 그 검사는
+   * 아무것도 지키지 않는다(10-20 에 `npm test` 가 여기서 멈췄다). 글자가 하나라도
+   * 다르면 여전히 "다름"이다.
+   */
+  const nl = (x) => (x == null ? null : x.replace(/\r\n/g, '\n'));
+  if (nl(cur) !== nl(built)) {
     console.log('다름: web/listener/index.html');
     console.log('→ `node tools/build-listener.js` 를 돌리고 같이 커밋한다. (손으로 index.html 을 고쳤으면 그 변경을 index.src.html 로 옮긴다)');
     process.exit(1);
