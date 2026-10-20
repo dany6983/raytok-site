@@ -411,7 +411,9 @@
 
   <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 — 말하는 짝 호스트와 같은 표 -->
   <!-- 대체어 음성 표 (site NOW 1) — **앱 src/offlineLangs.js 에서 생성된 파일**이다.
-       손으로 고치지 않는다: node tools/build-voice-fallback.js --write -->
+       손으로 고치지 않는다: node tools/build-voice-fallback.js --write
+       ⚠ 미루지 않는다 — **참여 전** 「이 언어 음성 없음」 띠가 이 표를 본다(B 24).
+          10-20 에 「참여하기」로 미뤘다가 그 띠가 깨지는 것을 시험이 잡았다. -->
   <script src="../common/voice-fallback.js"></script>
   <script>
     const LISTENER_VER = '1.1.4'; // v1.1.4 — ④ 빈 방 문구·글자 크기

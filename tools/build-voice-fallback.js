@@ -106,33 +106,20 @@ function render(fb, sc, srcFile) {
   const fp = crypto.createHash('sha256').update(canon(fb, sc)).digest('hex').slice(0, 16);
   const q = (o, pad) => Object.keys(o).sort()
     .map((k) => pad + JSON.stringify(k) + ': ' + JSON.stringify(o[k]) + ',').join('\n');
-  return `/**
- * 대체어 표 — **생성된 파일이다. 손으로 고치지 않는다.**
- *
- *   node tools/build-voice-fallback.js --write
- *
- * 원본: 앱 저장소 \`src/offlineLangs.js\` (\`FALLBACK_CHOICES\` · \`SCRIPT_OF\`).
- * 설계: 앱 \`docs/design/voice-fallback.md\` — 숫자와 짝을 여기서 바꾸지 않는다.
- *
- * ★ 음성 대체는 **꼴이 같을 때만** 된다 (설계 §3). 타이 음성은 라오 글자를 못 읽으므로
- * \`lo→th\` 는 **글자 대체는 되고 음성 대체는 안 된다.** 그 판정은 \`voiceFallbackFor\`
- * 한 곳에 있다 — 부르는 쪽이 꼴을 다시 세지 않는다(D-193).
- *
- * 지문 \`FINGERPRINT\` 는 표 둘을 한 줄로 굳혀 해시한 것이다. \`samples/voice_fallback_test.js\`
- * 가 앱 파일에서 다시 세어 이 값과 맞댄다 — 손으로 고치면 그 자리에서 붉어진다.
- */
+  /* ★ 손님이 **첫 화면에서 받는 파일**이다 — 참여 전 「음성 없음」 띠가 이 표를 보므로
+     미룰 수 없다(B 24). 그래서 **짧게 낸다**: 설명은 여기(생성기)와 앱 설계 문서에 두고,
+     나온 파일에는 어디서 왔는지 두 줄만. 10-20 에 이 파일이 손님 첫 화면 한도를
+     넘겼다(36.0 → 36.3KB) — 줄여서 35.x 로 돌아왔다. */
+  const one = (o) => '{' + Object.keys(o).sort()
+    .map((k) => JSON.stringify(k) + ':' + JSON.stringify(o[k])).join(',') + '}';
+  return `/* 대체어 표 — 생성된 파일. 손대지 않는다: node tools/build-voice-fallback.js --write
+   원본: 앱 src/offlineLangs.js · 설계: 앱 docs/design/voice-fallback.md */
 (function (global) {
   'use strict';
 
-  /** 글자 대체 짝 (앱 표 그대로) */
-  var FALLBACK_CHOICES = {
-${q(fb, '    ')}
-  };
+  var FALLBACK_CHOICES = ${one(fb)};
 
-  /** 언어가 쓰는 글자 꼴 (앱 표 그대로) · 모르는 언어는 칸이 없다 */
-  var SCRIPT_OF = {
-${q(sc, '    ')}
-  };
+  var SCRIPT_OF = ${one(sc)};
 
   var FINGERPRINT = '${fp}';
 
