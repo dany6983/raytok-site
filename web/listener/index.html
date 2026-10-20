@@ -1232,7 +1232,6 @@
         uttr.voice = voice;
         uttr.lang = voice.lang;
       } else {
-        // 아이폰은 'en' 같은 짧은 꼴이면 폰 기본(한국어) 목소리로 읽는다(10-20 실기: "한국어 톤") — 지역까지 붙인다
         const FULL = { en: 'en-US', ja: 'ja-JP', zh: 'zh-CN', ko: 'ko-KR', uk: 'uk-UA', ru: 'ru-RU', vi: 'vi-VN', th: 'th-TH', id: 'id-ID', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-BR', ar: 'ar-SA', hi: 'hi-IN', tr: 'tr-TR', pl: 'pl-PL', nl: 'nl-NL', ms: 'ms-MY', fil: 'fil-PH', tl: 'fil-PH' };
         const short = String(targetLang || '').split(/[-_]/)[0].toLowerCase();
         uttr.lang = /[-_]/.test(targetLang || '') ? targetLang : (FULL[short] || targetLang);
