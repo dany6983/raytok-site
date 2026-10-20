@@ -1231,6 +1231,12 @@
     let ttsTouched = false;   // 청취자가 단추를 직접 눌렀나 (L4-3: 원고 줄 기본 끔을 가를 때 본다)
     function setTtsEnabled(on) {
       isTtsEnabled = !!on;
+      /*
+       * 끄면 **지금 읽던 것과 줄 선 것도** 멈춘다 (마스터 10-20 고침 `515bfd8`,
+       * 대표님 실기: "켜지면 꺼지지도 않고"). 끄기를 눌렀는데 계속 말하면 그 단추가 거짓이다.
+       * (이 고침도 생성물에만 있었다 — 소스로 옮겼다. 네 번째다)
+       */
+      if (!isTtsEnabled) { try { speechSynthesis.cancel(); } catch (_) {} }
       btnToggleTts.textContent = isTtsEnabled ? t('tts_on', currentUiLang) : t('tts_off', currentUiLang);
       btnToggleTts.classList.toggle('active', !isTtsEnabled);
     }
