@@ -272,9 +272,28 @@ function mockHost(wss) {
   // 8-2. 언어를 바꾸고 참여 → 여덟 줄 → 종료 화면
   await d.pg.selectOption('#lang-select', 'vi');
   await d.pg.click('#btn-join');
-  await d.pg.clock.runFor(1500);
-  ds = await demoState(d.pg);
-  assert(ds.inChat && ds.n === 0 && ds.pendingNow.length > 3 && '안녕하세요. 오늘 작업 전 안전교육을 시작하겠습니다.'.startsWith(ds.pendingNow), '먼저 말하는 중(임시) 글자가 보인다');
+  /*
+   * ★ 한 번에 1500ms 를 밀면 **들쭉날쭉했다** (2026-10-20 A1: 세 번 돌려 두 번 붉었다).
+   *
+   * 까닭: 언어를 바꾸면 그 언어 글자 조각을 **받아 오고**(fetch), 그 사이에 시계를
+   * 통째로 밀면 시연이 타이머를 **등록하기 전에** 가상 시각이 지나가 버린다. 그러면
+   * 「말하는 중」 글자가 아직 0 이고 시험은 제품이 아니라 **제 자신의 경합**에 걸린다.
+   * 1.2초 자리를 노리고 센 수(0.35·0.7·1 × 600ms)라 여유도 없었다.
+   *
+   * 그래서 **조금씩 밀며 그 상태가 되기를 기다린다**(최대 3초). 보는 것은 그대로다:
+   * 확정 줄은 아직 0 인데 임시 글자는 보이고, 그 글자는 첫 문장의 앞부분이다.
+   */
+  const SAY1 = '안녕하세요. 오늘 작업 전 안전교육을 시작하겠습니다.';
+  let waited = 0;
+  for (;;) {
+    ds = await demoState(d.pg);
+    if (ds.inChat && ds.n === 0 && ds.pendingNow.length > 3) break;
+    if (waited >= 3000) break;
+    await d.pg.clock.runFor(300);
+    waited += 300;
+  }
+  assert(ds.inChat && ds.n === 0 && ds.pendingNow.length > 3 && SAY1.startsWith(ds.pendingNow),
+         `먼저 말하는 중(임시) 글자가 보인다 (${waited}ms 뒤 ${JSON.stringify(ds.pendingNow)} · 확정 ${ds.n}줄)`);
   assert.deepStrictEqual(ds.spoken, [], '임시 글자는 읽지 않는다');
   await d.pg.clock.runFor(4 * 60 * 1000);
   ds = await demoState(d.pg);

@@ -297,6 +297,7 @@ const FOOTER_EXEMPT = {
   '404.html': 'noindex, 없는 주소 안내 + /lic/ 되돌리기만',
   'join/index.html': 'QR 진입 — 본문이 81개 언어 사전으로 뜬다. 국문 한 줄을 박으면 그 설계가 깨진다(ui-strings.json)',
   'web/listener/selftest.html': '개발용 자체 점검, 공개 링크 0개',
+  'web/dev/translate-check/index.html': '개발용 재는 자리 — 이 기기에 브라우저 번역기가 있나만 보고 끝난다. 파는 것도 손님이 올 자리도 아니다. 공개 링크 0개',
   'web/tools/qr-sheet/index.html': '단체에 나눠 줄 코드를 A4 에 찍는 인쇄 도구 — 손님이 사는 화면이 아니고, 바닥 줄이 인쇄물에 같이 찍힌다. 공개 링크 0개',
 };
 
