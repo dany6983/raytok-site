@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>브라우저 번역기 확인 — RayTok</title>
+<!-- 개발용 확인 페이지. 사이트 어디에도 링크하지 않는다(손님이 올 자리가 아니다).
+     바깥으로 아무것도 보내지 않는다 — 이 폰/PC 안에서만 재고 화면에 적는다.
+     까닭: 원설계는 "원문이 가고 **받는 폰이 번역**한다"(분산). 웹에서 그게 서려면 브라우저
+     안에 번역기가 있어야 한다. 있는지/어느 언어가 되는지를 **추측하지 않고 재는** 자리다. -->
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --tx:#e2e8f0; --mut:#94a3b8;
+          --ok:#22c55e; --no:#ef4444; --wait:#f59e0b; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f8fafc; --card:#fff; --line:#cbd5e1; --tx:#0f172a; --mut:#64748b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+         background:var(--bg); color:var(--tx); line-height:1.5;
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { color:var(--mut); font-size:13px; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px;
+          padding:12px; margin-bottom:12px; }
+  .big { font-size:17px; font-weight:700; }
+  .ok { color:var(--ok); } .no { color:var(--no); } .wait { color:var(--wait); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td { padding:5px 2px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td:first-child { color:var(--mut); width:42%; }
+  button { width:100%; min-height:48px; font-size:16px; font-weight:600; cursor:pointer;
+           background:#0284c7; color:#fff; border:0; border-radius:8px; margin-top:8px; }
+  button[disabled] { opacity:.5; cursor:default; }
+  pre { white-space:pre-wrap; word-break:break-all; font-size:12px; color:var(--mut); margin:8px 0 0; }
+  .lang { display:flex; justify-content:space-between; gap:8px; font-size:14px; padding:4px 0;
+          border-bottom:1px solid var(--line); }
+</style>
+</head>
+<body>
+<h1>브라우저 번역기 확인</h1>
+<div class="sub">이 기기 안에서만 잽니다. 바깥으로 나가는 요청 <b>0건</b>입니다.</div>
+
+<div class="card">
+  <div id="verdict" class="big wait">재는 중…</div>
+  <div id="verdictWhy" class="sub" style="margin:6px 0 0"></div>
+</div>
+
+<div class="card">
+  <table>
+    <tr><td>번역기(Translator)</td><td id="rTranslator">—</td></tr>
+    <tr><td>언어 알아보기(LanguageDetector)</td><td id="rDetector">—</td></tr>
+    <tr><td>옛 모양(ai / translation)</td><td id="rOld">—</td></tr>
+    <tr><td>브라우저</td><td id="rUa">—</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="sub" style="margin:0 0 6px">한국어 → 각 언어가 되는가</div>
+  <div id="langs"></div>
+  <button id="btnTry" disabled>한 문장 번역해 보기</button>
+  <pre id="tryOut"></pre>
+</div>
+
+<div class="card">
+  <div class="sub" style="margin:0">이 화면을 그대로 찍어서 주시면 됩니다.</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  /* 재는 언어 — 현장교육에서 실제로 필요한 것들. zh 는 코드가 갈리므로 둘 다 본다. */
+  var PAIRS = [
+    ['en','영어'], ['ja','일본어'], ['zh-Hans','중국어(간체)'], ['zh-CN','중국어(zh-CN)'],
+    ['vi','베트남어'], ['th','태국어'], ['ne','네팔어'], ['km','크메르어'],
+    ['my','미얀마어'], ['uz','우즈베크어'], ['si','싱할라어'], ['mn','몽골어']
+  ];
+  var SAMPLE = '안전모를 반드시 착용하십시오. 비상구는 저쪽 계단 옆에 있습니다.';
+  var $ = function (id) { return document.getElementById(id); };
+  var hasNew = ('Translator' in self);
+  var oldShape = ('ai' in self && self.ai && self.ai.translator) ? 'ai.translator'
+               : ('translation' in self) ? 'translation' : '';
+
+  $('rTranslator').innerHTML = hasNew ? '<span class="ok">있음</span>' : '<span class="no">없음</span>';
+  $('rDetector').innerHTML = ('LanguageDetector' in self) ? '<span class="ok">있음</span>' : '<span class="no">없음</span>';
+  $('rOld').textContent = oldShape || '없음';
+  $('rUa').textContent = navigator.userAgent;
+
+  if (!hasNew && !oldShape) {
+    $('verdict').className = 'big no';
+    $('verdict').textContent = '이 브라우저엔 번역기가 없습니다';
+    $('verdictWhy').textContent = '원문만 받습니다. 번역은 서버 쪽에서 해야 합니다.';
+    $('langs').innerHTML = '<div class="sub">잴 것이 없습니다.</div>';
+    return;
+  }
+
+  /* 되는 언어를 센다. 모르면 **모른다고 적는다** — 되는 척하지 않는다. */
+  var okCount = 0, done = 0, timeouts = 0, finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    var noAnswer = (okCount === 0 && (timeouts > 0 || done < PAIRS.length));
+    $('verdict').className = okCount > 0 ? 'big ok' : (noAnswer ? 'big wait' : 'big no');
+    $('verdict').textContent = okCount > 0
+      ? ('번역기 있음 — ' + okCount + '/' + PAIRS.length + ' 언어')
+      : (noAnswer ? '번역기는 있는데 답이 오지 않습니다' : '번역기는 있는데 되는 언어가 없습니다');
+    $('verdictWhy').textContent = okCount > 0
+      ? '이 기기는 폰 안에서 번역할 수 있습니다. 아래 단추로 실제 글을 한 번 보세요.'
+      : (noAnswer
+          ? '이 브라우저로는 잴 수 없습니다(모름). 안 된다는 뜻이 아닙니다 — 다른 기기에서도 한 번 열어 보세요.'
+          : '이 기기로는 폰 안 번역이 안 됩니다. 번역은 서버 쪽에서 해야 합니다.');
+    $('btnTry').disabled = false;
+  }
+  /* 무슨 일이 있어도 12초 뒤에는 **끝낸다** — 화면이 "재는 중" 으로 멈춰 있으면 아무것도 모른다. */
+  setTimeout(finish, 12000);
+  PAIRS.forEach(function (p) {
+    var row = document.createElement('div');
+    row.className = 'lang';
+    row.innerHTML = '<span>' + p[1] + '</span><span class="wait">재는 중…</span>';
+    $('langs').appendChild(row);
+    var val = row.lastElementChild;
+    /* 답이 **안 올 수도 있다** — 이 컨테이너의 크롬 141 에서 실제로 안 왔다.
+       기다리다 화면이 "재는 중"에서 멈추면 아무것도 모르고 끝난다(§20). 8초면 끊고 모른다고 적는다. */
+    var ask = hasNew && Translator.availability
+      ? Promise.race([
+          Translator.availability({ sourceLanguage: 'ko', targetLanguage: p[0] }),
+          new Promise(function (r) { setTimeout(function () { r('timeout'); }, 8000); })
+        ])
+      : Promise.resolve('unknown');
+    Promise.resolve(ask).then(function (a) {
+      var s = String(a || 'unknown');
+      var ok = (s === 'available' || s === 'readily' || s === 'downloadable' || s === 'downloading' || s === 'after-download');
+      if (s === 'timeout') { timeouts++; val.className = 'wait'; val.textContent = ' 답이 없음(8초)'; return; }
+      if (ok) okCount++;
+      val.className = ok ? 'ok' : 'no';
+      val.textContent = s === 'available' || s === 'readily' ? '바로 됨'
+                      : s === 'downloadable' || s === 'after-download' ? '받으면 됨'
+                      : s === 'downloading' ? '받는 중'
+                      : s === 'unavailable' || s === 'no' ? '안 됨' : s;
+    }).catch(function (e) {
+      val.className = 'no';
+      val.textContent = '물어보다 실패: ' + (e && e.message ? e.message : e);
+    }).then(function () {
+      done++;
+      if (done === PAIRS.length) {
+        finish();
+      }
+    });
+  });
+
+  $('btnTry').addEventListener('click', function () {
+    var btn = $('btnTry');
+    btn.disabled = true;
+    $('tryOut').textContent = '여는 중… (처음에는 모델을 받느라 오래 걸릴 수 있습니다)';
+    var t0 = Date.now();
+    Translator.create({ sourceLanguage: 'ko', targetLanguage: 'en' })
+      .then(function (tr) {
+        var t1 = Date.now();
+        return tr.translate(SAMPLE).then(function (out) {
+          $('tryOut').textContent =
+            '원문: ' + SAMPLE + '\n번역: ' + out +
+            '\n\n여는 데 ' + (t1 - t0) + 'ms · 번역에 ' + (Date.now() - t1) + 'ms';
+        });
+      })
+      .catch(function (e) {
+        $('tryOut').textContent = '실패: ' + (e && e.message ? e.message : e);
+      })
+      .then(function () { btn.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>
