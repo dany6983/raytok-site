@@ -301,6 +301,33 @@
         }
       ]
     },
+    "script_tr": {
+      "_dir": "릴레이(방) → 청취자. **원고 문단의 늦게 온 번역**. relay 길에서만 쓴다(웹).",
+      "_fields": "kind:\"script_tr\", para(어느 문단인가), trans{lang:text}, no_tr?(1 = 그 문단은 번역이 오지 않는다), why?",
+      "_notes": [
+        "왜 따로 있나: 🎤 줄은 seq 로 짝을 맞추지만 원고 문단은 seq 가 없다 — para 로 맞춘다.",
+        "강사는 원문만 보낸다(결정장부 43). 번역을 만들어 보내는 것은 **방**이다 — 기기가 아니다.",
+        "no_tr 이 있으면 「번역 대기 중」을 지운다. 안 보내면 손님은 영원히 기다린다(D-139 ⑤).",
+        "짝이 없는 para 는 받는 쪽이 조용히 버린다(그 문단을 못 받은, 늦게 들어온 손님이다)."
+      ],
+      "samples": [
+        {
+          "kind": "script_tr",
+          "para": 3,
+          "trans": {
+            "en": "There are three items today",
+            "ja": "本日の項目は3つです"
+          }
+        },
+        {
+          "kind": "script_tr",
+          "para": 4,
+          "trans": {},
+          "no_tr": 1,
+          "why": "http_502"
+        }
+      ]
+    },
     "skip": {
       "_dir": "강사 → 청취자. 그 문단을 **건너뛴다**(읽지 않고 지나갔다).",
       "_fields": "kind:\"skip\", para",

@@ -1545,6 +1545,9 @@ export default {
           host_token,
           kind,
           sub: licenseRes.payload.sub,
+          /* B 3 — 방이 번역할 수 있나는 **이 라이선스**가 정한다. 깃발만 넘긴다(비밀값 아님).
+             방은 이 깃발로 짧은 토큰을 만들어 `/translate` 를 부른다 (RULE: P-16). */
+          flags: Number(licenseRes.payload.flags || 0),
           test_silence_warn_ms: body.test_silence_warn_ms,
           test_silence_timeout_ms: body.test_silence_timeout_ms
         })

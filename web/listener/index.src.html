@@ -1402,6 +1402,17 @@
     }
 
     // RULE P-03: speak only confirmed `tr`, never `pending`
+    /* ★ 그 줄을 **읽었다고 적어 둔다** (B 3). 왜 필요한가: 같은 줄이 두 길로 온다 —
+       손님 폰 번역(장부 51, 먼저)과 **늦게 오는 방 번역**(보조 길). 적어 두지 않으면
+       손님은 한 줄을 **두 번** 듣는다. 읽는 곳은 아래 `sayOnce` 하나다(§4).
+       상한을 넘겨 **읽지 않은** 줄에는 표를 남기지 않는다 — 늦게 온 번역이 그때 읽는다(R-15). */
+    function sayOnce(line, text, via, audioUrl) {
+      if (!line || line.said) return false;
+      line.said = 1;
+      speak(text, via, audioUrl);
+      return true;
+    }
+
     function speak(text, via, audioUrl) {
       if (!isTtsEnabled) return;
       speechSynthesis.cancel();
@@ -1591,7 +1602,24 @@
         lines.push(line);
         addLine(line);
         scriptTtsDefault();   // 원고 줄은 기본 끔 — 청취자가 소리 단추를 켠 때만 아래 speak 가 소리를 낸다
-        if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
+        if (line.tr[selectedLang]) sayOnce(line, line.tr[selectedLang]);
+        return;
+      }
+      /* ★ 원고 문단의 **늦게 온 번역** (B 3). 문단은 `seq` 가 없어 `para` 로 짝을 맞춘다.
+         `no_tr` 이면 그 문단은 번역이 **오지 않는다**는 뜻 — 「대기 중」을 지운다(D-139 ⑤).
+         짝이 없으면 조용히 버린다(그 문단을 못 받은 손님이다 — 늦게 들어온 사람). */
+      if (msg.kind === 'script_tr') {
+        const para = Number(msg.para) || 0;
+        const line = lines.find(l => l.script && l.para === para);
+        if (line) {
+          if (msg.trans && typeof msg.trans === 'object') Object.assign(line.tr, msg.trans);
+          line.pending = false;
+          updateLineUI(line);
+          if (!msg.no_tr && line.tr[selectedLang]) {
+            scriptTtsDefault();
+            sayOnce(line, line.tr[selectedLang], line.via);
+          }
+        }
         return;
       }
       if (msg.kind === 'skip') {
@@ -1708,9 +1736,9 @@
           speakWhenTranslated(line, msg);
         } else if (isBroadcast || isSameLang) {
           // 방송 줄 또는 호스트 언어와 같은 청취자: 원문을 그 자리에 보이고 그대로 읽는다 (번역 없음 표시 금지)
-          speak(line.text, srcLang, msg.audio_url || (msg.tr && msg.tr.audio_url));
+          sayOnce(line, line.text, srcLang, msg.audio_url || (msg.tr && msg.tr.audio_url));
         } else if (line.tr[selectedLang]) {
-          speak(line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
+          sayOnce(line, line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
         }
       } else if ('tr' in msg && !('text' in msg)) {
         const line = lines.find(l => l.seq === msg.seq);
@@ -1720,7 +1748,9 @@
           if (msg.via) line.via = msg.via;
           updateLineUI(line);
           liveTtsDefault();
-          if (msg.tr[selectedLang]) speak(msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
+          /* 방이 늦게 보낸 번역(B 3). 이미 읽은 줄이면 **읽지 않는다** — 손님 폰이
+             먼저 번역해 읽었을 수 있다(장부 51). 글자는 이 번역으로 바뀐다. */
+          if (msg.tr[selectedLang]) sayOnce(line, msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
         }
       } else if ('no_tr' in msg) {
         const line = lines.find(l => l.seq === msg.seq);
@@ -1818,14 +1848,14 @@
         var now = el.textContent;
         if (was != null && now !== was) {         // 브라우저가 바꿨다 = 번역됐다
           markGuestTr('browser');
-          speak(now, selectedLang, audio);
+          sayOnce(line, now, selectedLang, audio);
           return;
         }
         if (Date.now() - t0 < TR_WAIT_MS) { setTimeout(tick, 120); return; }
         /* 상한을 넘겼다 — 보조 길. 서버 번역이 와 있으면 그것을 읽고, 없으면 **읽지 않는다**. */
         if (line.tr && line.tr[selectedLang]) {
           markGuestTr('server');
-          speak(line.tr[selectedLang], line.via, audio);
+          sayOnce(line, line.tr[selectedLang], line.via, audio);
         } else {
           markGuestTr('none');
           try { console.log('guest_tr_wait_timeout seq=' + line.seq); } catch (e) {}
@@ -1897,7 +1927,13 @@
       if (!div) return;
       const trDiv = div.querySelector('.msg-tr');
 
-      if (line.broadcast || (srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang))) {
+      const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+      /* ★ 방송 줄(강사가 번역 없이 보낸 줄)도 **번역이 와 있으면 보여 준다** (B 3).
+         전에는 `line.broadcast` 면 번역 칸을 통째로 숨겼다 — 그때는 번역이 올 길이
+         없었다. 이제 **방이** 늦게 보낸다(결정장부 51 의 보조 길). 숨긴 채로 두면
+         소리는 번역으로 나는데 화면에는 원문만 남는다 — 가장 헷갈리는 꼴이다.
+         §4: 값이 오는 **길**이 생기면 그 값을 쓰는 곳도 센다. */
+      if (sameLang || (line.broadcast && !line.tr[selectedLang])) {
         trDiv.textContent = '';
         trDiv.style.display = 'none';
         return;

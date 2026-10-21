@@ -1,5 +1,6 @@
-import { verifyLicense } from './license.js';
+import { verifyLicense, mintLicense } from './license.js';
 import { verifyCode } from './mint-core.js';
+import * as RTR from './room-translate.js';
 import crypto from 'node:crypto';
 
 export class Room {
@@ -15,6 +16,10 @@ export class Room {
     this.hostMsgCount = 0;
     this.lastLineAt = null;
     this.silenceWarningSent = false;
+    this.licFlags = 0;            // 방을 만든 라이선스가 들고 있던 깃발 — 번역 문을 여는 열쇠(B 3)
+    this.trQueue = [];            // 번역을 기다리는 줄. 250ms 모아서 한 번 부른다
+    this.trTimer = null;
+    this.trToken = null;          // 방 안에서만 쓰는 짧은 토큰(아래 trFetch)
     this.licStore = new Map();
     this.batchStore = new Map();
     this.issuedStore = new Map();
@@ -38,7 +43,7 @@ export class Room {
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
-      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'silenceWarnMs', 'silenceTimeoutMs', 'att']);
+      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'licFlags', 'silenceWarnMs', 'silenceTimeoutMs', 'att']);
       if (stored.get('initialized')) {
         this.initialized = true;
         this.att = stored.get('att') || null;
@@ -49,6 +54,7 @@ export class Room {
         this.lastLineAt = stored.get('lastLineAt') || (this.startedAt ? new Date(this.startedAt).getTime() : Date.now());
         this.kind = stored.get('kind') || 'guide';
         this.sub = stored.get('sub') || null;
+        this.licFlags = Number(stored.get('licFlags') || 0);
         this.silenceWarnMs = stored.get('silenceWarnMs') || 9 * 60 * 1000;
         this.silenceTimeoutMs = stored.get('silenceTimeoutMs') || 10 * 60 * 1000;
       }
@@ -202,6 +208,151 @@ export class Room {
           body: JSON.stringify({ sub: this.sub, deskMinutes: elapsedMin })
         }));
       } catch (_) {}
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * 방이 번역한다 — NOW B 3 (보조 길). 설계: docs/design/room-translate.md
+   *
+   * 강사는 **원문만** 보낸다(장부 43). 여기서 손님 언어마다 한 번씩 번역해 **그 언어
+   * 손님에게만** 보낸다. 손님 쪽은 아무것도 청하지 않는다 — 방이 민다 (RULE: P-16).
+   * 판단(언어 고르기·묶기·메시지 모양)은 `room-translate.js` 에 있다.
+   * ───────────────────────────────────────────────────────────────────────── */
+
+  /** 문이 열려 있나 — 스위치는 **끄기 위해** 있다(§24: 기본 켬). 깃발이 없으면 닫힌다. */
+  roomTrOn() {
+    if (String(this.env && this.env.ROOM_TR) === '0') return false;
+    return (Number(this.licFlags) & (0x10 | 0x04 | 0x08)) !== 0;
+  }
+
+  /** 지금 방에 있는 손님들의 언어 — **아는 칸은 이 하나**다(§4: 새 칸을 만들지 않는다) */
+  listenerLangs() {
+    const out = [];
+    try {
+      for (const ws of this.ctx.getWebSockets('listener')) {
+        const m = this.attMark(ws);
+        if (m && m.lang && !m.left) out.push(m.lang);
+      }
+    } catch (_) {}
+    return out;
+  }
+
+  /**
+   * 강사가 보낸 줄에서 **번역할 것**을 집는다. 집지 않는 것:
+   * ① 중간 인식 결과(`pending`) — 확정만 번역·재생한다 (RULE: P-03)
+   * ② 끝·인사 같은 알림 ③ 짝 맞출 번호가 없는 줄 (보내도 손님이 어디에 붙일지 모른다)
+   */
+  trItemOf(parsed) {
+    if (!parsed || parsed.end || parsed.hello) return null;
+    const srcLang = parsed.srcLang || parsed.src_lang || 'ko';
+    if (parsed.kind === 'script' && typeof parsed.src === 'string' && parsed.src.trim()) {
+      return { script: 1, para: Number(parsed.para) || 0, text: parsed.src, srcLang };
+    }
+    if (parsed.kind) return null;                       // skip·break·grant 등은 글이 아니다
+    if (parsed.pending) return null;                    // RULE: P-03
+    if (typeof parsed.text !== 'string' || !parsed.text.trim()) return null;
+    if (parsed.seq === undefined || parsed.seq === null) return null;
+    return { seq: parsed.seq, text: parsed.text, srcLang };
+  }
+
+  /** 줄을 대기줄에 넣고 **모아서** 한 번 부른다. 원문은 이미 전원에게 갔다. */
+  roomTrFromHost(parsed) {
+    if (!this.roomTrOn()) return;
+    const item = this.trItemOf(parsed);
+    if (!item) return;
+    this.trQueue.push(item);
+    if (this.trTimer) return;
+    this.trTimer = setTimeout(() => {
+      this.trTimer = null;
+      const batch = this.trQueue.splice(0, this.trQueue.length);
+      /* 대기줄을 비우고 **그 다음에** 부른다 — 부르는 동안 들어온 줄은 다음 묶음이다.
+         `waitUntil` 이 없는 자리이므로 실패해도 소켓을 막지 않게 따로 돌린다. */
+      this.roomTrFlush(batch).catch(() => {});
+    }, RTR.BATCH_MS);
+  }
+
+  /** 방 안에서만 쓰는 짧은 토큰. **비밀값을 들고 있지 않고** 깃발로 만들어 쓴다. */
+  async trToken_() {
+    if (this.trToken) return this.trToken;
+    const secret = this.env && this.env.LICENSE_SECRET;
+    if (!secret || !this.sub) return null;
+    try {
+      const { token } = await mintLicense(this.sub, 1, Number(this.licFlags) || 0, secret);
+      this.trToken = token;
+      return token;
+    } catch (_) { return null; }
+  }
+
+  /**
+   * `/translate` 를 **같은 릴레이**에 부른다 — 같은 엔진·같은 상한·같은 글자 세기다.
+   * 길이 없으면 `null` 을 돌려주고 까닭을 적는다. 못 부른 것을 "번역 없음"으로
+   * 조용히 넘기지 않는다(§20).
+   */
+  async trFetch(body) {
+    const token = await this.trToken_();
+    if (!token) return { res: null, why: 'no_token' };
+    const base = String((this.env && this.env.RELAY_BASE_URL) || 'http://internal').replace(/\/$/, '');
+    const req = new Request(base + '/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body)
+    });
+    const self = this.env && this.env.SELF;
+    try {
+      if (self && typeof self.fetch === 'function') return { res: await self.fetch(req), why: null };
+      if (this.env && this.env.RELAY_BASE_URL) return { res: await fetch(req), why: null };
+    } catch (e) {
+      return { res: null, why: 'fetch_error' };
+    }
+    return { res: null, why: 'no_route' };
+  }
+
+  /** 그 언어 손님에게만 보낸다 — 남의 언어 번역문을 받을 필요가 없다(바이트도 돈이다) */
+  sendToLang(lang, msgs) {
+    const want = RTR.normLang(lang);
+    let n = 0;
+    try {
+      for (const ws of this.ctx.getWebSockets('listener')) {
+        const m = this.attMark(ws);
+        if (!m || m.left || RTR.normLang(m.lang) !== want) continue;
+        for (const msg of msgs) this.sendToListener(ws, msg);
+        n += 1;
+      }
+    } catch (_) {}
+    return n;
+  }
+
+  /** 묶음 하나를 언어마다 한 번씩 번역한다. 사람이 20명이어도 번역은 **언어 수만큼**이다. */
+  async roomTrFlush(batch) {
+    if (!batch || !batch.length) return;
+    const srcLang = batch[0].srcLang || 'ko';
+    const { langs, capped } = RTR.pickLangs(this.listenerLangs(), srcLang);
+    if (capped > 0) {
+      /* 막고 **알린다** — 조용히 자르면 그 언어 손님은 까닭을 모른다(§20) */
+      try { console.log(`room_tr_cap langs=${langs.length} dropped=${capped}`); } catch (_) {}
+    }
+    for (const lang of langs) {
+      for (const part of RTR.chunk(batch)) {
+        const texts = part.map((it) => it.text);
+        const { res, why } = await this.trFetch({ q: texts, source: srcLang, target: lang, engine: 'basic' });
+        if (!res || !res.ok) {
+          const code = why || (res ? 'http_' + res.status : 'no_res');
+          try { console.log(`room_tr_fail lang=${lang} why=${code}`); } catch (_) {}
+          this.sendToLang(lang, RTR.noTrMessages(part, code));
+          continue;
+        }
+        let out;
+        try { out = RTR.textsOf(await res.json()); } catch (_) { out = []; }
+        const made = RTR.trMessages(part, lang, out);
+        if (!made.ok) {
+          try { console.log(`room_tr_fail lang=${lang} why=${made.why}`); } catch (_) {}
+          this.sendToLang(lang, RTR.noTrMessages(part, made.why));
+          continue;
+        }
+        const chars = texts.reduce((a, t) => a + t.length, 0);
+        const sent = this.sendToLang(lang, made.msgs);
+        try { console.log(`room_tr lang=${lang} n=${part.length} chars=${chars} to=${sent}`); } catch (_) {}
+      }
     }
   }
 
@@ -1037,6 +1188,9 @@ export class Room {
       this.silenceWarningSent = false;
       this.kind = body.kind || 'guide';
       this.sub = body.sub || null;
+      /* B 3 — 방이 번역할 수 있나는 **방을 만든 라이선스**가 정한다. 깃발만 들고 있고
+         토큰(비밀값)은 들고 있지 않는다 — 필요할 때 이 깃발로 짧게 만들어 쓴다. */
+      this.licFlags = Number(body.flags || 0);
       this.silenceWarnMs = body.test_silence_warn_ms || 9 * 60 * 1000;
       this.silenceTimeoutMs = body.test_silence_timeout_ms || 10 * 60 * 1000;
       this.deskMinutesRecorded = false;
@@ -1049,6 +1203,7 @@ export class Room {
         lastLineAt: this.lastLineAt,
         kind: this.kind,
         sub: this.sub,
+        licFlags: this.licFlags,
         silenceWarnMs: this.silenceWarnMs,
         silenceTimeoutMs: this.silenceTimeoutMs
       });
@@ -1252,6 +1407,10 @@ export class Room {
         if (/"end"\s*:\s*1/.test(msgStr)) isEnd = true;
         else if (/"text"\s*:/.test(msgStr) || /"kind"\s*:\s*"script"/.test(msgStr)) isSubtitleLine = true;
       }
+
+      /* 방이 번역한다 (B 3 · 보조 길). 원문은 **위에서 이미** 전원에게 갔다 — 번역은
+         늦게 그 언어 손님에게만 간다(R-15: 늦어도 남는 쪽). 되돌림 자리는 이 한 줄이다. */
+      if (parsed) this.roomTrFromHost(parsed);
 
       if (parsed) {
         // N:1 질문 지명 및 종료 처리 (정본 wire-messages.json: grant, revoke 규격 완비)

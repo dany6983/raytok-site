@@ -1232,6 +1232,13 @@
       if (ttsAutoOff) { ttsAutoOff = false; setTtsEnabled(true); }
     }
 
+    function sayOnce(line, text, via, audioUrl) {
+      if (!line || line.said) return false;
+      line.said = 1;
+      speak(text, via, audioUrl);
+      return true;
+    }
+
     function speak(text, via, audioUrl) {
       if (!isTtsEnabled) return;
       speechSynthesis.cancel();
@@ -1393,7 +1400,21 @@
         lines.push(line);
         addLine(line);
         scriptTtsDefault();   // 원고 줄은 기본 끔 — 청취자가 소리 단추를 켠 때만 아래 speak 가 소리를 낸다
-        if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
+        if (line.tr[selectedLang]) sayOnce(line, line.tr[selectedLang]);
+        return;
+      }
+      if (msg.kind === 'script_tr') {
+        const para = Number(msg.para) || 0;
+        const line = lines.find(l => l.script && l.para === para);
+        if (line) {
+          if (msg.trans && typeof msg.trans === 'object') Object.assign(line.tr, msg.trans);
+          line.pending = false;
+          updateLineUI(line);
+          if (!msg.no_tr && line.tr[selectedLang]) {
+            scriptTtsDefault();
+            sayOnce(line, line.tr[selectedLang], line.via);
+          }
+        }
         return;
       }
       if (msg.kind === 'skip') {
@@ -1498,9 +1519,9 @@
         if (isBroadcast && !isSameLang) {
           speakWhenTranslated(line, msg);
         } else if (isBroadcast || isSameLang) {
-          speak(line.text, srcLang, msg.audio_url || (msg.tr && msg.tr.audio_url));
+          sayOnce(line, line.text, srcLang, msg.audio_url || (msg.tr && msg.tr.audio_url));
         } else if (line.tr[selectedLang]) {
-          speak(line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
+          sayOnce(line, line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
         }
       } else if ('tr' in msg && !('text' in msg)) {
         const line = lines.find(l => l.seq === msg.seq);
@@ -1510,7 +1531,7 @@
           if (msg.via) line.via = msg.via;
           updateLineUI(line);
           liveTtsDefault();
-          if (msg.tr[selectedLang]) speak(msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
+          if (msg.tr[selectedLang]) sayOnce(line, msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
         }
       } else if ('no_tr' in msg) {
         const line = lines.find(l => l.seq === msg.seq);
@@ -1593,13 +1614,13 @@
         var now = el.textContent;
         if (was != null && now !== was) {         // 브라우저가 바꿨다 = 번역됐다
           markGuestTr('browser');
-          speak(now, selectedLang, audio);
+          sayOnce(line, now, selectedLang, audio);
           return;
         }
         if (Date.now() - t0 < TR_WAIT_MS) { setTimeout(tick, 120); return; }
         if (line.tr && line.tr[selectedLang]) {
           markGuestTr('server');
-          speak(line.tr[selectedLang], line.via, audio);
+          sayOnce(line, line.tr[selectedLang], line.via, audio);
         } else {
           markGuestTr('none');
           try { console.log('guest_tr_wait_timeout seq=' + line.seq); } catch (e) {}
@@ -1665,7 +1686,8 @@
       if (!div) return;
       const trDiv = div.querySelector('.msg-tr');
 
-      if (line.broadcast || (srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang))) {
+      const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+      if (sameLang || (line.broadcast && !line.tr[selectedLang])) {
         trDiv.textContent = '';
         trDiv.style.display = 'none';
         return;

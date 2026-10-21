@@ -5,6 +5,11 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 LICENSE_MAX_DEVICES = "1"
+# B 3 — 방(DO)이 같은 릴레이의 /translate 를 부를 주소. 같은 엔진·같은 상한·같은 글자 세기를
+# 쓰기 위해 엔진을 따로 부르지 않는다. 비우면 방은 번역하지 않고 no_tr 을 보낸다(§20: 조용히 넘기지 않는다).
+RELAY_BASE_URL = "https://raytok-relay.raytok.workers.dev"
+# 방 번역 스위치. 기본 켬(§24) — 끄려면 "0".
+ROOM_TR = "1"
 
 [durable_objects]
 bindings = [

@@ -54,6 +54,24 @@ const noTrans = (script.samples || []).filter((s) => !s.trans);
 ok(withTrans.length > 0, 'script — relay 길 보기(trans 채움)가 있다');
 ok(noTrans.length > 0, 'script — LAN 길 보기(trans 없음)가 있다');
 
+/*
+ * `script_tr` — 원고 문단의 **늦게 온 번역** (B 3, 2026-10-21). 방이 보내고 청취 페이지가 받는다.
+ * 🎤 줄은 `seq` 로 짝을 맞추는데 문단은 `seq` 가 없어 `para` 로 맞춘다 — 그 짝이 사양에서
+ * 빠지면 보내는 쪽과 받는 쪽이 **다른 칸으로 짝을 맞추려 들고**, 손님은 영원히 원문만 본다(D-75).
+ * `no_tr` 보기도 꼭 있어야 한다: 실패를 안 보내면 「번역 대기 중」이 안 지워진다(D-139 ⑤).
+ */
+const str = (spec.messages && spec.messages.script_tr) || {};
+ok(!!spec.messages.script_tr, 'script_tr 가 사양에 있다');
+ok(typeof str._dir === 'string' && /방|릴레이/.test(str._dir || ''), 'script_tr — 보내는 쪽이 **방**이라고 적혀 있다 (강사가 아니다)');
+const trSamples = str.samples || [];
+ok(trSamples.length >= 2, 'script_tr — 보기 둘 이상 (된 것·안 된 것)');
+for (const s2 of trSamples) {
+  ok(s2.kind === 'script_tr', 'script_tr — 보기의 kind');
+  ok(Number.isInteger(s2.para) && s2.para >= 1, 'script_tr — para 는 1부터인 정수 (짝을 맞추는 칸)');
+}
+ok(trSamples.some((s2) => s2.trans && Object.keys(s2.trans).length), 'script_tr — 번역이 붙은 보기');
+ok(trSamples.some((s2) => s2.no_tr === 1), 'script_tr — **안 온다**고 알리는 보기(no_tr)');
+
 const brk = (spec.messages && spec.messages.break) || {};
 const ons = (brk.samples || []).map((s) => s.on);
 ok(ons.includes(true) && ons.includes(false), 'break — 켜는 보기와 끄는 보기 둘');
