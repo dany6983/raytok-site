@@ -734,6 +734,10 @@
     const langChips = document.getElementById('langChips');
     const paraList = document.getElementById('paraList');
     const paraCount = document.getElementById('paraCount');
+    /* 늦게 온 언어를 **이 화면에서도** 번역해 둘까 — 손님에게는 방이 보낸다(B 5).
+       켜면 강사 화면의 검수 칸만 채워지고 `/translate` 를 그만큼 더 부른다(돈). 기본 끔. */
+    const LATE_TR_LOCAL = false;
+
     const btnPreTranslate = document.getElementById('btnPreTranslate');
     const transProgressArea = document.getElementById('transProgressArea');
     const transProgressText = document.getElementById('transProgressText');
@@ -1511,14 +1515,32 @@
       wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG, raw: live.raw ? 1 : 0, q: live.questionEnabled ? 1 : 0 });
     }
 
-    // 넘길 때 보내는 문단 — 와이어 정본 script 모양 그대로. trans 는 미리 번역된 것만.
+    /* 넘길 때 보내는 문단 — 와이어 정본 script 모양. **번역문은 싣지 않는다**(결정장부 43).
+     *
+     * ★ 2026-10-21 (NOW B 5): 전에는 여기에 `trans` 를 실어 보냈다. 그 길을 닫는다 —
+     * 번역해서 보내는 것은 **방**이고, 이 화면은 원문 + 문단 번호 + 원문 언어만 보낸다.
+     * 화면에 보이는 번역문(`p.trans`)은 **강사가 검수하는 용도로 이 폰에만** 남는다.
+     * 손님이 보는 번역은 방이 손님 언어마다 한 번씩 만들어 그 언어 손님에게 보낸다
+     * (설계: 저장소 docs/design/room-translate.md · 손님 폰 번역이 먼저, 이것이 보조).
+     * `samples/host_no_trans_test.js` 가 이 자리를 잠근다 — 되살리면 붉다. */
     function buildScriptMsg(para) {
       const p = paragraphs[para - 1];
-      const trans = {};
-      for (const [lang, text] of Object.entries(p.trans || {})) {
-        if (typeof text === 'string' && text.trim() && text !== p.src) trans[lang] = text;   // 실패해 원문이 들어간 칸은 뺀다
+      return { kind: 'script', para, total: paragraphs.length, src: p.src, srcLang: SRC_LANG, at: Date.now() };
+    }
+
+    /* 원고 **원문**을 방에 올린다 (NOW B 4). 번역은 방이 「다음」 때·새 언어가 올 때 한다.
+       한 번에 200문단씩 — 더 길면 여러 번 보내고 방이 `para` 로 합친다. */
+    function sendScriptSrc() {
+      if (!Array.isArray(paragraphs) || !paragraphs.length) return 0;
+      const CHUNK = 200;
+      let sent = 0;
+      for (let i = 0; i < paragraphs.length; i += CHUNK) {
+        const paras = paragraphs.slice(i, i + CHUNK)
+          .map((p, k) => ({ para: i + k + 1, src: p.src }));
+        if (wsSend({ kind: 'script_src', srcLang: SRC_LANG, total: paragraphs.length, paras })) sent += paras.length;
       }
-      return { kind: 'script', para, total: paragraphs.length, src: p.src, srcLang: SRC_LANG, trans, at: Date.now() };
+      trLog.push(`script_src paras=${sent} total=${paragraphs.length}`);
+      return sent;
     }
 
     function sendScript(para) {
@@ -1923,7 +1945,12 @@
          * 규칙(어떤 문단을 어떤 차례로)은 `web/common/script-follow.js` 한 곳이고
          * **앱과 같은 사례 표**로 센다.
          */
-        lateTranslate(String(msg.lang || '').trim());
+        /* ★ 늦게 온 언어를 **방이** 채운다 (NOW B 4·B 5). 이 화면이 하면 번역문을 와이어에
+           실어야 하고, 그것이 결정장부 43 금지다. 규칙(지금 문단부터·5문단씩)은 그대로
+           `web/common/script-follow.js` 에 있고 방이 **같은 셈**으로 돌린다 —
+           같은 답인지는 `samples/script-follow-cases.json` 정본 사례가 센다.
+           이 화면의 `lateTranslate` 는 **강사 검수용**으로만 남긴다(보내지 않는다). */
+        if (LATE_TR_LOCAL) lateTranslate(String(msg.lang || '').trim());
         if (live.ended) renderEnd();
         return;
       }
@@ -2091,6 +2118,9 @@
       ws.onopen = () => {
         liveStatus.textContent = T('live_connected');
         sendWelcome();   // 링버퍼에 남아 뒤에 오는 청취자도 받는다
+        /* 원고 **원문**을 방에 올린다 — 방이 「다음」 때와 새 언어가 올 때 번역한다(B 4).
+           다시 붙을 때도 보낸다: 방이 살아 있으면 `para` 로 합쳐지고, 새 방이면 꼭 필요하다. */
+        try { sendScriptSrc(); } catch (_) {}
         /* 끊긴 동안 말한 확정 줄을 **순서대로** 흘려보낸다 (R-15) */
         try { flushSpoken(); } catch (_) {}
         clearInterval(live.pingTimer);
@@ -2527,15 +2557,25 @@
     }
 
     // 리포트 줄: 나간 script 의 src·trans 그대로 + 출처 "(원고 n)". 건너뛴 문단은 본문 뒤 한 줄.
+    /* 리포트의 번역문은 **이 폰의 검수 표**에서 읽는다 (NOW B 5, 2026-10-21).
+     *
+     * 전에는 보낸 메시지(`live.sent[].trans`)에서 읽었다. 그 칸이 **없어졌다** — 강사는
+     * 번역문을 보내지 않는다(결정장부 43). 그대로 두면 리포트의 번역 칸이 **조용히 빈다**:
+     * 시험이 "리포트 언어 = en,ja" 를 보다가 `en,ja,vi` 를 잡아 줬다(§4: 값의 출처를 바꾸면
+     * 읽는 곳을 전부 센다 — 이 둘이 그 읽는 곳이었다).
+     * 지금 출처는 `paragraphs[].trans` 다: 사전 번역을 돌렸으면 차 있고, 안 돌렸으면 비어 있다
+     * (미리 번역은 선택이다 — B 4). 실패한 언어는 애초에 그 표에 들어가지 않는다(R-15). */
+    const paraTransOf = (para) => (paragraphs[para - 1] || {}).trans || {};
+
     function reportLines() {
-      return live.sent.map(m => ({ at: m.at, text: m.src, tr: m.trans, label: `(${T('src_script')} ${m.para})` }));
+      return live.sent.map(m => ({ at: m.at, text: m.src, tr: paraTransOf(m.para), label: `(${T('src_script')} ${m.para})` }));
     }
     function reportFooter(skipped) {
       return skipped.length ? [`${T('sum_skip')}: ${skipped.join(', ')}`] : [];
     }
     function reportLangCodes() {
       const set = new Set();
-      for (const m of live.sent) for (const k of Object.keys(m.trans || {})) set.add(k);
+      for (const m of live.sent) for (const k of Object.keys(paraTransOf(m.para))) set.add(k);
       if (!set.size) for (const k of selectedLangs) set.add(k);
       if (!set.size) set.add('en');
       return [...set];

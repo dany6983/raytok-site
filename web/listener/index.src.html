@@ -1610,7 +1610,14 @@
          짝이 없으면 조용히 버린다(그 문단을 못 받은 손님이다 — 늦게 들어온 사람). */
       if (msg.kind === 'script_tr') {
         const para = Number(msg.para) || 0;
-        const line = lines.find(l => l.script && l.para === para);
+        /* ★ **마지막** 줄에 붙인다. 강사가 「이전(←)」으로 같은 문단을 다시 보내면 손님
+           화면에는 그 문단이 **두 줄** 생긴다 — 앞에서부터 찾으면 번역이 **화면 위의 옛 줄**에
+           붙고, 방금 온 줄은 원문으로 남는다(그리고 옛 줄은 이미 읽은 줄이라 소리도 안 난다).
+           10-21 에 `live_test` 의 "소리 단추를 켠 뒤의 원고 줄은 읽는다"가 이것을 잡았다. */
+        let line = null;
+        for (let i = lines.length - 1; i >= 0; i -= 1) {
+          if (lines[i].script && lines[i].para === para) { line = lines[i]; break; }
+        }
         if (line) {
           if (msg.trans && typeof msg.trans === 'object') Object.assign(line.tr, msg.trans);
           line.pending = false;

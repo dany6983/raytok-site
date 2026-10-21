@@ -104,21 +104,31 @@ const { rooms, hostReceived } = relay;
   ok(true, '호스트: 언어별 인원 en 1');
 
   // ── 문단 3개 넘기기: 단추 → 키보드 → 스페이스 ──
-  const before = relay.counters.translate;
+  const before = relay.counters.roomTranslate;
   await host.click('#btnNext');
   await host.keyboard.press('ArrowRight');
   await host.keyboard.press('Space');
   await lis.waitForFunction(() => document.querySelectorAll('#chat-list .msg-line.msg-script').length === 3, null, { timeout: 5000 });
   ok(true, '청취자: 문단 3개 → 원고 줄 3개');
-  ok(relay.counters.translate === before, '넘길 때 /translate 0회 — 번역을 새로 청하지 않는다');
+  /* ★ 2026-10-21 (NOW B 3·B 5) — 여기서 세는 것이 **바뀌었다**. 전에는 "넘길 때 0회"였다:
+     강사가 미리 번역해 두고 그 번역문을 실어 보냈으니까. 이제 강사는 **원문만** 보내고
+     (결정장부 43) **방이** 손님 언어마다 한 번씩 번역한다(장부 51 의 보조 길).
+     그래서 0 이 아니라 **문단마다 (손님 언어 수)회**가 맞는 값이다. 0 을 지키려 들면
+     그것은 "손님이 번역을 못 받는다"를 지키는 것이다. 지금 손님은 en 하나뿐이다. */
+  const trCalls = relay.counters.roomTranslate - before;
+  ok(trCalls === 3, `넘길 때 방이 번역한다: 문단 3개 × 손님 언어 1개 = ${trCalls}회 (강사는 원문만 보낸다)`);
 
   const scripts = hostReceived.filter(m => m.kind === 'script');
   ok(scripts.length === 3, '호스트 → /ws script 3건');
   const s1 = scripts[0];
-  ok(Object.keys(s1).sort().join(',') === 'at,kind,para,src,srcLang,total,trans', 'script 모양 = {kind,para,total,src,srcLang,trans,at} (정본)');
+  ok(Object.keys(s1).sort().join(',') === 'at,kind,para,src,srcLang,total',
+     'script 모양 = {kind,para,total,src,srcLang,at} — **trans 가 없다**(결정장부 43 · B 5 자물쇠)');
   ok(s1.para === 1 && s1.total === 4 && s1.srcLang === 'ko' && s1.src === '안전 교육을 시작하겠습니다.', 'script 1: para·total·srcLang·src');
-  ok(s1.trans.en === '[en] 안전 교육을 시작하겠습니다.' && s1.trans.ja === '[ja] 안전 교육을 시작하겠습니다.', 'script trans = IndexedDB 미리 번역(en·ja)');
-  ok(!('vi' in s1.trans), '미리 번역 실패한 언어(vi)는 trans 에서 빠진다(R-15)');
+  /* 번역문은 **다른 메시지**로 온다 — 강사가 아니라 방이 보낸다 */
+  const srcMsgs = hostReceived.filter(m => m.kind === 'script_src');
+  ok(srcMsgs.length >= 1 && (srcMsgs[0].paras || []).length === 4,
+     `강사는 원고를 **원문으로** 올린다 (script_src ${(srcMsgs[0] || {}).paras ? srcMsgs[0].paras.length : 0}문단)`);
+  ok(!srcMsgs.some(m => JSON.stringify(m).includes('trans')), '올린 원고에도 번역문 칸이 없다');
   ok(scripts.map(s => s.para).join(',') === '1,2,3', '단추·→·스페이스 = 1,2,3 순서');
 
   const heads = await lis.$$eval('#chat-list .msg-line.msg-script .badge-script', els => els.map(e => e.textContent.trim()));

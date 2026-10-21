@@ -18,7 +18,7 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
   const rooms = new Map();        // code -> room
   const hostReceived = [];        // 호스트가 /ws 로 보낸 메시지(해석한 것, 방 구분 없이 시간 순)
   const httpLog = [];             // 릴레이 API 로 온 요청 "METHOD /path"
-  const counters = { translate: 0 };
+  const counters = { translate: 0, roomTranslate: 0 };   // HTTP /translate · 방이 한 번역(B 3)
   const licStore = new Map();
   const batchStore = new Map();
   const mockPortonePayments = new Map();
@@ -30,10 +30,65 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
     const room = {
       code, token, kind, ring: [], received: [],
       hosts: new Set(), listeners: new Map(), att: null, ended: false,
-      askQueue: [], askSeq: 0, activeAsk: null, askHistory: []
+      askQueue: [], askSeq: 0, activeAsk: null, askHistory: [],
+      script: new Map(), trCache: new Map()      // 올려 둔 원고 원문 · 산 번역문 (B 3·B 4)
     };   // received = 이 방의 호스트가 보낸 메시지
     rooms.set(code, room);
     return room;
+  }
+
+  /* ── 방이 번역한다 (room.js roomTrFromHost·roomTrFlush — site NOW B 3·B 4, 2026-10-21) ──
+   *
+   * 왜 가짜에도 넣나: 10-21 에 강사 화면이 `script.trans` 를 **그만 보내게** 됐다(장부 43).
+   * 번역해서 보내는 것은 이제 **방**이다. 이 가짜가 그 일을 안 하면, 손님 화면을 보는 시험
+   * 전부가 **번역이 없는 화면**을 정상으로 알게 된다 — 가짜가 운영보다 느슨해지는 그 사고다
+   * (D-11). 그래서 같은 길을 같은 모양으로 넣는다:
+   *   원문은 그대로 전원에게 → 언어마다 한 번 번역 → 그 언어 손님에게만 `tr`/`script_tr`
+   *   실패하면 `no_tr` (「대기 중」에 갇히지 않게)
+   * `vi` 는 /translate 가 503 이므로 여기서도 실패한다 — R-15 시험이 그걸 본다.
+   */
+  function trOne(text, target) {
+    /* ★ 세는 칸을 **따로** 둔다. `counters.translate` 는 **HTTP `/translate` 를 누가 불렀나**를
+       세는 칸이고, 거기에 방 번역을 더하면 "청취 페이지가 번역을 청하지 않는다"(RULE: P-16 ①)
+       를 보는 시험이 **방이 일한 것을 손님이 청한 것으로** 읽는다(10-21 에 `w_t_test` 가 그렇게
+       붉었다). 방이 쓴 돈은 이 칸에서 센다. */
+    counters.roomTranslate++;
+    if (target === 'vi') return null;           // 위 /translate 와 **같은 규칙**
+    return `[${target}] ` + text;
+  }
+
+  function roomTranslate(room, parsed) {
+    if (!parsed || parsed.end || parsed.hello || parsed.welcome) return;
+    const srcLang = parsed.srcLang || parsed.src_lang || 'ko';
+    let item = null;
+    if (parsed.kind === 'script' && typeof parsed.src === 'string' && parsed.src.trim()) {
+      item = { script: 1, para: Number(parsed.para) || 0, text: parsed.src };
+    } else if (!parsed.kind && !parsed.pending && typeof parsed.text === 'string'
+               && parsed.text.trim() && parsed.seq !== undefined) {
+      item = { seq: parsed.seq, text: parsed.text };
+    }
+    if (!item) return;
+    const have = {};
+    for (const [k, v] of Object.entries(parsed.trans || {})) {
+      if (typeof v === 'string' && v.trim()) have[String(k).toLowerCase()] = 1;   // 강사가 이미 보낸 칸은 안 산다
+    }
+    const seen = new Set();
+    for (const [ws, mark] of room.listeners) {
+      const lang = String((mark && mark.lang) || '').trim();
+      const key = lang.toLowerCase();
+      if (!lang || lang === '?' || key === String(srcLang).toLowerCase() || have[key]) continue;
+      if (seen.has(key)) { /* 같은 언어 손님이 여럿 — 번역은 한 번, 보내기만 여러 번 */ }
+      const text = seen.has(key) ? room.trCache.get(key + '|' + (item.script ? 'p' + item.para : 's' + item.seq))
+                                 : trOne(item.text, lang);
+      seen.add(key);
+      room.trCache.set(key + '|' + (item.script ? 'p' + item.para : 's' + item.seq), text);
+      const msg = text
+        ? (item.script ? { kind: 'script_tr', para: item.para, trans: { [lang]: text } }
+                       : { seq: item.seq, tr: { [lang]: text } })
+        : (item.script ? { kind: 'script_tr', para: item.para, trans: {}, no_tr: 1, why: 'http_503' }
+                       : { seq: item.seq, no_tr: 1, why: 'http_503' });
+      try { ws.send(JSON.stringify(msg)); } catch (_) {}
+    }
   }
 
   // ── 참석 집계 (room.js attInit·attLang·attSnapshot·attJoin·attSetLang·attLeave·attEnd) ──
@@ -361,10 +416,20 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
             for (const l of room.listeners.keys()) { try { l.send(qMsgList); } catch (_) {} }
             return;
           }
+          /* 원고 원문 올리기(`script_src`)는 **손님에게 보내지 않는다** — 방이 보관만 한다(B 4) */
+          if (parsed && parsed.kind === 'script_src') {
+            for (const q of parsed.paras || []) {
+              if (q && typeof q.src === 'string') room.script.set(Number(q.para) || 0, q.src);
+            }
+            hostReceived.push(parsed); room.received.push(parsed);
+            return;
+          }
           room.ring.push(s);
           if (room.ring.length > 500) room.ring.shift();
           for (const l of room.listeners.keys()) { try { l.send(s); } catch (_) {} }
           if (parsed) { hostReceived.push(parsed); room.received.push(parsed); }
+          /* 원문이 간 **뒤에** 번역을 보낸다 — 늦어도 남는 쪽(R-15) */
+          if (parsed) roomTranslate(room, parsed);
           if (parsed && parsed.end) endRoom(room, parsed.summary);
         });
         ws.on('close', () => room.hosts.delete(ws));

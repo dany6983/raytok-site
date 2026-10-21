@@ -1405,7 +1405,10 @@
       }
       if (msg.kind === 'script_tr') {
         const para = Number(msg.para) || 0;
-        const line = lines.find(l => l.script && l.para === para);
+        let line = null;
+        for (let i = lines.length - 1; i >= 0; i -= 1) {
+          if (lines[i].script && lines[i].para === para) { line = lines[i]; break; }
+        }
         if (line) {
           if (msg.trans && typeof msg.trans === 'object') Object.assign(line.tr, msg.trans);
           line.pending = false;
