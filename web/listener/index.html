@@ -857,7 +857,7 @@
         const res = await fetch('./langs.json');
         if (res.ok) langs = await res.json();
       } catch (e) {}
-      try { console.log('langs_src=' + (langs.length > 20 ? 'json' : 'inline') + ' n=' + langs.length); } catch (e) {}
+      try { console.log('langs_from=' + (langs.length > 20 ? 'json' : 'inline') + ' n=' + langs.length); } catch (e) {}
 
       try {
         const res = await fetch('./ui-strings/_langs.json');
@@ -1614,7 +1614,7 @@
                    normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang);
       var show = !!differ && guestTr !== 'server';
       box.style.display = show ? 'block' : 'none';
-      var line = 'tr_notice on=' + (show ? 1 : 0) + ' src=' + (srcLang || '-') + ' me=' + (selectedLang || '-');
+      var line = 'tr_notice on=' + (show ? 1 : 0) + ' from=' + (srcLang || '-') + ' me=' + (selectedLang || '-');
       if (trNoticeLog[trNoticeLog.length - 1] !== line) trNoticeLog.push(line);
     }
     var trNoticeLog = [];

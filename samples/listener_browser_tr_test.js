@@ -134,7 +134,7 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
       ok(shown.vis === true, '손님 말이 원문과 다르면 띠가 보인다');
       ok(/trình duyệt/i.test(shown.text), `안내가 **손님 말**로 나온다 — "${shown.text.slice(0, 40)}"`);
       ok(/máy chủ/i.test(shown.btn), `단추도 손님 말이다 — "${shown.btn}"`);
-      ok(shown.log.some((l) => /^tr_notice on=1 src=ko me=vi$/.test(l)),
+      ok(shown.log.some((l) => /^tr_notice on=1 from=ko me=vi$/.test(l)),
          `첫 걸음에 기록 한 줄 (§12) — ${shown.log.join(' · ')}`);
 
       /* 같은 말이면 띠가 없다 — 번역할 것이 없다 (되돌림 실증 ③) */
