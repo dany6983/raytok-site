@@ -1595,7 +1595,7 @@
     function trPlan() {
       var plan = browserCanTranslate() ? 'browser' : 'server';
       var line = 'guest_tr_plan plan=' + plan + ' me=' + (selectedLang || '-')
-               + ' browser=' + (browserLangs()[0] || '-') + ' src=' + (srcLang || '-');
+               + ' browser=' + (browserLangs()[0] || '-') + ' from=' + (srcLang || '-');
       if (trPlanLog[trPlanLog.length - 1] !== line) { trPlanLog.push(line); try { console.log(line); } catch (e) {} }
       return plan;
     }

@@ -1856,8 +1856,10 @@
     /** 어느 길로 갈까 — 'browser' 또는 'server'. 바뀔 때만 기록한다(§12 첫 걸음에 한 줄) */
     function trPlan() {
       var plan = browserCanTranslate() ? 'browser' : 'server';
+      /* 칸 이름에 s-r-c 를 쓰지 않는다 — 링크 검사기가 그 글자 뒤의 따옴표를 **링크로
+         읽는다**(10-21 에 두 번 걸렸다: `langs_src=` 와 이 줄). `from=` 으로 적는다. */
       var line = 'guest_tr_plan plan=' + plan + ' me=' + (selectedLang || '-')
-               + ' browser=' + (browserLangs()[0] || '-') + ' src=' + (srcLang || '-');
+               + ' browser=' + (browserLangs()[0] || '-') + ' from=' + (srcLang || '-');
       if (trPlanLog[trPlanLog.length - 1] !== line) { trPlanLog.push(line); try { console.log(line); } catch (e) {} }
       return plan;
     }
