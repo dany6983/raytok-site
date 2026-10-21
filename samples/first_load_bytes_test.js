@@ -139,6 +139,11 @@ const LIMIT_GZ = { '/web/listener/': 37 * 1024, '/join/': 12 * 1024 };
   ok(leaked.length === 0,
      `시연 줄이 페이지에 **박혀 있지 않다** (박힌 줄 ${leaked.length}개) — 손님 전원이 받게 된다`);
   ok(/fetch\('\.\/demo\.json'\)/.test(page), '데모는 `?demo=1` 일 때 그 파일을 받는다');
+  /* 고르개는 **첫 줄의 언어 묶음**으로 걸러진다(`DEMO_LANGS`). 한 줄에만 언어를 더하면
+     그 언어를 고를 수 있는데 그 줄만 번역이 있다 — 데모 중간에 원문이 나온다. 줄마다 같은지 센다. */
+  const keys0 = Object.keys(demo.lines[0].tr || {}).sort().join(',');
+  const odd = demo.lines.filter((l) => Object.keys(l.tr || {}).sort().join(',') !== keys0);
+  ok(odd.length === 0, `시연 줄마다 언어 묶음이 같다 (${keys0}) · 다른 줄 ${odd.length}개`);
   /* 되돌림 실증 — 그 줄을 페이지에 넣어 보면 위 단언이 잡는가 (파일은 안 건드린다) */
   let demoRevert = false;
   try {

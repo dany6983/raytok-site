@@ -290,8 +290,8 @@ export class Room {
       this.script.paras.delete(first.value);
     }
     try {
-      console.log(`script_src paras=${got.paras.length} total=${this.script.total}`
-                  + (got.dropped ? ` dropped_trans=${got.dropped}` : ''));
+      this.trLog(`script_src paras=${got.paras.length} total=${this.script.total}`
+                 + (got.dropped ? ` dropped_trans=${got.dropped}` : ''));
     } catch (_) {}
     return true;
   }
@@ -308,7 +308,7 @@ export class Room {
       }
     }
     if (!items.length) return;
-    try { console.log(`room_tr_pre para=${items.map((x) => x.para).join(',')}`); } catch (_) {}
+    this.trLog(`room_tr_pre para=${items.map((x) => x.para).join(',')}`);
     /* 보내지 **않는다** — 사 두고 적어 둔다. 「다음」을 누르면 그때 그 언어 손님에게 간다.
        (사 둔 글자는 아래 `trCache` 에 있고, `roomTrFlush` 가 먼저 거기를 본다) */
     this.roomTrFlush(items, { quiet: true }).catch(() => {});
@@ -344,7 +344,7 @@ export class Room {
       this.trLangsSeen.push(lang);
     } finally {
       this.lateBusy = false;
-      try { console.log(`room_tr_late lang=${lang} paras=${done} ms=${Date.now() - t0}`); } catch (_) {}
+      this.trLog(`room_tr_late lang=${lang} paras=${done} ms=${Date.now() - t0}`);
     }
   }
 
@@ -414,6 +414,17 @@ export class Room {
    * 있다 — 말을 다시 하거나, 그 언어를 빼거나, 상한·돈을 본다. 조용히 넘기면 강사는
    * **번역이 되고 있다고 믿는다**(§20: 모르게 두지 않는다).
    */
+  /**
+   * 방 기록 한 줄 — **어느 방인지 적는다** (2026-10-21).
+   *
+   * 왜: 대표님이 배포 뒤 `wrangler tail` 로 `room_tr …` 을 보신다. 방이 여럿 돌면 어느
+   * 강연의 줄인지 가릴 수 없다 — 그러면 "보인다/안 보인다"만 알고 **어느 방이 안 되는지**는
+   * 모른다. 방 코드는 QR 에 찍히는 공개값이다(비밀값이 아니다). 적는 곳은 이 함수 하나다(§4).
+   */
+  trLog(line) {
+    try { console.log(`[${this.code || '------'}] ${line}`); } catch (_) {}
+  }
+
   tellHost(msg) {
     try {
       const str = JSON.stringify(msg);
@@ -477,7 +488,7 @@ export class Room {
       /* 막고 **알린다** — 조용히 자르면 그 언어 손님은 까닭을 모른다(§20).
          기록만 남기면 강사는 **모른다**: 그 언어 손님들은 원문만 보는데 화면에는 아무 표도
          없다. 그래서 강사 화면에도 보낸다(상한에 닿는 일은 드물어 줄이 쌓이지 않는다). */
-      try { console.log(`room_tr_cap langs=${langs.length} dropped=${capped}`); } catch (_) {}
+      this.trLog(`room_tr_cap langs=${langs.length} dropped=${capped}`);
       this.tellHost({ kind: 'tr_cap', n: langs.length, dropped: capped });
     }
     for (const lang of langs) {
@@ -490,7 +501,7 @@ export class Room {
           const made = RTR.trMessages(cached, lang, cached.map((it) => this.trCache.get(RTR.doneKey(it, lang))));
           if (made.ok) {
             const sent = this.sendToLang(lang, made.msgs);
-            try { console.log(`room_tr lang=${lang} n=${cached.length} cached=1 to=${sent}`); } catch (_) {}
+            this.trLog(`room_tr lang=${lang} n=${cached.length} cached=1 to=${sent}`);
           }
         }
       }
@@ -502,7 +513,7 @@ export class Room {
         const { res, why } = await this.trFetch({ q: texts, source: srcLang, target: lang, engine: 'basic' });
         if (!res || !res.ok) {
           const code = why || (res ? 'http_' + res.status : 'no_res');
-          try { console.log(`room_tr_fail lang=${lang} why=${code}`); } catch (_) {}
+          this.trLog(`room_tr_fail lang=${lang} why=${code}`);
           this.sendToLang(lang, RTR.noTrMessages(part, code));
           this.tellHostTrFail(lang, code, part[0]);
           continue;
@@ -511,7 +522,7 @@ export class Room {
         try { out = RTR.textsOf(await res.json()); } catch (_) { out = []; }
         const made = RTR.trMessages(part, lang, out);
         if (!made.ok) {
-          try { console.log(`room_tr_fail lang=${lang} why=${made.why}`); } catch (_) {}
+          this.trLog(`room_tr_fail lang=${lang} why=${made.why}`);
           this.sendToLang(lang, RTR.noTrMessages(part, made.why));
           this.tellHostTrFail(lang, made.why, part[0]);
           continue;
@@ -526,7 +537,7 @@ export class Room {
           this.trCache.set(RTR.doneKey(part[i], lang), out[i]);
         }
         const sent = o.quiet ? 0 : this.sendToLang(lang, made.msgs);
-        try { console.log(`room_tr lang=${lang} n=${part.length} chars=${chars} to=${sent}`); } catch (_) {}
+        this.trLog(`room_tr lang=${lang} n=${part.length} chars=${chars} to=${sent}`);
       }
     }
   }

@@ -125,6 +125,24 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(/^http_502|fetch_error$/.test(String(ls[0].got[0].why)), `까닭을 적는다 (why=${ls[0].got[0].why})`);
 }
 
+/* ①-2 기록에 **방 코드**가 붙는다 — 방이 여럿 돌면 `wrangler tail` 에서 가릴 수 없다 */
+{
+  const { room } = makeRoom(['en']);
+  room.code = 'ABC123';
+  const said = [];
+  const real = console.log;
+  console.log = (...a) => { said.push(a.join(' ')); };
+  try {
+    room.roomTrFromHost(lineOf(61, '방 코드'));
+    await wait(RTR.BATCH_MS + 60);
+  } finally { console.log = real; }
+  const line = said.find((l) => /room_tr lang=en/.test(l));
+  ok(line && line.startsWith('[ABC123] '),
+     `기록 앞에 방 코드가 붙는다 ("${line}") — 대표님이 tail 에서 어느 방인지 가린다`);
+  const bare = said.filter((l) => /room_tr/.test(l) && !/^\[/.test(l));
+  ok(bare.length === 0, `코드 없는 줄이 없다 (${bare.length}개) — 적는 곳이 한 함수다(§4)`);
+}
+
 /* ③-2 강사에게도 **알린다** — 손님은 「번역 안 됨」을 봐도 할 수 있는 일이 없고 강사는 있다 */
 {
   const { room, hostWs } = makeRoom(['en'], 'fail');
