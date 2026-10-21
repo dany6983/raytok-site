@@ -313,6 +313,15 @@
          「서버 번역으로」는 **보조 길**(판 3번). 3번이 들어오기 전까지는 지금 길(강사가 미리
          보낸 번역)로 가고, 그때 기록이 `guest_tr=server` 로 남는다.
          구조: #chat-screen > #tr-notice (#voice-notice 바로 앞 형제) -->
+    <!-- 아이폰 사파리로 열린 손님에게만: 같은 방을 크롬에서 열 수 있다 (NOW B 7 · 편의).
+         왜 있나: 사파리에서 **새 자막 줄까지** 번역되는지 우리는 아직 모른다(실기 대기).
+         크롬이 있으면 손님이 한 번 눌러 옮겨 갈 수 있고, 없으면 아무 일도 일어나지 않는다
+         — 그때는 사파리 번역 → 「서버 번역으로」(아래 띠) 가 그대로 받친다.
+         자리: #chat-screen > #ios-chrome (#tr-notice **바로 앞** 형제) -->
+    <div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid #94a3b8; color:#e2e8f0; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+      <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
+      <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
+    </div>
     <div id="tr-notice" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid #38bdf8; color:#bae6fd; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
       <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
       <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
@@ -1885,7 +1894,53 @@
     var trNoticeLog = [];
     window.rtTrNotice = { log: function () { return trNoticeLog.slice(); }, render: renderTrNotice };
 
+    /* ── 「크롬으로 열기」 — 아이폰 사파리에서만 (NOW B 7) ─────────────────────
+     *
+     * 아이폰에서는 **모든 브라우저가 웹킷**이라 엔진으로는 가릴 수 없다. 가리는 자리는
+     * UA 하나뿐이고, 크롬·파폭·엣지는 자기 표를 UA 에 남긴다(`CriOS`·`FxiOS`·`EdgiOS`).
+     * 그래서 "아이폰이고 그 표가 **없으면** 사파리"로 읽는다 — 모르는 것을 사파리로 읽지
+     * 않으려고 아이폰 여부를 먼저 본다(§20).
+     *
+     * 누르면 `googlechromes://` 로 **같은 주소**를 연다(https 전용 꼴이다). 크롬이 없으면
+     * **아무 일도 일어나지 않는다** — 그 자리에 머물고 사파리 번역 → 「서버 번역으로」가
+     * 받친다. 그래서 "크롬이 깔려 있나"를 묻지 않는다: 물어서 알 길이 없고(브라우저가
+     * 알려 주지 않는다), 모르는 것을 아는 척하면 손님에게 거짓을 보이게 된다.
+     */
+    function isIosSafari(ua) {
+      var u = String(ua || (navigator && navigator.userAgent) || '');
+      var ios = /iP(hone|od|ad)/.test(u) ||
+                (/Macintosh/.test(u) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
+      if (!ios) return false;
+      return !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/)/.test(u);
+    }
+
+    var iosChromeLog = [];
+    function renderIosChrome() {
+      var box = document.getElementById('ios-chrome');
+      if (!box) return;
+      var show = isIosSafari();
+      box.style.display = show ? 'block' : 'none';
+      var line = 'ios_chrome on=' + (show ? 1 : 0);
+      if (iosChromeLog[iosChromeLog.length - 1] !== line) iosChromeLog.push(line);
+    }
+    /** 같은 주소를 크롬 꼴로 — 글자를 손으로 잇지 않는다(방 코드·언어가 그대로 가야 한다) */
+    function chromeUrlOf(href) {
+      var u = String(href || location.href);
+      return u.replace(/^https:\/\//, 'googlechromes://').replace(/^http:\/\//, 'googlechrome://');
+    }
+    window.rtIosChrome = { log: function () { return iosChromeLog.slice(); },
+                           isIosSafari: isIosSafari, urlOf: chromeUrlOf, render: renderIosChrome };
+
     document.addEventListener('DOMContentLoaded', function () {
+      renderIosChrome();                       // 기능의 첫 걸음에 기록 한 줄(§12)
+      var c = document.getElementById('btn-open-chrome');
+      if (c) {
+        c.addEventListener('click', function () {
+          var to = chromeUrlOf(location.href);
+          iosChromeLog.push('ios_chrome go=1');
+          try { location.href = to; } catch (e) {}
+        });
+      }
       var b = document.getElementById('btn-tr-server');
       if (!b) return;
       b.addEventListener('click', function () {

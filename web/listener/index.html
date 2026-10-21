@@ -299,6 +299,10 @@
 
   <div class="screen" id="chat-screen">
 
+    <div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid #94a3b8; color:#e2e8f0; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+      <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
+      <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
+    </div>
     <div id="tr-notice" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid #38bdf8; color:#bae6fd; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
       <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
       <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
@@ -1644,7 +1648,40 @@
     var trNoticeLog = [];
     window.rtTrNotice = { log: function () { return trNoticeLog.slice(); }, render: renderTrNotice };
 
+    function isIosSafari(ua) {
+      var u = String(ua || (navigator && navigator.userAgent) || '');
+      var ios = /iP(hone|od|ad)/.test(u) ||
+                (/Macintosh/.test(u) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
+      if (!ios) return false;
+      return !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/)/.test(u);
+    }
+
+    var iosChromeLog = [];
+    function renderIosChrome() {
+      var box = document.getElementById('ios-chrome');
+      if (!box) return;
+      var show = isIosSafari();
+      box.style.display = show ? 'block' : 'none';
+      var line = 'ios_chrome on=' + (show ? 1 : 0);
+      if (iosChromeLog[iosChromeLog.length - 1] !== line) iosChromeLog.push(line);
+    }
+    function chromeUrlOf(href) {
+      var u = String(href || location.href);
+      return u.replace(/^https:\/\//, 'googlechromes://').replace(/^http:\/\//, 'googlechrome://');
+    }
+    window.rtIosChrome = { log: function () { return iosChromeLog.slice(); },
+                           isIosSafari: isIosSafari, urlOf: chromeUrlOf, render: renderIosChrome };
+
     document.addEventListener('DOMContentLoaded', function () {
+      renderIosChrome();                       // 기능의 첫 걸음에 기록 한 줄(§12)
+      var c = document.getElementById('btn-open-chrome');
+      if (c) {
+        c.addEventListener('click', function () {
+          var to = chromeUrlOf(location.href);
+          iosChromeLog.push('ios_chrome go=1');
+          try { location.href = to; } catch (e) {}
+        });
+      }
       var b = document.getElementById('btn-tr-server');
       if (!b) return;
       b.addEventListener('click', function () {
