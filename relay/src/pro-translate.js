@@ -20,7 +20,8 @@ export const PRO_FALLBACK = {
   SLOW: 'pro_slow',     // 2초 안에 안 왔다
   NUMBERS: 'pro_numbers', // 원문에 없는 숫자가 생겼다 (지어냈다)
   ERROR: 'pro_error',   // 상류가 죽었다
-  NO_KEY: 'pro_no_key'  // 키가 없다 (운영 전)
+  NO_KEY: 'pro_no_key',    // 키가 없다 (운영 전)
+  NO_PROVIDER: 'pro_no_provider' // `LLM_PROVIDER` 가 표에 없는 이름이다 (§20: 지어내지 않는다)
 };
 
 /* ── 프롬프트 규칙 셋 (고정. 시험이 지킨다) ───────────────────────────────
@@ -92,8 +93,72 @@ export function todayKey(now = Date.now()) {
   return new Date(now).toISOString().slice(0, 10);
 }
 
+/* ── 공급자를 **바꿔 끼우는 자리** (site NOW 10, 2026-10-21) ───────────────────
+ *
+ * 전에는 이 아래가 `if (gemini) … else (OpenAI 꼴)` 이었다. 그 모양의 흠은 둘이다:
+ *   ① 공급자를 더하려면 **부르는 함수 안을** 고쳐야 한다 — 두 곳(보낼 것·읽을 것)을 따로
+ *      고치게 되고, 한 쪽만 고치면 조용히 어긋난다(§4).
+ *   ② 이름을 잘못 적으면(`gemni`) **else 로 떨어져** OpenAI 꼴 요청이 날아간다. 모르는 것을
+ *      아는 것으로 읽는 꼴이다(§20) — 그래서 지금은 **모르는 이름은 멈춘다**.
+ *
+ * 공급자 하나 = 이 표에 한 줄이다. 넷을 적는다:
+ *   `url(…)`     어디로 보내나 (기본 주소는 `LLM_BASE_URL` 로 덮는다)
+ *   `headers(…)` 키를 어떤 칸에 싣나
+ *   `body(…)`    무엇을 보내나 (규칙 셋은 `PRO_SYSTEM_RULES` 하나에서 온다)
+ *   `parse(…)`   답에서 **글자와 토큰 수**를 꺼낸다
+ *
+ * 대표님이 공급자를 정하시면 **키·주소·모델 이름만** 넣는다(비밀값은 저장소에 넣지 않는다).
+ * 표에 없는 공급자면 `pro_no_provider` 로 **basic(0x10)으로 내려앉는다** — 손님은 번역을
+ * 받고(R-15), 기록에 까닭이 남는다.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const PROVIDERS = {
+  gemini: {
+    defaultBase: 'https://generativelanguage.googleapis.com/v1beta',
+    defaultModel: 'gemini-2.0-flash-lite',
+    url: ({ base, model }) => `${base}/models/${model}:generateContent`,
+    headers: ({ key }) => ({ 'Content-Type': 'application/json', 'x-goog-api-key': key }),
+    body: ({ prompt }) => ({
+      systemInstruction: { parts: [{ text: PRO_SYSTEM_RULES }] },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, candidateCount: 1 }
+    }),
+    parse: (data) => {
+      const text = ((((data.candidates || [])[0] || {}).content || {}).parts || [])
+        .map((p) => p && p.text).filter(Boolean).join('').trim();
+      const u = data.usageMetadata || {};
+      return { text, tokIn: Number(u.promptTokenCount || 0), tokOut: Number(u.candidatesTokenCount || 0) };
+    }
+  },
+  /* OpenAI 꼴 — 많은 공급자가 이 모양을 그대로 쓴다(주소·모델만 바꾸면 된다) */
+  openai: {
+    defaultBase: 'https://api.openai.com/v1',
+    defaultModel: 'gpt-4o-mini',
+    url: ({ base }) => `${base}/chat/completions`,
+    headers: ({ key }) => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }),
+    body: ({ prompt, model }) => ({
+      model,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: PRO_SYSTEM_RULES },
+        { role: 'user', content: prompt }
+      ]
+    }),
+    parse: (data) => {
+      const text = String((((data.choices || [])[0] || {}).message || {}).content || '').trim();
+      const u = data.usage || {};
+      return { text, tokIn: Number(u.prompt_tokens || 0), tokOut: Number(u.completion_tokens || 0) };
+    }
+  }
+};
+
+/** 그 이름의 공급자 — 없으면 null (지어내지 않는다, §20) */
+export function providerOf(name) {
+  const k = String(name || '').trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(PROVIDERS, k) ? PROVIDERS[k] : null;
+}
+
 /**
- * 공급자 한 곳만 안다 — 다른 공급자는 `LLM_PROVIDER` 와 이 함수에 더한다.
+ * 한 단위를 번역한다. 공급자 모양은 위 표에서만 온다 — 이 함수는 **보내고 받는 일**만 한다.
  * 스트리밍 아님(1차): 한 단위 한 응답.
  */
 export async function callLlmOnce({ prompt, env, timeoutMs = 2000, fetchImpl }) {
@@ -103,37 +168,25 @@ export async function callLlmOnce({ prompt, env, timeoutMs = 2000, fetchImpl }) 
     e.why = PRO_FALLBACK.NO_KEY;
     throw e;
   }
-  const provider = (env.LLM_PROVIDER || 'gemini').trim().toLowerCase();
-  const base = (env.LLM_BASE_URL || '').trim();
-  const model = (env.LLM_MODEL || 'gemini-2.0-flash-lite').trim();
+  const name = (env.LLM_PROVIDER || 'gemini').trim().toLowerCase();
+  const P = providerOf(name);
+  if (!P) {
+    /* 모르는 공급자다. **고르지 않는다** — basic 으로 내려앉고 까닭을 남긴다(§20). */
+    const e = new Error(`unknown LLM provider '${name}'`);
+    e.why = PRO_FALLBACK.NO_PROVIDER;
+    throw e;
+  }
+  const base = ((env.LLM_BASE_URL || '').trim() || P.defaultBase).replace(/\/$/, '');
+  const model = ((env.LLM_MODEL || '').trim() || P.defaultModel);
   const doFetch = fetchImpl || fetch;
 
   const ctl = new AbortController();
   // 2초 넘으면 **포기한다.** 기다리는 것이 손님에게는 고장이다(설계 4).
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    let url, body, headers;
-    if (provider === 'gemini') {
-      url = `${base || 'https://generativelanguage.googleapis.com/v1beta'}/models/${model}:generateContent`;
-      headers = { 'Content-Type': 'application/json', 'x-goog-api-key': key };
-      body = {
-        systemInstruction: { parts: [{ text: PRO_SYSTEM_RULES }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0, candidateCount: 1 }
-      };
-    } else {
-      // OpenAI 꼴 — 다른 공급자도 대개 이 모양이다
-      url = `${base || 'https://api.openai.com/v1'}/chat/completions`;
-      headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` };
-      body = {
-        model,
-        temperature: 0,
-        messages: [
-          { role: 'system', content: PRO_SYSTEM_RULES },
-          { role: 'user', content: prompt }
-        ]
-      };
-    }
+    const url = P.url({ base, model });
+    const headers = P.headers({ key });
+    const body = P.body({ prompt, model });
 
     const res = await doFetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal });
     if (!res.ok) {
@@ -143,22 +196,10 @@ export async function callLlmOnce({ prompt, env, timeoutMs = 2000, fetchImpl }) 
       throw e;
     }
     const data = await res.json();
-    let text = '';
-    let tokIn = 0;
-    let tokOut = 0;
-    if (provider === 'gemini') {
-      text = ((((data.candidates || [])[0] || {}).content || {}).parts || [])
-        .map((p) => p && p.text).filter(Boolean).join('').trim();
-      const u = data.usageMetadata || {};
-      tokIn = Number(u.promptTokenCount || 0);
-      tokOut = Number(u.candidatesTokenCount || 0);
-    } else {
-      text = (((data.choices || [])[0] || {}).message || {}).content || '';
-      text = String(text).trim();
-      const u = data.usage || {};
-      tokIn = Number(u.prompt_tokens || 0);
-      tokOut = Number(u.completion_tokens || 0);
-    }
+    let { text, tokIn, tokOut } = P.parse(data) || {};
+    text = String(text || '');
+    tokIn = Number(tokIn || 0);
+    tokOut = Number(tokOut || 0);
     // ⓒ 설명·따옴표를 붙여 보내는 모델이 있다 — 여기서 벗긴다
     text = stripWrapping(text);
     if (!text) {
