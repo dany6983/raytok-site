@@ -330,6 +330,7 @@
   <script src="../common/region.js"></script>   <!-- RULE: P-16 — 🎤 를 켤지 정하는 한 곳 -->
   <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 -->
   <script src="../common/script-follow.js"></script>   <!-- 10-20 판정 ⓐ: 원고를 읽는 중인 말은 안 보낸다 -->
+  <script src="../common/script-play.js"></script>     <!-- 정본 §1 ④: 원고 자동 넘김 시간·되켜기 판정 한 곳 -->
 </head>
 <body>
   <header>
@@ -484,6 +485,9 @@
           <div id="liveParaList" class="live-list"></div>
           <div class="live-controls">
             <button id="btnPrev" class="btn secondary" title="← 키" data-t="live_prev"></button>
+            <!-- 정본 §1 ④ 재생/멈춤 — 원고를 글자 수 속도로 혼자 넘긴다. 배속은 바로 옆에서 고른다 -->
+            <button id="btnPlay" class="btn" data-t="live_play"></button>
+            <select id="playRate" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: var(--card); color: var(--text); border: 1px solid var(--border); font-size: 0.9rem;"></select>
             <button id="btnNext" class="btn" title="→ 또는 스페이스 키" data-t="live_next"></button>
             <button id="btnSkip" class="btn secondary" data-t="live_skip"></button>
             <button id="btnBreak" class="btn warn" data-t="live_break"></button>
@@ -1418,6 +1422,13 @@
     const btnNext = document.getElementById('btnNext');
     const btnSkip = document.getElementById('btnSkip');
     const btnBreak = document.getElementById('btnBreak');
+    const btnPlay = document.getElementById('btnPlay');
+    const playRateSel = document.getElementById('playRate');
+
+    /* 정본 §1 ④ 재생 — 시간·되켜기 **판정은 `web/common/script-play.js` 한 곳**이다.
+     * 여기 두는 것은 상태뿐: 켜졌나 · 타이머 · 🎤 로 멈춘 문단 · 고른 배속.
+     * `pausedAt` 이 쓰는 곳이고 읽는 곳은 `playResume` 하나다(§4). */
+    const play = { on: false, timer: null, pausedAt: 0, rate: 1.0, log: [] };
 
     const live = {
       on: false,          // 진행 화면이 켜졌나
@@ -1882,7 +1893,18 @@
       micStatus.textContent = T('mic_idle');
     }
 
-    btnMic.addEventListener('click', () => { if (mic.on) stopMic(); else startMic(); });
+    /* 정본 §6 ④ — 🎤 로 끼어들면 원고는 **멈추고 그 문단을 기억**한다. 🎤 를 한 번 더
+     * 누르거나 ▶ 재생을 누르면 **멈춘 문단에서** 다시 간다. 마이크가 열리지 못했으면
+     * (권한 거부·인식 없음) 원고를 멈추지 않는다 — 반쯤 바꾼 상태로 두지 않는다(D-32). */
+    btnMic.addEventListener('click', async () => {
+      if (mic.on) {
+        stopMic();
+        if (play.pausedAt) playStart('mic_off');
+      } else {
+        await startMic();
+        if (mic.on) playStop('mic_on', true);
+      }
+    });
     window.rtHostMic = { state: mic, start: startMic, stop: stopMic, apply: applyMicVisibility,
                          send: sendSpokenLine, flush: flushSpoken, log: () => mic.log.map(x => x.line) };
 
@@ -1920,6 +1942,7 @@
       btnPrev.disabled = live.cur <= 1;
       btnNext.disabled = live.cur >= total;
       btnSkip.disabled = live.cur >= total;
+      playRenderBtn();   // 재생은 **마지막 문단에서 끝난다** — 글자·꺼짐을 거기서 맞춘다
       const curEl = document.getElementById(`live-para-${live.cur}`);
       if (curEl && curEl.scrollIntoView) curEl.scrollIntoView({ block: 'nearest' });
     }
@@ -1932,6 +1955,7 @@
       live.state[para] = 'read';
       sendScript(para);
       renderLive();
+      if (play.on) playArm();     // 재생 중이면 이 문단의 글자 수만큼 다시 기다린다
     }
     function doNext() { goTo(live.cur + 1); }
     function doPrev() { goTo(live.cur - 1); }
@@ -1943,8 +1967,102 @@
       live.state[para] = 'skip';
       wsSend({ kind: 'skip', para });
       renderLive();
+      if (play.on) playArm();     // 건너뛴 자리에서 다시 센다
     }
     function doBreak() { setBreak(!live.breakOn); }
+
+    /* ── 정본 §1 ④ 재생/멈춤 ──────────────────────────────────────────────
+     * 재생 = 원고를 **글자 수 속도**로 혼자 넘긴다. 시간은 `rtScriptPlay.paraMs` 가
+     * 답하고(판정 한 곳), 여기서는 타이머만 돈다. 마지막 문단에 닿으면 스스로 끈다.
+     * 🎤 끼어들기는 재생을 **멈추고 그 문단을 기억한다** — 되켜면 거기서 다시(정본 §6 ④).
+     * 기능의 첫 걸음에 기록 한 줄(§12): `play_on`·`play_tick`·`play_off`. */
+    const PLAY = (typeof rtScriptPlay !== 'undefined' && rtScriptPlay) ? rtScriptPlay : null;
+
+    function playLog(line) { play.log.push(line); if (play.log.length > 200) play.log.shift(); }
+
+    /* 글자와 **꺼짐**을 같이 맞춘다 — 재생이 스스로 꺼질 때 renderLive 는 이미 지나갔다
+     * (10-21 시험이 잡았다: 마지막 문단에서 글자는 「▶ 재생」인데 단추가 눌리는 채였다) */
+    function playRenderBtn() {
+      if (!btnPlay) return;
+      btnPlay.textContent = play.on ? T('live_stop') : T('live_play');
+      btnPlay.classList.toggle('on', play.on);
+      const total = paragraphs.length;
+      btnPlay.disabled = !total || (!play.on && live.cur >= total);
+    }
+
+    function playClearTimer() {
+      if (play.timer) { clearTimeout(play.timer); play.timer = null; }
+    }
+
+    /* 지금 문단을 보여 준 만큼 머문 뒤 다음으로. 머무는 시간은 **지금 문단의 글자 수**다 */
+    function playArm() {
+      playClearTimer();
+      if (!play.on || !PLAY) return;
+      const total = paragraphs.length;
+      const nxt = PLAY.nextPara({ cur: live.cur, total });
+      if (nxt == null) { playStop('end'); return; }
+      const cur = paragraphs[live.cur - 1];
+      const ms = PLAY.paraMs(cur ? cur.src : '', play.rate);
+      playLog(`play_tick para=${live.cur} next=${nxt} ms=${ms} rate=${play.rate} chars=${cur ? String(cur.src || '').trim().length : 0}`);
+      play.timer = setTimeout(() => {
+        play.timer = null;
+        if (!play.on) return;
+        /* 잠든 사이 사람이 「건너뛰기」·「이전」을 눌렀을 수 있다 — **깨어날 때 다시 센다** */
+        const go = PLAY.nextPara({ cur: live.cur, total: paragraphs.length });
+        if (go == null) { playStop('end'); return; }
+        goTo(go);
+      }, ms);
+    }
+
+    function playStart(why) {
+      if (!PLAY || !paragraphs.length) return;
+      /* 멈춘 문단이 있으면 **거기서 다시** — 그 사이 딴 문단을 봤으면 되돌아가 다시 보낸다 */
+      const r = PLAY.resumeFrom({ pausedAt: play.pausedAt, cur: live.cur, total: paragraphs.length });
+      play.on = true;
+      play.pausedAt = 0;
+      playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${r.go ? r.para : '-'} rate=${play.rate}`);
+      playRenderBtn();
+      if (r.go) { goTo(r.para); return; }        // goTo 가 renderLive → playArm 을 부른다
+      if (live.cur < 1) { goTo(1); return; }     // 아직 시작 전이면 첫 문단부터
+      playArm();
+    }
+
+    /* `keep` 이면 멈춘 문단을 적어 둔다(🎤). 사람이 ■ 를 누른 것은 적지 않는다 */
+    function playStop(why, keep) {
+      playClearTimer();
+      if (!play.on && !keep) { playRenderBtn(); return; }
+      play.on = false;
+      if (keep) play.pausedAt = live.cur;
+      playLog(`play_off why=${why || 'btn'} at=${live.cur} keep=${keep ? play.pausedAt : '-'}`);
+      playRenderBtn();
+    }
+
+    function playRenderRates() {
+      if (!playRateSel || !PLAY) return;
+      play.rate = PLAY.clampRate(play.rate);
+      playRateSel.setAttribute('aria-label', T('live_rate'));
+      playRateSel.innerHTML = '';
+      PLAY.RATES.forEach((r) => {
+        const o = document.createElement('option');
+        o.value = String(r);
+        o.textContent = `${r}×`;
+        if (r === play.rate) o.selected = true;
+        playRateSel.appendChild(o);
+      });
+    }
+
+    if (btnPlay) btnPlay.addEventListener('click', () => {
+      btnPlay.blur();
+      if (play.on) playStop('btn'); else playStart('btn');
+    });
+    if (playRateSel) playRateSel.addEventListener('change', () => {
+      play.rate = PLAY ? PLAY.clampRate(playRateSel.value) : 1.0;
+      playLog(`play_rate set=${play.rate}`);
+      if (play.on) playArm();                   // 남은 기다림을 새 배속으로 다시 잡는다
+    });
+
+    window.rtHostPlay = { state: play, start: playStart, stop: playStop,
+                          arm: playArm, log: () => play.log.slice() };
 
     // 단추를 누른 뒤 초점을 빼 둔다 — 스페이스가 초점 잡힌 단추를 다시 누르지 않게(키는 늘 문서에서 받는다)
     btnNext.addEventListener('click', () => { btnNext.blur(); doNext(); });
@@ -2262,6 +2380,7 @@
         document.getElementById('joinUrl').textContent = joinUrl;
         renderQr(joinUrl);
         renderAtt({ now: 0, max: 0, langs: {} });
+        playRenderRates();       // 배속 표 (기본 1.0배 · 정본 §6 ③)
         renderLive();
         mic.seq = 0;
         mic.sent = [];
@@ -2355,11 +2474,14 @@
         live_title: '강의 진행',
         live_break_badge: '⏸ 쉬는 시간',
         live_prev: '◀ 이전',
+        live_play: '▶ 재생',
+        live_stop: '■ 멈춤',
+        live_rate: '재생 배속',
         live_next: '다음 ▶',
         live_skip: '건너뜀',
         live_break: '쉬는 시간',
         live_connecting: '연결 중…',
-        live_keys: '키보드: → 또는 스페이스 = 다음, ← = 이전. 넘길 때 미리 번역해 둔 문단만 보냅니다 — 번역이 없는 언어의 청취자는 원문을 봅니다.',
+        live_keys: '키보드: → 또는 스페이스 = 다음, ← = 이전. ▶ 재생은 글자 수에 맞춰 혼자 넘깁니다. 🎤 로 끼어들면 멈추고, 🎤 를 한 번 더 누르거나 ▶ 를 누르면 멈춘 문단에서 다시 갑니다. 번역은 청취자 쪽에서 각자 언어로 만듭니다.',
         att_label: '참석',
         att_unit: '명 (최대',
         qr_title: '손님 이용권 QR',
@@ -2495,11 +2617,14 @@
         live_title: 'Session',
         live_break_badge: '⏸ Break',
         live_prev: '◀ Back',
+        live_play: '▶ Play',
+        live_stop: '■ Stop',
+        live_rate: 'Playback speed',
         live_next: 'Next ▶',
         live_skip: 'Skip',
         live_break: 'Break',
         live_connecting: 'Connecting…',
-        live_keys: 'Keys: → or Space = next, ← = back. Only pre-translated paragraphs are sent; listeners in other languages see the original.',
+        live_keys: 'Keys: → or Space = next, ← = back. ▶ Play advances on its own, paced by paragraph length. 🎤 pauses it; press 🎤 again or ▶ to resume from the paragraph where it stopped. Translation is produced for each listener in their own language.',
         att_label: 'Attending',
         att_unit: 'people (peak',
         qr_title: 'Visitor pass QR',
@@ -2756,6 +2881,9 @@
     function showEndScreen() {
       if (!live.on) return;
       live.ended = true;
+      /* 끝 화면으로 가면 재생을 **끈다** — 타이머가 살아 있으면 끝낸 뒤에도 문단이
+       * 손님에게 간다(D-32: 반쯤 바꾼 상태로 두지 않는다). */
+      playStop('end_screen');
       if (!live.endedAt) live.endedAt = Date.now();
       stepLive.style.display = 'none';
       stepEnd.style.display = 'block';
