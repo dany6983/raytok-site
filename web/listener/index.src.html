@@ -276,7 +276,7 @@
     <div class="demo-tag" id="demo-tag">DEMO</div>
     <div class="status-badge" id="status-badge">
       <div class="status-dot" id="status-dot"></div>
-      <span id="status-text" data-i18n="status_ready">준비</span>
+      <span id="status-text" translate="no" data-i18n="status_ready">준비</span>
     </div>
   </div>
 
@@ -284,11 +284,11 @@
     <div class="card">
       <h2 data-i18n="join_title">세션 참여</h2>
       <label data-i18n="room_code_label">세션 코드 (6자리)</label>
-      <input type="text" id="room-input" placeholder="000000" maxlength="6" inputmode="numeric" data-i18n="room_code_placeholder">
+      <input type="text" id="room-input" translate="no" placeholder="000000" maxlength="6" inputmode="numeric" data-i18n="room_code_placeholder">
 
       <div style="font-size: 13px; color: var(--warning); margin-bottom: 8px;" data-i18n="hint_keep_screen">화면을 켜 둔 채로 두세요</div>
       <label data-i18n="lang_select_label">언어 선택</label>
-      <select id="lang-select">
+      <select id="lang-select" translate="no">
         <option value="ko">한국어 (Korean)</option>
       </select>
 
@@ -766,13 +766,22 @@
 
     function applyStrings(lang) {
       currentUiLang = lang;
-      document.documentElement.lang = lang;
+      /* ★ `lang` 은 **원문 언어**다 — 손님 언어가 아니다 (결정장부 51 · 10-20 대표님).
+         설계는 "원문이 가고 **받는 폰이 번역**한다". 웹에서 그 길은 손님이 누르는
+         브라우저 「페이지 번역」이고, 브라우저는 **이 값으로** "번역할까요?" 를 띄운다.
+         여기에 손님 언어를 적으면 브라우저는 "이미 그 말이네" 하고 **아예 안 권한다.**
+         글 방향(dir)은 그대로 손님 언어로 잡는다 — 둘레 글자는 손님 말이다. */
+      document.documentElement.lang = normalizeLangCode(srcLang || 'ko');
       document.documentElement.setAttribute('dir', RTL.has(normalizeLangCode(lang)) ? 'rtl' : 'ltr');
       document.title = t('page_title', lang);
 
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         const val = t(key, lang);
+        /* 둘레 글자는 **이미 손님 말**이다(81개 언어 사전). 브라우저가 또 번역하면
+           두 번 번역한 말이 되고, 방 코드·단추처럼 기능이 걸린 글자는 깨진다.
+           그래서 사전에서 채우는 칸은 전부 **번역 금지**로 둔다 — 한 자리에서. */
+        el.setAttribute('translate', 'no');
         if (el.tagName === 'INPUT') {
           el.placeholder = val;
         } else {
@@ -1722,6 +1731,55 @@
       chatList.scrollTop = chatList.scrollHeight;
     }
 
+    /* ── 손님 폰이 번역한다 (결정장부 51, 10-20 대표님) ─────────────────────────
+       웹에서 그 길은 손님이 누르는 브라우저 「페이지 번역」이다. 페이지 코드가 폰의 번역기를
+       부를 수는 없다 — 누르는 것은 손님이고, 우리는 **번역되게 두는 것**까지 한다:
+         · `<html lang>` = 원문 언어 (applyStrings)
+         · 자막 칸은 `lang=원문`, **번역 금지를 붙이지 않는다**
+         · 둘레(사전에서 채우는 칸·방 코드·줄 머리)는 `translate="no"`
+       그리고 **번역이 실제로 일어났는지 센다** — 추측하지 않는다(D-11).
+       브라우저는 자막의 글자를 **밖에서** 바꾼다. 우리가 쓴 것과 달라지면 그때가 번역된 때다.
+       기록 한 줄: `guest_tr=browser|server|none`. */
+    var guestTr = 'none';
+    var guestTrSeen = {};
+    function markGuestTr(mode) {
+      if (guestTr === mode) return;
+      guestTr = mode;
+      if (guestTrSeen[mode]) return;
+      guestTrSeen[mode] = 1;
+      try { console.log('guest_tr=' + mode); } catch (e) {}
+      if (!window.__rtGuestTr) window.__rtGuestTr = [];
+      window.__rtGuestTr.push(mode);
+    }
+    window.rtGuestTr = { mode: function () { return guestTr; }, log: function () { return (window.__rtGuestTr || []).slice(); } };
+
+    /* 우리가 자막 글자를 쓸 때는 **세지 않는다** — 그건 번역이 아니다. */
+    var writingLine = false;
+    function setLineText(el, text) {
+      writingLine = true;
+      el.textContent = text;
+      el.setAttribute('data-src-text', text);
+      writingLine = false;
+    }
+    (function watchBrowserTranslate() {
+      if (typeof MutationObserver === 'undefined') return;
+      var mo = new MutationObserver(function (recs) {
+        if (writingLine) return;
+        for (var i = 0; i < recs.length; i++) {
+          var el = recs[i].target.nodeType === 3 ? recs[i].target.parentElement : recs[i].target;
+          if (!el || !el.closest) continue;
+          var t = el.closest('.msg-text');
+          if (!t) continue;
+          var was = t.getAttribute('data-src-text');
+          if (was != null && t.textContent !== was) { markGuestTr('browser'); return; }
+        }
+      });
+      document.addEventListener('DOMContentLoaded', function () {
+        var list = document.getElementById('chat-list');
+        if (list) mo.observe(list, { subtree: true, childList: true, characterData: true });
+      });
+    })();
+
     function addLine(line) {
       updateRoomState();   // ④ 줄이 하나라도 오면 빈 방 띠를 치운다
       const div = document.createElement('div');
@@ -1738,10 +1796,10 @@
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src" dir="ltr">${head} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
+        <div class="msg-src" dir="ltr" translate="no">${head} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
       `;
       const textDiv = div.querySelector('.msg-text');
-      textDiv.textContent = line.text;
+      setLineText(textDiv, line.text);      // 우리가 쓴 글자를 적어 둔다 — 밖에서 바뀌면 번역이다
       textDiv.setAttribute('dir', RTL.has(normalizeLangCode(srcLang)) ? 'rtl' : 'ltr');
       textDiv.setAttribute('lang', srcLang);
       const prevLatest = chatList.querySelector('.msg-line.is-latest');
