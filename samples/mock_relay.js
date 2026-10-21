@@ -70,6 +70,10 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
     let item = null;
     if (parsed.kind === 'script' && typeof parsed.src === 'string' && parsed.src.trim()) {
       item = { script: 1, para: Number(parsed.para) || 0, text: parsed.src };
+    } else if (parsed.kind === 'question' && typeof parsed.src === 'string' && parsed.src.trim() && parsed.id) {
+      /* 손님 질문도 방이 번역한다 (정본 §3 4단계) — 운영 `relay/src/room.js` 의
+         `roomTrAsk` 와 **같은 규칙**이어야 한다(D-11: 가짜가 느슨하면 시험이 거짓말한다) */
+      item = { ask: String(parsed.id), text: parsed.src };
     } else if (!parsed.kind && !parsed.pending && typeof parsed.text === 'string'
                && parsed.text.trim() && parsed.seq !== undefined) {
       item = { seq: parsed.seq, text: parsed.text };
@@ -85,15 +89,22 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
       const key = lang.toLowerCase();
       if (!lang || lang === '?' || key === String(srcLang).toLowerCase() || have[key]) continue;
       if (seen.has(key)) { /* 같은 언어 손님이 여럿 — 번역은 한 번, 보내기만 여러 번 */ }
-      const text = seen.has(key) ? room.trCache.get(key + '|' + (item.script ? 'p' + item.para : 's' + item.seq))
-                                 : trOne(item.text, lang);
+      /* 줄 이름 — 질문·원고 문단·🎤 줄을 **갈라 센다**(운영 `doneKey` 와 같은 꼴).
+         섞으면 질문 3번 번역이 원고 3번 문단에 붙는다. */
+      /* 질문 이름에 **글자 길이**도 넣는다 — 운영 `doneKey` 가 글자의 표를 넣는 것과 같은
+         까닭이다(한 질문의 글자가 손들 때·말할 때 두 번 온다). 가짜가 느슨하면 안 된다(D-11). */
+      const who = item.ask ? 'q' + item.ask + '#' + String(item.text).length
+        : item.script ? 'p' + item.para : 's' + item.seq;
+      const text = seen.has(key) ? room.trCache.get(key + '|' + who) : trOne(item.text, lang);
       seen.add(key);
-      room.trCache.set(key + '|' + (item.script ? 'p' + item.para : 's' + item.seq), text);
+      room.trCache.set(key + '|' + who, text);
       const msg = text
-        ? (item.script ? { kind: 'script_tr', para: item.para, trans: { [lang]: text } }
-                       : { seq: item.seq, tr: { [lang]: text } })
-        : (item.script ? { kind: 'script_tr', para: item.para, trans: {}, no_tr: 1, why: 'http_503' }
-                       : { seq: item.seq, no_tr: 1, why: 'http_503' });
+        ? (item.ask ? { kind: 'question_tr', id: item.ask, trans: { [lang]: text } }
+          : item.script ? { kind: 'script_tr', para: item.para, trans: { [lang]: text } }
+            : { seq: item.seq, tr: { [lang]: text } })
+        : (item.ask ? { kind: 'question_tr', id: item.ask, trans: {}, no_tr: 1, why: 'http_503' }
+          : item.script ? { kind: 'script_tr', para: item.para, trans: {}, no_tr: 1, why: 'http_503' }
+            : { seq: item.seq, no_tr: 1, why: 'http_503' });
       try { ws.send(JSON.stringify(msg)); } catch (_) {}
     }
   }
@@ -382,6 +393,8 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
                   h.send(activeMsg);
                 } catch (_) {}
               }
+              /* 정본 §3 4단계 — 글자로 적은 질문도 각자 자기 언어로(운영과 같은 자리) */
+              if (doRoomTr) roomTranslate(room, JSON.parse(questionWireMsg));
             }
             return;
           }
@@ -533,6 +546,8 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
             });
             for (const h of room.hosts) { try { h.send(spokenMsg); } catch (_) {} }
             for (const l of room.listeners.keys()) { try { l.send(spokenMsg); } catch (_) {} }
+            /* 정본 §3 4단계 — 같은 질문을 각자 자기 언어로(운영: `roomTrAsk`) */
+            if (doRoomTr) roomTranslate(room, JSON.parse(spokenMsg));
             return;
           }
           for (const h of room.hosts) { try { h.send(s); } catch (_) {} }

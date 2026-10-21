@@ -281,6 +281,12 @@
         <option value="ko">한국어 (Korean)</option>
       </select>
 
+      <div id="pack-row" style="display: none; margin: -4px 0 12px; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <a class="btn" id="btn-get-pack" href="/download/" target="_blank" rel="noopener"
+           style="width: auto; padding: 8px 14px; font-size: 14px; margin: 0;" data-i18n="btn_get_pack">📲 앱 같이 받기</a>
+        <span style="font-size: 12px; color: var(--text-muted);" data-i18n="pack_optional">안 받아도 그대로 들립니다.</span>
+      </div>
+
       <label data-i18n="name_label">이름 (선택 사항)</label>
       <input type="text" id="name-input" placeholder="예: 홍길동" data-i18n="name_placeholder">
 
@@ -292,7 +298,7 @@
       <button class="btn" id="btn-join" data-i18n="join_button">참여하기</button>
     </div>
     <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 12px; line-height: 1.4;">
-      v<span id="ver-text">1.1.4</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_privacy">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_terms">이용약관</a><br>
+      v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_privacy">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_terms">이용약관</a><br>
       주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:raytok.dany@gmail.com" style="color: var(--text-muted); text-decoration: none;">raytok.dany@gmail.com</a>
     </div>
   </div>
@@ -419,7 +425,7 @@
 
   <script src="../common/voice-fallback.js"></script>
   <script>
-    const LISTENER_VER = '1.1.5'; // v1.1.5 — B 0: 폰 말이 아니면 방 번역으로 · 「번역 대기 중」
+    const LISTENER_VER = '1.2.0'; // v1.2.0 — 정본 v1: 내 말만 보기 · 질문도 내 말로 · 앱 같이 받기
     document.getElementById('ver-text').textContent = LISTENER_VER;
 
     const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"}];
@@ -883,6 +889,7 @@
       applyStrings(initialUiLang);
       updateSubtitleDir();
       checkOsVoiceSupport(selectedLang);   // B 24 — QR 로 들어온 그 자리에서 본다(연결 전)
+      renderPackRow();                     // 정본 §2 ② — 들어온 그 자리에서 받기 단추
 
       if (isRawBroadcast) {
         if (langSelect) langSelect.style.display = 'none';
@@ -915,6 +922,7 @@
       await loadUiStrings(newUiLang);      // 그 언어 조각이 손에 없으면 받는다 (B 19)
       applyStrings(newUiLang);
       checkOsVoiceSupport(selectedLang);   // B 24 — 바꾼 언어로 다시 본다
+      renderPackRow();                     // 정본 §2 ② — 고른 언어에 따라 받기 단추
       updateSubtitleDir();
 
       if (isConnected) {
@@ -922,6 +930,23 @@
         renderAllLines();
       }
     });
+
+    function inRayTokApp() {
+      try {
+        return /RayTok/i.test(navigator.userAgent || '')
+               || new URLSearchParams(location.search).get('app') === '1';
+      } catch (_) { return false; }
+    }
+
+    function renderPackRow() {
+      const row = document.getElementById('pack-row');
+      if (!row) return;
+      const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+      const show = !inRayTokApp() && !sameLang && !isDemo;
+      row.style.display = show ? 'flex' : 'none';
+      try { console.log('pack_row show=' + (show ? 1 : 0) + ' me=' + (selectedLang || '-') + ' app=' + (inRayTokApp() ? 1 : 0)); } catch (_) {}
+    }
+    window.rtPackRow = { render: renderPackRow, inApp: inRayTokApp };
 
     const VOICE_WAIT_MS = 3000, VOICE_POLL_MS = 200;
     window.__rtVoiceCheck = [];                  // 마지막 판정들 — 시험과 개발자 창이 읽는 자리
@@ -1433,16 +1458,30 @@
 
       if (msg.kind === 'question' || msg.kind === 'ask_active') {
         currentActiveAskId = msg.id;
+        const qSrc = msg.src || msg.text;
+        if (msg.id) {
+          let dup = null;
+          for (let i = lines.length - 1; i >= 0; i -= 1) {
+            if (lines[i].ask && lines[i].ask === msg.id) { dup = lines[i]; break; }
+          }
+          if (dup) {
+            if (!dup.text && qSrc) { dup.text = qSrc; updateLineUI(dup); }
+            return;
+          }
+        }
+        const qLang = msg.srcLang || srcLang;
         const line = {
           seq: null,
           script: 1,
+          ask: msg.id,
           para: Number(msg.seq) || 1,
           total: Number(msg.seq) || 1,
-          text: msg.src || msg.text,
-          spk: null,
+          text: qSrc,
+          spk: msg.name || null,
           at: msg.at || Date.now(),
           tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
-          pending: false,
+          pending: !!qSrc && trPlan() === 'server' && !!(qLang && selectedLang &&
+                   normalizeLangCode(qLang) !== normalizeLangCode(selectedLang)),
           via: undefined
         };
         lines.push(line);
@@ -1451,7 +1490,21 @@
         if (btnAsk && myAskId === msg.id) {
           btnAsk.textContent = t('btn_ask_speaking', currentUiLang) || '🎤 발언 중';
         }
-        if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
+        speakWhenTranslated(line, msg);
+        return;
+      }
+      if (msg.kind === 'question_tr') {
+        const askId = msg.id;
+        let line = null;
+        for (let i = lines.length - 1; i >= 0; i -= 1) {
+          if (lines[i].ask && lines[i].ask === askId) { line = lines[i]; break; }
+        }
+        if (line) {
+          if (msg.trans && typeof msg.trans === 'object') Object.assign(line.tr, msg.trans);
+          line.pending = false;
+          updateLineUI(line);
+          if (!msg.no_tr && line.tr[selectedLang]) sayOnce(line, line.tr[selectedLang], line.via);
+        }
         return;
       }
       if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
@@ -1737,6 +1790,7 @@
     }
 
     function showSrcFor(line) {
+      if (isScreenView) return true;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
       if (sameLang) return true;
       if (trPlan() === 'browser') return true;
@@ -1747,7 +1801,7 @@
     function renderSrcBtn() {
       if (!btnToggleSrc) return;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-      const useful = !sameLang && trPlan() === 'server';
+      const useful = !isScreenView && !sameLang && trPlan() === 'server';
       btnToggleSrc.style.display = useful ? '' : 'none';
       btnToggleSrc.classList.toggle('active', !!showSrc);
       btnToggleSrc.setAttribute('aria-pressed', showSrc ? 'true' : 'false');

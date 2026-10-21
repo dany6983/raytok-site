@@ -291,6 +291,13 @@
       <select id="lang-select" translate="no">
         <option value="ko">한국어 (Korean)</option>
       </select>
+      <!-- 정본 §2 ② · §6 ⑤ — 언어 고르기 **바로 옆**에 받기 단추. 웹 브라우저에는 언어팩을
+           넣을 수 없다(사실) → 「앱 같이 받기」. 안 받아도 서버 번역으로 계속 들린다. -->
+      <div id="pack-row" style="display: none; margin: -4px 0 12px; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <a class="btn" id="btn-get-pack" href="/download/" target="_blank" rel="noopener"
+           style="width: auto; padding: 8px 14px; font-size: 14px; margin: 0;" data-i18n="btn_get_pack">📲 앱 같이 받기</a>
+        <span style="font-size: 12px; color: var(--text-muted);" data-i18n="pack_optional">안 받아도 그대로 들립니다.</span>
+      </div>
 
       <label data-i18n="name_label">이름 (선택 사항)</label>
       <input type="text" id="name-input" placeholder="예: 홍길동" data-i18n="name_placeholder">
@@ -303,7 +310,7 @@
       <button class="btn" id="btn-join" data-i18n="join_button">참여하기</button>
     </div>
     <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 12px; line-height: 1.4;">
-      v<span id="ver-text">1.1.4</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_privacy">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_terms">이용약관</a><br>
+      v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_privacy">개인정보 처리방침</a> · <a href="/web/terms/" style="color: var(--text-muted); text-decoration: none;" data-i18n="foot_terms">이용약관</a><br>
       주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:raytok.dany@gmail.com" style="color: var(--text-muted); text-decoration: none;">raytok.dany@gmail.com</a>
     </div>
   </div>
@@ -451,7 +458,7 @@
     /* ★ 판 번호를 올리는 까닭(10-21): 대표님이 **화면 아래 이 번호만 보고** 새 판인지
        아실 수 있어야 한다. 10-21 에 "배포 했는데 또 해?"가 나온 자리다 — 손님 화면은
        배포가 아니라 밀면 바로 사는데, 그것을 눈으로 확인할 길이 없었다. */
-    const LISTENER_VER = '1.1.5'; // v1.1.5 — B 0: 폰 말이 아니면 방 번역으로 · 「번역 대기 중」
+    const LISTENER_VER = '1.2.0'; // v1.2.0 — 정본 v1: 내 말만 보기 · 질문도 내 말로 · 앱 같이 받기
     document.getElementById('ver-text').textContent = LISTENER_VER;
 
     /* 되돌림용 **짧은** 목록이다 — 진짜 목록은 `./langs.json`(82개)을 받아 쓴다.
@@ -994,6 +1001,7 @@
       applyStrings(initialUiLang);
       updateSubtitleDir();
       checkOsVoiceSupport(selectedLang);   // B 24 — QR 로 들어온 그 자리에서 본다(연결 전)
+      renderPackRow();                     // 정본 §2 ② — 들어온 그 자리에서 받기 단추
 
       // 아웃바운드 원문 방송 모드 (question.md §12: 청취자 화면에 언어 고르기가 없다)
       if (isRawBroadcast) {
@@ -1027,6 +1035,7 @@
       await loadUiStrings(newUiLang);      // 그 언어 조각이 손에 없으면 받는다 (B 19)
       applyStrings(newUiLang);
       checkOsVoiceSupport(selectedLang);   // B 24 — 바꾼 언어로 다시 본다
+      renderPackRow();                     // 정본 §2 ② — 고른 언어에 따라 받기 단추
       updateSubtitleDir();
 
       if (isConnected) {
@@ -1034,6 +1043,32 @@
         renderAllLines();
       }
     });
+
+    /* ── 정본 §2 ② · §6 ⑤ — 「앱 같이 받기」 ───────────────────────────────
+     * **사실**: 브라우저에는 언어팩을 넣을 수 없다. 그래서 웹에서는 받을 것이 **앱**이고,
+     * 앱을 받으면 그 언어 팩도 폰 안에 들어간다(그때부터 번역이 손님 폰에서 돈다 = 장부 51).
+     * **안 받아도 계속 들린다** — 그 말을 단추 옆에 적는다. 안 적으면 손님이 받아야 하는
+     * 줄로 읽고 거기서 멈춘다.
+     *
+     * 안 보이는 때 둘: ① 고른 말이 **강연 말과 같다**(번역할 것이 없다) ② **앱**으로 열린
+     * 화면(앱은 자기 자리에서 팩을 받는다 — 앱에 또 앱을 권하지 않는다).
+     * 읽는 곳은 이 한 함수다(§4). */
+    function inRayTokApp() {
+      try {
+        return /RayTok/i.test(navigator.userAgent || '')
+               || new URLSearchParams(location.search).get('app') === '1';
+      } catch (_) { return false; }
+    }
+
+    function renderPackRow() {
+      const row = document.getElementById('pack-row');
+      if (!row) return;
+      const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+      const show = !inRayTokApp() && !sameLang && !isDemo;
+      row.style.display = show ? 'flex' : 'none';
+      try { console.log('pack_row show=' + (show ? 1 : 0) + ' me=' + (selectedLang || '-') + ' app=' + (inRayTokApp() ? 1 : 0)); } catch (_) {}
+    }
+    window.rtPackRow = { render: renderPackRow, inApp: inRayTokApp };
 
     /* B 24 — QR 로 들어온 **그 자리에서** 이 폰에 그 언어 음성이 있는지 보고 알린다.
        세 가지를 가린다(§20 · D-70 — **모름은 없음이 아니다**):
@@ -1672,18 +1707,47 @@
         return;
       }
 
+      /* ★ 손님 질문 — **내 말로** 보고 듣는다 (정본 §3 4단계 · 10-21).
+       *
+       * 10-21 까지 이 줄은 원문 그대로 꽂히고 끝이었다. 정본 §2 ③ 으로 손님 화면이
+       * **내 언어만** 보이게 된 뒤로는, 번역 없는 질문은 화면에 **빈 줄**로 떨어진다 —
+       * 손든 사람이 말했는데 다른 손님은 아무것도 못 본다(쓰는 곳만 만들고 읽는 곳을 안
+       * 센 자리, §4). 그래서 원고 문단과 **같은 길**을 탄다: 원문이 먼저 오고(R-15: 줄은
+       * 잃지 않는다), 번역은 `question_tr` 로 뒤따라온다.
+       *
+       * 짝은 **질문 id** 로 맞춘다 — `para` 로 맞추면 질문 3번 번역이 원고 3번 문단에 붙는다. */
       if (msg.kind === 'question' || msg.kind === 'ask_active') {
         currentActiveAskId = msg.id;
+        const qSrc = msg.src || msg.text;
+        /* ★ 한 질문에 **메시지가 둘** 온다 — 방은 `question` 과 `ask_active` 를 같이 보낸다.
+           둘 다 줄로 만들면 손님 화면에 **같은 질문이 두 줄** 생기고, 늦게 온 번역은
+           (마지막 줄에 붙으므로) 한 줄에만 붙는다 — 남은 한 줄은 **못 알아듣는 원문**으로
+           화면에 남는다. 10-21 실기 디버그에서 그 두 줄을 봤다. 먼저 온 것만 쓴다. */
+        if (msg.id) {
+          let dup = null;
+          for (let i = lines.length - 1; i >= 0; i -= 1) {
+            if (lines[i].ask && lines[i].ask === msg.id) { dup = lines[i]; break; }
+          }
+          if (dup) {
+            if (!dup.text && qSrc) { dup.text = qSrc; updateLineUI(dup); }
+            return;
+          }
+        }
+        const qLang = msg.srcLang || srcLang;
         const line = {
           seq: null,
           script: 1,
+          ask: msg.id,
           para: Number(msg.seq) || 1,
           total: Number(msg.seq) || 1,
-          text: msg.src || msg.text,
-          spk: null,
+          text: qSrc,
+          spk: msg.name || null,
           at: msg.at || Date.now(),
           tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
-          pending: false,
+          /* 번역을 기다리는 중이면 「번역 중…」 — 빈 줄로 두지 않는다. 내 말이 질문한
+             사람 말과 같으면 번역할 것이 없으니 기다리지 않는다. */
+          pending: !!qSrc && trPlan() === 'server' && !!(qLang && selectedLang &&
+                   normalizeLangCode(qLang) !== normalizeLangCode(selectedLang)),
           via: undefined
         };
         lines.push(line);
@@ -1692,7 +1756,22 @@
         if (btnAsk && myAskId === msg.id) {
           btnAsk.textContent = t('btn_ask_speaking', currentUiLang) || '🎤 발언 중';
         }
-        if (line.tr[selectedLang]) speak(line.tr[selectedLang]);
+        speakWhenTranslated(line, msg);
+        return;
+      }
+      /* 질문의 **늦게 온 번역**. `no_tr` 이면 번역이 오지 않는다는 뜻 — 「번역 중」을 지운다 */
+      if (msg.kind === 'question_tr') {
+        const askId = msg.id;
+        let line = null;
+        for (let i = lines.length - 1; i >= 0; i -= 1) {
+          if (lines[i].ask && lines[i].ask === askId) { line = lines[i]; break; }
+        }
+        if (line) {
+          if (msg.trans && typeof msg.trans === 'object') Object.assign(line.tr, msg.trans);
+          line.pending = false;
+          updateLineUI(line);
+          if (!msg.no_tr && line.tr[selectedLang]) sayOnce(line, line.tr[selectedLang], line.via);
+        }
         return;
       }
       if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
@@ -2059,6 +2138,11 @@
      *      손님이 「원문 보기」를 켜면 그때도 보인다
      */
     function showSrcFor(line) {
+      /* ★ **큰 화면 보기**(`?view=screen`)는 원문·번역 **두 칸**이 제 모양이다 — 강연장
+         화면이고, 보는 사람이 여럿이라 원문이 필요한 사람도 있다. 정본 §2 ③ 의 "원문은
+         접는다"는 **손님 폰 화면**의 규칙이다. 10-21 에 접기를 넣으면서 이 자리를 안 세어
+         큰 화면의 두 칸이 한 칸이 됐다 — `screen_view_test` 의 rtl 칸 순서가 잡았다(§4). */
+      if (isScreenView) return true;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
       if (sameLang) return true;
       if (trPlan() === 'browser') return true;
@@ -2070,7 +2154,7 @@
     function renderSrcBtn() {
       if (!btnToggleSrc) return;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-      const useful = !sameLang && trPlan() === 'server';
+      const useful = !isScreenView && !sameLang && trPlan() === 'server';
       btnToggleSrc.style.display = useful ? '' : 'none';
       btnToggleSrc.classList.toggle('active', !!showSrc);
       btnToggleSrc.setAttribute('aria-pressed', showSrc ? 'true' : 'false');

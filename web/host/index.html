@@ -545,6 +545,8 @@
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
               <div style="display: flex; gap: 6px;">
+                <!-- 정본 §1 ⑤ — 질문을 강사 말로 읽어 준다. 기본 켬(§24), 끄는 단추다 -->
+                <button id="btnAskSpeak" class="btn secondary" style="min-height: 36px; padding: 6px 10px;" data-t="ask_speak_on"></button>
                 <button id="btnAskEnd" class="btn secondary" style="flex: 1; min-height: 36px; padding: 6px;" data-t="btn_end"></button>
                 <button id="btnAskSilent" class="btn" style="min-height: 36px; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;" title="발언자가 무음이거나 응답하지 않을 때 회수" data-t="live_mute"></button>
               </div>
@@ -1291,7 +1293,9 @@
       }
     }
 
-    async function translateMany(texts, targetLang) {
+    /* `sourceLang` 을 받는다 — 원고는 강사 말에서 나가지만 **질문은 손님 말에서** 온다.
+       안 받으면 질문을 번역할 때 "강사 말 → 강사 말"이 되어 그대로 돌아온다(§4). */
+    async function translateMany(texts, targetLang, sourceLang) {
       try {
         const res = await fetch(`${RELAY_BASE}/translate`, {
           method: 'POST',
@@ -1299,7 +1303,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${hostToken}`
           },
-          body: JSON.stringify({ q: texts, source: SRC_LANG, target: targetLang })
+          body: JSON.stringify({ q: texts, source: sourceLang || SRC_LANG, target: targetLang })
         });
         if (!res.ok) {
           let why = '';
@@ -1631,7 +1635,7 @@
     const micStatus = document.getElementById('micStatus');
     const micOffNote = document.getElementById('micOffNote');
 
-    const mic = { on: false, rec: null, stream: null, wakeLock: null, seq: 0, sent: [],
+    const mic = { on: false, rec: null, stream: null, seq: 0, sent: [],
                   /* 60분 무중단 (A1, 2026-10-19) */
                   live: false,          // 인식기가 **지금 열려 있나** (onstart ↔ onend)
                   reopens: 0, backoff: 0, lastWhy: '', reopenTimer: null, guard: null,
@@ -1795,18 +1799,38 @@
       }, wait);
     }
 
+    /* ── 화면 깨우기 — **진행 화면이 임자**다 (2026-10-21, 대표님 "폰화면 꺼지면 웹도 꺼지는거냐")
+     *
+     * 안드로이드 크롬은 화면이 꺼지면 페이지를 **없애지는 않고 멈춘다**: `setTimeout` 이
+     * 크게 느려지고, 음성 인식은 마이크를 놓고, 몇 분 뒤엔 페이지를 얼린다. 그래서
+     * ▶ 재생(타이머)과 🎤(인식) 둘 다 화면이 켜져 있어야 돈다.
+     *
+     * 10-21 까지 이 잠금은 **🎤 의 것**이었다(`mic.wakeLock`) — 원고 모드로만 쓰면
+     * 한 번도 안 잡혔고, ▶ 재생을 켜 두면 안드로이드 기본 시간에 화면이 꺼져 멈췄다.
+     * 그래서 임자를 **진행 화면**으로 옮긴다: 방을 열면 잡고, 끝 화면·방 닫기에서 놓는다.
+     * 🎤 는 더 이상 놓지 않는다 — 놓으면 원고 재생이 같이 멈춘다(§5: 대체하는 것을 치운다).
+     *
+     * 크롬은 페이지가 뒤로 가면 잠금을 **스스로 풀어 버린다**. 그래서 돌아올 때 다시
+     * 잡는다 — 안 하면 한 번 꺼진 뒤로는 영원히 안 잡힌다(손님 화면이 이미 그렇게 한다). */
+    const screenLock = { h: null };
+
     async function acquireWakeLock() {
       try {
-        if (navigator.wakeLock && !mic.wakeLock) {
-          mic.wakeLock = await navigator.wakeLock.request('screen');
-          mic.wakeLock.addEventListener('release', () => { mic.wakeLock = null; });
+        if (navigator.wakeLock && !screenLock.h) {
+          screenLock.h = await navigator.wakeLock.request('screen');
+          screenLock.h.addEventListener('release', () => { screenLock.h = null; });
         }
       } catch (_) {}
     }
     function releaseWakeLock() {
-      try { if (mic.wakeLock) mic.wakeLock.release(); } catch (_) {}
-      mic.wakeLock = null;
+      try { if (screenLock.h) screenLock.h.release(); } catch (_) {}
+      screenLock.h = null;
     }
+    /* 돌아오면 다시 잡는다 — 진행 중일 때만(끝 화면에서 잡으면 폰을 쓸데없이 깨운다) */
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      if (live.on && !live.ended && !live.closed) acquireWakeLock();
+    });
 
     function buildRecognition() {
       const Ctor = speechCtor();
@@ -1887,7 +1911,8 @@
       mic.rec = null;
       try { if (mic.stream) mic.stream.getTracks().forEach(t => t.stop()); } catch (_) {}
       mic.stream = null;
-      releaseWakeLock();
+      /* 화면 깨우기는 **놓지 않는다** — 임자가 진행 화면이다(위). 🎤 를 끄면 원고 재생으로
+         돌아가는 것이 보통이고, 거기서 화면이 꺼지면 재생이 멈춘다. */
       btnMic.textContent = T('mic_start');
       btnMic.classList.remove('on');
       micStatus.textContent = T('mic_idle');
@@ -2232,42 +2257,101 @@
       });
     }
 
-    async function grantQuestion(id) {
+    /**
+     * 「받기」 — 발언권만 준다. **번역문을 싣지 않는다**(결정장부 43 · RULE: P-14).
+     *
+     * 10-21 까지 여기서 역번역을 만들어 `grant.trans` 에 실어 보냈다. 둘이 틀렸다:
+     *  ① 강사 쪽이 번역문을 보내는 길이다 — 장부 43 이 없앤 길이고 손님 번역은 방이 한다
+     *  ② 부르는 모양이 **운영에서 400 만 받는 모양**이었다(`q` 가 글자 하나, 답은
+     *     `translatedText`). 운영 규약은 배열·`{t:[]}` 다 — 그래서 한 번도 안 됐다(D-11).
+     * 강사가 **자기 화면·이어폰으로 보는** 번역은 받은 뒤에 만든다(`renderAskSpoken`) —
+     * 그것은 **받는 쪽 번역**이라 괜찮다(정본 §3 3단계).
+     */
+    function grantQuestion(id) {
       if (liveActiveAsk) return;
       const item = liveAskQueue.find(q => q.id === id);
       if (!item) return;
-      // P-14: 역번역(강사 언어로) 생성하여 함께 인가 메시지 송출
-      let trans = {};
-      try {
-        const targetLang = SRC_LANG || 'ko';
-        if (item.lang !== targetLang) {
-          const res = await fetch(`${RELAY_BASE}/translate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ q: item.text, target: targetLang, source: item.lang })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            trans[targetLang] = data.translatedText || item.text;
-          }
-        }
-      } catch (_) {}
-      wsSend({ kind: 'grant', id, trans });
+      wsSend({ kind: 'grant', id });
     }
+
+    /* ── 강사 이어폰 — 질문을 **강사 말로 읽어 준다** (정본 §1 ⑤ · §3 3단계) ──
+     * 강사는 손님 말을 모른다. 글자만 보여 주면 읽을 수 없는 글자다. 읽는 곳은 이 한
+     * 함수이고, 켜고 끌 수 있다(기본 **켬** — §24: 문은 숨기지 않는다). 소리는 **폰이**
+     * 낸다 — 릴레이로 소리를 보내지 않는다(RULE: P-04). */
+    let askSpeakOn = (() => { try { return localStorage.getItem('raytok_ask_speak') !== '0'; } catch (_) { return true; } })();
+
+    function speakHost(text, lang) {
+      if (!askSpeakOn) return false;
+      try {
+        if (!window.speechSynthesis) return false;
+        const u = new SpeechSynthesisUtterance(String(text || ''));
+        u.lang = (window.rtRecLang && window.rtRecLang.tag) ? window.rtRecLang.tag(lang || SRC_LANG) : (lang || SRC_LANG);
+        window.speechSynthesis.cancel();        // 앞 질문을 읽는 중이면 끊고 새것을
+        window.speechSynthesis.speak(u);
+        askLog.push(`ask_speak lang=${u.lang} chars=${String(text || '').length}`);
+        return true;
+      } catch (_) { return false; }
+    }
+
+    const askLog = [];
 
     // 7번: 마이크로 말한 질문 원문을 발언 칸에 적는다.
     // P-14 — 강사 화면이 **청취자의 번역문을 받아 쓰지 않는다**. 받는 것은 원문뿐이고,
-    // 강사 언어로 보는 역번역은 지명할 때 강사 쪽에서 만든 것(grantQuestion)만 쓴다.
-    function renderAskSpoken(msg) {
+    // 강사 말로 보는 번역은 **받은 뒤 여기서** 만든다(받는 쪽 번역이라 괜찮다).
+    async function renderAskSpoken(msg) {
       const spoken = (msg && typeof msg.src === 'string') ? msg.src.trim() : '';
       if (!spoken) return;                                  // §20 빈 답은 화면을 지우지 않는다
       if (!liveActiveAsk || liveActiveAsk.id !== msg.id) return;
+      const askId = msg.id;
+      const fromLang = msg.srcLang || liveActiveAsk.lang || '';
       liveActiveAsk = { ...liveActiveAsk, src: spoken, text: spoken };
       const textEl = document.getElementById('askActiveText');
-      if (textEl) textEl.textContent = `"${spoken}"`;
-      const hItem = liveAskQueue.find(q => q.id === msg.id);
+      if (textEl) textEl.textContent = `"${spoken}"`;        // 원문을 **먼저** 보여 준다(R-15)
+      const hItem = liveAskQueue.find(q => q.id === askId);
       if (hItem) { hItem.text = spoken; hItem.src = spoken; }
+
+      const target = SRC_LANG || 'ko';
+      if (!fromLang || fromLang === target) {               // 같은 말이면 번역할 것이 없다
+        askLog.push(`ask_spoken id=${askId} same_lang=${target}`);
+        speakHost(spoken, target);
+        return;
+      }
+      askLog.push(`ask_tr id=${askId} from=${fromLang} to=${target}`);
+      const out = await translateMany([spoken], target, fromLang);
+      const tr = (out && out[0]) || '';
+      /* 번역이 안 되면 **원문을 그대로 둔다** — 지우지 않는다(R-15). 그 사이 질문이
+         끝났거나 다음 사람으로 넘어갔으면 화면을 덮지 않는다(늦게 온 답이다). */
+      if (!liveActiveAsk || liveActiveAsk.id !== askId) return;
+      if (tr && tr !== spoken) {
+        liveActiveAsk.tr = tr;
+        if (hItem) hItem.tr = tr;
+        if (textEl) textEl.textContent = `"${tr}" (${T('label_src')}: ${spoken})`;
+        speakHost(tr, target);
+      } else {
+        askLog.push(`ask_tr_fail id=${askId} to=${target}`);
+        speakHost(spoken, fromLang);     // 못 바꿨으면 원문이라도 읽는다 — 침묵보다 낫다
+      }
     }
+
+    const btnAskSpeak = document.getElementById('btnAskSpeak');
+    function renderAskSpeakBtn() {
+      if (!btnAskSpeak) return;
+      btnAskSpeak.textContent = askSpeakOn ? T('ask_speak_on') : T('ask_speak_off');
+      btnAskSpeak.classList.toggle('on', askSpeakOn);
+    }
+    if (btnAskSpeak) btnAskSpeak.addEventListener('click', () => {
+      btnAskSpeak.blur();
+      askSpeakOn = !askSpeakOn;
+      try { localStorage.setItem('raytok_ask_speak', askSpeakOn ? '1' : '0'); } catch (_) {}
+      if (!askSpeakOn) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (_) {} }
+      askLog.push(`ask_speak_set on=${askSpeakOn ? 1 : 0}`);
+      renderAskSpeakBtn();
+    });
+    /* ★ 여기서 `renderAskSpeakBtn()` 을 부르면 **스크립트가 죽는다** — `T()` 가 읽는
+       `HOST_STR` 은 이 아래에서 `const` 로 만들어진다(TDZ). 글자는 발언 칸이 열릴 때
+       맞춘다(`renderAskActive`). 10-21 에 이것 때문에 화면 전체가 안 떴다. */
+
+    window.rtHostAsk = { speakOn: () => askSpeakOn, log: () => askLog.slice() };
 
     function renderAskActive(msg) {
       liveActiveAsk = msg;
@@ -2277,6 +2361,7 @@
       const timerEl = document.getElementById('askTimer');
       if (area) area.style.display = 'block';
       if (speakerEl) speakerEl.textContent = `${T('ask_speaking')}: ${msg.name} (${msg.lang})`;
+      renderAskSpeakBtn();      // 🔊 글자를 그때 맞춘다 (표는 이 시점엔 다 차 있다)
       if (textEl) {
         // grant 에는 글자 칸이 없다 — 마이크 질문은 말한 뒤에 온다(아래 renderAskSpoken).
         const raw = msg.text || msg.src || '';
@@ -2381,6 +2466,7 @@
         renderQr(joinUrl);
         renderAtt({ now: 0, max: 0, langs: {} });
         playRenderRates();       // 배속 표 (기본 1.0배 · 정본 §6 ③)
+        acquireWakeLock();       // 화면이 꺼지면 ▶ 재생 타이머도 🎤 도 멈춘다 (10-21 대표님)
         renderLive();
         mic.seq = 0;
         mic.sent = [];
@@ -2473,6 +2559,8 @@
         prep_start: '강의 시작하기',
         live_title: '강의 진행',
         live_break_badge: '⏸ 쉬는 시간',
+        ask_speak_on: '🔊 읽어 줌',
+        ask_speak_off: '🔇 안 읽음',
         live_prev: '◀ 이전',
         live_play: '▶ 재생',
         live_stop: '■ 멈춤',
@@ -2616,6 +2704,8 @@
         prep_start: 'Start the session',
         live_title: 'Session',
         live_break_badge: '⏸ Break',
+        ask_speak_on: '🔊 Read aloud',
+        ask_speak_off: '🔇 Muted',
         live_prev: '◀ Back',
         live_play: '▶ Play',
         live_stop: '■ Stop',
@@ -2884,6 +2974,7 @@
       /* 끝 화면으로 가면 재생을 **끈다** — 타이머가 살아 있으면 끝낸 뒤에도 문단이
        * 손님에게 간다(D-32: 반쯤 바꾼 상태로 두지 않는다). */
       playStop('end_screen');
+      releaseWakeLock();      // 끝났으면 폰을 놓아 준다 (D-32: 반쯤 바꾼 폰을 남기지 않는다)
       if (!live.endedAt) live.endedAt = Date.now();
       stepLive.style.display = 'none';
       stepEnd.style.display = 'block';
@@ -2898,6 +2989,7 @@
       live.endedAt = null;
       stepEnd.style.display = 'none';
       stepLive.style.display = 'block';
+      acquireWakeLock();      // 진행으로 돌아왔다 — 다시 잡는다
       renderLive();
     }
 
@@ -2953,7 +3045,8 @@
         sent = wsSend({ end: 1, summary: { lines: s.lines, minutes: Math.round(s.durationMs / 60000), joined_max: s.maxConcurrent } });
       }
       live.closing = true;   // 다시 붙지 않는다
-      stopMic();   // B 9 — 방이 끝나면 마이크·wakeLock 을 놓는다
+      stopMic();           // B 9 — 방이 끝나면 마이크를 놓는다
+      releaseWakeLock();   // 그리고 화면 깨우기도 (임자는 진행 화면이다)
       live.closed = true;
       live.on = false;
       clearInterval(live.pingTimer);
