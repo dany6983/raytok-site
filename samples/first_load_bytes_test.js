@@ -127,5 +127,25 @@ const LIMIT_GZ = { '/web/listener/': 37 * 1024, '/join/': 12 * 1024 };
     srv.close();
   }
 
+  /* ── 손님이 **쓰지 않는 것**이 첫 화면에 다시 들어오지 않게 (2026-10-21) ──
+     시연 줄(예시 번역문 8줄 × 5언어)이 gz 2.5KB 였고 **손님 전원**이 받고 있었다. 쓰는
+     사람은 데모를 켠 대표님 한 분이다. `?demo=1` 일 때만 받게 옮겼다 — 되돌아오면 첫 화면
+     한도를 바로 넘긴다. 그래서 한도만 세지 않고 **그 글자가 페이지에 있나**를 센다. */
+  const page = fs.readFileSync(path.join(ROOT, 'web', 'listener', 'index.html'), 'utf-8');
+  const demo = JSON.parse(fs.readFileSync(path.join(ROOT, 'web', 'listener', 'demo.json'), 'utf-8'));
+  ok(Array.isArray(demo.lines) && demo.lines.length >= 5,
+     `시연 줄은 따로 있다 (demo.json ${demo.lines.length}줄)`);
+  const leaked = demo.lines.filter((l) => page.includes(l.text));
+  ok(leaked.length === 0,
+     `시연 줄이 페이지에 **박혀 있지 않다** (박힌 줄 ${leaked.length}개) — 손님 전원이 받게 된다`);
+  ok(/fetch\('\.\/demo\.json'\)/.test(page), '데모는 `?demo=1` 일 때 그 파일을 받는다');
+  /* 되돌림 실증 — 그 줄을 페이지에 넣어 보면 위 단언이 잡는가 (파일은 안 건드린다) */
+  let demoRevert = false;
+  try {
+    const bent = page + '\n<!-- ' + demo.lines[0].text + ' -->';
+    assert(demo.lines.filter((l) => bent.includes(l.text)).length === 0, '박혀도 통과한다');
+  } catch (e) { demoRevert = true; }
+  ok(demoRevert === true, '시연 줄을 페이지에 넣으면 붉어진다 (되돌림 실증)');
+
   console.log(`\n전부 통과 (${checks}건)`);
 })().catch((e) => { console.error('\n[FAIL]', e.message); process.exit(1); });
