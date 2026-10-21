@@ -23,6 +23,23 @@ function ok(cond, msg) { assert(cond, msg); checks++; console.log('  [PASS] ' + 
 const SCRIPT = path.join(__dirname, '..', 'scripts', 'mailwait.js');
 const sh = (cmd, cwd) => execSync(cmd, { cwd, stdio: ['ignore', 'pipe', 'pipe'] }).toString();
 
+/*
+ * ★ **보는 파일 이름을 스크립트에서 읽는다** (2026-10-21).
+ *
+ * 10-21 에 마스터가 `mailwait.js` 의 `WATCH` 를 `docs/MASTER.md` → `docs/NOW.md` 로 바꿨다.
+ * 이 시험은 `MASTER.md` 를 흔들고 있었고, 그래서 **셋을 가리는 시험이 "못 봤다"(3)만
+ * 내고 붉어졌다** — main 전체가 붉었다. 이름을 여기 또 적으면 다음 바뀜에 또 붉는다.
+ * 그래서 **스크립트가 들고 있는 이름을 꺼내 쓴다**(§4: 값의 출처가 하나여야 한다).
+ */
+const WATCHED = (() => {
+  const src = fs.readFileSync(SCRIPT, 'utf-8');
+  const m = src.match(/const WATCH = \[([^\]]*)\]/);
+  if (!m) throw new Error('mailwait.js 에서 WATCH 를 못 읽었다 — 모양이 바뀌었나(§4)');
+  const list = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+  if (!list.length) throw new Error('WATCH 가 비어 있다');
+  return list;
+})();
+
 /** 가짜 원격 + 복제본 한 쌍을 만든다. 기본 가지 이름을 골라 쓴다. */
 function makePair(branch) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mailwait-'));
@@ -33,7 +50,7 @@ function makePair(branch) {
   sh(`git init -q -b ${branch} .`, seed);
   sh('git config user.email t@t && git config user.name t', seed);
   fs.mkdirSync(path.join(seed, 'docs'));
-  fs.writeFileSync(path.join(seed, 'docs', 'MASTER.md'), '첫 판\n');
+  for (const rel of WATCHED) fs.writeFileSync(path.join(seed, rel), '첫 판\n');
   sh('git add -A && git commit -q -m first', seed);
   // bare 의 기본 가지도 맞춰 준다 — 안 맞추면 복제본의 HEAD 가 태어나지 않아
   // 체크아웃이 비고, 스크립트는 (올바르게) "못 봤다" 를 낸다. 틀의 흠이다.
@@ -66,7 +83,7 @@ try {
 
   /* ── 2. 원격이 바뀌면 2 ── */
   console.log('\n[2] 원격이 바뀌면 2 (메일박스 변경)');
-  fs.writeFileSync(path.join(a.seed, 'docs', 'MASTER.md'), '첫 판\n새 지시\n');
+  fs.writeFileSync(path.join(a.seed, WATCHED[0]), '첫 판\n새 지시\n');
   sh('git add -A && git commit -q -m second && git push -q origin main', a.seed);
   const r2 = run(a.work);
   ok(r2.code === 2, `바뀌면 → 2 (실제 ${r2.code})`);
