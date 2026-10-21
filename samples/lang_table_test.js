@@ -25,17 +25,36 @@ function hostCodes(html) {
   if (!m) return null;
   return [...m[1].matchAll(/code:\s*'([a-zA-Z-]+)'/g)].map((x) => x[1]);
 }
-/** 손님 화면이 **고를 수 있는** 자막 언어 코드 */
-function guestCodes(html) {
-  return [...new Set([...html.matchAll(/"code":"([a-zA-Z-]+)"/g)].map((x) => x[1]))];
+/**
+ * 손님 **페이지에 박힌** 되돌림 목록 — 정본이 아니다.
+ *
+ * ★ 10-21: 전에는 이 함수가 읽는 것을 "손님 표"로 세었다. 그때는 82개가 페이지 안에도
+ * 박혀 있었기 때문이다. 같은 표를 두 번 보내는 꼴이라 짧게 줄였고(`1aa25b1`), 그러자
+ * 이 시험이 "손님 표가 69개 모자라다"고 붉어졌다 — **표가 아니라 시험이 가리키는 자리가
+ * 틀린** 것이다(§4: 값의 출처를 바꾸면 읽는 곳을 전부 센다, 그 읽는 곳에 시험도 든다).
+ * 손님 표의 정본은 `web/listener/langs.json` 이고, 아래에서 그것으로 센다.
+ */
+function guestFallbackCodes(html) {
+  const m = html.match(/const FALLBACK_LANGS = \[([\s\S]*?)\];/);
+  if (!m) return null;
+  return [...new Set([...m[1].matchAll(/"code":"([a-zA-Z-]+)"/g)].map((x) => x[1]))];
 }
 
 const host = hostCodes(hostHtml);          // 박혀 있는 **되돌림용** 목록(정본을 못 읽을 때만 쓴다)
-const guest = guestCodes(guestSrc);
+const guestFb = guestFallbackCodes(guestSrc);
 const canon = JSON.parse(fs.readFileSync(path.join(ROOT, 'web', 'listener', 'langs.json'), 'utf-8'));
 ok(Array.isArray(host) && host.length > 0, `강사의 되돌림 목록을 읽었다 (${host.length}개)`);
-ok(guest.length > 50, `손님 표를 읽었다 (${guest.length}개)`);
+ok(Array.isArray(guestFb) && guestFb.length > 0, `손님의 되돌림 목록을 읽었다 (${guestFb.length}개)`);
 ok(Array.isArray(canon) && canon.length > 50, `정본 langs.json 을 읽었다 (${canon.length}개)`);
+
+/* 두 화면이 **같은 한 파일**을 받는가 — 그것이 "표가 한 곳"의 뜻이다 */
+ok(/await fetch\('\.\/langs\.json'\)/.test(guestSrc) && /langs = await res\.json\(\)/.test(guestSrc),
+   '손님 화면도 정본 파일을 받아 **목록을 통째로 간다** — 페이지에 박힌 것을 쓰지 않는다');
+ok(/langs_from=/.test(guestSrc),
+   '받았나 못 받았나를 손님 쪽도 기록한다 (§20 빈 답)');
+/* 박힌 목록이 다시 정본만큼 길어지면 **같은 표를 두 번 보내는** 것이다(첫 화면 gz 0.8 KB) */
+ok(guestFb.length < canon.length / 2,
+   `손님에 박힌 목록은 짧다 (${guestFb.length}개 < 정본 ${canon.length}개) — 표를 두 벌 보내지 않는다`);
 
 /* ★ 10-20: 강사 화면이 **정본을 읽는다**. 아홉이 아니라 82 다(ko 는 원고 언어라 뺀다). */
 ok(/const LANGS_URL = '\.\.\/listener\/langs\.json'/.test(hostHtml),
@@ -45,12 +64,15 @@ ok(/targetLangs = rows/.test(hostHtml) && /targetLangs\.forEach/.test(hostHtml),
 ok(/langs_src=builtin/.test(hostHtml),
    '못 읽으면 박힌 목록으로 서고 **왜 그랬는지 기록**한다 (§20 빈 답)');
 
-const gset = new Set(guest);
+const gset = new Set(canon.map((l) => l.code));   // 손님이 **고를 수 있는** 코드 = 정본
 const orphan = host.filter((c) => !gset.has(c));
 ok(orphan.length === 0,
-   `되돌림 목록의 코드도 전부 손님 표에 있다 (닿지 않는 코드: ${orphan.join(', ') || '없음'})`);
-const canonOrphan = canon.map((l) => l.code).filter((c) => !gset.has(c));
-ok(canonOrphan.length === 0, `정본의 코드가 전부 손님 표에 있다 (${canonOrphan.join(', ') || '없음'})`);
+   `강사 되돌림 목록의 코드도 전부 정본에 있다 (닿지 않는 코드: ${orphan.join(', ') || '없음'})`);
+/* 손님 쪽 되돌림 목록도 센다 — 정본에 없는 코드로 서면, 받기가 뒤늦게 되는 순간
+   고른 언어가 목록에서 사라져 **말없이 다른 언어**가 된다(§20: 모름을 없음으로 읽지 않는다). */
+const fbOrphan = guestFb.filter((c) => !gset.has(c));
+ok(fbOrphan.length === 0,
+   `손님 되돌림 목록의 코드도 전부 정본에 있다 (닿지 않는 코드: ${fbOrphan.join(', ') || '없음'})`);
 
 /* 상한 — 미리 번역은 언어마다 한 번 부르고 릴레이는 분당 60회다. 숫자를 코드에서 읽는다. */
 const cap = Number((hostHtml.match(/MAX_SELECTED_LANGS = (\d+)/) || [])[1]);
@@ -69,6 +91,13 @@ ok(reverted !== hostHtml, '되돌린 본문이 실제로 달라졌다');
 const revertedCodes = hostCodes(reverted);
 ok(revertedCodes.includes('zh') && revertedCodes.filter((c) => !gset.has(c)).length === 1,
    "10-19 의 값('zh')으로 되돌리면 닿지 않는 코드가 1개로 잡힌다 (되돌림 실증)");
+
+/* 되돌림 실증 ② — 손님 쪽도 같은 자리를 센다. 박힌 목록의 `zh-CN` 을 10-19 의 `zh` 로
+   되돌리면 위 `fbOrphan` 단언이 잡는가. 잡지 않으면 그 초록은 정본을 읽은 결과가 아니다. */
+const bentGuest = guestSrc.replace('"code":"zh-CN"', '"code":"zh"');
+const bentFb = guestFallbackCodes(bentGuest);
+ok(bentGuest !== guestSrc && bentFb.filter((c) => !gset.has(c)).length === 1,
+   "손님 박힌 목록을 'zh' 로 되돌리면 닿지 않는 코드가 1개로 잡힌다 (되돌림 실증)");
 
 /* ── 대표님 한 장이 **같은 아홉**을 적고 있나 ──────────────────────────────
    데모 때 그 한 장만 보신다. 거기 적힌 언어가 강사 표와 다르면 그 자리에서 원문이 나온다.
