@@ -260,6 +260,37 @@
         }
       ]
     },
+    "script_src": {
+      "_dir": "강사 → 릴레이(방). **원고 원문**을 미리 올린다. 번역문은 싣지 않는다(결정장부 43).",
+      "_fields": "kind:\"script_src\", srcLang, total(문단 수), paras[{para, src}]",
+      "_notes": [
+        "방은 **원문만 보관**한다 — 번역은 「다음」 때와 새 언어가 들어올 때 한다.",
+        "왜 통째로 미리 하지 않나: 문단 40 × 언어 30 이면 부르기 720회다. /translate 는 분당 60회다.",
+        "여러 번 보내도 된다 — 방은 para 를 열쇠로 합친다. 보관은 500문단까지.",
+        "paras 에 trans·translated·tr 가 섞여 있으면 방이 **그 칸만 버리고 센다**(script_src dropped_trans=). 통째로 버리면 원고가 안 올라가 손님이 아무것도 못 본다(R-15)."
+      ],
+      "samples": [
+        {
+          "kind": "script_src",
+          "srcLang": "ko",
+          "total": 3,
+          "paras": [
+            {
+              "para": 1,
+              "src": "오늘 안전 교육을 시작합니다"
+            },
+            {
+              "para": 2,
+              "src": "안전모를 꼭 쓰세요"
+            },
+            {
+              "para": 3,
+              "src": "질문은 끝에 받습니다"
+            }
+          ]
+        }
+      ]
+    },
     "script": {
       "_dir": "강사 → 청취자. **원고 한 문단**. 인식 결과를 번역하지 않는다 — 원고가 정본(마스터 11:25 ②). 번역문을 싣는지는 **길에 따라 다르다** — `trans` 참고(마스터 23:15 P-14 판정).",
       "_fields": "kind:\"script\", para(1부터), total(문단 수), src(원문 글자), srcLang, at(unix ms), spkN?, trans{lang:text}? — **선택**: relay 길(B)만 채운다",

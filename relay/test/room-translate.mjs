@@ -13,6 +13,7 @@
  */
 import assert from 'assert';
 import { Room } from '../src/room.js';
+import fs from 'fs';
 import * as RTR from '../src/room-translate.js';
 
 console.log('=== 방이 번역한다 (room_tr · B 3) ===');
@@ -197,6 +198,116 @@ for (const mode of ['empty', 'null']) {
   await wait(RTR.BATCH_MS + 60);
   ok(ls[0].got.length === 1 && ls[0].got[0].no_tr === 1 && ls[0].got[0].why === 'no_route',
      `부를 길이 없으면 까닭과 함께 no_tr (${JSON.stringify(ls[0].got[0])})`);
+}
+
+/* ───────────── 미리 번역은 **선택** (NOW B 4) ───────────── */
+
+const SRC = (n, from = 1) => ({
+  kind: 'script_src', srcLang: 'ko', total: n,
+  paras: Array.from({ length: n - from + 1 }, (_, i) => ({ para: from + i, src: '문단 ' + (from + i) }))
+});
+
+/* ⑫ 원고를 올려도 **번역을 부르지 않는다** — 보관은 공짜, 번역은 돈 */
+{
+  const { room, calls } = makeRoom(['en', 'ja']);
+  room.roomTrFromHost(SRC(40));
+  await wait(RTR.BATCH_MS + 60);
+  ok(calls.length === 0, `원고 40문단을 올려도 부르지 않는다 (${calls.length}회) — 통째로 미리 하면 언어 30개에 720회다`);
+  ok(room.script && room.script.paras.size === 40 && room.script.total === 40,
+     `원문은 보관한다 (${room.script.paras.size}문단)`);
+}
+
+/* ⑬ 원고에 번역문이 섞여 오면 **그 칸만 버리고 센다** — 원고는 올라간다(R-15) */
+{
+  const { room } = makeRoom(['en']);
+  const msg = SRC(3);
+  msg.paras[1].trans = { en: 'paragraph two' };          // 결정장부 43 위반 칸
+  room.roomTrFromHost(msg);
+  await wait(50);
+  ok(room.script.paras.size === 3, '번역문이 섞여도 원고 세 문단이 다 올라간다 (통째로 버리면 손님이 아무것도 못 본다)');
+  const got = RTR.scriptSrcOf(msg);
+  ok(got.dropped === 1, `섞여 온 번역문을 **세어 둔다** (dropped=${got.dropped}) — 보내는 쪽을 고치게`);
+  ok(!JSON.stringify(got.paras).includes('paragraph two'), '그 번역문은 방 안으로 들어오지 않는다');
+}
+
+/* ⑭ 「다음」을 누르면 **다음 문단이 미리** 된다. 그리고 그 문단을 넘길 때 **다시 사지 않는다** */
+{
+  const { room, ls, calls } = makeRoom(['en']);
+  room.roomTrFromHost(SRC(5));
+  room.roomTrFromHost({ kind: 'script', para: 1, total: 5, src: '문단 1', srcLang: 'ko' });
+  await wait(RTR.BATCH_MS + 120);
+  const first = calls.map((c) => c.q.join('/')).join(' | ');
+  ok(calls.length === 2 && /문단 2/.test(first),
+     `문단 1을 넘기면 **2번을 미리** 산다 (${calls.length}회: ${first})`);
+  ok(ls[0].got.length === 1 && ls[0].got[0].para === 1,
+     `손님에게는 1번만 갔다 (미리 산 2번은 쥐고 있는다) — ${JSON.stringify(ls[0].got)}`);
+
+  const before = calls.length;
+  room.roomTrFromHost({ kind: 'script', para: 2, total: 5, src: '문단 2', srcLang: 'ko' });
+  await wait(RTR.BATCH_MS + 120);
+  const added = calls.slice(before).map((c) => c.q.join('/'));
+  ok(!added.some((q) => /문단 2$|^문단 2/.test(q)),
+     `2번을 넘길 때 **다시 사지 않는다** (새로 부른 것: ${added.join(' | ') || '없음'}) — 미리 산 글자를 보낸다`);
+  ok(ls[0].got.some((m) => m.para === 2 && m.trans && m.trans.en),
+     `2번 번역이 **그 자리에서** 간다 (지연 0) — ${JSON.stringify(ls[0].got.filter((m) => m.para === 2))}`);
+}
+
+/* ⑮ 늦게 온 언어 — 방이 **지금 문단부터** 채운다. 지난 문단은 사지 않는다(돈) */
+{
+  const { room, calls } = makeRoom([]);
+  room.roomTrFromHost(SRC(8));
+  room.scriptCur = 6;
+  await room.fillLateLang('vi');
+  const asked = calls.filter((c) => c.target === 'vi').flatMap((c) => c.q);
+  ok(asked.length === 3 && asked.join(',') === '문단 6,문단 7,문단 8',
+     `지금 문단(6)부터 끝까지만 산다 (${asked.join(',') || '없음'}) — 지난 5문단은 사지 않는다`);
+  const n1 = calls.length;
+  await room.fillLateLang('vi');
+  ok(calls.length === n1, '같은 언어를 두 번 채우지 않는다');
+
+  /* 사 둔 것은 **쥐고 있다가** 그 문단이 갈 때 따라간다 — 아직 안 온 문단에 보내면
+     손님 화면에 붙을 자리가 없어 조용히 버려진다 */
+  const late = listener('vi');
+  room.ctx.getWebSockets = (tag) => (tag === 'listener' ? [late] : []);
+  room.roomTrFromHost({ kind: 'script', para: 7, total: 8, src: '문단 7', srcLang: 'ko' });
+  await wait(RTR.BATCH_MS + 120);
+  ok(calls.length === n1, `그 문단을 넘길 때 **다시 사지 않는다** (${calls.length}회 그대로)`);
+  ok(late.got.some((m) => m.para === 7 && m.trans && m.trans.vi === '[vi] 문단 7'),
+     `쥐고 있던 번역이 그 자리에서 간다 (${JSON.stringify(late.got)})`);
+}
+
+/* �⑯ 늦은 언어 규칙이 **정본 사례와 같은 답**을 내는가 (앱·웹·방 셋이 같은 표를 본다, D-75) */
+{
+  const cases = JSON.parse(fs.readFileSync(new URL('../../samples/script-follow-cases.json', import.meta.url), 'utf-8'));
+  const late = cases.late;
+  let same = 0;
+  for (const c of late.cases) {
+    const got = JSON.stringify(RTR.latePlan({ total: c.total, cur: c.cur, have: c.have, batch: late.batch }));
+    if (got === JSON.stringify(c.want)) same += 1;
+    else console.log(`    [다름] ${c.name}: ${got}`);
+  }
+  for (const c of late.newLangs) {
+    const got = JSON.stringify(RTR.newLangs(c.prev, c.now, c.srcLang));
+    if (got === JSON.stringify(c.want)) same += 1;
+    else console.log(`    [다름] ${c.name}: ${got}`);
+  }
+  const want = late.cases.length + late.newLangs.length;
+  ok(same === want, `정본 사례 ${want}건과 **같은 답**을 낸다 (${same}/${want}) — 규칙을 새로 쓰지 않고 옮겼다`);
+  ok(RTR.LATE_BATCH === late.batch, `한 묶음 크기가 정본과 같다 (${RTR.LATE_BATCH} = ${late.batch})`);
+}
+
+/* ⑰ 되돌림 실증 ③ — 미리 하기를 끄면 "미리 돼 있다"가 사라진다 */
+{
+  const { room, calls } = makeRoom(['en']);
+  const keep = RTR.PREFETCH;
+  room.prefetchNext = function (para) {                 // PREFETCH = 0 과 같은 자리
+    if (!0 || !this.script) return;
+  };
+  room.roomTrFromHost(SRC(5));
+  room.roomTrFromHost({ kind: 'script', para: 1, total: 5, src: '문단 1', srcLang: 'ko' });
+  await wait(RTR.BATCH_MS + 120);
+  ok(calls.length === 1 && keep === 1,
+     `미리 하기를 끄면 부르는 횟수가 2 → ${calls.length} 로 줄는다 (되돌림 실증 ③)`);
 }
 
 console.log(`\n[OK] ${pass}개 확인 — 방이 번역한다`);

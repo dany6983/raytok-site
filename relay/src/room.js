@@ -20,6 +20,12 @@ export class Room {
     this.trQueue = [];            // 번역을 기다리는 줄. 250ms 모아서 한 번 부른다
     this.trTimer = null;
     this.trToken = null;          // 방 안에서만 쓰는 짧은 토큰(아래 trFetch)
+    this.trDone = new Set();      // 이미 산 (줄, 언어) 짝 — 두 번 사지 않는다 (B 4)
+    this.trCache = new Map();     // 미리 사 둔 번역문 — (줄, 언어) → 글자 (B 4)
+    this.script = null;           // 올려 둔 원고 **원문만** — { srcLang, total, paras:Map } (B 4)
+    this.scriptCur = 0;           // 지금 읽는 문단 (늦은 언어는 여기부터 채운다)
+    this.trLangsSeen = [];        // 이미 채운 언어 — 두 번 채우지 않는다
+    this.lateBusy = false;        // 늦은 언어 채우기는 **한 묶음씩** — 실시간 줄이 먼저다
     this.licStore = new Map();
     this.batchStore = new Map();
     this.issuedStore = new Map();
@@ -245,21 +251,114 @@ export class Room {
   trItemOf(parsed) {
     if (!parsed || parsed.end || parsed.hello) return null;
     const srcLang = parsed.srcLang || parsed.src_lang || 'ko';
+    /* ★ 강사가 **이미 번역을 실어 보낸** 언어는 적어 둔다 — 그 언어는 방이 다시 사지 않는다.
+       (강사 쪽 번역문 전송은 결정장부 43 으로 없어질 길이지만, 그때까지 **같은 문단을 두 번
+       사는** 일은 막는다. 10-21 에 B 3 을 붙이자마자 생긴 자리다 — 돈이 조용히 두 배가 된다.) */
+    const have = {};
+    if (parsed.trans && typeof parsed.trans === 'object') {
+      for (const [k, v] of Object.entries(parsed.trans)) {
+        if (typeof v === 'string' && v.trim()) have[RTR.normLang(k)] = 1;
+      }
+    }
     if (parsed.kind === 'script' && typeof parsed.src === 'string' && parsed.src.trim()) {
-      return { script: 1, para: Number(parsed.para) || 0, text: parsed.src, srcLang };
+      return { script: 1, para: Number(parsed.para) || 0, text: parsed.src, srcLang, have };
     }
     if (parsed.kind) return null;                       // skip·break·grant 등은 글이 아니다
     if (parsed.pending) return null;                    // RULE: P-03
     if (typeof parsed.text !== 'string' || !parsed.text.trim()) return null;
     if (parsed.seq === undefined || parsed.seq === null) return null;
-    return { seq: parsed.seq, text: parsed.text, srcLang };
+    return { seq: parsed.seq, text: parsed.text, srcLang, have };
+  }
+
+  /**
+   * 강사가 올린 원고를 **원문만** 보관한다 (B 4). 번역은 여기서 하지 않는다 —
+   * 통째로 미리 하면 언어 30개에 720회가 되어 분당 60회 상한을 넘긴다. 보관은 공짜고
+   * 번역은 돈이다. 여러 번 와도 `para` 를 열쇠로 합친다.
+   */
+  storeScript(parsed) {
+    const got = RTR.scriptSrcOf(parsed);
+    if (!got) return false;
+    if (!this.script) this.script = { srcLang: got.srcLang, total: got.total, paras: new Map() };
+    this.script.srcLang = got.srcLang || this.script.srcLang;
+    this.script.total = Math.max(this.script.total || 0, got.total || 0);
+    for (const p of got.paras) this.script.paras.set(p.para, p.src);
+    /* 보관은 500문단까지 — 넘으면 **앞을 버린다**(지난 문단은 다시 읽지 않는다) */
+    while (this.script.paras.size > RTR.SCRIPT_MAX) {
+      const first = this.script.paras.keys().next();
+      if (first.done) break;
+      this.script.paras.delete(first.value);
+    }
+    try {
+      console.log(`script_src paras=${got.paras.length} total=${this.script.total}`
+                  + (got.dropped ? ` dropped_trans=${got.dropped}` : ''));
+    } catch (_) {}
+    return true;
+  }
+
+  /** 「다음」 때 **다음 한 문단**을 미리 사 둔다 — 누르는 순간 이미 있게 (B 4) */
+  prefetchNext(para) {
+    if (!RTR.PREFETCH || !this.script) return;
+    const items = [];
+    for (let i = 1; i <= RTR.PREFETCH; i += 1) {
+      const n = para + i;
+      const src = this.script.paras.get(n);
+      if (typeof src === 'string' && src.trim()) {
+        items.push({ script: 1, para: n, text: src, srcLang: this.script.srcLang, have: {} });
+      }
+    }
+    if (!items.length) return;
+    try { console.log(`room_tr_pre para=${items.map((x) => x.para).join(',')}`); } catch (_) {}
+    /* 보내지 **않는다** — 사 두고 적어 둔다. 「다음」을 누르면 그때 그 언어 손님에게 간다.
+       (사 둔 글자는 아래 `trCache` 에 있고, `roomTrFlush` 가 먼저 거기를 본다) */
+    this.roomTrFlush(items, { quiet: true }).catch(() => {});
+  }
+
+  /**
+   * 늦게 들어온 언어를 채운다 (B 4) — 규칙은 강사 쪽과 **같은 셈**이다:
+   * 지금 문단부터 앞으로만, 5문단씩, 한 묶음씩(실시간 줄이 먼저다).
+   */
+  async fillLateLang(lang) {
+    if (!this.roomTrOn() || !this.script || this.lateBusy) return;
+    const fresh = RTR.newLangs(this.trLangsSeen, [lang], this.script.srcLang);
+    if (!fresh.length) return;
+    this.lateBusy = true;
+    const t0 = Date.now();
+    let done = 0;
+    try {
+      const nums = [...this.script.paras.keys()].sort((a, b) => a - b);
+      const total = Math.max(this.script.total || 0, nums.length ? nums[nums.length - 1] : 0);
+      const have = nums.filter((n) => RTR.alreadyHas({ script: 1, para: n }, lang, this.trDone));
+      for (const group of RTR.latePlan({ total, cur: this.scriptCur, have })) {
+        await new Promise((r) => setTimeout(r, 0));      // 실시간이 먼저 — 숨을 둔다
+        const items = group
+          .map((n) => ({ script: 1, para: n, text: this.script.paras.get(n), srcLang: this.script.srcLang, have: {} }))
+          .filter((x) => typeof x.text === 'string' && x.text.trim());
+        if (!items.length) continue;
+        /* ★ **사 두고 쥐고 있는다**(quiet). 지금 보내면 손님 화면에는 **붙을 자리가 없다** —
+           아직 오지 않은 문단의 번역이라 `script_tr` 이 짝을 못 찾고 조용히 버려진다.
+           「다음」으로 그 문단이 갈 때 여기 쥔 글자가 **그 자리에서** 따라간다(지연 0). */
+        await this.roomTrFlush(items, { only: lang, quiet: true });
+        done += items.length;
+      }
+      this.trLangsSeen.push(lang);
+    } finally {
+      this.lateBusy = false;
+      try { console.log(`room_tr_late lang=${lang} paras=${done} ms=${Date.now() - t0}`); } catch (_) {}
+    }
   }
 
   /** 줄을 대기줄에 넣고 **모아서** 한 번 부른다. 원문은 이미 전원에게 갔다. */
   roomTrFromHost(parsed) {
+    /* 원고 보관은 **스위치와 무관하다** — 원문을 들고 있는 것은 돈이 들지 않고,
+       스위치를 켜는 순간 쓸 수 있어야 한다(§20: 모르게 두지 않는다). */
+    if (parsed && parsed.kind === 'script_src') { this.storeScript(parsed); return; }
     if (!this.roomTrOn()) return;
     const item = this.trItemOf(parsed);
     if (!item) return;
+    if (item.script) {
+      this.scriptCur = item.para;          // 늦은 언어는 **여기부터** 채운다
+      this.prefetchNext(item.para);        // 다음 한 문단을 미리
+    }
     this.trQueue.push(item);
     if (this.trTimer) return;
     this.trTimer = setTimeout(() => {
@@ -323,16 +422,35 @@ export class Room {
   }
 
   /** 묶음 하나를 언어마다 한 번씩 번역한다. 사람이 20명이어도 번역은 **언어 수만큼**이다. */
-  async roomTrFlush(batch) {
+  async roomTrFlush(batch, opts) {
     if (!batch || !batch.length) return;
+    const o = opts || {};
     const srcLang = batch[0].srcLang || 'ko';
-    const { langs, capped } = RTR.pickLangs(this.listenerLangs(), srcLang);
+    const { langs, capped } = o.only
+      ? RTR.pickLangs([o.only], srcLang)                  // 늦은 언어 채우기 — 그 언어만
+      : RTR.pickLangs(this.listenerLangs(), srcLang);
     if (capped > 0) {
       /* 막고 **알린다** — 조용히 자르면 그 언어 손님은 까닭을 모른다(§20) */
       try { console.log(`room_tr_cap langs=${langs.length} dropped=${capped}`); } catch (_) {}
     }
     for (const lang of langs) {
-      for (const part of RTR.chunk(batch)) {
+      /* 그 언어에 **아직 없는** 줄만 산다: ① 강사가 이미 실어 보낸 칸 ② 아까 산 칸.
+         적어 두지 않으면 같은 (문단, 언어)를 몇 번이고 다시 사게 된다 — 돈이다. */
+      /* ① 아까 **미리 사 둔** 글자가 있으면 그것을 그대로 보낸다 (B 4: 지연 0) */
+      if (!o.quiet) {
+        const cached = batch.filter((it) => this.trCache.has(RTR.doneKey(it, lang)));
+        if (cached.length) {
+          const made = RTR.trMessages(cached, lang, cached.map((it) => this.trCache.get(RTR.doneKey(it, lang))));
+          if (made.ok) {
+            const sent = this.sendToLang(lang, made.msgs);
+            try { console.log(`room_tr lang=${lang} n=${cached.length} cached=1 to=${sent}`); } catch (_) {}
+          }
+        }
+      }
+      /* ② 아직 없는 줄만 산다: 강사가 실어 보낸 칸·아까 산 칸은 뺀다 (돈) */
+      const need = batch.filter((it) => !RTR.alreadyHas(it, lang, this.trDone));
+      if (!need.length) continue;
+      for (const part of RTR.chunk(need)) {
         const texts = part.map((it) => it.text);
         const { res, why } = await this.trFetch({ q: texts, source: srcLang, target: lang, engine: 'basic' });
         if (!res || !res.ok) {
@@ -350,7 +468,14 @@ export class Room {
           continue;
         }
         const chars = texts.reduce((a, t) => a + t.length, 0);
-        const sent = this.sendToLang(lang, made.msgs);
+        for (const it of part) RTR.markDone(it, lang, this.trDone);
+        /* 미리 산 것(`quiet`)은 **보내지 않고 쥐고 있는다** — 그 문단을 「다음」으로 넘길 때
+           `script` 메시지가 오고, 그때 `trDone` 에 있으니 다시 사지 않고 여기 적어 둔 글자를
+           보낸다. 미리 샀는데 못 보내면 돈만 쓴 것이 된다(아래 `trCache`). */
+        for (let i = 0; i < part.length; i += 1) {
+          this.trCache.set(RTR.doneKey(part[i], lang), out[i]);
+        }
+        const sent = o.quiet ? 0 : this.sendToLang(lang, made.msgs);
         try { console.log(`room_tr lang=${lang} n=${part.length} chars=${chars} to=${sent}`); } catch (_) {}
       }
     }
@@ -1585,7 +1710,12 @@ export class Room {
       let parsed = null;
       try {
         parsed = JSON.parse(msgStr);
-        if (parsed && parsed.hello && parsed.lang) await this.attSetLang(ws, parsed.lang);
+        if (parsed && parsed.hello && parsed.lang) {
+          await this.attSetLang(ws, parsed.lang);
+          /* 늦게 들어온 손님의 **새 언어**를 방이 채운다 (B 4). 기다리지 않는다 —
+             이 손님에게 지금 문단을 보내는 일이 먼저고, 번역은 뒤따라 간다(R-15). */
+          this.fillLateLang(parsed.lang).catch(() => {});
+        }
       } catch (_) {}
 
       // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번, 정본 ask)

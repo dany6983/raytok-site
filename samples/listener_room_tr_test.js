@@ -18,7 +18,10 @@ const { createMockRelay } = require('./mock_relay');
 
 console.log('=== 방이 보낸 번역 — 손님 화면 (B 3) ===');
 let pass = 0;
-const ok = (c, d) => { assert(c, d); pass++; console.log('  [PASS] ' + d); };
+const T0 = Date.now();
+/* 걸린 시간을 같이 찍는다 — 10-21 에 이 시험이 **2분 넘게** 걸려 게이트를 늦췄다.
+   어느 줄이 오래 걸리는지 보이지 않으면 다음 사람도 같은 것을 다시 뒤진다. */
+const ok = (c, d) => { assert(c, d); pass++; console.log(`  [PASS] (${Date.now() - T0}ms) ` + d); };
 
 const relay = createMockRelay({ root: path.join(__dirname, '..') });
 
@@ -140,7 +143,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log(`\n[OK] ${pass}개 확인 — 방이 보낸 번역 (손님 화면)`);
     await ctx.close();
   } finally {
+    /* ★ 호스트 소켓을 **닫는다**. 안 닫으면 시험이 다 통과하고도 **프로세스가 안 죽는다** —
+       열린 ws 하나가 이벤트 루프를 붙잡는다. 10-21 에 `npm test` 가 바로 여기서 4분을
+       서 있었다(초록을 다 찍어 놓고). 시험이 끝나는 것도 시험의 일부다. */
+    /* ★ 열어 둔 소켓을 **다 닫고 끝낸다**. 안 그러면 시험이 10개 초록을 다 찍고도
+       **프로세스가 안 죽는다** — 열린 소켓 하나가 이벤트 루프를 붙잡는다. 10-21 에
+       `npm test` 가 바로 여기서 2분 넘게 서 있었다(본문은 1.9초에 끝나 있었다).
+       **시험이 끝나는 것도 시험의 일부다**: 안 끝나는 시험은 게이트를 멈춰 세우고,
+       멈춘 게이트는 빌드를 못 걸게 한다. */
+    try { host.close(); } catch (_) {}
+    for (const r of relay.rooms.values()) {
+      for (const l of [...r.listeners.keys()]) { try { l.close(1000, 'test_end'); } catch (_) {} }
+      for (const h of [...r.hosts]) { try { h.close(1000, 'test_end'); } catch (_) {} }
+    }
     await browser.close();
     relay.close();
   }
+  /* 그래도 남는 손잡이가 있으면 **여기서 끝낸다** — 실패 길은 아래에서 이미 그렇게 한다. */
+  process.exit(0);
 })().catch((e) => { console.error('[FAIL] ' + e.message); process.exit(1); });

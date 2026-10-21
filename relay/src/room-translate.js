@@ -108,9 +108,111 @@ export function noTrMessages(items, why) {
     : { seq: it.seq, no_tr: 1, why: why || 'tr_fail' }));
 }
 
+/** 그 (줄, 언어) 짝의 이름 — 🎤 줄은 `seq`, 원고 문단은 `para` 다(둘은 번호가 섞인다) */
+export function doneKey(item, lang) {
+  const who = item && item.script ? 'p' + item.para : 's' + (item && item.seq);
+  return who + '|' + normLang(lang);
+}
+
+/**
+ * 그 언어 번역을 **이미 들고 있나**. 둘을 본다:
+ * ① 강사가 메시지에 실어 보낸 칸(`have`) ② 이 방이 아까 산 것(`done`).
+ * 둘 중 하나라도 있으면 **다시 사지 않는다** — 같은 문단을 두 번 사면 돈이 두 배다.
+ */
+export function alreadyHas(item, lang, done) {
+  const code = normLang(lang);
+  if (item && item.have && item.have[code]) return true;
+  return !!(done && done.has(doneKey(item, lang)));
+}
+
+/** 샀다고 적어 둔다. 적는 곳은 이 함수 하나다(§4) */
+export function markDone(item, lang, done) {
+  if (!done) return;
+  done.add(doneKey(item, lang));
+  /* 한 강연이 길어도 적어 둔 것이 무한히 늘지 않게 — 오래된 것부터 버린다(문단 500 × 언어 30) */
+  if (done.size > 15000) {
+    const it = done.values();
+    for (let i = 0; i < 5000; i += 1) { const v = it.next(); if (v.done) break; done.delete(v.value); }
+  }
+}
+
 /** 릴레이 답(`{t:[...]}`)에서 글자만 꺼낸다. 다른 모양이면 **빈 배열** — 모름을 됨으로 읽지 않는다. */
 export function textsOf(data) {
   if (!data || typeof data !== 'object') return [];
   if (Array.isArray(data.t)) return data.t.map((x) => (typeof x === 'string' ? x : ''));
   return [];
 }
+
+/* ── 미리 번역은 **선택** (NOW B 4) ─────────────────────────────────────────
+ *
+ * 왜 "통째로 미리"가 아닌가: 문단 40 × 언어 30 = 1,200줄이고, 묶어도 언어마다 24회 ×
+ * 30 = 720회다. `/translate` 는 토큰당 **분당 60회** — 올리는 순간 429 가 쏟아지고 그 달
+ * 글자 상한을 한 번에 먹는다. 게다가 **그 언어 손님이 올지도 모르는** 상태에서 돈을 쓴다.
+ * 그래서 **보관은 미리, 번역은 그때그때**다.
+ *
+ * ★ 늦게 온 언어 규칙은 **새로 쓰지 않는다 — 옮긴다.** `web/common/script-follow.js` 의
+ *   `newLangs`·`latePlan`(마스터 10-20 04:45: ① 지금 문단부터 앞으로만 ② 5문단씩)이 그
+ *   규칙이고, 지금은 강사 화면이 그것을 돌려 번역문을 와이어에 싣는다 — 싣는 것이 장부 43
+ *   금지다. 규칙은 그대로 두고 **돌리는 자리만** 방으로 옮긴다. 세 구현(앱·웹·방)이 같은
+ *   답을 내는지는 `samples/script-follow-cases.json` 의 `late` 칸이 센다(D-75).
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/** 보관할 문단 수 — 링버퍼와 같은 수. 넘으면 앞을 버린다 */
+export const SCRIPT_MAX = 500;
+/** 「다음」을 누를 때 **미리** 해 두는 문단 수. 0 이면 미리 하지 않는다(되돌림 자리) */
+export const PREFETCH = 1;
+/** 늦게 온 언어를 채울 때 한 묶음 크기 — 강사 쪽 `LATE_BATCH` 와 **같은 수** */
+export const LATE_BATCH = 5;
+
+/** 새로 생긴 언어만 — 이미 있던 것·원고 언어·빈 값은 빼고, 두 번 와도 한 번 (강사 쪽과 같은 셈) */
+export function newLangs(prev, now, srcLang) {
+  const had = {};
+  (prev || []).forEach((x) => { const l = String(x || '').trim(); if (l) had[l] = 1; });
+  const src = String(srcLang || '').trim();
+  const out = [];
+  (now || []).forEach((raw) => {
+    const l = String(raw || '').trim();
+    if (!l || l === src || had[l] || out.indexOf(l) >= 0) return;
+    out.push(l);
+  });
+  return out;
+}
+
+/** 어떤 문단을 어떤 차례로 — 지금 읽는 문단부터, batch 개씩. 이미 있는 것은 뺀다 (강사 쪽과 같은 셈) */
+export function latePlan(opts) {
+  const o = opts || {};
+  const n = Math.max(0, Math.floor(Number(o.total) || 0));
+  const from = Math.max(1, Math.floor(Number(o.cur) || 0) || 1);
+  const skip = {};
+  (o.have || []).forEach((x) => { const v = Number(x); if (isFinite(v)) skip[v] = 1; });
+  const want = [];
+  for (let i = from; i <= n; i += 1) if (!skip[i]) want.push(i);
+  const b = Math.max(1, Math.floor(Number(o.batch) || LATE_BATCH));
+  const out = [];
+  for (let j = 0; j < want.length; j += b) out.push(want.slice(j, j + b));
+  return out;
+}
+
+/**
+ * 강사가 올린 원고에서 **원문만** 꺼낸다.
+ *
+ * `trans`·`translated`·`tr` 가 섞여 있으면 **그 칸만 버리고 센다**(결정장부 43). 메시지를
+ * 통째로 버리지 않는 까닭: 그러면 원고가 안 올라가 손님이 아무것도 못 본다 — 그쪽이 더
+ * 나쁘다(R-15). 버린 것은 기록으로 남아 **보내는 쪽을 고치게** 한다.
+ */
+export function scriptSrcOf(parsed) {
+  if (!parsed || parsed.kind !== 'script_src' || !Array.isArray(parsed.paras)) return null;
+  const srcLang = parsed.srcLang || parsed.src_lang || 'ko';
+  const total = Math.max(0, Math.floor(Number(parsed.total) || 0));
+  const paras = [];
+  let dropped = 0;
+  for (const p of parsed.paras.slice(0, SCRIPT_MAX)) {
+    if (!p || typeof p.src !== 'string' || !p.src.trim()) continue;
+    const n = Math.floor(Number(p.para) || 0);
+    if (n < 1) continue;
+    if (p.trans || p.translated || p.tr) dropped += 1;     // 번역문은 받지 않는다
+    paras.push({ para: n, src: p.src });
+  }
+  return { srcLang, total: total || paras.length, paras, dropped };
+}
+

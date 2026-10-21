@@ -60,6 +60,22 @@ ok(noTrans.length > 0, 'script — LAN 길 보기(trans 없음)가 있다');
  * 빠지면 보내는 쪽과 받는 쪽이 **다른 칸으로 짝을 맞추려 들고**, 손님은 영원히 원문만 본다(D-75).
  * `no_tr` 보기도 꼭 있어야 한다: 실패를 안 보내면 「번역 대기 중」이 안 지워진다(D-139 ⑤).
  */
+/*
+ * `script_src` — 강사가 올리는 **원고 원문**(B 4). 번역문은 싣지 않는다(장부 43).
+ * 보기에 `trans` 가 들어가 있으면 다음 사람이 "실어도 된다"로 읽는다 — 그래서 센다.
+ */
+const ssrc = (spec.messages && spec.messages.script_src) || {};
+ok(!!spec.messages.script_src, 'script_src 가 사양에 있다');
+ok(Array.isArray(ssrc.samples) && ssrc.samples.length > 0, 'script_src — 보기가 하나 이상');
+for (const s3 of ssrc.samples || []) {
+  ok(s3.kind === 'script_src', 'script_src — 보기의 kind');
+  ok(Array.isArray(s3.paras) && s3.paras.length > 0, 'script_src — paras 에 문단이 있다');
+  ok(s3.paras.every((x) => Number.isInteger(x.para) && typeof x.src === 'string' && x.src.length),
+     'script_src — 문단마다 para(정수)와 src(원문)');
+  ok(s3.paras.every((x) => !x.trans && !x.translated && !x.tr),
+     'script_src — 보기에 **번역문 칸이 없다** (결정장부 43: 강사는 원문만 보낸다)');
+}
+
 const str = (spec.messages && spec.messages.script_tr) || {};
 ok(!!spec.messages.script_tr, 'script_tr 가 사양에 있다');
 ok(typeof str._dir === 'string' && /방|릴레이/.test(str._dir || ''), 'script_tr — 보내는 쪽이 **방**이라고 적혀 있다 (강사가 아니다)');
