@@ -108,6 +108,37 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(shown.vis !== 'none', '방송 줄에도 번역 칸이 **보인다** — 숨겨 두면 소리는 영어, 화면은 한국어가 된다');
     ok(shown.text.indexOf('Wear your helmet') >= 0, `늦게 온 번역이 화면에 붙었다 ("${shown.text}")`);
 
+    /* ── ★ 정본 v1 §2 ③: 손님은 **내 언어만** 본다 (원문은 접힌 단추) ──────────────
+       대표님 10-21 15:15: "청취자 화면에 원문 표시 의미없다, 못 알아듣는데 괜한 혼선".
+       서버 번역 길(한국어 폰 + 영어 손님)이라 번역이 오면 **원문이 사라져야** 한다. */
+    {
+      const got = await page.evaluate(() => {
+        const t = document.querySelector('#msg-1 .msg-text');
+        const b = document.getElementById('btn-toggle-src');
+        return {
+          srcShown: t ? getComputedStyle(t).display !== 'none' : null,
+          trText: (document.querySelector('#msg-1 .msg-tr') || {}).textContent || '',
+          btnShown: b ? getComputedStyle(b).display !== 'none' : null,
+          pressed: b ? b.getAttribute('aria-pressed') : null
+        };
+      });
+      ok(got.srcShown === false && /Wear your helmet/.test(got.trText),
+         `번역이 오면 **원문이 사라지고 내 언어만** 남는다 (원문 보임=${got.srcShown})`);
+      ok(got.btnShown === true && got.pressed === 'false',
+         `「원문 보기」는 **접힌 단추**로 있다 (보임=${got.btnShown} 눌림=${got.pressed})`);
+
+      /* 켜면 다시 보인다 — 손님이 고르는 것이다(정본 §6 ①) */
+      await page.click('#btn-toggle-src');
+      await sleep(200);
+      const on = await page.evaluate(() => ({
+        srcShown: getComputedStyle(document.querySelector('#msg-1 .msg-text')).display !== 'none',
+        pressed: document.getElementById('btn-toggle-src').getAttribute('aria-pressed')
+      }));
+      ok(on.srcShown === true && on.pressed === 'true', `켜면 원문이 돌아온다 (눌림=${on.pressed})`);
+      await page.click('#btn-toggle-src');          // 다시 끈다(아래 단언에 영향 없게)
+      await sleep(200);
+    }
+
     /* ★ B 0 보탬: 방 번역을 기다리는 줄은 **기다린다고 보인다**(콘솔 없이 화면만으로) */
     const waitBadge = await page.evaluate(() => !!document.querySelector('#msg-1 .badge-pending'));
     ok(waitBadge === false,

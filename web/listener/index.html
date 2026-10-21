@@ -314,6 +314,8 @@
     <div class="tool-bar">
       <span style="font-size: 13px; color: var(--text-muted);" id="current-lang-text"></span>
       <button class="tool-btn" id="btn-toggle-tts" data-i18n="tts_on">🔊 소리 켜짐</button>
+
+      <button class="tool-btn" id="btn-toggle-src" data-i18n="btn_show_src" aria-pressed="false" style="display:none;">원문 보기</button>
       <button class="tool-btn" id="btn-open-voice-picker" data-i18n="voice_button">🗣️ 목소리</button>
       <button class="tool-btn active" id="btn-bg-audio" data-i18n="bg_audio_on">🔒 화면 꺼도 듣기</button>
       <span class="font-group" id="font-group" role="group" aria-label="글자 크기" data-i18n-aria="font_size_label">
@@ -604,6 +606,9 @@
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
     const currentLangText = document.getElementById('current-lang-text');
+    let showSrc = false;
+    const btnToggleSrc = document.getElementById('btn-toggle-src');
+
     const btnToggleTts = document.getElementById('btn-toggle-tts');
     const endModal = document.getElementById('end-modal');
     const endSummary = document.getElementById('end-summary');
@@ -1645,6 +1650,7 @@
       box.style.display = show ? 'block' : 'none';
       var line = 'tr_notice on=' + (show ? 1 : 0) + ' from=' + (srcLang || '-') + ' me=' + (selectedLang || '-');
       if (trNoticeLog[trNoticeLog.length - 1] !== line) trNoticeLog.push(line);
+      renderSrcBtn();        // 길(browser/server)이 정해지는 자리에서 단추도 같이 본다
     }
     var trNoticeLog = [];
     window.rtTrNotice = { log: function () { return trNoticeLog.slice(); }, render: renderTrNotice };
@@ -1675,6 +1681,14 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       renderIosChrome();                       // 기능의 첫 걸음에 기록 한 줄(§12)
+      if (btnToggleSrc) {
+        btnToggleSrc.addEventListener('click', function () {
+          showSrc = !showSrc;
+          try { console.log('show_src on=' + (showSrc ? 1 : 0)); } catch (e) {}
+          renderSrcBtn();
+          for (var i = 0; i < lines.length; i++) updateLineUI(lines[i]);
+        });
+      }
       var c = document.getElementById('btn-open-chrome');
       if (c) {
         c.addEventListener('click', function () {
@@ -1722,9 +1736,30 @@
       chatList.scrollTop = chatList.scrollHeight;
     }
 
+    function showSrcFor(line) {
+      const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+      if (sameLang) return true;
+      if (trPlan() === 'browser') return true;
+      if (showSrc) return true;
+      return !(line.tr && line.tr[selectedLang]);
+    }
+
+    function renderSrcBtn() {
+      if (!btnToggleSrc) return;
+      const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+      const useful = !sameLang && trPlan() === 'server';
+      btnToggleSrc.style.display = useful ? '' : 'none';
+      btnToggleSrc.classList.toggle('active', !!showSrc);
+      btnToggleSrc.setAttribute('aria-pressed', showSrc ? 'true' : 'false');
+    }
+
     function updateLineUI(line) {
       const div = document.getElementById(lineElId(line));
       if (!div) return;
+      const textDiv = div.querySelector('.msg-text');
+      if (textDiv) textDiv.style.display = showSrcFor(line) ? '' : 'none';
+      const srcTag = div.querySelector('.msg-src');
+      if (srcTag) srcTag.style.display = showSrcFor(line) ? '' : 'none';
       const trDiv = div.querySelector('.msg-tr');
 
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
