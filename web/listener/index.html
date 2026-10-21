@@ -298,10 +298,7 @@
   </div>
 
   <div class="screen" id="chat-screen">
-    <!-- 손님 폰이 번역한다 (장부 51) — 손님 말이 원문과 다를 때만 보인다.
-         「서버 번역으로」는 **보조 길**(판 3번). 3번이 들어오기 전까지는 지금 길(강사가 미리
-         보낸 번역)로 가고, 그때 기록이 `guest_tr=server` 로 남는다.
-         구조: #chat-screen > #tr-notice (#voice-notice 바로 앞 형제) -->
+
     <div id="tr-notice" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid #38bdf8; color:#bae6fd; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
       <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
       <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
@@ -326,7 +323,6 @@
     </div>
   </div>
 
-  <!-- 목소리 선택 모달 (8번: 그 언어 음성 최대 3개 + 미리보기 + localStorage) -->
   <div id="voice-picker-modal" style="display:none; position:fixed; bottom:70px; left:16px; z-index:60; width:280px; background:var(--card-bg, #1e293b); border:1px solid var(--border); border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <div style="font-weight:bold; font-size:14px; color:var(--text);" data-i18n="voice_pick_title">목소리 선택</div>
@@ -335,7 +331,6 @@
     <div id="voice-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 
-  <!-- 질문 모달 (N:1, question.md) -->
   <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #cbd5e1; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, #1e293b);" data-i18n="ask_title">✋ 질문하기</div>
     <div id="ask-status-msg" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" data-i18n="ask_notice">질문 내용을 입력하세요 (마이크 없이 글자로 전송됩니다).</div>
@@ -346,7 +341,6 @@
     </div>
   </div>
 
-  <!-- 기록 저장 내용 x 형식 선택판 모달 (L2) -->
   <div id="save-picker-modal" style="display:none; position:fixed; bottom:70px; right:16px; z-index:60; width:260px; background:var(--card-bg, #fff); border:1px solid #cbd5e1; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25); text-align:left;">
     <div>
       <div style="font-weight:bold; font-size:16px; margin-bottom:14px; color:var(--text, #1e293b);" data-i18n="save_title">기록 저장</div>
@@ -377,7 +371,6 @@
     </div>
   </div>
 
-  <!-- 세션 종료 모달 -->
   <div class="modal" id="end-modal">
     <div class="modal-content">
       <div class="modal-title" data-i18n="end_title">세션·안내 종료</div>
@@ -398,7 +391,6 @@
     </div>
   </div>
 
-  <!-- 숨겨진 i18n 템플릿/참조 항목 -->
   <div style="display:none" aria-hidden="true">
     <span data-i18n="status_connecting">연결 중...</span>
     <span data-i18n="status_connected">연결됨</span>
@@ -417,17 +409,14 @@
     <span data-i18n="btn_save_record">내 기록 받기 (TXT)</span>
   </div>
 
-  <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 — 말하는 짝 호스트와 같은 표 -->
-  <!-- 대체어 음성 표 (site NOW 1) — **앱 src/offlineLangs.js 에서 생성된 파일**이다.
-       손으로 고치지 않는다: node tools/build-voice-fallback.js --write
-       ⚠ 미루지 않는다 — **참여 전** 「이 언어 음성 없음」 띠가 이 표를 본다(B 24).
-          10-20 에 「참여하기」로 미뤘다가 그 띠가 깨지는 것을 시험이 잡았다. -->
+  <script src="../common/rec-lang.js"></script>
+
   <script src="../common/voice-fallback.js"></script>
   <script>
     const LISTENER_VER = '1.1.4'; // v1.1.4 — ④ 빈 방 문구·글자 크기
     document.getElementById('ver-text').textContent = LISTENER_VER;
 
-    const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"de","name_ko":"독일어","name_en":"German","offline":true,"fallback":null},{"code":"it","name_ko":"이탈리아어","name_en":"Italian","offline":true,"fallback":null},{"code":"pt","name_ko":"포르투갈어","name_en":"Portuguese","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"hi","name_ko":"힌디어","name_en":"Hindi","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"tr","name_ko":"튀르키예어","name_en":"Turkish","offline":true,"fallback":null},{"code":"nl","name_ko":"네덜란드어","name_en":"Dutch","offline":true,"fallback":null},{"code":"pl","name_ko":"폴란드어","name_en":"Polish","offline":true,"fallback":null},{"code":"sv","name_ko":"스웨덴어","name_en":"Swedish","offline":true,"fallback":null},{"code":"da","name_ko":"덴마크어","name_en":"Danish","offline":true,"fallback":null},{"code":"nb","name_ko":"노르웨이어","name_en":"Norwegian","offline":true,"fallback":null},{"code":"fi","name_ko":"핀란드어","name_en":"Finnish","offline":true,"fallback":null},{"code":"cs","name_ko":"체코어","name_en":"Czech","offline":true,"fallback":null},{"code":"el","name_ko":"그리스어","name_en":"Greek","offline":true,"fallback":null},{"code":"he","name_ko":"히브리어","name_en":"Hebrew","offline":true,"fallback":null},{"code":"hu","name_ko":"헝가리어","name_en":"Hungarian","offline":true,"fallback":null},{"code":"ro","name_ko":"루마니아어","name_en":"Romanian","offline":true,"fallback":null},{"code":"uk","name_ko":"우크라이나어","name_en":"Ukrainian","offline":true,"fallback":null},{"code":"ms","name_ko":"말레이어","name_en":"Malay","offline":true,"fallback":null},{"code":"fil","name_ko":"필리핀어","name_en":"Filipino","offline":true,"fallback":null},{"code":"bn","name_ko":"벵골어","name_en":"Bengali","offline":true,"fallback":null},{"code":"ta","name_ko":"타밀어","name_en":"Tamil","offline":true,"fallback":null},{"code":"te","name_ko":"텔루구어","name_en":"Telugu","offline":true,"fallback":null},{"code":"ur","name_ko":"우르두어","name_en":"Urdu","offline":true,"fallback":null},{"code":"fa","name_ko":"페르시아어","name_en":"Persian","offline":true,"fallback":null},{"code":"sw","name_ko":"스와힐리어","name_en":"Swahili","offline":true,"fallback":null},{"code":"sk","name_ko":"슬로바키아어","name_en":"Slovak","offline":true,"fallback":null},{"code":"bg","name_ko":"불가리아어","name_en":"Bulgarian","offline":true,"fallback":null},{"code":"ca","name_ko":"카탈루냐어","name_en":"Catalan","offline":true,"fallback":null},{"code":"hr","name_ko":"크로아티아어","name_en":"Croatian","offline":true,"fallback":null},{"code":"sr","name_ko":"세르비아어","name_en":"Serbian","offline":false,"fallback":null},{"code":"sl","name_ko":"슬로베니아어","name_en":"Slovenian","offline":true,"fallback":null},{"code":"lt","name_ko":"리투아니아어","name_en":"Lithuanian","offline":true,"fallback":null},{"code":"lv","name_ko":"라트비아어","name_en":"Latvian","offline":true,"fallback":null},{"code":"et","name_ko":"에스토니아어","name_en":"Estonian","offline":true,"fallback":null},{"code":"is","name_ko":"아이슬란드어","name_en":"Icelandic","offline":true,"fallback":null},{"code":"ga","name_ko":"아일랜드어","name_en":"Irish","offline":true,"fallback":null},{"code":"cy","name_ko":"웨일스어","name_en":"Welsh","offline":true,"fallback":null},{"code":"eu","name_ko":"바스크어","name_en":"Basque","offline":false,"fallback":null},{"code":"gl","name_ko":"갈리시아어","name_en":"Galician","offline":true,"fallback":null},{"code":"af","name_ko":"아프리칸스어","name_en":"Afrikaans","offline":true,"fallback":null},{"code":"zu","name_ko":"줄루어","name_en":"Zulu","offline":false,"fallback":null},{"code":"xh","name_ko":"코사어","name_en":"Xhosa","offline":false,"fallback":null},{"code":"hy","name_ko":"아르메니아어","name_en":"Armenian","offline":false,"fallback":null},{"code":"az","name_ko":"아제르바이잔어","name_en":"Azerbaijani","offline":false,"fallback":null},{"code":"ka","name_ko":"조지아어","name_en":"Georgian","offline":true,"fallback":null},{"code":"kk","name_ko":"카자흐어","name_en":"Kazakh","offline":false,"fallback":null},{"code":"uz","name_ko":"우즈베크어","name_en":"Uzbek","offline":false,"fallback":"ru"},{"code":"ky","name_ko":"키르기스어","name_en":"Kyrgyz","offline":false,"fallback":"ru"},{"code":"tg","name_ko":"타지크어","name_en":"Tajik","offline":false,"fallback":"ru"},{"code":"tet","name_ko":"테툼어","name_en":"Tetum","offline":false,"fallback":"id"},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"},{"code":"ne","name_ko":"네팔어","name_en":"Nepali","offline":false,"fallback":"hi"},{"code":"si","name_ko":"싱할라어","name_en":"Sinhala","offline":false,"fallback":"ta"},{"code":"kn","name_ko":"칸나다어","name_en":"Kannada","offline":true,"fallback":null},{"code":"ml","name_ko":"말라얄람어","name_en":"Malayalam","offline":false,"fallback":null},{"code":"mr","name_ko":"마라티어","name_en":"Marathi","offline":true,"fallback":null},{"code":"gu","name_ko":"구자라트어","name_en":"Gujarati","offline":true,"fallback":null},{"code":"pa","name_ko":"펀자브어","name_en":"Punjabi","offline":false,"fallback":null},{"code":"km","name_ko":"크메르어","name_en":"Khmer","offline":false,"fallback":null},{"code":"lo","name_ko":"라오어","name_en":"Lao","offline":false,"fallback":"th"},{"code":"my","name_ko":"미얀마어","name_en":"Burmese","offline":false,"fallback":null},{"code":"am","name_ko":"암하라어","name_en":"Amharic","offline":false,"fallback":null},{"code":"so","name_ko":"소말리어","name_en":"Somali","offline":false,"fallback":null},{"code":"mk","name_ko":"마케도니아어","name_en":"Macedonian","offline":true,"fallback":null},{"code":"sq","name_ko":"알바니아어","name_en":"Albanian","offline":true,"fallback":null},{"code":"bs","name_ko":"보스니아어","name_en":"Bosnian","offline":false,"fallback":null},{"code":"mt","name_ko":"몰타어","name_en":"Maltese","offline":true,"fallback":null},{"code":"yo","name_ko":"요루바어","name_en":"Yoruba","offline":false,"fallback":null},{"code":"ig","name_ko":"이그보어","name_en":"Igbo","offline":false,"fallback":null},{"code":"ha","name_ko":"하우사어","name_en":"Hausa","offline":false,"fallback":null}];
+    const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"}];
 
     const isDemo = new URLSearchParams(location.search).has('demo');
     const DEMO_SRC = 'ko';
@@ -868,6 +857,7 @@
         const res = await fetch('./langs.json');
         if (res.ok) langs = await res.json();
       } catch (e) {}
+      try { console.log('langs_src=' + (langs.length > 20 ? 'json' : 'inline') + ' n=' + langs.length); } catch (e) {}
 
       try {
         const res = await fetch('./ui-strings/_langs.json');

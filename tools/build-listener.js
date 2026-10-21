@@ -45,7 +45,16 @@ function strip(src) {
     }
     out.push(lines[i]); i += 1;
   }
-  return { text: out.join('\n').replace(/\n{3,}/g, '\n\n'), dropped };
+  /* ★ HTML 주석도 뺀다 (10-21). 이 생성기의 까닭은 "손님에게 가는 판은 **주석을 뺀 판**"
+     인데 지금까지 **JS 주석만** 뺐다 — `<!-- … -->` 는 그대로 손님에게 갔다(9개 816 B,
+     gz 682 B). 첫 화면 한도를 넘긴 것을 쫓다가 찾았다.
+     IE 조건부 주석(`<!--[if`)은 **기능**이라 건드리지 않는다(지금은 없지만 규칙으로 둔다).
+     맨 위 머리글(HEAD)은 이 함수 **뒤에** 붙으므로 여기서 지워지지 않는다. */
+  let text = out.join('\n');
+  const htmlComments = (text.match(/<!--(?!\[if)[\s\S]*?-->/g) || []).length;
+  text = text.replace(/<!--(?!\[if)[\s\S]*?-->/g, '');
+  dropped += htmlComments;
+  return { text: text.replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n'), dropped };
 }
 
 const count = (s, re) => (s.match(re) || []).length;
