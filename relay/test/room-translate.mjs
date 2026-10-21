@@ -135,6 +135,58 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
      `실패를 강사 화면에 알린다 (${JSON.stringify(m)}) — 조용히 넘기면 강사는 되고 있다고 믿는다`);
 }
 
+/* ③-3 같은 언어가 또 실패해도 **한 번만** 알린다. 되살아나면 **그것도 알린다** (10-21) */
+{
+  const ls = ['en'].map(listener);
+  const hostWs = listener(null);
+  let mode = 'fail';
+  const calls = [];
+  const env = {
+    LICENSE_SECRET: SECRET, RELAY_BASE_URL: 'https://relay.test',
+    SELF: { async fetch(req) {
+      const b = await req.json();
+      calls.push(b.target);
+      if (mode === 'fail') return new Response(JSON.stringify({ error: 'upstream' }), { status: 502 });
+      return new Response(JSON.stringify({ t: b.q.map((x) => `[${b.target}] ${x}`) }), { status: 200 });
+    } }
+  };
+  const room = new Room({
+    storage: new MockStorage(), getTags: () => ['host'],
+    blockConcurrencyWhile: async (fn) => await fn(),
+    getWebSockets: (tag) => (tag === 'listener' ? ls : tag === 'host' ? [hostWs] : [...ls, hostWs])
+  }, env);
+  room.sub = 'state_user'; room.licFlags = 0x10; room.att = { joined: 1, max: 1, langs: {} };
+
+  room.roomTrFromHost(lineOf(41, '첫 실패'));
+  await wait(RTR.BATCH_MS + 60);
+  room.roomTrFromHost(lineOf(42, '또 실패'));
+  await wait(RTR.BATCH_MS + 60);
+  const fails = hostWs.got.filter((m) => m.kind === 'tr_fail' && !m.ok);
+  ok(fails.length === 1, `두 번 실패해도 알림은 **한 번**이다 (${fails.length}번) — 줄마다 보내면 화면이 덮인다`);
+
+  mode = 'ok';
+  room.roomTrFromHost(lineOf(43, '되살아났다'));
+  await wait(RTR.BATCH_MS + 60);
+  const oks = hostWs.got.filter((m) => m.kind === 'tr_fail' && m.ok === 1);
+  ok(oks.length === 1 && oks[0].lang === 'en',
+     `되살아나면 **그것도 알린다** (${JSON.stringify(oks)}) — 안 알리면 그 띠는 거짓이 된다`);
+  room.roomTrFromHost(lineOf(44, '계속 된다'));
+  await wait(RTR.BATCH_MS + 60);
+  ok(hostWs.got.filter((m) => m.kind === 'tr_fail').length === 2,
+     '잘 되는 동안은 **한 줄도 더 보내지 않는다** (상태가 바뀔 때만 보낸다)');
+}
+
+/* ③-4 언어 상한에 닿으면 강사 화면에도 알린다 — 기록만 남기면 강사는 모른다(§20) */
+{
+  const many = Array.from({ length: RTR.MAX_LANGS + 3 }, (_, i) => 'l' + i);
+  const { room, hostWs } = makeRoom(many);
+  room.roomTrFromHost(lineOf(51, '상한'));
+  await wait(RTR.BATCH_MS + 400);
+  const cap = hostWs.got.find((m) => m.kind === 'tr_cap');
+  ok(cap && cap.n === RTR.MAX_LANGS && cap.dropped === 3,
+     `상한을 강사 화면에 알린다 (${JSON.stringify(cap)}) — 그 언어 손님은 원문만 본다`);
+}
+
 /* ④ **빈 답**은 답이 아니다(§20) — `{t:[]}` · `{t:null}` 둘 다 no_tr */
 for (const mode of ['empty', 'null']) {
   const { room, ls } = makeRoom(['en'], mode);

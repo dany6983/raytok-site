@@ -22,6 +22,7 @@ export class Room {
     this.trToken = null;          // 방 안에서만 쓰는 짧은 토큰(아래 trFetch)
     this.trDone = new Set();      // 이미 산 (줄, 언어) 짝 — 두 번 사지 않는다 (B 4)
     this.trCache = new Map();     // 미리 사 둔 번역문 — (줄, 언어) → 글자 (B 4)
+    this.trState = new Map();     // 언어 → 'ok'|'fail' — **바뀔 때만** 강사에게 알린다
     this.script = null;           // 올려 둔 원고 **원문만** — { srcLang, total, paras:Map } (B 4)
     this.scriptCur = 0;           // 지금 읽는 문단 (늦은 언어는 여기부터 채운다)
     this.trLangsSeen = [];        // 이미 채운 언어 — 두 번 채우지 않는다
@@ -413,14 +414,40 @@ export class Room {
    * 있다 — 말을 다시 하거나, 그 언어를 빼거나, 상한·돈을 본다. 조용히 넘기면 강사는
    * **번역이 되고 있다고 믿는다**(§20: 모르게 두지 않는다).
    */
-  tellHostTrFail(lang, why, item) {
-    const msg = { kind: 'tr_fail', lang, why };
-    if (item && item.script) msg.para = item.para; else if (item) msg.seq = item.seq;
+  tellHost(msg) {
     try {
+      const str = JSON.stringify(msg);
       for (const ws of this.ctx.getWebSockets('host')) {
-        try { ws.send(JSON.stringify(msg)); } catch (_) {}
+        try { ws.send(str); } catch (_) {}
       }
     } catch (_) {}
+  }
+
+  /**
+   * 그 언어가 **안 되기 시작했을 때 한 번** 알린다. 줄마다 보내면 강사 화면이 같은 말로
+   * 덮인다 — 그래서 `trState` 가 바뀔 때만 보낸다.
+   */
+  tellHostTrFail(lang, why, item) {
+    const key = RTR.normLang(lang);
+    if (this.trState.get(key) === 'fail') return;        // 이미 알렸다
+    this.trState.set(key, 'fail');
+    const msg = { kind: 'tr_fail', lang, why };
+    if (item && item.script) msg.para = item.para; else if (item) msg.seq = item.seq;
+    this.tellHost(msg);
+  }
+
+  /**
+   * **되살아났으면 그것도 알린다** (2026-10-21).
+   *
+   * 왜: 한 번 뜬 「번역 안 됨」이 끝까지 남아 있으면 그 띠는 **거짓이 된다** — 강사는
+   * 되는 것을 안 된다고 믿는다. 띠를 띄우는 까닭(§20: 모르게 두지 않는다)이 그대로
+   * 반대로 걸리는 자리다. 상태가 바뀔 때만 보내므로 steady state 에서는 한 줄도 안 늘어난다.
+   */
+  tellHostTrOk(lang) {
+    const key = RTR.normLang(lang);
+    if (this.trState.get(key) !== 'fail') { this.trState.set(key, 'ok'); return; }
+    this.trState.set(key, 'ok');
+    this.tellHost({ kind: 'tr_fail', lang, ok: 1 });
   }
 
   /** 그 언어 손님에게만 보낸다 — 남의 언어 번역문을 받을 필요가 없다(바이트도 돈이다) */
@@ -447,8 +474,11 @@ export class Room {
       ? RTR.pickLangs([o.only], srcLang)                  // 늦은 언어 채우기 — 그 언어만
       : RTR.pickLangs(this.listenerLangs(), srcLang);
     if (capped > 0) {
-      /* 막고 **알린다** — 조용히 자르면 그 언어 손님은 까닭을 모른다(§20) */
+      /* 막고 **알린다** — 조용히 자르면 그 언어 손님은 까닭을 모른다(§20).
+         기록만 남기면 강사는 **모른다**: 그 언어 손님들은 원문만 보는데 화면에는 아무 표도
+         없다. 그래서 강사 화면에도 보낸다(상한에 닿는 일은 드물어 줄이 쌓이지 않는다). */
       try { console.log(`room_tr_cap langs=${langs.length} dropped=${capped}`); } catch (_) {}
+      this.tellHost({ kind: 'tr_cap', n: langs.length, dropped: capped });
     }
     for (const lang of langs) {
       /* 그 언어에 **아직 없는** 줄만 산다: ① 강사가 이미 실어 보낸 칸 ② 아까 산 칸.
@@ -487,6 +517,7 @@ export class Room {
           continue;
         }
         const chars = texts.reduce((a, t) => a + t.length, 0);
+        this.tellHostTrOk(lang);                        // 되살아났으면 띠를 치우게 알린다
         for (const it of part) RTR.markDone(it, lang, this.trDone);
         /* 미리 산 것(`quiet`)은 **보내지 않고 쥐고 있는다** — 그 문단을 「다음」으로 넘길 때
            `script` 메시지가 오고, 그때 `trDone` 에 있으니 다시 사지 않고 여기 적어 둔 글자를

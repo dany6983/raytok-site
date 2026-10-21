@@ -139,6 +139,27 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const again = await host.evaluate(() => document.getElementById('trFailNote').textContent);
     ok((again.match(/ne/g) || []).length === 1, `같은 언어는 한 줄로 모은다 ("${again}")`);
 
+    /* ⑥ 되살아나면 띠가 **사라진다** (10-21). 한 번 뜬 경고가 끝까지 남아 있으면 그 띠는
+       거짓이 되고, 강사는 되는 것을 안 된다고 믿는다. */
+    try { hostSock.send(JSON.stringify({ kind: 'tr_fail', lang: 'ne', ok: 1 })); } catch (_) {}
+    await sleep(300);
+    const gone = await host.evaluate(() => {
+      const el = document.getElementById('trFailNote');
+      return { vis: el.style.display !== 'none', text: el.textContent };
+    });
+    ok(gone.vis === false && !gone.text,
+       `되살아나면 띠가 사라진다 (보임=${gone.vis} "${gone.text}")`);
+
+    /* ⑦ 언어 상한도 **화면에** 뜬다 — 기록만 남기면 강사는 모른다(§20) */
+    try { hostSock.send(JSON.stringify({ kind: 'tr_cap', n: 30, dropped: 3 })); } catch (_) {}
+    await sleep(300);
+    const cap = await host.evaluate(() => {
+      const el = document.getElementById('trFailNote');
+      return { vis: el.style.display !== 'none', text: el.textContent };
+    });
+    ok(cap.vis && /30/.test(cap.text) && /3/.test(cap.text),
+       `상한이 강사 화면에 뜬다 ("${cap.text}")`);
+
     /* ④ 되돌림 실증 — 10-20 에 실제로 나가던 그 메시지를 같은 검사기에 넣는다.
        잡지 않으면 위 초록은 "검사기가 아무것도 안 본다"는 뜻이다(D-09). */
     const old2020 = { kind: 'script', para: 1, total: 3, src: '안전모를 쓰세요', srcLang: 'ko',

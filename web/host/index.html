@@ -1975,15 +1975,37 @@
          같은 언어가 여러 번 실패해도 한 줄로 모은다(줄마다 띠가 쌓이면 못 읽는다). */
       if (msg.kind === 'tr_fail') {
         const lang = String(msg.lang || '?');
-        const why = String(msg.why || '?');
-        trFails.set(lang, why);
+        /* ★ `ok:1` = 그 언어가 **되살아났다**. 띠에서 지운다 — 한 번 뜬 경고가 끝까지
+           남아 있으면 그 띠는 **거짓**이 되고, 강사는 되는 것을 안 된다고 믿는다. */
+        if (msg.ok) {
+          trFails.delete(lang);
+          trLog.push(`tr_ok_seen lang=${lang}`);
+        } else {
+          trFails.set(lang, String(msg.why || '?'));
+          trLog.push(`tr_fail_seen lang=${lang} why=${msg.why || '?'}`);
+        }
         const note = document.getElementById('trFailNote');
         if (note) {
-          const parts = [...trFails.entries()].map(([l, w]) => `${l} (${w})`);
-          note.textContent = T('tr_fail_note').replace('{langs}', parts.join(', '));
+          if (trFails.size) {
+            const parts = [...trFails.entries()].map(([l, w]) => `${l} (${w})`);
+            note.textContent = T('tr_fail_note').replace('{langs}', parts.join(', '));
+            note.style.display = 'block';
+          } else {
+            note.textContent = '';
+            note.style.display = 'none';
+          }
+        }
+        return;
+      }
+      /* 한 번에 번역하는 언어 **상한**에 닿았다 — 넘은 언어 손님은 원문만 본다.
+         기록만 남기면 강사는 모른다(§20). 드문 일이라 줄이 쌓이지 않는다. */
+      if (msg.kind === 'tr_cap') {
+        const note = document.getElementById('trFailNote');
+        if (note) {
+          note.textContent = T('tr_cap_note').replace('{n}', String(msg.n || '')).replace('{d}', String(msg.dropped || ''));
           note.style.display = 'block';
         }
-        trLog.push(`tr_fail_seen lang=${lang} why=${why}`);
+        trLog.push(`tr_cap_seen n=${msg.n} dropped=${msg.dropped}`);
         return;
       }
       if (msg.kind === 'ask_queue') {
@@ -2250,6 +2272,7 @@
         err_need_code: '이용권 코드를 입력하세요.',
         err_lang_cap: '한 번에 고를 수 있는 언어는 {n}개까지입니다. 하나를 빼고 다시 고르세요.',
         tr_fail_note: '번역 안 됨: {langs} — 그 언어 청취자는 원문을 봅니다.',
+        tr_cap_note: '한 번에 번역하는 언어 {n}개가 찼습니다. {d}개 언어의 청취자는 원문을 봅니다.',
         err_timeout: '서버 응답 시간 초과 (5초)',
         err_unreachable: '서버에 닿지 않습니다: ',
         err_bad_json: '서버로부터 올바르지 않은(빈) 응답을 받았습니다.',
@@ -2386,6 +2409,7 @@
         err_need_code: 'Enter the licence code.',
         err_lang_cap: 'You can pick up to {n} languages at once. Unpick one first.',
         tr_fail_note: 'Not translated: {langs} — those listeners see the original text.',
+        tr_cap_note: 'Translating {n} languages at once (limit reached). Listeners in {d} more languages see the original text.',
         err_timeout: 'The server did not answer within 5 seconds.',
         err_unreachable: 'Cannot reach the server: ',
         err_bad_json: 'The server returned an empty or invalid response.',
