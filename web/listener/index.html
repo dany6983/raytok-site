@@ -1497,7 +1497,9 @@
         addLine(line);
         liveTtsDefault();   // 원고 줄 때문에 꺼 둔 소리는 들은 줄에서 도로 켠다(L4-3)
         const isSameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-        if (isBroadcast || isSameLang) {
+        if (isBroadcast && !isSameLang) {
+          speakWhenTranslated(line, msg);
+        } else if (isBroadcast || isSameLang) {
           speak(line.text, srcLang, msg.audio_url || (msg.tr && msg.tr.audio_url));
         } else if (line.tr[selectedLang]) {
           speak(line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
@@ -1581,6 +1583,31 @@
         if (list) mo.observe(list, { subtree: true, childList: true, characterData: true });
       });
     })();
+
+    var TR_WAIT_MS = 2000;
+    function speakWhenTranslated(line, msg) {
+      var audio = (msg && (msg.audio_url || (msg.tr && msg.tr.audio_url))) || undefined;
+      var el = document.querySelector('#' + CSS.escape(lineElId(line)) + ' .msg-text');
+      if (!el) return;
+      var was = el.getAttribute('data-src-text');
+      var t0 = Date.now();
+      (function tick() {
+        var now = el.textContent;
+        if (was != null && now !== was) {         // 브라우저가 바꿨다 = 번역됐다
+          markGuestTr('browser');
+          speak(now, selectedLang, audio);
+          return;
+        }
+        if (Date.now() - t0 < TR_WAIT_MS) { setTimeout(tick, 120); return; }
+        if (line.tr && line.tr[selectedLang]) {
+          markGuestTr('server');
+          speak(line.tr[selectedLang], line.via, audio);
+        } else {
+          markGuestTr('none');
+          try { console.log('guest_tr_wait_timeout seq=' + line.seq); } catch (e) {}
+        }
+      })();
+    }
 
     function addLine(line) {
       updateRoomState();   // ④ 줄이 하나라도 오면 빈 방 띠를 치운다

@@ -98,6 +98,68 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
     ok((await page2.evaluate(() => rtGuestTr.mode())) === 'none',
        '우리가 줄을 더 쓰는 것은 번역으로 세지 않는다 (되돌림 실증 ①)');
 
+    /* ⑦ 소리는 **번역된 글자**를 읽는다 — 번역 전 원문을 읽으면 손님은 모르는 말을 듣는다.
+       말하기를 기록으로 바꿔 놓고(가짜가 실기보다 느슨하지 않게 **같은 함수**를 거친다) 센다. */
+    const page3 = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await page3.addInitScript(() => {
+      window.__spoken = [];
+      window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
+      Object.defineProperty(window, 'speechSynthesis', {
+        configurable: true,
+        value: { getVoices: () => [{ lang: 'vi-VN', name: 'vi' }], cancel() {},
+                 speak: (u) => { if (u && u.text) window.__spoken.push(u.text); } }
+      });
+    });
+    await page3.goto(`${base}/web/listener/?lang=vi`);
+    await page3.waitForSelector('#lang-select');
+    /* 방송 줄(원문)이 오는 길을 그대로 탄다 — `addLine` 이 아니라 소켓이 주는 모양으로 */
+    await page3.evaluate(() => {
+      srcLang = 'ko'; selectedLang = 'vi'; ttsOn = true;
+      const line = { seq: 11, text: '비상구는 저쪽입니다.', tr: {}, at: Date.now(), broadcast: true };
+      lines.push(line); addLine(line);
+      speakWhenTranslated(line, {});
+    });
+    await page3.waitForTimeout(300);
+    ok((await page3.evaluate(() => window.__spoken.length)) === 0,
+       '번역 전에는 **읽지 않는다** — 원문을 소리로 들려주지 않는다');
+    await page3.evaluate(() => {
+      /* 줄 칸 id 는 `lineElId` 가 만든다 — 시험이 꼴을 다시 적지 않는다(§4) */
+      const el = document.querySelector('#' + CSS.escape(lineElId({ seq: 11 })) + ' .msg-text');
+      el.textContent = 'Lối thoát hiểm ở đằng kia.';
+    });
+    await page3.waitForFunction(() => window.__spoken.length > 0, null, { timeout: 4000 }).catch(() => {});
+    const said = await page3.evaluate(() => window.__spoken.slice());
+    ok(said[0] === 'Lối thoát hiểm ở đằng kia.', `번역이 오면 **바뀐 글자**를 읽는다 (${said[0] || '없음'})`);
+    ok((await page3.evaluate(() => rtGuestTr.mode())) === 'browser', '그때 guest_tr=browser');
+
+    /* ⑧ 상한까지 안 바뀌면 — 원문을 읽지 않고 보조 길(서버 번역)로 */
+    await page3.evaluate(() => {
+      window.__spoken = [];
+      const line = { seq: 12, text: '안전모를 쓰십시오.', tr: { vi: 'Hãy đội mũ bảo hộ.' }, at: Date.now(), broadcast: true };
+      lines.push(line); addLine(line);
+      TR_WAIT_MS = 300;                 // 시험에서만 짧게 — 기다림이 **있다**는 것은 위에서 봤다
+      speakWhenTranslated(line, {});
+    });
+    await page3.waitForFunction(() => window.__spoken.length > 0, null, { timeout: 4000 }).catch(() => {});
+    const said2 = await page3.evaluate(() => window.__spoken.slice());
+    ok(said2[0] === 'Hãy đội mũ bảo hộ.', `상한을 넘기면 서버 번역을 읽는다 (${said2[0] || '없음'})`);
+    ok((await page3.evaluate(() => rtGuestTr.mode())) === 'server', '그때 guest_tr=server');
+
+    /* ⑨ 서버 번역도 없으면 — **아무 말도 안 한다**(원문을 읽지 않는다). 글자는 화면에 남는다 */
+    await page3.evaluate(() => {
+      window.__spoken = [];
+      const line = { seq: 13, text: '다음으로 넘어갑니다.', tr: {}, at: Date.now(), broadcast: true };
+      lines.push(line); addLine(line);
+      TR_WAIT_MS = 300;
+      speakWhenTranslated(line, {});
+    });
+    await page3.waitForTimeout(900);
+    ok((await page3.evaluate(() => window.__spoken.length)) === 0,
+       '번역도 서버 번역도 없으면 **읽지 않는다** — 모르는 말을 소리로 주지 않는다');
+    ok((await page3.evaluate(() => !!document.querySelector('#' + CSS.escape(lineElId({ seq: 13 })) + ' .msg-text'))) === true,
+       '그래도 **글자는 화면에 남는다** (R-15: 유실 > 지연)');
+    await page3.close();
+
     /* 되돌림 실증 ② — 적어 둔 글자를 지우면 판정이 못 센다(그 메모가 근거라는 증거) */
     await page2.evaluate(() => {
       const el = document.querySelector('.msg-text');
