@@ -287,6 +287,12 @@
     .qr-box { background: #fff; border-radius: 8px; padding: 10px; display: flex; justify-content: center; }
     .qr-box svg, .qr-box img { width: 220px; height: 220px; display: block; }
     .room-code { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.15em; color: #38bdf8; text-align: center; }
+    /* 갈림 QR 스위치 (데모용). 손가락 칸 44px 은 접근성 시험(samples/a11y_test.js)과 같은 값 */
+    .qr-target { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; justify-content: center; margin-top: 8px; }
+    .qr-target-label { font-size: 0.75rem; color: var(--text-muted); margin-right: 2px; }
+    .qr-target-btn { min-height: 44px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+                     background: #0f172a; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; }
+    .qr-target-btn.on { background: #38bdf8; color: #0a0f1f; border-color: #38bdf8; font-weight: 700; }
     .att-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; }
     .att-now { font-size: 1.4rem; font-weight: 700; color: var(--text); }
     .att-langs { margin-top: 6px; color: var(--text-muted); }
@@ -493,6 +499,13 @@
         <div class="live-side">
           <div class="qr-box" id="qrBox"></div>
           <div class="room-code" id="roomCode">------</div>
+          <!-- 갈림 QR 스위치 (데모용, 기본 「둘 다」) — 주소는 joinQrUrl 한 자리에서 만든다 -->
+          <div class="qr-target" id="qrTargetBox">
+            <span class="qr-target-label" data-t="qr_target_label"></span>
+            <button type="button" class="qr-target-btn on" id="qrTarget-both" onclick="setQrTarget('both')" data-t="qr_target_both"></button>
+            <button type="button" class="qr-target-btn" id="qrTarget-app" onclick="setQrTarget('app')" data-t="qr_target_app"></button>
+            <button type="button" class="qr-target-btn" id="qrTarget-web" onclick="setQrTarget('web')" data-t="qr_target_web"></button>
+          </div>
           <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; overflow-wrap: anywhere;" id="joinUrl"></div>
           <div class="att-box">
             <div style="color: var(--text-muted);" data-t="att_label"></div>
@@ -1405,6 +1418,54 @@
       return u.toString();
     }
 
+    /*
+     * ★★ **갈림 QR** (NOW 10-21 2번 · 대표님 데모 스위치). QR 은 **한 장**이고, 그 한 장이
+     * 세 가지 폰을 다 받는다 — 가르는 일은 `/join` 페이지가 한다:
+     *   · 안드로이드 + 앱 있음 → 앱(인텐트)      · 안드로이드 + 앱 없음 → 웹(+「앱 받기」)
+     *   · 아이폰 → 웹 (아이폰 앱이 아직 없다)
+     *
+     * 왜 `intent://` 를 QR 에 직접 넣지 않나: 카메라 앱은 **https 만** 링크로 본다
+     * (앱 LANG-11 실기 — `intent://` 는 아무 것도 안 띄우거나 검색으로 갔다). 그래서 QR 은
+     * 늘 우리 https 주소이고, 그 페이지가 폰을 보고 보낸다.
+     *
+     * 스위치는 **데모용**이다(기본 「둘 다」): 대표님이 "앱만"·"웹만"을 각각 보여 줄 수 있어야
+     * 한다. 세 가지 주소를 만드는 자리는 **여기 하나**다 — 두 곳에서 만들면 스위치를 켠
+     * 화면과 QR 이 어긋난다.
+     */
+    const QR_TARGETS = ['both', 'app', 'web'];
+    let qrTarget = 'both';                       // 기본 「둘 다」
+
+    function joinQrUrl(code, target) {
+      const t = QR_TARGETS.indexOf(String(target || qrTarget)) >= 0 ? String(target || qrTarget) : 'both';
+      if (t === 'web') return listenerJoinUrl(code);          // 지금까지의 주소 그대로
+      const u = new URL('../../join/', window.location.href);
+      u.searchParams.set('room', code);
+      /* 릴레이는 **늘 싣는다** — 없으면 손님이 운영 릴레이로 가서 빈 방을 본다(10-20 실기) */
+      u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));
+      if (live.raw) u.searchParams.set('raw', '1');
+      if (live.questionEnabled) u.searchParams.set('q', '1');
+      if (t === 'app') u.searchParams.set('only', 'app');     // 「앱만」 — 웹으로 듣는 단추를 숨긴다
+      return u.toString();
+    }
+
+    /** QR 과 그 아래 주소 글자를 **한 자리**에서 다시 그린다 (스위치·시작 둘 다 이것을 부른다) */
+    function refreshJoinQr() {
+      if (!live.code) return;
+      const url = joinQrUrl(live.code);
+      document.getElementById('joinUrl').textContent = url;
+      renderQr(url);
+      for (const t of QR_TARGETS) {
+        const b = document.getElementById('qrTarget-' + t);
+        if (b) b.classList.toggle('on', t === qrTarget);
+      }
+    }
+
+    function setQrTarget(t) {
+      if (QR_TARGETS.indexOf(t) < 0) return;
+      qrTarget = t;
+      refreshJoinQr();
+    }
+
     function renderQr(text) {
       const box = document.getElementById('qrBox');
       box.innerHTML = '';
@@ -2209,9 +2270,7 @@
         stepPrepare.style.display = 'none';
         stepLive.style.display = 'block';
         document.getElementById('roomCode').textContent = live.code;
-        const joinUrl = listenerJoinUrl(live.code);
-        document.getElementById('joinUrl').textContent = joinUrl;
-        renderQr(joinUrl);
+        refreshJoinQr();                     // 주소를 만드는 자리는 하나다 (joinQrUrl)
         renderAtt({ now: 0, max: 0, langs: {} });
         renderLive();
         mic.seq = 0;
@@ -2259,6 +2318,10 @@
         prep_tr_busy: '번역 중...',
         prep_tr_done: '번역 완료!',
         prep_para: '문단',
+        qr_target_label: '손님을 어디로',
+        qr_target_both: '둘 다',
+        qr_target_app: '앱만',
+        qr_target_web: '웹만',
         live_qr_show: 'QR 보기',
         live_qr_hide: 'QR 닫기',
         live_connected: '연결됨',
@@ -2396,6 +2459,10 @@
         prep_tr_busy: 'Translating…',
         prep_tr_done: 'Translation finished',
         prep_para: 'Paragraph',
+        qr_target_label: 'Send guests to',
+        qr_target_both: 'Both',
+        qr_target_app: 'App only',
+        qr_target_web: 'Web only',
         live_qr_show: 'Show QR',
         live_qr_hide: 'Hide QR',
         live_connected: 'Connected',

@@ -73,7 +73,16 @@ const { rooms, hostReceived } = relay;
   ok((await host.textContent('#roomCode')).trim() === 'ABC123', '방 코드 표시');
   ok((await host.$$('#qrBox svg')).length === 1, 'QR(svg) 그림 — 바깥 요청 없이 로컬 생성');
   const joinUrl = (await host.textContent('#joinUrl')).trim();
-  ok(joinUrl.includes('/web/listener/') && joinUrl.includes('room=ABC123'), '참여 주소 = 청취 페이지 + room 코드');
+  /*
+   * ★ **갈림 QR** (NOW 2026-10-21 2번) — 기본 주소가 바뀌었다: 청취 페이지가 아니라 `/join`
+   * 이고, 거기서 폰을 보고 가른다(안드로이드+앱 → 앱 · 앱 없음 → 웹 · 아이폰 → 웹).
+   * 「웹만」을 고르면 전의 주소(청취 페이지) 그대로다. 자물쇠는 `samples/split_qr_test.js`.
+   */
+  ok(joinUrl.includes('/join/') && joinUrl.includes('room=ABC123'), '참여 주소 = /join + room 코드 (갈림 QR, 기본 「둘 다」)');
+  ok(/[?&]relay=/.test(joinUrl) && !/relay=https?/.test(joinUrl), '참여 주소에 릴레이가 스킴 없이 실린다 (없으면 손님이 빈 방으로 간다)');
+  await host.evaluate(() => window.setQrTarget('web'));
+  ok((await host.textContent('#joinUrl')).includes('/web/listener/'), '「웹만」을 고르면 청취 페이지 주소다');
+  await host.evaluate(() => window.setQrTarget('both'));
   await host.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 5000 });
   ok(room.hosts.size === 1, '호스트 /ws 연결(role=host, 토큰)');
   ok(hostReceived.some(m => m.welcome === 1), '호스트가 welcome 을 먼저 보낸다(링버퍼 → 늦게 온 청취자도 받는다)');
