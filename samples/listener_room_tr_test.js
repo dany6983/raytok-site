@@ -68,7 +68,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   try {
     const room = relay.newRoom('guide');
     const host = await openHost(base, room);
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR' });
     await ctx.addInitScript(FAKE_VOICES);
     const page = await ctx.newPage();
     const logs = [];
@@ -76,6 +76,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
        10-21 에 가짜 목소리가 `uttr.voice` 에서 예외를 냈고, 그 예외가 보여서 잡았다. */
     page.on('console', (m) => logs.push(m.text()));
     page.on('pageerror', (e) => { logs.push('PAGEERROR ' + e.message); });
+    /* 폰 언어를 **한국어로** 둔다 (B 0) — 그 폰에서는 브라우저가 번역해 주지 않으므로
+       방 번역이 유일한 길이고, 이 시험이 보는 것이 바로 그 길이다. */
     await page.goto(`${base}/web/listener/?room=${room.code}&lang=en`);
     await page.waitForSelector('#btn-join');
     await page.click('#btn-join');
@@ -85,8 +87,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     /* ① 방송 줄(강사가 번역 없이 보낸 줄) → 방이 늦게 보낸 tr 이 **화면에 붙는다** */
     host.send(JSON.stringify({ seq: 1, text: '안전모를 쓰세요', src_lang: 'ko', broadcast: true }));
     await page.waitForSelector('#msg-1');
-    const trBefore = await page.textContent('#msg-1 .msg-tr');
-    ok(!trBefore, `번역이 오기 전에는 번역 칸이 비어 있다 ("${trBefore}")`);
+    const before1 = await page.evaluate(() => ({
+      text: document.querySelector('#msg-1 .msg-tr').textContent,
+      badge: !!document.querySelector('#msg-1 .badge-pending')
+    }));
+    /* ★ B 0 보탬: 번역이 오기 전에는 **「번역 대기 중」**이 보인다(전에는 빈칸이었다 —
+       손님은 "안 되는 것"으로 읽었다). 번역문 글자는 아직 없다. */
+    ok(before1.badge === true && !/Wear|helmet/.test(before1.text),
+       `번역이 오기 전에는 「번역 대기 중」이 보인다 ("${before1.text}")`);
 
     host.send(JSON.stringify({ seq: 1, tr: { en: 'Wear your helmet' } }));
     await page.waitForFunction(() => {
@@ -100,11 +108,29 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(shown.vis !== 'none', '방송 줄에도 번역 칸이 **보인다** — 숨겨 두면 소리는 영어, 화면은 한국어가 된다');
     ok(shown.text.indexOf('Wear your helmet') >= 0, `늦게 온 번역이 화면에 붙었다 ("${shown.text}")`);
 
+    /* ★ B 0 보탬: 방 번역을 기다리는 줄은 **기다린다고 보인다**(콘솔 없이 화면만으로) */
+    const waitBadge = await page.evaluate(() => !!document.querySelector('#msg-1 .badge-pending'));
+    ok(waitBadge === false,
+       '번역이 온 뒤에는 「번역 대기 중」이 없다 (방금 왔다)');
+
     /* ④ 두 번 읽지 않는다 — 같은 번역이 또 와도 한 번이다 */
     host.send(JSON.stringify({ seq: 1, tr: { en: 'Wear your helmet' } }));
     await sleep(400);
     const said = await page.evaluate(() => (window.__said || []).filter((t) => t.indexOf('Wear your helmet') >= 0).length);
     ok(said === 1, `같은 줄을 **한 번만** 읽는다 (${said}회) — 손님 폰 번역과 방 번역이 겹치는 자리다`);
+
+    /* ★ B 0 보탬 ② — **번역이 오기 전**에는 「번역 대기 중」이 보인다 */
+    host.send(JSON.stringify({ seq: 9, text: '아직 번역이 안 온 줄', src_lang: 'ko', broadcast: true }));
+    await page.waitForSelector('#msg-9', { timeout: 4000 });
+    const waiting = await page.evaluate(() => ({
+      badge: !!document.querySelector('#msg-9 .badge-pending'),
+      plan: (window.rtTrPlan && window.rtTrPlan.plan()) || '?'
+    }));
+    ok(waiting.plan === 'server' && waiting.badge === true,
+       `한국어 폰(길=${waiting.plan})에서 번역을 기다리는 줄은 **기다린다고 보인다** — 손님이 "안 되는 것"으로 읽지 않게`);
+    host.send(JSON.stringify({ seq: 9, no_tr: 1, why: 'http_502' }));
+    await page.waitForFunction(() => !document.querySelector('#msg-9 .badge-pending'), null, { timeout: 4000 });
+    ok(true, '안 온다고 알리면(no_tr) 그 표가 사라진다 — 영원히 기다리지 않는다');
 
     /* ② 원고 문단 — para 로 짝을 맞춘다 */
     host.send(JSON.stringify({ kind: 'script', para: 3, total: 10, src: '오늘 일정은 셋입니다', srcLang: 'ko' }));

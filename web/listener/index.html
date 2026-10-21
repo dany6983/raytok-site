@@ -1482,7 +1482,9 @@
           spk: msg.spk || null,   // 화자 표시는 진행자가 보낸 때만(Desk). 강의·가이드는 보내지 않는다
           at: Date.now(),         // 이 폰이 받은 시각 (기록 저장용)
           tr: msg.tr || {},
-          pending: !isBroadcast && !!msg.pending,
+          pending: !!msg.pending || (!msg.tr || !msg.tr[selectedLang])
+                   && trPlan() === 'server'
+                   && !!(srcLang && selectedLang && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)),
           via: msg.via,
           broadcast: isBroadcast
         };
@@ -1726,7 +1728,7 @@
       const trDiv = div.querySelector('.msg-tr');
 
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-      if (sameLang || (line.broadcast && !line.tr[selectedLang])) {
+      if (sameLang || (line.broadcast && !line.tr[selectedLang] && !line.pending)) {
         trDiv.textContent = '';
         trDiv.style.display = 'none';
         return;
