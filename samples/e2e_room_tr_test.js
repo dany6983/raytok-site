@@ -160,6 +160,24 @@ class Bridge {
        `④ 부른 횟수가 언어마다 몇 번뿐이다 (${JSON.stringify(byLang)}) — 손님 수로 늘지 않는다`);
     ok(!byLang.ko, '④ 원문 언어(ko)는 부르지 않았다');
 
+    /* ── ⑤ 되돌림 실증 (D-09) — 스위치를 끄면 **손님 화면에서 번역이 사라진다** ──
+       위 초록들이 "방이 번역해서 보낸 결과"인지, 아니면 다른 길로 들어온 글자인지
+       가르는 자리다. 끈 뒤에도 **원문은 간다**(R-15: 유실이 아니다). */
+    room.env = { ...env, ROOM_TR: '0' };
+    const callsBefore = calls.length;
+    hostWs.send(JSON.stringify({ seq: 2, text: '스위치를 끈 뒤의 줄', src_lang: 'ko', broadcast: true }));
+    const en = guests.find((x) => x.lang === 'en');
+    await en.page.waitForSelector('#msg-2', { timeout: 5000 });
+    await sleep(1200);
+    const offText = await en.page.textContent('#msg-2 .msg-text');
+    const offTr = await en.page.textContent('#msg-2 .msg-tr');
+    ok(calls.length === callsBefore,
+       `⑤ ROOM_TR=0 이면 **부르지 않는다** (${calls.length - callsBefore}회 늘었다) — 되돌림 실증`);
+    ok(!offTr || !offTr.includes('[en]'),
+       `⑤ 그래서 번역이 화면에 **붙지 않는다** ("${offTr}") — 위 초록은 이 코드에서 왔다`);
+    ok(offText && offText.includes('스위치를 끈 뒤의 줄'),
+       `⑤ 그래도 **원문은 간다** ("${offText}") — 끄는 것이 손님을 빈손으로 만들지 않는다(R-15)`);
+
     console.log(`\n[OK] ${pass}개 확인 — 끝까지 (진짜 방 + 손님 셋)`);
   } finally {
     try { if (hostWs) hostWs.close(); } catch (_) {}
