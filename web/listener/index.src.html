@@ -309,6 +309,14 @@
   </div>
 
   <div class="screen" id="chat-screen">
+    <!-- 손님 폰이 번역한다 (장부 51) — 손님 말이 원문과 다를 때만 보인다.
+         「서버 번역으로」는 **보조 길**(판 3번). 3번이 들어오기 전까지는 지금 길(강사가 미리
+         보낸 번역)로 가고, 그때 기록이 `guest_tr=server` 로 남는다.
+         구조: #chat-screen > #tr-notice (#voice-notice 바로 앞 형제) -->
+    <div id="tr-notice" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid #38bdf8; color:#bae6fd; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+      <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
+      <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
+    </div>
     <div id="voice-notice" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
     <div id="room-state" role="status" aria-live="polite"></div>
@@ -1816,7 +1824,36 @@
       })();
     }
 
+    /* 안내 띠 — **손님 말이 원문과 다를 때만** 보인다. 같으면 번역할 것이 없다.
+       읽는 곳은 이 한 함수다(§4). 첫 걸음에 기록 한 줄(§12). */
+    function renderTrNotice() {
+      var box = document.getElementById('tr-notice');
+      if (!box) return;
+      var differ = srcLang && selectedLang &&
+                   normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang);
+      var show = !!differ && guestTr !== 'server';
+      box.style.display = show ? 'block' : 'none';
+      var line = 'tr_notice on=' + (show ? 1 : 0) + ' src=' + (srcLang || '-') + ' me=' + (selectedLang || '-');
+      if (trNoticeLog[trNoticeLog.length - 1] !== line) trNoticeLog.push(line);
+    }
+    var trNoticeLog = [];
+    window.rtTrNotice = { log: function () { return trNoticeLog.slice(); }, render: renderTrNotice };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var b = document.getElementById('btn-tr-server');
+      if (!b) return;
+      b.addEventListener('click', function () {
+        /* 손님이 **스스로** 보조 길을 골랐다. 띠를 치우고 기록에 남긴다.
+           지금 보조 길은 강사가 미리 보낸 번역이다 — 판 3번(릴레이 번역)이 들어오면
+           그쪽으로 바뀐다. 바뀌는 자리는 여기 하나다(§4). */
+        markGuestTr('server');
+        renderTrNotice();
+        for (var i = 0; i < lines.length; i++) updateLineUI(lines[i]);
+      });
+    });
+
     function addLine(line) {
+      renderTrNotice();        // 원문 언어는 줄이 와야 확실해진다 — 그때 다시 본다
       updateRoomState();   // ④ 줄이 하나라도 오면 빈 방 띠를 치운다
       const div = document.createElement('div');
       div.className = 'msg-line' + (line.script ? ' msg-script' : '');

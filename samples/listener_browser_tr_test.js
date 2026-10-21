@@ -98,6 +98,59 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
     ok((await page2.evaluate(() => rtGuestTr.mode())) === 'none',
        '우리가 줄을 더 쓰는 것은 번역으로 세지 않는다 (되돌림 실증 ①)');
 
+    /* ⑥-2 안내 띠 — 손님 말이 원문과 다를 때만. 「서버 번역으로」는 보조 길.
+       §12: 칸을 넣으면 **구조 단언**(어느 부모의 어느 형제인지)을 같이 넣는다. */
+    {
+      const pageN = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await pageN.goto(`${base}/web/listener/?lang=vi`);
+      await pageN.waitForSelector('#lang-select');
+      const before = await pageN.evaluate(() => {
+        const b = document.getElementById('tr-notice');
+        return { exists: !!b, vis: b ? getComputedStyle(b).display !== 'none' : null,
+                 noTr: b ? b.getAttribute('translate') : null,
+                 nextIsVoice: !!(b && b.nextElementSibling && b.nextElementSibling.id === 'voice-notice'),
+                 inChat: !!(b && b.closest('#chat-screen')) };
+      });
+      ok(before.exists && before.noTr === 'no', '안내 띠가 있고 **번역 금지**다 — 이미 손님 말이다');
+      ok(before.nextIsVoice && before.inChat,
+         '구조: 청취 화면 안, 「음성 없음」 띠 **바로 앞 형제** (§12 구조 단언)');
+      ok(before.vis === false, '아직 방에 안 들어왔으면 띠가 없다');
+
+      /* 참여한 뒤의 화면으로 둔다 — 띠와 단추는 **청취 화면** 안에 있어서 참여 전에는
+         안 보인다(그게 맞다). 방에 붙는 길은 릴레이가 있어야 하므로 화면만 그 자리로 둔다. */
+      await pageN.evaluate(() => {
+        srcLang = 'ko'; selectedLang = 'vi';
+        document.getElementById('join-screen') && (document.getElementById('join-screen').style.display = 'none');
+        document.querySelectorAll('.screen').forEach((el) => { if (el.id !== 'chat-screen') el.style.display = 'none'; });
+        document.getElementById('chat-screen').style.display = 'flex';
+        renderTrNotice();
+      });
+      const shown = await pageN.evaluate(() => ({
+        vis: getComputedStyle(document.getElementById('tr-notice')).display !== 'none',
+        text: document.getElementById('tr-notice-text').textContent,
+        btn: document.getElementById('btn-tr-server').textContent,
+        log: rtTrNotice.log()
+      }));
+      ok(shown.vis === true, '손님 말이 원문과 다르면 띠가 보인다');
+      ok(/trình duyệt/i.test(shown.text), `안내가 **손님 말**로 나온다 — "${shown.text.slice(0, 40)}"`);
+      ok(/máy chủ/i.test(shown.btn), `단추도 손님 말이다 — "${shown.btn}"`);
+      ok(shown.log.some((l) => /^tr_notice on=1 src=ko me=vi$/.test(l)),
+         `첫 걸음에 기록 한 줄 (§12) — ${shown.log.join(' · ')}`);
+
+      /* 같은 말이면 띠가 없다 — 번역할 것이 없다 (되돌림 실증 ③) */
+      await pageN.evaluate(() => { selectedLang = 'ko'; renderTrNotice(); });
+      ok((await pageN.evaluate(() => getComputedStyle(document.getElementById('tr-notice')).display !== 'none')) === false,
+         '손님 말이 원문과 같으면 띠가 없다 (되돌림 실증 ③)');
+
+      /* 단추를 누르면 보조 길 — 띠가 사라지고 guest_tr=server */
+      await pageN.evaluate(() => { selectedLang = 'vi'; renderTrNotice(); });
+      await pageN.click('#btn-tr-server');
+      ok((await pageN.evaluate(() => rtGuestTr.mode())) === 'server', '단추를 누르면 guest_tr=server');
+      ok((await pageN.evaluate(() => getComputedStyle(document.getElementById('tr-notice')).display !== 'none')) === false,
+         '고른 뒤에는 띠가 사라진다 — 두 번 묻지 않는다');
+      await pageN.close();
+    }
+
     /* ⑦ 소리는 **번역된 글자**를 읽는다 — 번역 전 원문을 읽으면 손님은 모르는 말을 듣는다.
        말하기를 기록으로 바꿔 놓고(가짜가 실기보다 느슨하지 않게 **같은 함수**를 거친다) 센다. */
     const page3 = await browser.newPage({ viewport: { width: 390, height: 844 } });
