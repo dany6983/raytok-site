@@ -374,13 +374,25 @@
         </div>
       </div>
 
-      <!-- ② 청취자 지원 언어 선택 -->
-      <div class="form-group" id="langChipsGroup">
-        <label data-t="prep_step2"></label>
-        <div class="lang-chips" id="langChips">
-          <!-- 동적 생성 -->
-        </div>
+      <!-- ★ 정본 v1 §1 ② (대표님 10-21 15:26): 강사는 **내가 말하는 언어 하나**만 고른다.
+           번역 대상 언어 고르기는 **없다** — 손님이 자기 언어를 고르고 방이 그 언어로 번역한다
+           (장부 51). 아래 「원고 미리 번역」은 **강사 검수용 선택**이라 접어 둔다. -->
+      <div class="form-group" id="srcLangGroup">
+        <label for="srcLangSelect" data-t="prep_src_lang"></label>
+        <select id="srcLangSelect" style="width:100%; padding:10px; border-radius:8px; background:var(--card); color:var(--text); border:1px solid var(--border); font-size:0.95rem;"></select>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;" data-t="prep_src_lang_sub"></div>
       </div>
+
+      <!-- (선택) 원고 미리 번역 — 강사가 눈으로 검수할 때만. 손님에게 가는 번역은 방이 만든다 -->
+      <details class="form-group" id="preTrDetails">
+        <summary style="cursor:pointer; font-weight:600; font-size:0.9rem;" data-t="prep_pre_open"></summary>
+        <div id="langChipsGroup" style="margin-top:10px;">
+          <label data-t="prep_step2"></label>
+          <div class="lang-chips" id="langChips">
+            <!-- 동적 생성 -->
+          </div>
+        </div>
+      </details>
 
       <!-- ②-B 번역 없이 방송 (아웃바운드 / 무선 가이드 모드, question.md §12) -->
       <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
@@ -669,7 +681,11 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const RELAY_BASE = (urlParams.get('relay') || 'https://raytok-relay.raytok.workers.dev').replace(/\/+$/, '');
-    const SRC_LANG = 'ko';   // 원고 언어 — /translate 의 source 와 script.srcLang 이 같은 값을 쓴다
+    /* ★ **내가 말하는 언어** (정본 v1 §1 ②). 전에는 `const … = 'ko'` 로 박혀 있었다 —
+       받아쓰기(`rec.lang`)·`script.srcLang`·`/translate` 의 source 가 모두 이 값을 쓴다.
+       강사가 한국어로만 말하는 것이 아니므로 **고를 수 있어야** 한다. 바꾸는 곳은 아래
+       고르개 하나이고, 읽는 곳은 그대로다(§4). */
+    let SRC_LANG = 'ko';
 
     // ── IndexedDB 관리 ──
     const DB_NAME = 'RayTokHostDB';
@@ -734,6 +750,37 @@
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
+    const srcLangSelect = document.getElementById('srcLangSelect');
+    /** 말하는 언어 고르개를 채운다 — 목록은 손님 쪽 정본(`langs.json`)과 같은 표다(§4) */
+    function renderSrcLangSelect() {
+      if (!srcLangSelect) return;
+      const rows = (targetLangs && targetLangs.length ? targetLangs : [{ code: 'ko', name_ko: '한국어', name_en: 'Korean' }]);
+      const seen = new Set();
+      srcLangSelect.innerHTML = '';
+      for (const l of rows) {
+        if (!l || !l.code || seen.has(l.code)) continue;
+        seen.add(l.code);
+        const o = document.createElement('option');
+        o.value = l.code;
+        o.textContent = (UI_LANG === 'ko' ? (l.name_ko || l.code) : (l.name_en || l.code)) + ' (' + l.code + ')';
+        if (l.code === SRC_LANG) o.selected = true;
+        srcLangSelect.appendChild(o);
+      }
+      /* 목록에 ko 가 없으면(정본을 못 읽었을 때) 적어도 지금 값은 고를 수 있어야 한다(§20) */
+      if (!seen.has(SRC_LANG)) {
+        const o = document.createElement('option');
+        o.value = SRC_LANG; o.textContent = SRC_LANG; o.selected = true;
+        srcLangSelect.insertBefore(o, srcLangSelect.firstChild);
+      }
+    }
+    if (srcLangSelect) {
+      srcLangSelect.addEventListener('change', () => {
+        SRC_LANG = srcLangSelect.value || 'ko';
+        trLog.push(`src_lang set=${SRC_LANG}`);
+        initLangChips();                   // 말하는 언어는 번역 대상에서 빠진다
+      });
+    }
+
     const langChips = document.getElementById('langChips');
     const paraList = document.getElementById('paraList');
     const paraCount = document.getElementById('paraCount');
@@ -813,9 +860,11 @@
       stepPrepare.style.display = 'block';
       licenseInfo.textContent = `${T('auth_ok')} (${payload && payload.sub ? payload.sub : 'Host'})`;
       initLangChips();                       // 먼저 박힌 아홉으로 그린다 — 화면이 비어 보이지 않게
+      renderSrcLangSelect();                 // **내가 말하는 언어** 고르개도 같이(정본 §1 ②)
       loadTargetLangs().then((rows) => {     // 정본(82)이 오면 다시 그린다. 못 오면 아홉 그대로(§20)
         targetLangs = rows;
         initLangChips();
+        renderSrcLangSelect();
       });
       restoreSavedData();
     }
@@ -2246,6 +2295,9 @@
         auth_ask: '이용권 발급 문의 →',
         auth_ok: '강사 이용권 인증됨',
         prep_title: '강의 원고 준비 및 사전 번역',
+        prep_src_lang: '내가 말하는 언어',
+        prep_src_lang_sub: '이 언어로 받아쓰고, 손님은 각자 고른 언어로 듣습니다. (손님 언어를 강사가 고르지 않습니다)',
+        prep_pre_open: '원고 미리 번역 (선택 · 강사 검수용)',
         prep_step1: '① 원고 파일 올리기 (TXT · PDF · DOCX · HWPX)',
         prep_drop: '강의 원고 파일(TXT · PDF · DOCX)을 마우스로 끌어다 놓으세요',
         prep_drop_sub: '또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)',
@@ -2383,6 +2435,9 @@
         auth_ask: 'Ask about licences →',
         auth_ok: 'Instructor licence verified',
         prep_title: 'Prepare the script and pre-translate',
+        prep_src_lang: 'The language I speak',
+        prep_src_lang_sub: 'Dictation uses this language; each listener hears their own. (You do not pick listener languages.)',
+        prep_pre_open: 'Pre-translate the script (optional · for your own review)',
         prep_step1: '① Upload the script (TXT · PDF · DOCX · HWPX)',
         prep_drop: 'Drag the script file (TXT · PDF · DOCX) here',
         prep_drop_sub: 'or click to choose a file — handled in this browser, nothing is uploaded',
