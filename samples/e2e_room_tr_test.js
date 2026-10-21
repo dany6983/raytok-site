@@ -115,7 +115,10 @@ class Bridge {
 
     /* 손님 셋 — en · zh-CN · ne. 셋 다 **원문 언어가 아닌** 말을 쓴다. */
     for (const lang of ['en', 'zh-CN', 'ne']) {
-      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      /* ★ 폰 언어를 **한국어로** 둔다 (B 0, 대표님 실기 10-21 13:30). 그 폰에서는 브라우저가
+         번역해 주지 않으므로 **방 번역만이 길**이다 — 여기서 자막이 손님 말로 나오면
+         그 길이 실제로 사는 것이다. 전에는 기본 폰 언어(en)로 돌아 en 손님만 운이 좋았다. */
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR' });
       const page = await ctx.newPage();
       await page.goto(`${base}/web/listener/?room=ABC123&lang=${lang}&relay=127.0.0.1:${srv.address().port}`);
       await page.waitForSelector('#btn-join');

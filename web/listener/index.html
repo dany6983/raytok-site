@@ -1579,9 +1579,39 @@
       });
     })();
 
+    function browserLangs() {
+      try {
+        var l = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language];
+        return (l || []).filter(Boolean).map(function (x) { return normalizeLangCode(String(x).split(/[-_]/)[0]); });
+      } catch (e) { return []; }
+    }
+    function browserCanTranslate() {
+      var me = normalizeLangCode(String(selectedLang || '').split(/[-_]/)[0]);
+      var src = normalizeLangCode(String(srcLang || '').split(/[-_]/)[0]);
+      if (!me || !src || me === src) return false;        // 번역할 것이 없다
+      return browserLangs().indexOf(me) >= 0;
+    }
+    var trPlanLog = [];
+    function trPlan() {
+      var plan = browserCanTranslate() ? 'browser' : 'server';
+      var line = 'guest_tr_plan plan=' + plan + ' me=' + (selectedLang || '-')
+               + ' browser=' + (browserLangs()[0] || '-') + ' src=' + (srcLang || '-');
+      if (trPlanLog[trPlanLog.length - 1] !== line) { trPlanLog.push(line); try { console.log(line); } catch (e) {} }
+      return plan;
+    }
+    window.rtTrPlan = { plan: trPlan, log: function () { return trPlanLog.slice(); },
+                        canBrowser: browserCanTranslate, langs: browserLangs };
+
     var TR_WAIT_MS = 2000;
     function speakWhenTranslated(line, msg) {
       var audio = (msg && (msg.audio_url || (msg.tr && msg.tr.audio_url))) || undefined;
+      if (trPlan() === 'server') {
+        if (line.tr && line.tr[selectedLang]) {
+          markGuestTr('server');
+          sayOnce(line, line.tr[selectedLang], line.via, audio);
+        }
+        return;
+      }
       var el = document.querySelector('#' + CSS.escape(lineElId(line)) + ' .msg-text');
       if (!el) return;
       var was = el.getAttribute('data-src-text');
@@ -1609,7 +1639,7 @@
       if (!box) return;
       var differ = srcLang && selectedLang &&
                    normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang);
-      var show = !!differ && guestTr !== 'server';
+      var show = !!differ && guestTr !== 'server' && browserCanTranslate();
       box.style.display = show ? 'block' : 'none';
       var line = 'tr_notice on=' + (show ? 1 : 0) + ' from=' + (srcLang || '-') + ' me=' + (selectedLang || '-');
       if (trNoticeLog[trNoticeLog.length - 1] !== line) trNoticeLog.push(line);
