@@ -35,18 +35,5 @@
       "Bash(npx wrangler secret:*)"
     ]
   },
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node scripts/stopwait.js",
-            "timeout": 600
-          }
-        ]
-      }
-    ]
-  },
   "crossSessionInbound": "accept"
 }

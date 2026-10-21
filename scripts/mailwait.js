@@ -16,7 +16,7 @@
 // 나가는 값: 0 변화 없음 · 2 바뀌었다 · 3 **못 봤다**(가지·원격·파일 문제 — 고쳐야 한다)
 const { execSync } = require('child_process');
 
-const WATCH = ['docs/MASTER.md'];
+const WATCH = ['docs/NOW.md'];
 const EVERY_MS = 60 * 1000, MAX_MS = 9 * 60 * 1000;
 const FETCH_FAIL_LIMIT = 3;        // 원격을 세 번 내리 못 받으면 멈춘다(조용히 "변화 없음" 하지 않는다)
 const once = process.argv.includes('--once');

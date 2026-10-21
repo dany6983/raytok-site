@@ -8,8 +8,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const WATCH = ['docs/MASTER.md', 'docs/MAIL.md', 'docs/C_검색보고.md'];
-const THROTTLE_MS = 60 * 1000;
+const WATCH = ['docs/NOW.md']; // 10-21: 지시는 NOW 하나 (대표님 "크레딧 아끼자")
+const THROTTLE_MS = 5 * 60 * 1000;
 const force = process.argv.includes('--force');
 
 function git(cmd) {
