@@ -444,7 +444,10 @@
           10-20 에 「참여하기」로 미뤘다가 그 띠가 깨지는 것을 시험이 잡았다. -->
   <script src="../common/voice-fallback.js"></script>
   <script>
-    const LISTENER_VER = '1.1.4'; // v1.1.4 — ④ 빈 방 문구·글자 크기
+    /* ★ 판 번호를 올리는 까닭(10-21): 대표님이 **화면 아래 이 번호만 보고** 새 판인지
+       아실 수 있어야 한다. 10-21 에 "배포 했는데 또 해?"가 나온 자리다 — 손님 화면은
+       배포가 아니라 밀면 바로 사는데, 그것을 눈으로 확인할 길이 없었다. */
+    const LISTENER_VER = '1.1.5'; // v1.1.5 — B 0: 폰 말이 아니면 방 번역으로 · 「번역 대기 중」
     document.getElementById('ver-text').textContent = LISTENER_VER;
 
     /* 되돌림용 **짧은** 목록이다 — 진짜 목록은 `./langs.json`(82개)을 받아 쓴다.
