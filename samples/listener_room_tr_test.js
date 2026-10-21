@@ -23,7 +23,10 @@ const T0 = Date.now();
    어느 줄이 오래 걸리는지 보이지 않으면 다음 사람도 같은 것을 다시 뒤진다. */
 const ok = (c, d) => { assert(c, d); pass++; console.log(`  [PASS] (${Date.now() - T0}ms) ` + d); };
 
-const relay = createMockRelay({ root: path.join(__dirname, '..') });
+/* 가짜 방의 번역은 **끈다** — 이 시험은 방 메시지를 **손으로** 넣어 페이지가 그것을 어떻게
+   다루나를 본다. 가짜까지 번역하면 손으로 넣은 것과 섞여 무엇을 보고 통과했는지 못 가른다.
+   (보내는 쪽은 `relay/test/room-translate.mjs` 와 `samples/e2e_room_tr_test.js` 가 본다) */
+const relay = createMockRelay({ root: path.join(__dirname, '..'), roomTranslate: false });
 
 function openHost(base, room) {
   return new Promise((resolve, reject) => {

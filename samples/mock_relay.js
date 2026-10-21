@@ -14,7 +14,14 @@ const { verifyCode } = require('../relay/src/mint-core.js');
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.js': 'application/javascript', '.png': 'image/png' };
 
-function createMockRelay({ root, endCloseMs = 5000 } = {}) {
+/*
+ * `roomTranslate: false` — **가짜 방이 번역하지 않게** 한다. 방 메시지(`tr`·`script_tr`·
+ * `no_tr`)를 손으로 넣어 **청취 페이지가 그것을 어떻게 다루나**를 보는 시험을 위한 문이다
+ * (`samples/listener_room_tr_test.js`). 그런 시험에서 가짜까지 번역하면 손으로 넣은 것과
+ * 가짜가 넣은 것이 섞여 **무엇을 보고 통과했는지** 못 가른다. 기본은 **켬**이다 — 운영이
+ * 그렇게 돌아가므로, 끄는 것은 그 까닭을 쓴 시험만 한다(D-11).
+ */
+function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = true } = {}) {
   const rooms = new Map();        // code -> room
   const hostReceived = [];        // 호스트가 /ws 로 보낸 메시지(해석한 것, 방 구분 없이 시간 순)
   const httpLog = [];             // 릴레이 API 로 온 요청 "METHOD /path"
@@ -429,7 +436,7 @@ function createMockRelay({ root, endCloseMs = 5000 } = {}) {
           for (const l of room.listeners.keys()) { try { l.send(s); } catch (_) {} }
           if (parsed) { hostReceived.push(parsed); room.received.push(parsed); }
           /* 원문이 간 **뒤에** 번역을 보낸다 — 늦어도 남는 쪽(R-15) */
-          if (parsed) roomTranslate(room, parsed);
+          if (parsed && doRoomTr) roomTranslate(room, parsed);
           if (parsed && parsed.end) endRoom(room, parsed.summary);
         });
         ws.on('close', () => room.hosts.delete(ws));

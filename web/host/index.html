@@ -485,6 +485,9 @@
             <span id="micStatus" class="live-status" data-t="mic_idle"></span>
           </div>
           <div class="notice info" id="micOffNote" style="display: none; margin-top: 12px; margin-bottom: 0;"></div>
+          <!-- 방이 그 언어를 번역하지 못했다 (NOW B 5). 강사는 할 수 있는 일이 있다 —
+               말을 다시 하거나, 그 언어를 빼거나, 상한·돈을 본다. 조용히 넘기지 않는다(§20). -->
+          <div class="notice warn" id="trFailNote" style="display: none; margin-top: 12px; margin-bottom: 0;"></div>
           <div class="notice info" style="margin-top: 14px; margin-bottom: 0;" data-t="live_keys"></div>
         </div>
         <div class="live-side">
@@ -737,6 +740,9 @@
     /* 늦게 온 언어를 **이 화면에서도** 번역해 둘까 — 손님에게는 방이 보낸다(B 5).
        켜면 강사 화면의 검수 칸만 채워지고 `/translate` 를 그만큼 더 부른다(돈). 기본 끔. */
     const LATE_TR_LOCAL = false;
+
+    /* 방이 번역 못 한 언어 → 까닭. 같은 언어는 **마지막 까닭 하나**만 들고 있는다(B 5) */
+    const trFails = new Map();
 
     const btnPreTranslate = document.getElementById('btnPreTranslate');
     const transProgressArea = document.getElementById('transProgressArea');
@@ -1965,6 +1971,21 @@
         if (live.ended) renderEnd();
         return;
       }
+      /* 방이 번역을 못 했다 — 어느 언어가·왜 인지 **화면에 띄운다**(NOW B 5).
+         같은 언어가 여러 번 실패해도 한 줄로 모은다(줄마다 띠가 쌓이면 못 읽는다). */
+      if (msg.kind === 'tr_fail') {
+        const lang = String(msg.lang || '?');
+        const why = String(msg.why || '?');
+        trFails.set(lang, why);
+        const note = document.getElementById('trFailNote');
+        if (note) {
+          const parts = [...trFails.entries()].map(([l, w]) => `${l} (${w})`);
+          note.textContent = T('tr_fail_note').replace('{langs}', parts.join(', '));
+          note.style.display = 'block';
+        }
+        trLog.push(`tr_fail_seen lang=${lang} why=${why}`);
+        return;
+      }
       if (msg.kind === 'ask_queue') {
         renderAskQueue(msg.queue || []);
         return;
@@ -2228,6 +2249,7 @@
         ask_empty: '대기 중인 질문이 없습니다.',
         err_need_code: '이용권 코드를 입력하세요.',
         err_lang_cap: '한 번에 고를 수 있는 언어는 {n}개까지입니다. 하나를 빼고 다시 고르세요.',
+        tr_fail_note: '번역 안 됨: {langs} — 그 언어 청취자는 원문을 봅니다.',
         err_timeout: '서버 응답 시간 초과 (5초)',
         err_unreachable: '서버에 닿지 않습니다: ',
         err_bad_json: '서버로부터 올바르지 않은(빈) 응답을 받았습니다.',
@@ -2363,6 +2385,7 @@
         ask_empty: 'No questions waiting.',
         err_need_code: 'Enter the licence code.',
         err_lang_cap: 'You can pick up to {n} languages at once. Unpick one first.',
+        tr_fail_note: 'Not translated: {langs} — those listeners see the original text.',
         err_timeout: 'The server did not answer within 5 seconds.',
         err_unreachable: 'Cannot reach the server: ',
         err_bad_json: 'The server returned an empty or invalid response.',

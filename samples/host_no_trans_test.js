@@ -121,6 +121,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(scripts.every((m) => typeof m.src === 'string' && m.srcLang),
        '그 문단은 **원문 + 원문 언어**만 들고 간다 (번역은 방이 한다)');
 
+    /* ⑤ 번역이 안 되면 **강사 화면에 뜬다** (NOW B 5). 방이 보내는 `tr_fail` 을 그대로 넣어
+       본다 — 화면에 안 뜨면 강사는 번역이 되고 있다고 믿는다(§20). */
+    const hostSock = [...room.hosts][0];
+    try { hostSock.send(JSON.stringify({ kind: 'tr_fail', lang: 'ne', why: 'http_502', para: 1 })); } catch (_) {}
+    await sleep(400);
+    const noteShown = await host.evaluate(() => {
+      const el = document.getElementById('trFailNote');
+      return el ? { vis: el.style.display !== 'none', text: el.textContent } : null;
+    });
+    ok(noteShown && noteShown.vis && /ne/.test(noteShown.text) && /502/.test(noteShown.text),
+       `번역 실패가 강사 화면에 **언어와 까닭으로** 뜬다 ("${noteShown && noteShown.text}")`);
+
+    /* 같은 언어가 또 실패해도 **한 줄로 모은다** — 줄마다 띠가 쌓이면 못 읽는다 */
+    try { hostSock.send(JSON.stringify({ kind: 'tr_fail', lang: 'ne', why: 'shape', para: 2 })); } catch (_) {}
+    await sleep(300);
+    const again = await host.evaluate(() => document.getElementById('trFailNote').textContent);
+    ok((again.match(/ne/g) || []).length === 1, `같은 언어는 한 줄로 모은다 ("${again}")`);
+
     /* ④ 되돌림 실증 — 10-20 에 실제로 나가던 그 메시지를 같은 검사기에 넣는다.
        잡지 않으면 위 초록은 "검사기가 아무것도 안 본다"는 뜻이다(D-09). */
     const old2020 = { kind: 'script', para: 1, total: 3, src: '안전모를 쓰세요', srcLang: 'ko',

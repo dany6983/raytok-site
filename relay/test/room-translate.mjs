@@ -70,18 +70,19 @@ function makeEnv(mode, listeners) {
 
 function makeRoom(langs, mode = 'ok', extraEnv = {}) {
   const ls = langs.map(listener);
+  const hostWs = listener(null);                 // 강사 소켓 — 실패 알림을 받는 자리(B 5)
   const { env, calls } = makeEnv(mode, ls);
   const ctx = {
     storage: new MockStorage(),
     getTags: () => ['host'],
     blockConcurrencyWhile: async (fn) => await fn(),
-    getWebSockets: (tag) => (tag === 'listener' ? ls : [])
+    getWebSockets: (tag) => (tag === 'listener' ? ls : tag === 'host' ? [hostWs] : [...ls, hostWs])
   };
   const room = new Room(ctx, { ...env, ...extraEnv });
   room.sub = 'room_tr_user';
   room.licFlags = 0x10;                 // 인터넷 번역 패키지를 산 라이선스로 만든 방
   room.att = { joined: ls.length, max: ls.length, langs: {} };
-  return { room, ls, calls };
+  return { room, ls, calls, hostWs };
 }
 
 const lineOf = (seq, text) => ({ seq, text, srcLang: 'ko' });
@@ -122,6 +123,16 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(ls[0].got.length === 1 && ls[0].got[0].no_tr === 1 && ls[0].got[0].seq === 3,
      `실패해도 no_tr 이 간다 (${JSON.stringify(ls[0].got[0])})`);
   ok(/^http_502|fetch_error$/.test(String(ls[0].got[0].why)), `까닭을 적는다 (why=${ls[0].got[0].why})`);
+}
+
+/* ③-2 강사에게도 **알린다** — 손님은 「번역 안 됨」을 봐도 할 수 있는 일이 없고 강사는 있다 */
+{
+  const { room, hostWs } = makeRoom(['en'], 'fail');
+  room.roomTrFromHost(lineOf(31, '강사도 알아야 한다'));
+  await wait(RTR.BATCH_MS + 60);
+  const m = hostWs.got.find((x) => x.kind === 'tr_fail');
+  ok(m && m.lang === 'en' && /^http_502|fetch_error$/.test(String(m.why)) && m.seq === 31,
+     `실패를 강사 화면에 알린다 (${JSON.stringify(m)}) — 조용히 넘기면 강사는 되고 있다고 믿는다`);
 }
 
 /* ④ **빈 답**은 답이 아니다(§20) — `{t:[]}` · `{t:null}` 둘 다 no_tr */

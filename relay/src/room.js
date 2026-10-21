@@ -406,6 +406,23 @@ export class Room {
     return { res: null, why: 'no_route' };
   }
 
+  /**
+   * 번역이 **안 됐다는 것을 강사에게 알린다** (NOW B 5).
+   *
+   * 왜 손님에게만 알리지 않나: 손님은 「번역 안 됨」을 봐도 할 수 있는 일이 없다. 강사는
+   * 있다 — 말을 다시 하거나, 그 언어를 빼거나, 상한·돈을 본다. 조용히 넘기면 강사는
+   * **번역이 되고 있다고 믿는다**(§20: 모르게 두지 않는다).
+   */
+  tellHostTrFail(lang, why, item) {
+    const msg = { kind: 'tr_fail', lang, why };
+    if (item && item.script) msg.para = item.para; else if (item) msg.seq = item.seq;
+    try {
+      for (const ws of this.ctx.getWebSockets('host')) {
+        try { ws.send(JSON.stringify(msg)); } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
   /** 그 언어 손님에게만 보낸다 — 남의 언어 번역문을 받을 필요가 없다(바이트도 돈이다) */
   sendToLang(lang, msgs) {
     const want = RTR.normLang(lang);
@@ -457,6 +474,7 @@ export class Room {
           const code = why || (res ? 'http_' + res.status : 'no_res');
           try { console.log(`room_tr_fail lang=${lang} why=${code}`); } catch (_) {}
           this.sendToLang(lang, RTR.noTrMessages(part, code));
+          this.tellHostTrFail(lang, code, part[0]);
           continue;
         }
         let out;
@@ -465,6 +483,7 @@ export class Room {
         if (!made.ok) {
           try { console.log(`room_tr_fail lang=${lang} why=${made.why}`); } catch (_) {}
           this.sendToLang(lang, RTR.noTrMessages(part, made.why));
+          this.tellHostTrFail(lang, made.why, part[0]);
           continue;
         }
         const chars = texts.reduce((a, t) => a + t.length, 0);
