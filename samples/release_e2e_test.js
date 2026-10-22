@@ -78,7 +78,7 @@ console.log('=== 줄 23 출시 전 끝까지 시험 (웹 강사 경로 포함) =
 
     // 사전 번역 실행
     await hostPage.click('#btnPreTranslate');
-    await hostPage.waitForSelector('#readyArea', { state: 'visible', timeout: 15000 });
+    await hostPage.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 15000 });
     ok(await hostPage.isVisible('#readyArea'), '4개 문단 다국어 사전 번역 완료');
 
     // 강의 시작 (방 개설)

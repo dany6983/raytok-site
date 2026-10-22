@@ -110,7 +110,7 @@ async function openHost(browser, base, { speech, region, locale, question }) {
   await page.check('#chkBroadcastRaw');
   if (question) await page.check('#chkEnableQuestion');   // 켜야 질문 대기열 칸이 보인다
   await page.click('#btnPreTranslate');
-  await page.waitForSelector('#readyArea', { state: 'visible', timeout: 5000 });
+  await page.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'raw', null, { timeout: 5000 });
   await page.click('#btnStartLecture');
   await page.waitForSelector('#step-live', { state: 'visible' });
   await page.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 5000 });

@@ -178,8 +178,14 @@ async function openHost(b, withScript, errs) {
                first: el.options[0] ? el.options[0].textContent : '' };
     });
     row('PC 강사 준비', '고르개에 82개가 다 있다', sel && sel.n >= 82 ? 'PASS' : 'FAIL', sel ? `${sel.n}개 · 첫 줄 "${sel.first}"` : '고르개가 없다');
-    const dark = sel && /dark/.test(sel.scheme) && sel.opBg && sel.opBg !== 'rgba(0, 0, 0, 0)';
-    row('PC 강사 준비', '펼침 목록이 어두운 쪽 색을 받는다', dark ? 'PASS' : 'FAIL',
+    /* 펼침 목록은 OS 가 그린다 — 화면 배색을 **말해 주지 않으면** 흰 바탕에 흰 글자가 된다
+       (대표님 10-22 17:35 ③). 어느 쪽 배색인지는 그때그때 다르니(10-22 저녁에 밝은 쪽으로
+       바뀌었다) **값을 박지 않고**, ① 배색을 말해 주었나 ② 바탕이 비치지 않나 ③ 글자와
+       바탕이 다른가 셋만 본다. */
+    const told = sel && /^(light|dark)$/.test((sel.scheme || '').trim());
+    const opaque = sel && sel.opBg && sel.opBg !== 'rgba(0, 0, 0, 0)' && sel.opBg !== 'transparent';
+    const readable = sel && sel.opFg && sel.opFg !== sel.opBg;
+    row('PC 강사 준비', '펼침 목록이 화면 배색을 따른다', told && opaque && readable ? 'PASS' : 'FAIL',
       sel ? `color-scheme=${sel.scheme} · option 바탕 ${sel.opBg} · 글자 ${sel.opFg}` : '-');
     if (SHOT) await pc.screenshot({ path: `${SHOT}/PC-host-prepare-1366.png`, fullPage: true });
     await pctx.close();

@@ -19,19 +19,26 @@
       --sp-md: 12px;
       --sp-lg: 16px;
       --sp-xl: 24px;
-      --ink-high: #ffffff;
-      --ink-mid: rgba(255, 255, 255, 0.5);
-      --ink-low: rgba(255, 255, 255, 0.45);
+      --ink-high: var(--rt-text, #201e1d);
+      --ink-mid: rgba(32, 30, 29, 0.72);
+      --ink-low: rgba(32, 30, 29, 0.56);
 
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #38bdf8;
-      --border: #334155;
-      --success: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
+      /* ★ 2026-10-22 대표님 "웹 색이 너무 칙칙하다 — 앱과 같은 배색".
+         정본은 `/common/theme.css` 의 `--rt-…`(= 앱 `src/theme.js`). 여기 값은 그 파일이
+         안 실릴 때의 떨어짐이고, 어긋나면 `test:design` 이 붉다. */
+      --bg: var(--rt-bg, #f3f2f2);
+      --card-bg: var(--rt-surface, #eae9e9);
+      --border: var(--rt-border, #d7d3d3);
+      --text: var(--rt-text, #201e1d);
+      --text-muted: var(--rt-muted, #605d5d);
+      --primary: var(--rt-primary, #006786);
+      --primary-hover: var(--rt-accent, #0088b0);
+      --success: var(--rt-success, #0f7a56);
+      --warning: var(--rt-warning, #f59e0b);
+      --warning-ink: var(--rt-warning-ink, #8a5a00);
+      --danger: var(--rt-danger, #c62828);
+      --brand: var(--rt-brand, #0A0F1F);
+
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -74,8 +81,8 @@
       font-size: 14px;
       font-weight: 700;
     }
-    .badge-success { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
-    .badge-danger { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
+    .badge-success { background-color: rgba(15, 122, 86, 0.2); color: var(--success); }
+    .badge-danger { background-color: rgba(198, 40, 40, 0.2); color: var(--danger); }
     
     .result-details { font-size: 14px; line-height: 1.7; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
     .detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
@@ -88,7 +95,7 @@
       border: 1px solid rgba(245, 158, 11, 0.3);
       border-radius: 8px;
       padding: 12px;
-      color: #fbbf24;
+      color: var(--warning);
       font-size: 13px;
     }
     .gap-title { font-weight: 700; margin-bottom: 4px; }

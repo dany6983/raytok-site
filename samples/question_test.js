@@ -63,7 +63,7 @@ const outsideRequests = [];
     await hostPage.waitForFunction(() => document.querySelectorAll('.para-item').length === 2);
 
     await hostPage.click('#btnPreTranslate');
-    await hostPage.waitForSelector('#readyArea', { state: 'visible', timeout: 10000 });
+    await hostPage.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 10000 });
 
     // 질문 받기 **기본 켬** 확인 (AGENTS §24, 대표님 10-16)
     // 10-16 까지 기본 꺼짐이었다 — 7번을 다 만들어 놓고도 대표님 화면에 대기열이 안 보였다.

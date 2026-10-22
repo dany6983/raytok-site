@@ -20,22 +20,27 @@
       --sp-md: 12px;
       --sp-lg: 16px;
       --sp-xl: 24px;
-      --ink-high: #ffffff;
-      --ink-mid: rgba(255, 255, 255, 0.5);
-      --ink-low: rgba(255, 255, 255, 0.45);
+      --ink-high: var(--rt-text, #201e1d);
+      --ink-mid: rgba(32, 30, 29, 0.72);
+      --ink-low: rgba(32, 30, 29, 0.56);
 
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      /* 흰 글자를 얹는 색이라 WCAG AA(4.5:1) 를 넘겨야 한다. #0284c7 은 4.1:1 로 모자랐다
-         — 10-15 a11y 시험이 잡았다. #0369a1 은 같은 파랑 계열에서 5.9:1. */
-      --primary: #0369a1;
-      --primary-hover: #0369a1;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
+      /* ★ 2026-10-22 대표님 "웹 색이 너무 칙칙하다 — 앱과 같은 배색".
+         값의 정본은 `/common/theme.css` 의 `--rt-…`(= 앱 `src/theme.js`)다. 여기 적힌 것은
+         그 파일이 안 실릴 때의 **떨어짐 값**이고, 둘이 어긋나면 `test:design` 이 붉다.
+         흰 글자를 얹는 색은 WCAG AA(4.5:1)를 넘겨야 한다 — `--primary` #006786 은 6.3:1,
+         앱 accent #0088b0 은 3.4:1 이라 **글자로 쓰지 않는다**(띠·테두리에만). */
+      --bg: var(--rt-bg, #f3f2f2);
+      --card-bg: var(--rt-surface, #eae9e9);
+      --border: var(--rt-border, #d7d3d3);
+      --text: var(--rt-text, #201e1d);
+      --text-muted: var(--rt-muted, #605d5d);
+      --primary: var(--rt-primary, #006786);
+      --primary-hover: var(--rt-accent, #0088b0);
+      --success: var(--rt-success, #0f7a56);
+      --warning: var(--rt-warning, #f59e0b);
+      --warning-ink: var(--rt-warning-ink, #8a5a00);
+      --danger: var(--rt-danger, #c62828);
+      --brand: var(--rt-brand, #0A0F1F);
       --radius: 10px;
     }
 
@@ -68,26 +73,28 @@
        보였다(폰은 멀쩡했다). PC 의 펼침 목록은 OS 가 그리고, 어두운 화면의 글자색만 물려받아
        **흰 바탕 + 흰 글자**가 된다. `color-scheme` 로 어두운 쪽을 쓰라고 알리고, `option` 에
        바탕·글자색을 직접 준다 — 둘 다 있어야 크롬·엣지·파이어폭스가 같이 맞는다. */
-    #srcLangSelect { color-scheme: dark; max-width: 100%; }
-    #srcLangSelect option { background: #111827; color: #e5e7eb; }
+    #srcLangSelect { color-scheme: light; max-width: 100%; }
+    #srcLangSelect option { background: #ffffff; color: var(--text); }
     .brand {
       display: flex;
       align-items: center;
       gap: 10px;
       font-weight: 700;
       font-size: 1.15rem;
-      color: #38bdf8;
+      color: var(--primary);
       min-width: 0;
       flex-wrap: wrap;
     }
     .brand > span:first-child { white-space: nowrap; }
+    /* 로고는 머리 높이에 맞춘다 — 폰에서도 한 줄이다 */
+    .brand-logo { height: 22px; width: auto; display: block; }
     .badge {
       font-size: 0.75rem;
       padding: 2px 8px;
       border-radius: 4px;
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      color: #38bdf8;
+      background: rgba(0, 136, 176, 0.15);
+      border: 1px solid rgba(0, 136, 176, 0.3);
+      color: var(--primary);
     }
 
     main {
@@ -124,7 +131,7 @@
       flex: 1;
       text-align: center;
       padding: 10px;
-      background: #1e293b;
+      background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 6px;
       font-size: 0.85rem;
@@ -132,9 +139,9 @@
       font-weight: 600;
     }
     .step-pill.active {
-      background: rgba(2, 132, 199, 0.2);
-      border-color: #38bdf8;
-      color: #38bdf8;
+      background: rgba(0, 103, 134, 0.2);
+      border-color: var(--primary);
+      color: var(--primary);
     }
 
     .form-group {
@@ -150,7 +157,7 @@
     input[type="text"], input[type="password"], textarea, select {
       width: 100%;
       padding: 10px 14px;
-      background: #0f172a;
+      background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 6px;
       color: var(--text);
@@ -158,7 +165,7 @@
       outline: none;
     }
     input[type="text"]:focus, textarea:focus {
-      border-color: #38bdf8;
+      border-color: var(--primary);
     }
 
     .btn {
@@ -178,8 +185,8 @@
     }
     .btn:hover { background: var(--primary-hover); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn.secondary { background: #334155; }
-    .btn.secondary:hover { background: #475569; }
+    .btn.secondary { background: var(--border); }
+    .btn.secondary:hover { background: #9b9797; }
     .btn.success { background: var(--success); }
 
     .drop-zone {
@@ -187,13 +194,13 @@
       border-radius: var(--radius);
       padding: 36px 20px;
       text-align: center;
-      background: rgba(15, 23, 42, 0.5);
+      background: rgba(32, 30, 29, 0.45);
       cursor: pointer;
       transition: border-color 0.2s;
     }
     .drop-zone:hover, .drop-zone.dragover {
-      border-color: #38bdf8;
-      background: rgba(2, 132, 199, 0.05);
+      border-color: var(--primary);
+      background: rgba(0, 103, 134, 0.05);
     }
     .drop-icon { font-size: 2rem; margin-bottom: 8px; color: var(--text-muted); }
 
@@ -205,7 +212,7 @@
     .lang-chip {
       padding: 6px 12px;
       border-radius: 6px;
-      background: #0f172a;
+      background: var(--bg);
       border: 1px solid var(--border);
       font-size: 0.85rem;
       cursor: pointer;
@@ -216,13 +223,13 @@
     }
     .lang-chip input { cursor: pointer; }
     .lang-chip.selected {
-      background: rgba(2, 132, 199, 0.2);
-      border-color: #38bdf8;
-      color: #38bdf8;
+      background: rgba(0, 103, 134, 0.2);
+      border-color: var(--primary);
+      color: var(--primary);
     }
 
     .para-item {
-      background: #0f172a;
+      background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 14px;
@@ -248,19 +255,19 @@
       font-size: 0.75rem;
       cursor: pointer;
     }
-    .btn-action:hover { color: var(--text); border-color: #94a3b8; }
+    .btn-action:hover { color: var(--text); border-color: var(--text-muted); }
 
     .progress-bar {
       width: 100%;
       height: 8px;
-      background: #0f172a;
+      background: var(--bg);
       border-radius: 4px;
       overflow: hidden;
       margin: 12px 0;
     }
     .progress-fill {
       height: 100%;
-      background: #38bdf8;
+      background: var(--primary);
       width: 0%;
       transition: width 0.2s;
     }
@@ -272,15 +279,15 @@
       margin-bottom: 16px;
       line-height: 1.4;
     }
-    .notice.info { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; color: #bae6fd; }
-    .notice.warn { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; color: #fde68a; }
+    .notice.info { background: rgba(0, 136, 176, 0.10); border-left: 3px solid var(--primary); color: var(--text); }
+    .notice.warn { background: rgba(245, 158, 11, 0.14); border-left: 3px solid var(--warning); color: var(--warning-ink); }
 
     /* ── L4-2 진행 화면 ── */
     .live-grid { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
     @media (max-width: 760px) { .live-grid { grid-template-columns: 1fr; } }
     .live-list { max-height: 60vh; overflow-y: auto; padding-right: 4px; }
     .live-para {
-      background: #0f172a;
+      background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 12px 14px;
@@ -294,22 +301,22 @@
     .live-para.is-next { opacity: 0.6; border-style: dashed; }          /* 다음 문단은 흐리게 */
     .live-para.is-current {                                               /* 현재 문단 강조 */
       opacity: 1;
-      border-color: #38bdf8;
-      background: rgba(2, 132, 199, 0.18);
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+      border-color: var(--primary);
+      background: rgba(0, 103, 134, 0.18);
+      box-shadow: 0 0 0 2px rgba(0, 136, 176, 0.25);
     }
     .live-para.is-skipped { text-decoration: line-through; color: var(--text-muted); }
     .live-side { display: flex; flex-direction: column; gap: 14px; }
     .qr-box { background: #fff; border-radius: 8px; padding: 10px; display: flex; justify-content: center; }
     .qr-box svg, .qr-box img { width: 220px; height: 220px; display: block; }
-    .room-code { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.15em; color: #38bdf8; text-align: center; }
+    .room-code { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.15em; color: var(--primary); text-align: center; }
     /* 갈림 QR 스위치 (데모용). 손가락 칸 44px 은 접근성 시험(samples/a11y_test.js)과 같은 값 */
     .qr-target { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; justify-content: center; margin-top: 8px; }
     .qr-target-label { font-size: 0.75rem; color: var(--text-muted); margin-right: 2px; }
     .qr-target-btn { min-height: 44px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
-                     background: #0f172a; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; }
-    .qr-target-btn.on { background: #38bdf8; color: #0a0f1f; border-color: #38bdf8; font-weight: 700; }
-    .att-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; }
+                     background: var(--bg); color: var(--text-muted); font-size: 0.8rem; cursor: pointer; }
+    .qr-target-btn.on { background: var(--primary); color: #ffffff; border-color: var(--primary); font-weight: 700; }
+    .att-box { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; }
     .att-now { font-size: 1.4rem; font-weight: 700; color: var(--text); }
     .att-langs { margin-top: 6px; color: var(--text-muted); }
     .att-langs span { display: inline-block; margin-right: 10px; }
@@ -321,7 +328,7 @@
       display: none;
       background: rgba(245, 158, 11, 0.2);
       border: 1px solid var(--warning);
-      color: #fde68a;
+      color: var(--warning-ink);
       border-radius: 6px;
       padding: 10px 14px;
       margin-bottom: 12px;
@@ -332,10 +339,10 @@
 
     /* ── L4-3 끝 화면 ── */
     .btn.danger { background: var(--danger); }
-    .btn.danger:hover { background: #dc2626; }
+    .btn.danger:hover { background: #a61b1b; }
     .end-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
     @media (max-width: 760px) { .end-summary { grid-template-columns: 1fr; } }
-    .end-summary > div { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; color: var(--text-muted); }
+    .end-summary > div { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; color: var(--text-muted); }
     .end-summary strong { display: block; font-size: 1.4rem; color: var(--text); margin-top: 2px; }
     .end-summary .sum-sub { font-size: 0.8rem; overflow-wrap: anywhere; }
     .end-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
@@ -357,7 +364,10 @@
 <body>
   <header>
     <div class="brand">
-      <span>RayTok</span>
+      <!-- ★ 10-22 대표님 "로고도 내 것으로" — 글자 「RayTok」 대신 로고 그림.
+           파일은 저장소에 이미 있던 것이다(`assets/raytok-logo-dark.png`, 남색 워드마크) —
+           앱 `assets/logo-lockup.png` 과 같은 글씨꼴이라 따로 복사하지 않았다(§5). -->
+      <img src="/assets/raytok-logo-dark.png" alt="RayTok" class="brand-logo">
       <span class="badge" data-t="hdr_title"></span>
     </div>
     <div id="licenseInfo" style="font-size: 0.85rem; color: var(--text-muted);" data-t="auth_badge_unverified"></div>
@@ -377,7 +387,7 @@
       </div>
       <div style="display: flex; gap: 10px; align-items: center;">
         <button id="btnVerifyToken" class="btn" data-t="auth_btn"></button>
-        <a href="https://raytok.kr/download/" target="_blank" style="color: #38bdf8; font-size: 0.85rem; text-decoration: none;" data-t="auth_ask"></a>
+        <a href="https://raytok.kr/download/" target="_blank" style="color: var(--primary); font-size: 0.85rem; text-decoration: none;" data-t="auth_ask"></a>
       </div>
       <div id="authError" style="margin-top: 10px; color: var(--danger); font-size: 0.85rem; display: none;"></div>
     </section>
@@ -418,7 +428,7 @@
       </details>
 
       <!-- ②-B 번역 없이 방송 (아웃바운드 / 무선 가이드 모드, question.md §12) -->
-      <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+      <div class="form-group" style="background: rgba(32, 30, 29, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
         <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
           <input type="checkbox" id="chkBroadcastRaw" autocomplete="off" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
           <span data-t="broadcast_raw_title">번역 없이 방송 (원문 브로드캐스팅)</span>
@@ -433,7 +443,7 @@
            대표님 화면에 질문 대기열 칸이 아예 안 보였다 — §24 가 말하는 바로 그 모양이다.
            켜도 깨지는 것이 없다(청취자에게 ✋ 단추가 하나 늘고, 강사에게 대기열이 보인다).
            스위치는 **끄기 위해** 있다. -->
-      <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+      <div class="form-group" style="background: rgba(32, 30, 29, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
         <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
           <input type="checkbox" id="chkEnableQuestion" checked style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
           <span data-t="enable_question_title">참여자 질문 받기 (N:1 손들기 대기열)</span>
@@ -447,7 +457,7 @@
            켜면 끝 화면 리포트 칸 아래에 「정확본」 한 줄이 생긴다. 끄면 그 칸이 **없다**.
            지금은 상태를 바꿀 길(녹음 있는 쪽)이 웹 강사 화면에 없어 "아직 없음" 으로 뜬다 —
            **그렇게 보이는 것이 사실이다.** 지어낸 상태를 적지 않는다(§20). -->
-      <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+      <div class="form-group" style="background: rgba(32, 30, 29, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
         <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
           <input type="checkbox" id="chkEnablePostAsr" checked style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
           <span data-t="enable_postasr_title">사후 정확본 칸 보이기</span>
@@ -493,8 +503,8 @@
            10-22 까지는 `display:none` 으로 숨어 있다가 **사전 번역이 끝나야** 나왔다. 그래서
            원고 없이 바로 말하려는 강사에게 시작 단추가 **아예 없었다.** 머리글·설명은
            문단 수에 따라 `renderReadyArea()` 가 갈아 준다(쓰는 곳 하나, §4). -->
-      <div id="readyArea" style="margin-top: 18px; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 6px;">
-        <div id="readyTitle" style="color: #6ee7b7; font-weight: 600; margin-bottom: 6px;"></div>
+      <div id="readyArea" style="margin-top: 18px; padding: 16px; background: rgba(15, 122, 86, 0.1); border: 1px solid var(--success); border-radius: 6px;">
+        <div id="readyTitle" style="color: var(--success); font-weight: 600; margin-bottom: 6px;"></div>
         <div id="readyDesc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;"></div>
         <button id="btnStartLecture" class="btn success" data-t="prep_start"></button>
         <div id="liveError" style="margin-top: 10px; color: var(--danger); font-size: 0.85rem; display: none;"></div>
@@ -546,13 +556,13 @@
             <div style="color: var(--text-muted);" data-t="att_label"></div>
             <div><span class="att-now" id="attNow">0</span> <span style="color: var(--text-muted);"><span data-t="att_unit"></span> <span id="attMax">0</span>)</span></div>
             <div class="att-langs" id="attLangs">—</div>
-            <div id="batchStatsRow" style="font-size: 0.8rem; color: #38bdf8; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(148, 163, 184, 0.2); display: none;">
+            <div id="batchStatsRow" style="font-size: 0.8rem; color: var(--primary); margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(32, 30, 29, 0.2); display: none;">
               <span id="batchStatsText" data-t="batch_default"></span>
             </div>
             <!-- 산 코드 N개 또는 묶음 QR 보기 (08:25 7번: 가이드 화면에 코드마다 QR) -->
             <div id="hostLicenseQrArea" style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; text-align: center;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 0.8rem; font-weight: 600; color: #38bdf8;" data-t="qr_title"></span>
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--primary);" data-t="qr_title"></span>
                 <button id="btnToggleLicQr" class="btn-action" style="font-size: 0.75rem;" data-t="live_qr_show"></button>
               </div>
               <div id="hostLicQrBox" style="display: none; background: #fff; padding: 8px; border-radius: 6px; margin: 8px auto; width: 180px; height: 180px; align-items: center; justify-content: center;"></div>
@@ -570,9 +580,9 @@
               <span style="font-weight: 600; font-size: 0.85rem;"><span data-t="ask_queue_label"></span><span id="askQueueCount">0</span>)</span>
             </div>
             <!-- 활성 발언(답변) 영역 -->
-            <div id="askActiveArea" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+            <div id="askActiveArea" style="display: none; background: rgba(0, 136, 176, 0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-weight: 600; font-size: 0.85rem; color: #38bdf8;" id="askActiveSpeaker" data-t="ask_speaking"></span>
+                <span style="font-weight: 600; font-size: 0.85rem; color: var(--primary);" id="askActiveSpeaker" data-t="ask_speaking"></span>
                 <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
@@ -580,7 +590,7 @@
                 <!-- 정본 §1 ⑤ — 질문을 강사 말로 읽어 준다. 기본 켬(§24), 끄는 단추다 -->
                 <button id="btnAskSpeak" class="btn secondary" style="min-height: 36px; padding: 6px 10px;" data-t="ask_speak_on"></button>
                 <button id="btnAskEnd" class="btn secondary" style="flex: 1; min-height: 36px; padding: 6px;" data-t="btn_end"></button>
-                <button id="btnAskSilent" class="btn" style="min-height: 36px; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;" title="발언자가 무음이거나 응답하지 않을 때 회수" data-t="live_mute"></button>
+                <button id="btnAskSilent" class="btn" style="min-height: 36px; padding: 6px 12px; background: rgba(198, 40, 40, 0.15); border: 1px solid var(--danger); color: var(--danger);" title="발언자가 무음이거나 응답하지 않을 때 회수" data-t="live_mute"></button>
               </div>
             </div>
             <!-- 대기열 목록 -->
@@ -997,10 +1007,12 @@
       if (!title || !desc) return;
       const n = paragraphs.length;
       const hasTrans = paragraphs.some((p) => p.trans && Object.keys(p.trans).length > 0);
-      const key = n === 0 ? 'mic' : hasTrans ? 'done' : 'script';
+      /* 「번역 없이 방송」으로 준비를 마친 길은 번역이 **없는 것이 맞다** — 그 둘을 가르지
+         않으면 화면이 「아직 번역 전」처럼 보이고, 시험도 끝났는지 알 길이 없다. */
+      const key = n === 0 ? 'mic' : rawReady ? 'raw' : hasTrans ? 'done' : 'script';
       title.textContent = key === 'done' ? T('prep_done') : T('prep_ready_' + key);
       desc.textContent = (key === 'done' ? T('prep_done_desc') : T('prep_ready_' + key + '_desc'))
-                       + (key === 'script' ? ' (' + n + ')' : '');
+                       + (key === 'script' || key === 'raw' ? ' (' + n + ')' : '');
       readyMode = key;
       const line = `ready_area mode=${key} paras=${n}`;      // §12 첫 걸음에 기록 한 줄
       if (trLog[trLog.length - 1] !== line) trLog.push(line);
@@ -1009,6 +1021,8 @@
      *  ★ 시험이 「사전 번역이 끝났나」를 보는 자리였던 `#readyArea` 가 **늘 보이게** 바뀌었다
      *  (10-22 17:35 ①). 그래서 보임/숨음으로는 더 못 가린다 — 화면이 쓰는 그 값을 그대로 낸다. */
     let readyMode = '';
+    /** 「번역 없이 방송」으로 준비를 마쳤나 — 원고가 바뀌면 다시 거짓이다 */
+    let rawReady = false;
     window.rtHostReady = { mode: function () { return readyMode; }, render: renderReadyArea };
 
     function renderParagraphs() {
@@ -1034,7 +1048,7 @@
           </div>
           <div style="font-size: 0.95rem; line-height: 1.5; color: var(--text);">${escapeHtml(p.src)}</div>
           ${Object.keys(p.trans).length > 0 ? `
-            <div style="margin-top: 8px; font-size: 0.85rem; color: #38bdf8; border-top: 1px dashed var(--border); padding-top: 6px;">
+            <div style="margin-top: 8px; font-size: 0.85rem; color: var(--primary); border-top: 1px dashed var(--border); padding-top: 6px;">
               ${Object.entries(p.trans).map(([code, t]) => `<div><strong>${code.toUpperCase()}:</strong> ${escapeHtml(t)}</div>`).join('')}
             </div>
           ` : ''}
@@ -1281,6 +1295,7 @@
         paragraphs = [];
         renderParagraphs();
         saveParagraphsToDB(paragraphs);
+        rawReady = false;
         renderReadyArea();            // 원고를 치웠다 — 「원고 없이 바로」 쪽 글로 바뀐다
       }
     });
@@ -1461,6 +1476,7 @@
           paragraphs[i].trans = {};
         }
         await saveParagraphsToDB(paragraphs);
+        rawReady = true;
         renderParagraphs();
         renderReadyArea();
         return;
@@ -1503,6 +1519,7 @@
 
       transProgressText.textContent = T('prep_tr_done');
       btnPreTranslate.disabled = false;
+      rawReady = false;
       renderReadyArea();
     });
 
@@ -2711,6 +2728,8 @@
         prep_progress: '번역 진행 중...',
         prep_ready_mic: '✓ 바로 시작할 수 있습니다',
         prep_ready_mic_desc: '원고 없이 🎤 실시간 말하기로 진행합니다. 원고는 위에서 선택으로 올릴 수 있습니다.',
+        prep_ready_raw: '✓ 번역 없이 방송할 준비가 됐습니다',
+        prep_ready_raw_desc: '원문 그대로 보냅니다 (번역을 부르지 않습니다). 문단 수',
         prep_ready_script: '✓ 원고를 읽었습니다 — 바로 시작할 수 있습니다',
         prep_ready_script_desc: '첫 문단부터 보냅니다. 미리 번역은 선택입니다. 문단 수',
         prep_done: '✓ 사전 번역이 완료되었습니다!',
@@ -2865,6 +2884,8 @@
         prep_progress: 'Translating…',
         prep_ready_mic: '✓ Ready to start',
         prep_ready_mic_desc: 'No script needed — start and speak with 🎤. A script is optional (above).',
+        prep_ready_raw: '✓ Ready to broadcast without translation',
+        prep_ready_raw_desc: 'Sends the original text as is (no translation calls). Paragraphs',
         prep_ready_script: '✓ Script loaded — ready to start',
         prep_ready_script_desc: 'Starts from the first paragraph. Pre-translation is optional. Paragraphs',
         prep_done: '✓ Pre-translation finished',

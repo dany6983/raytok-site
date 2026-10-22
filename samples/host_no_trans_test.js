@@ -77,7 +77,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       });
     }, ['en', 'zh-CN']);
     await host.click('#btnPreTranslate');
-    await host.waitForSelector('#readyArea', { state: 'visible', timeout: 20000 });
+    await host.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 20000 });
     /* 검수 칸은 `EN: …` 꼴로 그려진다(`renderParagraphs`). 언어 둘을 골랐으니 문단마다 둘이다.
        목 번역이 `[en] 원문` 꼴이라 **글자만 보면 한국어**다 — 칸 이름으로 센다. */
     const trCells = await host.$$eval('.para-item strong', (els) => els.map((e) => e.textContent.trim()));
