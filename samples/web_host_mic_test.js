@@ -331,6 +331,14 @@ async function openHost(browser, base, { speech, region, locale, question }) {
 
     // P-14 — 강사 화면이 청취자가 보낸 번역문을 받아 쓰지 않는다. 릴레이가 번역 칸을
     // 안 싣고, 화면은 원문만 적는다. 청취자가 번역을 실어 보내면 릴레이가 막는다.
+    /* ★ 늦게 오는 번역을 먼저 **가라앉힌다**. `renderAskSpoken` 은 원문을 먼저 적고
+       번역을 기다렸다 덮어쓴다(R-15) — 그 덮어쓰기가 아래 400ms 안에 떨어지면 이 단언이
+       P-14 와 아무 상관 없이 붉어진다(10-22 에 다섯 번에 한 번꼴로 그랬다). 화면이
+       **더 바뀌지 않는 자리**(`ask_tr_done`·`ask_tr_fail`)까지 기다린 뒤에 잰다. */
+    await qHost.page.waitForFunction(
+      () => (window.rtHostAsk.log() || []).some((l) => /^ask_tr_(done|fail) /.test(l) || /same_lang=/.test(l)),
+      null, { timeout: 8000 }).catch(() => {});
+    await qHost.page.waitForTimeout(300);
     const beforeSpoof = await qHost.page.textContent('#askActiveText');
     fakeLis.send({ kind: 'question', id: qItem.id, src: 'x', trans: { ko: '내가 번역한 것' } });
     await qHost.page.waitForTimeout(400);

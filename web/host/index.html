@@ -49,6 +49,9 @@
       flex-direction: column;
     }
 
+    /* ★ 10-22 17:35 ②: 폰(390px)에서 머리가 **가로로 265px 넘쳤다.** 넘친 것은
+       `#licenseInfo` 였다 — 인증 뒤 **64글자 해시를 통째로** 적어 521px 이 됐다. 해시는
+       아래 코드에서 앞 8자만 적고, 머리는 줄을 바꿔 받는다(둘 다 고쳐야 안 넘친다, §4). */
     header {
       background: var(--card-bg);
       border-bottom: 1px solid var(--border);
@@ -56,7 +59,17 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      max-width: 100%;
     }
+    #licenseInfo { min-width: 0; overflow-wrap: anywhere; }
+    /* ★ 10-22 17:35 ③: **PC(크롬·엣지)에서** 말하는 언어 고르개를 펼치면 흰 바탕에 한 줄만
+       보였다(폰은 멀쩡했다). PC 의 펼침 목록은 OS 가 그리고, 어두운 화면의 글자색만 물려받아
+       **흰 바탕 + 흰 글자**가 된다. `color-scheme` 로 어두운 쪽을 쓰라고 알리고, `option` 에
+       바탕·글자색을 직접 준다 — 둘 다 있어야 크롬·엣지·파이어폭스가 같이 맞는다. */
+    #srcLangSelect { color-scheme: dark; max-width: 100%; }
+    #srcLangSelect option { background: #111827; color: #e5e7eb; }
     .brand {
       display: flex;
       align-items: center;
@@ -64,7 +77,10 @@
       font-weight: 700;
       font-size: 1.15rem;
       color: #38bdf8;
+      min-width: 0;
+      flex-wrap: wrap;
     }
+    .brand > span:first-child { white-space: nowrap; }
     .badge {
       font-size: 0.75rem;
       padding: 2px 8px;
@@ -386,7 +402,7 @@
            (장부 51). 아래 「원고 미리 번역」은 **강사 검수용 선택**이라 접어 둔다. -->
       <div class="form-group" id="srcLangGroup">
         <label for="srcLangSelect" data-t="prep_src_lang"></label>
-        <select id="srcLangSelect" style="width:100%; padding:10px; border-radius:8px; background:var(--card); color:var(--text); border:1px solid var(--border); font-size:0.95rem;"></select>
+        <select id="srcLangSelect" style="width:100%; padding:10px; border-radius:8px; background:var(--card); color:var(--text); border:1px solid var(--border); font-size:0.95rem;" autocomplete="off"></select>
         <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;" data-t="prep_src_lang_sub"></div>
       </div>
 
@@ -473,10 +489,13 @@
         </div>
       </div>
 
-      <!-- 완료 및 다음 단계 안내 -->
-      <div id="readyArea" style="display: none; margin-top: 18px; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 6px;">
-        <div style="color: #6ee7b7; font-weight: 600; margin-bottom: 6px;" data-t="prep_done"></div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;" data-t="prep_done_desc"></div>
+      <!-- 시작 칸 — ★ **늘 보인다**(대표님 10-22 17:35 ①, 정본 v1 §1 ②: 원고는 「선택」).
+           10-22 까지는 `display:none` 으로 숨어 있다가 **사전 번역이 끝나야** 나왔다. 그래서
+           원고 없이 바로 말하려는 강사에게 시작 단추가 **아예 없었다.** 머리글·설명은
+           문단 수에 따라 `renderReadyArea()` 가 갈아 준다(쓰는 곳 하나, §4). -->
+      <div id="readyArea" style="margin-top: 18px; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 6px;">
+        <div id="readyTitle" style="color: #6ee7b7; font-weight: 600; margin-bottom: 6px;"></div>
+        <div id="readyDesc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;"></div>
         <button id="btnStartLecture" class="btn success" data-t="prep_start"></button>
         <div id="liveError" style="margin-top: 10px; color: var(--danger); font-size: 0.85rem; display: none;"></div>
       </div>
@@ -908,9 +927,13 @@
     function showPrepareScreen(payload) {
       stepAuth.style.display = 'none';
       stepPrepare.style.display = 'block';
-      licenseInfo.textContent = `${T('auth_ok')} (${payload && payload.sub ? payload.sub : 'Host'})`;
+      /* 해시는 **앞 8자만** — 통째로 적으면 폰에서 머리가 가로로 넘친다(10-22 17:35 ②).
+         자르는 자리는 여기 하나다(§4). 쓸모(어느 이용권인지 가리기)는 8자로 충분하다. */
+      const who = (payload && payload.sub) ? String(payload.sub) : 'Host';
+      licenseInfo.textContent = `${T('auth_ok')} (${who.length > 8 ? who.slice(0, 8) + '…' : who})`;
       initLangChips();                       // 먼저 박힌 아홉으로 그린다 — 화면이 비어 보이지 않게
       renderSrcLangSelect();                 // **내가 말하는 언어** 고르개도 같이(정본 §1 ②)
+      renderReadyArea();                     // 시작 칸 글 — 원고가 없으면 「바로 시작」(§1 ②)
       loadTargetLangs().then((rows) => {     // 정본(82)이 오면 다시 그린다. 못 오면 아홉+ko 그대로(§20)
         allLangs = rows;
         syncTargetLangs();
@@ -963,8 +986,34 @@
       }));
     }
 
+    /** 시작 칸의 머리글·설명 — **쓰는 곳은 이 한 함수**다(§4). 세 모양뿐이다:
+     *   원고 0        → 「바로 시작」 (🎤 실시간 말하기)
+     *   원고 있음·번역 전 → 「원고 n문단」 (미리 번역은 선택)
+     *   미리 번역 끝   → 전과 같은 「사전 번역 완료」
+     *  (10-22 17:35 ①: 시작 단추는 늘 보인다. 글만 갈린다) */
+    function renderReadyArea() {
+      const title = document.getElementById('readyTitle');
+      const desc = document.getElementById('readyDesc');
+      if (!title || !desc) return;
+      const n = paragraphs.length;
+      const hasTrans = paragraphs.some((p) => p.trans && Object.keys(p.trans).length > 0);
+      const key = n === 0 ? 'mic' : hasTrans ? 'done' : 'script';
+      title.textContent = key === 'done' ? T('prep_done') : T('prep_ready_' + key);
+      desc.textContent = (key === 'done' ? T('prep_done_desc') : T('prep_ready_' + key + '_desc'))
+                       + (key === 'script' ? ' (' + n + ')' : '');
+      readyMode = key;
+      const line = `ready_area mode=${key} paras=${n}`;      // §12 첫 걸음에 기록 한 줄
+      if (trLog[trLog.length - 1] !== line) trLog.push(line);
+    }
+    /** 시작 칸이 지금 어느 모양인가 — `mic`·`script`·`done`.
+     *  ★ 시험이 「사전 번역이 끝났나」를 보는 자리였던 `#readyArea` 가 **늘 보이게** 바뀌었다
+     *  (10-22 17:35 ①). 그래서 보임/숨음으로는 더 못 가린다 — 화면이 쓰는 그 값을 그대로 낸다. */
+    let readyMode = '';
+    window.rtHostReady = { mode: function () { return readyMode; }, render: renderReadyArea };
+
     function renderParagraphs() {
       paraCount.textContent = paragraphs.length;
+      renderReadyArea();                   // 문단 수가 바뀌면 시작 칸 글도 바뀐다
       if (paragraphs.length === 0) {
         paraList.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;">${T('prep_empty_js')}</div>`;
         btnPreTranslate.disabled = true;
@@ -1232,7 +1281,7 @@
         paragraphs = [];
         renderParagraphs();
         saveParagraphsToDB(paragraphs);
-        readyArea.style.display = 'none';
+        renderReadyArea();            // 원고를 치웠다 — 「원고 없이 바로」 쪽 글로 바뀐다
       }
     });
 
@@ -1413,13 +1462,12 @@
         }
         await saveParagraphsToDB(paragraphs);
         renderParagraphs();
-        readyArea.style.display = 'block';
+        renderReadyArea();
         return;
       }
 
       btnPreTranslate.disabled = true;
       transProgressArea.style.display = 'block';
-      readyArea.style.display = 'none';
 
       /* ★ 언어 하나에 **한 번**(문단을 묶어서) 부른다. 전에는 문단×언어였다 —
          문단 10 × 언어 20 이면 200번이고, 릴레이는 분당 60번이다(429). 묶으면 20번이다.
@@ -1455,7 +1503,7 @@
 
       transProgressText.textContent = T('prep_tr_done');
       btnPreTranslate.disabled = false;
-      readyArea.style.display = 'block';
+      renderReadyArea();
     });
 
     // ── 5. 진행 (L4-2): 방 만들기 → QR·참석 → 문단 넘기기 → /ws 로 script·skip·break ──
@@ -2419,6 +2467,9 @@
         liveActiveAsk.tr = tr;
         if (hItem) hItem.tr = tr;
         if (textEl) textEl.textContent = `"${tr}" (${T('label_src')}: ${spoken})`;
+        /* 번역이 **들어온 뒤**에도 기록 한 줄 — 들어오기 전(`ask_tr`)만 적으면 "언제 화면이
+           더 안 바뀌나"를 밖에서 알 수 없다. 실기 기록에서도 늦게 온 번역을 이 줄로 가린다. */
+        askLog.push(`ask_tr_done id=${askId} to=${target}`);
         speakHost(tr, target);
       } else {
         askLog.push(`ask_tr_fail id=${askId} to=${target}`);
@@ -2525,11 +2576,9 @@
 
     async function startLecture() {
       liveError.style.display = 'none';
-      if (!paragraphs.length) {
-        liveError.textContent = T('live_no_script');
-        liveError.style.display = 'block';
-        return;
-      }
+      /* ★ 10-22 17:35 ①: 원고가 0 이어도 **시작한다** — 그때는 🎤 실시간 말하기로 간다
+         (정본 v1 §1 ②). 전에는 여기서 `live_no_script` 로 되돌려 보냈다. */
+      trLog.push(`start paras=${paragraphs.length} mode=${paragraphs.length ? 'script' : 'mic'}`);
       const btn = document.getElementById('btnStartLecture');
       btn.disabled = true;
       try {
@@ -2561,8 +2610,18 @@
         renderLive();
         mic.seq = 0;
         mic.sent = [];
-        applyMicVisibility();   // B 9 — 🎤 는 인식이 있고 국내일 때만 (P-16, region.js)
+        const micOk = applyMicVisibility();   // B 9 — 🎤 는 인식이 있고 국내일 때만 (P-16, region.js)
         connectHostWs();
+        /* ★ 10-22 17:35 ④: 시작하면 **바로 듣는 상태**다. 원고가 0 이면 강사는 말로 할 수밖에
+           없으니 🎤 를 **스스로 켠다** — 단추를 한 번 더 눌러야 시작되는 것을 대표님이
+           「시작이 안 된다」로 보셨다. 원고가 있으면 첫 문단이 ▶ 로 대기한다(지금 그대로).
+           켤 수 없는 폰·해외면 켜지 않는다(§20 — 못 하는 것을 하는 척하지 않는다). */
+        if (!paragraphs.length && micOk) {
+          trLog.push('start_mic auto=1');
+          startMic().then(() => { if (mic.on) playStop('mic_on', true); });
+        } else if (!paragraphs.length) {
+          trLog.push(`start_mic auto=0 why=${speechCtor() ? 'region' : 'no_recognition'}`);
+        }
       } catch (err) {
         liveError.textContent = err.message;
         liveError.style.display = 'block';
@@ -2596,6 +2655,7 @@
         prep_pre_open: '원고 미리 번역 (선택 · 강사 검수용)',
         prep_step1: '① 원고 파일 올리기 (TXT · PDF · DOCX · HWPX)',
         prep_drop: '강의 원고 파일(TXT · PDF · DOCX)을 마우스로 끌어다 놓으세요',
+        prep_drop_touch: '눌러서 원고 파일 고르기 (TXT · PDF · DOCX)',
         prep_drop_sub: '또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)',
         prep_step2: '② 번역할 청취 언어 선택 (여럿 가능)',
         prep_reset: '원고 초기화',
@@ -2649,6 +2709,10 @@
         prep_step3a: '③ 문단 나눔 미리보기 (',
         prep_step3b: '개 문단)',
         prep_progress: '번역 진행 중...',
+        prep_ready_mic: '✓ 바로 시작할 수 있습니다',
+        prep_ready_mic_desc: '원고 없이 🎤 실시간 말하기로 진행합니다. 원고는 위에서 선택으로 올릴 수 있습니다.',
+        prep_ready_script: '✓ 원고를 읽었습니다 — 바로 시작할 수 있습니다',
+        prep_ready_script_desc: '첫 문단부터 보냅니다. 미리 번역은 선택입니다. 문단 수',
         prep_done: '✓ 사전 번역이 완료되었습니다!',
         prep_done_desc: '원고 및 번역문이 로컬 IndexedDB에 저장되었습니다. 이제 강의를 개설하고 문단을 송출할 수 있습니다.',
         prep_start: '강의 시작하기',
@@ -2745,6 +2809,7 @@
         prep_pre_open: 'Pre-translate the script (optional · for your own review)',
         prep_step1: '① Upload the script (TXT · PDF · DOCX · HWPX)',
         prep_drop: 'Drag the script file (TXT · PDF · DOCX) here',
+        prep_drop_touch: 'Tap to choose a script file (TXT · PDF · DOCX)',
         prep_drop_sub: 'or click to choose a file — handled in this browser, nothing is uploaded',
         prep_step2: '② Choose listener languages (more than one is fine)',
         prep_reset: 'Clear script',
@@ -2798,6 +2863,10 @@
         prep_step3a: '③ Paragraph preview (',
         prep_step3b: ' paragraphs)',
         prep_progress: 'Translating…',
+        prep_ready_mic: '✓ Ready to start',
+        prep_ready_mic_desc: 'No script needed — start and speak with 🎤. A script is optional (above).',
+        prep_ready_script: '✓ Script loaded — ready to start',
+        prep_ready_script_desc: 'Starts from the first paragraph. Pre-translation is optional. Paragraphs',
         prep_done: '✓ Pre-translation finished',
         prep_done_desc: 'The script and translations are stored in this browser. You can open the room and send paragraphs.',
         prep_start: 'Start the session',
@@ -2884,6 +2953,13 @@
     }
     function applyHostStrings() {
       document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.getAttribute('data-t')); });
+      /* ★ 10-22 17:35 ②: 폰에는 **마우스가 없다.** 「끌어다 놓으세요」는 폰에서 거짓말이고,
+         누르면 된다는 것을 알려 주지 않는다. 손가락 기기면 글을 바꾼다(가리키개가 굵은 쪽). */
+      try {
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const el = document.querySelector('[data-t="prep_drop"]');
+        if (coarse && el) el.textContent = T('prep_drop_touch');
+      } catch (e) {}
     }
 
     // ── 참석 명단 (메모리만) ──
@@ -3177,8 +3253,7 @@
         if (saved && saved.length > 0) {
           paragraphs = saved;
           renderParagraphs();
-          const hasTrans = paragraphs.some(p => p.trans && Object.keys(p.trans).length > 0);
-          if (hasTrans) readyArea.style.display = 'block';
+          renderReadyArea();
         }
       } catch (e) {
         console.warn('Failed to restore from IndexedDB:', e);
