@@ -1806,8 +1806,17 @@ export class Room {
         }
 
         this.askSeq = (this.askSeq || 0) + 1;
+        /* 손님이 제 질문의 이름을 들고 올 수 있다(웹 청취 화면이 그렇게 한다 — 이름을 안
+           적은 손님도 자기 질문을 알아보게). **다만 이미 있는 이름은 안 받는다** — 같은
+           이름이 둘이면 강사의 지명이 어느 쪽인지 갈리지 않고, 남의 발언권을 가로챌 길이
+           된다. 겹치면 우리가 새로 짓는다. */
+        const wantId = typeof parsed.id === 'string' ? parsed.id.trim().slice(0, 64) : '';
+        const idTaken = !!wantId && (
+          (this.askQueue || []).some((q) => q.id === wantId)
+          || (this.askHistory || []).some((h) => h.id === wantId)
+        );
         const askItem = {
-          id: parsed.id || ('q_' + this.askSeq + '_' + Math.random().toString(36).slice(2, 6)),
+          id: (wantId && !idTaken) ? wantId : ('q_' + this.askSeq + '_' + Math.random().toString(36).slice(2, 6)),
           seq: this.askSeq,
           name: parsed.name || '익명',
           lang: parsed.lang || 'ko',

@@ -294,7 +294,14 @@ const outsideRequests = [];
     watch(lis3Page);
     await lis3Page.goto(`${base}/web/listener/?room=${roomCode}&lang=en&relay=localhost:${port}`);
     await lis3Page.waitForSelector('#room-input');
-    await lis3Page.fill('#name-input', 'Mary');
+    /* ★ **이름을 적지 않는다** (2026-10-22, 진짜 릴레이 실측에서 잡았다).
+     *
+     * 이름 칸은 「선택 사항」이다. 10-22 까지 손님은 `ask_queue` 가 올 때 **이름을 견주어**
+     * 자기 질문을 찾았다 — 이름이 없으면 견줄 것이 없어 `myAskId` 가 끝까지 비고, 강사가
+     * 지명해도 `grant` 가 **내 것이 아니라서** 받아쓰기가 열리지 않았다. ✋ 는 눌리고
+     * 대기줄에도 뜨는데 **말을 할 수 없다** — 조용히 고장이다. 목(mock)에서는 시험이 늘
+     * 이름을 적어 와서 안 보였다(D-11 의 다른 얼굴).
+     * 지금은 손님이 **제 질문의 이름(id)을 만들어 보낸다**. 그래서 이 손님은 이름이 없다. */
     await lis3Page.click('#btn-join');
     await lis3Page.waitForSelector('#chat-screen', { state: 'visible' });
 
@@ -304,15 +311,29 @@ const outsideRequests = [];
     await lis3Page.click('#btn-ask-submit');
     await lis3Page.waitForSelector('#ask-modal', { state: 'hidden' });
 
-    /* 강사가 Mary 를 지명한다 (사람 손으로 — P-17) */
-    await hostPage.waitForFunction(() => Array.from(document.querySelectorAll('#askQueueList > div'))
-      .some(el => el.textContent.includes('Mary')));
+    /* 손님이 **제 질문의 이름을 들고** 올렸나 — 이것이 이름 없는 손님을 살리는 값이다 */
+    const askFrame = (await lis3Page.evaluate(() => window.__sentFrames || []))
+      .map(f => { try { return JSON.parse(f); } catch (_) { return null; } })
+      .find(m => m && m.kind === 'ask');
+    ok(!!askFrame && typeof askFrame.id === 'string' && askFrame.id.length > 6,
+       `이름 없는 손님도 **제 질문의 id** 를 들고 올린다 (${askFrame ? askFrame.id : '없음'})`);
+    const anonId = askFrame && askFrame.id;
+
+    /* 강사가 그 손님을 지명한다 (사람 손으로 — P-17). 이름이 없으니 대기줄에는 「익명」이다 */
+    await hostPage.waitForFunction((want) => Array.from(document.querySelectorAll('#askQueueList > div'))
+      .some(el => el.querySelector('button')), anonId, { timeout: 10000 });
     await hostPage.evaluate(() => {
-      const row = Array.from(document.querySelectorAll('#askQueueList > div')).find(el => el.textContent.includes('Mary'));
+      const row = Array.from(document.querySelectorAll('#askQueueList > div')).reverse()
+        .find(el => el.querySelector('button'));
       row.querySelector('button').click();
     });
     await lis3Page.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 5000 });
     ok(true, '지명되면 손님 폰의 **받아쓰기가 열린다** (마이크는 손님 폰에 있다)');
+    /* ★ 되돌림 실증 — `myAskId` 가 **그 id** 다. 이름 견주기로 되돌리면 이름 없는 손님은
+       이 값이 비고, 위의 「받아쓰기가 열린다」가 10초 뒤에 터진다. */
+    const myId = await lis3Page.evaluate(() => (typeof myAskId !== 'undefined' ? myAskId : null));
+    ok(myId === anonId,
+       `이름 없는 손님이 **자기 질문을 알아본다** (myAskId=${myId}) — 이름 견주기로 되돌리면 빈손이다 (되돌림 실증 5)`);
     const recLang = await lis3Page.evaluate(() => window.__rec.lang);
     ok(/^en/.test(recLang), `받아쓰기 언어가 **손님이 고른 말** (${recLang}) — 표 한 곳에서 읽는다(§6)`);
 
@@ -323,7 +344,7 @@ const outsideRequests = [];
       .map(f => { try { return JSON.parse(f); } catch (_) { return null; } })
       .filter(m => m && m.kind === 'question');
     ok(q3.length >= 1, `손님 폰이 **글자로 바꿔** 올렸다 (${q3.length}건)`);
-    ok(q3[0].src === 'Can we use this offline?' && q3[0].srcLang === 'en',
+    ok(q3[0].src === 'Can we use this offline?' && q3[0].srcLang === 'en' && q3[0].id === anonId,
        `올라간 것은 **원문 글자 + 언어**다 ("${q3[0].src}" · ${q3[0].srcLang})`);
     const AUDIO_KEYS = ['audio', 'pcm', 'wav', 'blob', 'buf', 'buffer', 'samples', 'opus', 'webm'];
     const audioKeys = Object.keys(q3[0]).filter(k => AUDIO_KEYS.some(a => k.toLowerCase().includes(a)));

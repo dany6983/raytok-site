@@ -2102,8 +2102,10 @@
             at: Date.now()
           }));
         } else {
+          myAskId = 'q_web_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
           ws.send(JSON.stringify({
             kind: 'ask',
+            id: myAskId,
             name: userName,
             lang: selectedLang,
             text,
