@@ -15,7 +15,11 @@ const langs = JSON.parse(fs.readFileSync(path.join(ROOT, 'web/listener/langs.jso
 const html = fs.readFileSync(path.join(ROOT, 'web/listener/index.html'), 'utf8');
 const KEYS = ['voice_absent_notice', 'voice_button', 'voice_pick_title', 'voice_none', 'voice_preview_text', 'anon_name',
   // ④ (10-14 11:10) 빈 방 문구 셋 · 글자 크기 넷
-  'empty_waiting', 'empty_disconnected', 'empty_ended', 'font_size_label', 'font_small', 'font_medium', 'font_large'];
+  'empty_waiting', 'empty_disconnected', 'empty_ended', 'font_size_label', 'font_small', 'font_medium', 'font_large',
+  /* ⑤ (10-22 마스터 13:00) 정본 v1 로 생긴 글자 — 「번역 중」·「원문 보기」·「앱 같이 받기」.
+     이 넷은 **번역이 아직일 때·원문을 숨겼을 때** 손님이 보는 글자다. 비면 그 자리에
+     한국어가 남는다(§18 — 영어 폰에 한국어가 나오는 그 모양). */
+  'badge_pending', 'badge_no_tr', 'btn_show_src', 'tr_server_btn', 'btn_get_pack', 'pack_optional'];
 const want = [...new Set(langs.map(l => l.code.startsWith('zh') ? 'zh' : l.code))];
 let n = 0; const ok = (c, m) => { assert(c, m); n++; console.log('  [PASS] ' + m); };
 

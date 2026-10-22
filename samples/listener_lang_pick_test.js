@@ -200,6 +200,47 @@ const srv = http.createServer((q, r) => {
       ok(revPack, '글자 한 칸을 비우면 붉어진다 — 그 폰에 영어가 나온다 (되돌림 실증)');
     }
 
+    /* ── 고른 자막 언어가 **화면 글자까지** 끌고 가나 (마스터 10-22 13:00) ─────────
+     *
+     * 사전에 81개 언어가 **차 있는 것**과 화면에 **그 언어로 뜨는 것**은 다른 얘기다.
+     * 무서운 모양: 한국어 폰 손님이 네팔어 자막을 골랐는데 배지·단추는 **한국어**로 남는 것.
+     * 글자는 다 채워져 있으니 **정적 시험으로는 안 보인다** — 화면에서 재야 한다.
+     * (「번역 중」·「원문 보기」는 번역이 **아직일 때** 보이는 글자다. 거기서 한국어가 나오면
+     *  못 알아듣는 손님에게 아무 뜻이 없다.) */
+    console.log('\n[화면 글자] 고른 자막 언어로 **배지·단추**가 뜨나');
+    {
+      const dict = JSON.parse(fs.readFileSync(path.join(ROOT, 'web', 'listener', 'ui-strings.json'), 'utf8'));
+      /* 폰 말과 **다른** 자막을 고른 둘 — 이 짝이 어긋나면 그대로 드러난다 */
+      for (const [locale, pick] of [['ko-KR', 'ne'], ['en-US', 'th']]) {
+        const ctx = await b.newContext({ locale });
+        const page = await ctx.newPage();
+        await page.goto(`http://localhost:${port}/web/listener/?room=123456&lang=${pick}`, { waitUntil: 'load' });
+        await page.waitForFunction(() => document.getElementById('lang-select').options.length > 1, null, { timeout: 8000 }).catch(() => {});
+        const got = await page.evaluate(() => ({
+          ui: typeof currentUiLang !== 'undefined' ? currentUiLang : '?',
+          badge: ((document.querySelector('[data-i18n="badge_pending"]') || {}).textContent || '').trim(),
+          srcBtn: ((document.getElementById('btn-toggle-src') || {}).textContent || '').trim(),
+          pack: ((document.getElementById('btn-get-pack') || {}).textContent || '').trim()
+        }));
+        ok(got.ui === pick, `${locale} 폰이 ${pick} 자막을 고르면 **화면 글자도 ${pick}** (UI=${got.ui})`);
+        for (const [el, key] of [['badge', 'badge_pending'], ['srcBtn', 'btn_show_src'], ['pack', 'btn_get_pack']]) {
+          const want = String(dict.strings[key][pick] || '').trim();
+          ok(got[el] === want, `  ${key} 가 ${pick} 로 뜬다 ("${got[el].slice(0, 26)}")`);
+          /* ★ 그리고 **한국어가 아니다** — 떨어짐(fallback)으로 통과하는 것을 막는다 */
+          ok(got[el] !== String(dict.strings[key].ko || '').trim(),
+             `  ${key} 가 **한국어로 남지 않았다** (못 알아듣는 손님에게 뜻이 없다)`);
+        }
+        await ctx.close();
+      }
+
+      /* 되돌림 실증 — 사전의 그 언어 칸이 비면 `t()` 가 **한국어로 떨어진다**.
+         시험 안 상수가 아니라 **사전이 들고 있는 값**으로 센다. */
+      const neBadge = String(dict.strings.badge_pending.ne || '').trim();
+      const koBadge = String(dict.strings.badge_pending.ko || '').trim();
+      ok(!!neBadge && neBadge !== koBadge,
+         `되돌림 실증: badge_pending.ne 를 비우면 화면이 한국어("${koBadge}")로 떨어져 위 단언이 붉어진다`);
+    }
+
     console.log(`\n[OK] ${checks}개 확인 — 폰 언어 → 자막 언어`);
   } finally {
     await b.close();
