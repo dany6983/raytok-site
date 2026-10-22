@@ -32,9 +32,15 @@
 import assert from 'node:assert/strict';
 import { mintCode, privateKeyFromSeed, testSeed, FLAG, TEST_KEY_ID } from '../relay/tools/mint-code.mjs';
 
-/* WebSocket 은 Node 22 의 **내장**을 쓴다 — `ws` 를 import 하면 대표님 PC 에서 `npm ci`
-   가 먼저 필요해지고, 그러면 "한 줄" 이 아니다. 내장이 없는 낡은 Node 면 그렇다고 말하고 멈춘다. */
-const WebSocket = globalThis.WebSocket;
+/* WebSocket 은 Node 22 의 **내장**을 먼저 쓴다 — `ws` 를 위에서 import 하면 대표님 PC 에서
+   `npm ci` 가 **먼저** 필요해지고, 그러면 "한 줄" 이 아니다.
+   ★ 내장이 없으면(낡은 Node) **그때만** 저장소의 `ws` 로 떨어진다 (2026-10-22).
+     그 전에는 "`npm ci` 를 하고 다시 돌려 주세요"라고 **안내만** 했는데, 이 파일은 `ws` 를
+     아예 안 불렀다 — `npm ci` 를 해도 **똑같이 멈춘다.** 대표님을 헛걸음시키는 안내였다. */
+let WebSocket = globalThis.WebSocket;
+if (typeof WebSocket !== 'function') {
+  try { WebSocket = (await import('ws')).default; } catch (_) { /* 아래에서 말하고 멈춘다 */ }
+}
 
 const BASE = (process.env.RELAY_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
 const WS_BASE = BASE.replace(/^http/, 'ws');
@@ -75,10 +81,11 @@ async function waitFor(pred, ms = 6000) {
 (async () => {
   console.log(`=== 이용권 끝에서 끝 실측 — ${BASE} ===\n`);
   if (typeof WebSocket !== 'function') {
-    console.error(`이 Node 에는 내장 WebSocket 이 없다 (${process.version}). Node 22 이상으로 돌리거나`);
-    console.error('이 저장소에서 `npm ci` 를 한 번 하고 다시 돌려 주세요.');
+    console.error(`이 Node 에는 내장 WebSocket 이 없고(${process.version}) 저장소의 ws 도 없습니다.`);
+    console.error('둘 중 하나만 하시면 됩니다: ① Node 22 이상으로 돌린다 ② 이 저장소에서 `npm ci` 를 한 번 한다.');
     process.exit(1);
   }
+  if (!globalThis.WebSocket) console.log(`(내장 WebSocket 이 없어 저장소의 ws 로 돕니다 — ${process.version})`);
   const device = 'e2e_' + Math.random().toString(36).slice(2, 10);
 
   // ① 코드 발급 — 키 0 시험 씨앗(공개값), 0x01 호스트, 1일
