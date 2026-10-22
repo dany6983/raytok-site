@@ -20,6 +20,12 @@
  *   ⑥ POST /translate       — 0x10 없는 토큰은 403 why=no_package
  *   ⑦ POST /translate engine:'pro' — 0x20 없으면 403 (B 10 이 배포됐는지 바로 보인다)
  *   ⑧ 지명된 청취자 마이크 질문이 전원에게 (B 7 이 배포됐는지 바로 보인다)
+ *   ⑨ **프로 이용권으로 engine:'pro'** — 200 이 오고, `tier` 가 **pro 인지 basic 인지**
+ *      보여 준다. 그 한 줄로 셋이 갈린다 (마스터 10-22 13:00):
+ *        tier=pro                     → 프로가 **살아 있다**(키·공급자 다 있다)
+ *        tier=basic why=pro_no_key     → 배포는 됐고 **키만 없다** (`wrangler secret put LLM_API_KEY`)
+ *        tier=basic why=pro_no_provider→ 이름이 표에 없다 (`LLM_PROVIDER` 를 고친다)
+ *      **돈**: 글자 몇 개짜리 한 줄이라 프로가 살아 있어도 비용은 사실상 0 이다.
  *
  * 토큰·코드는 화면에 **가려서** 찍는다(앞 6글자만). 저장소에 남기지 않는다.
  */
@@ -180,6 +186,58 @@ async function waitFor(pred, ms = 6000) {
   const dPro = await body(rPro);
   step(7, "POST /translate engine:'pro' (0x20 없음 → 403)", rPro.status === 403,
        `${rPro.status} why=${dPro && dPro.why} (문 순서상 0x10 도 없으니 no_package 가 맞다)`);
+
+  /* ⑨ **프로 이용권**으로 다시 — 여기서 비로소 "프로가 사는가"가 보인다 (마스터 10-22 13:00).
+   *
+   * ⑥⑦ 은 **문이 닫히는지**를 봤다(패키지 없는 토큰 → 403). 그것만으로는 "프로가 돈다"를
+   * 알 수 없다 — 문을 열어 봐야 한다. 그래서 0x10|0x20 을 든 코드를 새로 발급해 같은 길을
+   * 한 번 더 지난다. 비밀값은 여기서도 필요 없다(시험 키 0 의 씨앗은 공개값이다).
+   *
+   * 200 이 오면 **그 다음이 본론**이다: `tier` 가 pro 면 살아 있고, basic 이면 `why` 가
+   * 무엇을 넣어야 하는지 말해 준다. 404·403 이면 **아직 배포가 안 된 것**이다. */
+  const proDevice = 'e2epro_' + Math.random().toString(36).slice(2, 10);
+  const PRO_FLAG_BIT = 0x20;
+  const proMinted = mintCode({
+    keyId: TEST_KEY_ID,
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    days: 1,
+    flags: FLAG.host | FLAG.bundle | PRO_FLAG_BIT,     // 호스트 + 인터넷 번역 + 프로
+    cust: 'E2EPRO',       // 고객 칸은 ASCII **6자 이내**다 — 7자를 넣으면 발급이 터진다
+    privateKey: privateKeyFromSeed(testSeed())
+  });
+  await fetch(`${BASE}/license/redeem`, {
+    method: 'POST', headers: J, body: JSON.stringify({ code: proMinted.code, deviceId: proDevice })
+  });
+  const rProIssue = await fetch(`${BASE}/license/issue`, {
+    method: 'POST', headers: J, body: JSON.stringify({ device: proDevice })
+  });
+  const dProIssue = await body(rProIssue);
+  const proToken = dProIssue && dProIssue.token;
+  let proFlags = 0;
+  if (proToken) {
+    try { proFlags = Number(JSON.parse(Buffer.from(proToken.split('.')[0], 'base64url').toString()).flags || 0); } catch (_) {}
+  }
+  if (!proToken || (proFlags & PRO_FLAG_BIT) === 0) {
+    step(9, '프로 이용권 발급(0x20)', false,
+         `${rProIssue.status} flags=0x${proFlags.toString(16)} — 0x20 이 안 실렸다`);
+  } else {
+    const rProOk = await fetch(`${BASE}/translate`, {
+      method: 'POST',
+      headers: { ...J, Authorization: `Bearer ${proToken}` },
+      body: JSON.stringify({ q: ['안전모를 쓰세요'], source: 'ko', target: 'en', engine: 'pro' })
+    });
+    const dProOk = await body(rProOk);
+    const tier = dProOk && dProOk.tier;
+    const why = (dProOk && dProOk.why) || '';
+    /* 200 이면 통과다 — basic 으로 내려앉은 것도 **설계 그대로**다(키가 없으면 그렇게 된다).
+       400·403·404 면 아직 배포가 안 된 것이고, 그때 대표님이 할 일은 재배포다. */
+    step(9, "프로 이용권으로 engine:'pro'", rProOk.status === 200 && !!tier,
+         `${rProOk.status} tier=${tier || '-'}${why ? ' why=' + why : ''}`
+         + (tier === 'pro' ? ' → 프로가 **살아 있다**'
+            : why === 'pro_no_key' ? ' → 배포 OK · **키만 없다**(wrangler secret put LLM_API_KEY)'
+              : why === 'pro_no_provider' ? ' → **LLM_PROVIDER 이름**이 표에 없다'
+                : tier === 'basic' ? ' → basic 으로 내려앉았다(까닭은 위 why)' : ''));
+  }
 
   report();
 
