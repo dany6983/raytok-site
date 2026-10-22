@@ -9,6 +9,23 @@
  * 느슨한 가짜 둘이 사전 번역을 **운영에서 한 번도 안 되게** 두었다(D-11).
  */
 
+/**
+ * 프로(LLM) 번역을 **청할 것인가** (NOW B 10).
+ *
+ * 10-22 까지 방은 **늘 `basic`** 을 청했다. 그래서 프로(0x20)를 **산** 이용권도 웹 강연에서
+ * 프로 번역을 한 번도 못 받았다 — 돈을 받고 안 주는 자리다. 깃발을 들고 있으면 청한다.
+ *
+ * **못 주면 릴레이가 알아서 basic 으로 내려앉고 까닭을 적는다**(`pro_no_key`·`pro_no_provider`
+ * ·`pro_cap`·`pro_slow`…). 그래서 "공급자가 없을 때"를 여기서 또 가리지 않는다 — 가리는 곳이
+ * 둘이면 갈린다(§4). 끄는 스위치는 `PRO_TR=0` 하나다(기본 **켬** · §24).
+ */
+export const PRO_FLAG = 0x20;
+
+export function tierFor(licFlags, env) {
+  if (String((env && env.PRO_TR) ?? '') === '0') return 'basic';
+  return (Number(licFlags) & PRO_FLAG) !== 0 ? 'pro' : 'basic';
+}
+
 /** 한 번에 번역할 언어 수 상한 — 강사 화면의 `MAX_SELECTED_LANGS` 와 같은 수다. */
 export const MAX_LANGS = 30;
 /** 모아서 한 번 부르기까지 기다리는 시간(ms). 늦어도 남는 쪽을 고른다(R-15). */

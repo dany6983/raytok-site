@@ -229,7 +229,10 @@ export class Room {
   /** 문이 열려 있나 — 스위치는 **끄기 위해** 있다(§24: 기본 켬). 깃발이 없으면 닫힌다. */
   roomTrOn() {
     if (String(this.env && this.env.ROOM_TR) === '0') return false;
-    return (Number(this.licFlags) & (0x10 | 0x04 | 0x08)) !== 0;
+    /* 0x20(프로)도 **번역을 산 것**이다 — 설계상 프로는 인터넷 번역을 포함한다
+       (`pro-translate.js` 머리말). 안 세면 프로만 든 이용권은 번역이 **아예 안 돈다**.
+       10-22 에 B 10 시험을 붙이다 드러난 자리다(§4 — 깃발을 읽는 곳을 전부 센다). */
+    return (Number(this.licFlags) & (0x10 | 0x20 | 0x04 | 0x08)) !== 0;
   }
 
   /** 지금 방에 있는 손님들의 언어 — **아는 칸은 이 하나**다(§4: 새 칸을 만들지 않는다) */
@@ -523,9 +526,12 @@ export class Room {
       /* ② 아직 없는 줄만 산다: 강사가 실어 보낸 칸·아까 산 칸은 뺀다 (돈) */
       const need = batch.filter((it) => !RTR.alreadyHas(it, lang, this.trDone));
       if (!need.length) continue;
+      /* 어느 등급을 청하나 — 판정은 `room-translate.js` 한 곳이다(B 10). 못 주면 릴레이가
+         basic 으로 내려앉고 까닭을 답에 담는다. 그 **실제 결과**를 아래에서 적는다. */
+      const tier = RTR.tierFor(this.licFlags, this.env);
       for (const part of RTR.chunk(need)) {
         const texts = part.map((it) => it.text);
-        const { res, why } = await this.trFetch({ q: texts, source: srcLang, target: lang, engine: 'basic' });
+        const { res, why } = await this.trFetch({ q: texts, source: srcLang, target: lang, engine: tier });
         if (!res || !res.ok) {
           const code = why || (res ? 'http_' + res.status : 'no_res');
           this.trLog(`room_tr_fail lang=${lang} why=${code}`);
@@ -533,8 +539,13 @@ export class Room {
           this.tellHostTrFail(lang, code, part[0]);
           continue;
         }
-        let out;
-        try { out = RTR.textsOf(await res.json()); } catch (_) { out = []; }
+        /* 답을 **한 번만** 읽는다 — 글자도, 등급도, 까닭도 그 한 몸에 있다.
+           `tier`·`why` 를 안 적으면 "프로를 샀는데 왜 basic 인가"를 기록으로 못 가린다(§20). */
+        let data = null, out;
+        try { data = await res.json(); } catch (_) { data = null; }
+        out = RTR.textsOf(data);
+        const gotTier = (data && data.tier) || '?';
+        const tierWhy = (data && data.why) || '';
         const made = RTR.trMessages(part, lang, out);
         if (!made.ok) {
           this.trLog(`room_tr_fail lang=${lang} why=${made.why}`);
@@ -552,7 +563,9 @@ export class Room {
           this.trCache.set(RTR.doneKey(part[i], lang), out[i]);
         }
         const sent = o.quiet ? 0 : this.sendToLang(lang, made.msgs);
-        this.trLog(`room_tr lang=${lang} n=${part.length} chars=${chars} to=${sent}`);
+        this.trLog(`room_tr lang=${lang} n=${part.length} chars=${chars} to=${sent}`
+                   + ` tier=${tier}${gotTier !== tier ? '→' + gotTier : ''}`
+                   + (tierWhy ? ` why=${tierWhy}` : ''));
       }
     }
   }

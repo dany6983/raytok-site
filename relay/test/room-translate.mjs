@@ -61,7 +61,16 @@ function makeEnv(mode, listeners) {
           if (mode === 'fail') return new Response(JSON.stringify({ error: 'upstream' }), { status: 502 });
           if (mode === 'empty') return new Response(JSON.stringify({ t: [] }), { status: 200 });
           if (mode === 'null') return new Response(JSON.stringify({ t: null }), { status: 200 });
-          return new Response(JSON.stringify({ t: body.q.map((x) => `[${body.target}] ${x}`) }), { status: 200 });
+          /* ★ 운영 `/translate` 는 **`tier` 를 늘 답한다**(index.js: `tier: proApplied ? 'pro' : 'basic'`).
+             가짜가 그걸 빼면 기록이 `tier=pro→?` 로 남고, 시험은 「모름」을 못 가린다 — 가짜가
+             느슨하면 시험이 거짓말한다(D-11). 키가 없으면 운영은 basic 으로 내려앉으므로
+             여기서도 그렇게 답한다. */
+          const askedPro = body.engine === 'pro';
+          return new Response(JSON.stringify({
+            t: body.q.map((x) => `[${body.target}] ${x}`),
+            tier: askedPro ? 'basic' : 'basic',
+            ...(askedPro ? { why: 'pro_no_key' } : {})
+          }), { status: 200 });
         }
       }
     }
@@ -489,6 +498,65 @@ const SRC = (n, from = 1) => ({
   await wait(60);
   ok(ls[0].got.length === 0,
      '질문 번역을 밀지 않게 되돌리면 en 손님에게 아무 번역도 안 온다 (되돌림 실증 ④)');
+}
+
+/* (21) 프로(0x20)를 **산** 방은 프로를 청한다 — 그리고 못 주면 기록에 남는다 (NOW B 10) ──
+ *
+ * 10-22 까지 방은 **늘 `basic`** 을 청했다. 프로를 산 이용권도 웹 강연에서 프로 번역을
+ * 한 번도 못 받았다 — **돈을 받고 안 주는 자리**다. */
+{
+  console.log('\n[21] 프로 등급 — 산 사람에게 준다 · 못 주면 적는다');
+  ok(RTR.tierFor(0x20, {}) === 'pro', '0x20 을 들고 있으면 pro 를 청한다');
+  ok(RTR.tierFor(0x10, {}) === 'basic', '0x10(기본 패키지)만이면 basic');
+  ok(RTR.tierFor(0x30, {}) === 'pro', '0x10|0x20 이면 pro — 프로는 기본을 포함한다');
+  ok(RTR.tierFor(0x20, { PRO_TR: '0' }) === 'basic', '끄는 스위치는 `PRO_TR=0` 하나다 (기본 **켬** · §24)');
+  ok(RTR.tierFor(undefined, undefined) === 'basic', '깃발을 모르면 basic — 모름을 「산 것」으로 읽지 않는다(§20)');
+
+  /* 전선에서 — 0x20 방이 실제로 `engine:'pro'` 를 보낸다 */
+  const pro = makeRoom(['en']);
+  pro.room.licFlags = 0x10 | 0x20;
+  pro.room.roomTrFromHost(lineOf(1, '안전모를 쓰세요'));
+  await wait(RTR.BATCH_MS + 120);
+  ok(pro.calls.length === 1 && pro.calls[0].engine === 'pro',
+     `0x20 방은 전선에 **pro** 를 청한다 (${pro.calls[0] && pro.calls[0].engine})`);
+  /* 이 가짜는 키가 없어 basic 으로 답한다(운영과 같은 길) — 그래서 기록에 `pro→basic` 이 남는다 */
+
+  const basic = makeRoom(['en']);
+  basic.room.roomTrFromHost(lineOf(1, '안전모를 쓰세요'));
+  await wait(RTR.BATCH_MS + 120);
+  ok(basic.calls[0] && basic.calls[0].engine === 'basic',
+     `0x10 방은 basic 을 청한다 (${basic.calls[0] && basic.calls[0].engine})`);
+
+  /* 못 주면 **그 사실이 기록에 남는다** — 「프로를 샀는데 왜 basic 인가」를 가릴 수 있어야 한다 */
+  /* 프로만 든 방(0x20)도 **번역이 돈다** — 프로는 인터넷 번역을 포함한다.
+     10-22 까지 `roomTrOn()` 이 0x20 을 안 세어, 프로만 산 이용권은 번역이 아예 없었다. */
+  const onlyPro = makeRoom(['en']);
+  onlyPro.room.licFlags = 0x20;
+  ok(onlyPro.room.roomTrOn() === true, '0x20 만 든 방도 번역이 켜진다 (프로 = 인터넷 번역 + LLM)');
+  ok(makeRoom(['en'], 'ok', { ROOM_TR: '0' }).room.roomTrOn() === false, 'ROOM_TR=0 이면 꺼진다');
+
+  const down = makeRoom(['en']);
+  down.room.licFlags = 0x10 | 0x20;
+  down.room.env = { ...down.room.env };
+  const lines = [];
+  down.room.trLog = (l) => lines.push(l);
+  /* 상류가 **내려앉았다고 답한다** — 운영 `/translate` 가 그렇게 답한다(tier·why) */
+  down.room.env.SELF = {
+    async fetch(req) {
+      const b = await req.json();
+      return new Response(JSON.stringify({ t: b.q.map((x) => `[${b.target}] ${x}`), tier: 'basic', why: 'pro_no_key' }), { status: 200 });
+    }
+  };
+  down.room.roomTrFromHost(lineOf(2, '비상구를 확인하세요'));
+  await wait(RTR.BATCH_MS + 150);
+  const line = lines.find((l) => l.indexOf('room_tr lang=en') === 0) || '';
+  ok(/tier=pro→basic/.test(line) && /why=pro_no_key/.test(line),
+     `내려앉은 것이 기록에 남는다 — "${line}"`);
+
+  /* 되돌림 실증 ⑥ — 늘 basic 을 청하게 되돌리면 0x20 방도 basic 이다 */
+  let rev = false;
+  try { assert.ok(pro.calls[0].engine === 'basic', '0x20 방이 basic 을 청했다'); } catch (_) { rev = true; }
+  ok(rev, '늘 basic 을 청하게 되돌리면 붉어진다 — 산 사람이 프로를 못 받는다 (되돌림 실증 ⑥)');
 }
 
 console.log(`\n[OK] ${pass}개 확인 — 방이 번역한다`);
