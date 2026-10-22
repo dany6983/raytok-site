@@ -100,18 +100,36 @@ function ok(cond, msg) {
   const page = await browser.newPage();
 
   try {
-    // 2-A: /join 에 room=ABC123 파라미터가 있을 때 「브라우저로 듣기」 노출
-    await page.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123&room=ABC123&lang=vi`);
-    const btnWebListen = await page.$('#web-listen');
+    /* 2-A: 안드로이드에서 /join?room= → 「브라우저로 듣기」가 선다.
+     *
+     * ★ **폰을 안드로이드로 흉내 내야 한다**(2026-10-22). 갈림 QR(PR #13) 뒤로 /join 은
+     *   안드로이드가 아니고 방이 있으면 **그 자리에서 손님 화면으로 보낸다** — 아이폰에는
+     *   앱이 없어 딥링크 단추가 고장으로 보이기 때문이다. 헤드리스 크로미움은 안드로이드가
+     *   아니므로, UA 를 안 주면 이 쪽은 **떠나 버리고** `#web-listen` 이 없다(그 모양으로
+     *   붉었다). 두 길을 **둘 다** 센다 — 2-A 안드로이드, 2-A2 그 밖. */
+    const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; SM-S911N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36';
+    const androidCtx = await browser.newContext({ userAgent: ANDROID_UA });
+    const aPage = await androidCtx.newPage();
+    await aPage.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123&room=ABC123&lang=vi`);
+    const btnWebListen = await aPage.$('#web-listen');
+    ok(!!btnWebListen, '안드로이드: /join 에 「브라우저로 듣기」 단추가 있다');
     const isVisible = await btnWebListen.isVisible();
     ok(isVisible === true, 'join/?room=ABC123 시 「브라우저로 듣기」 단추 노출 확인');
     const href = await btnWebListen.getAttribute('href');
     ok(href.includes('/web/listener/?room=ABC123') && href.includes('lang=vi'), '브라우저로 듣기 링크에 room=ABC123 및 lang=vi 포함 확인');
 
+    // 2-A2: 안드로이드가 아니면 **그 자리에서 손님 화면으로 보낸다** (갈림 QR, 아이폰 길)
+    await page.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123&room=ABC123&lang=vi`);
+    await page.waitForURL(/\/web\/listener\//, { timeout: 8000 });
+    const sentTo = page.url();
+    ok(sentTo.includes('room=ABC123') && sentTo.includes('lang=vi'),
+       `안드로이드가 아니면 손님 화면으로 보낸다 — 방·언어를 들고 (${sentTo.split('?')[1] || ''})`);
+
     // 2-B: /join 에 room 파라미터가 없을 때 「브라우저로 듣기」 숨김
-    await page.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123`);
-    const isHidden = await page.$eval('#web-listen', el => el.style.display === 'none');
+    await aPage.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123`);
+    const isHidden = await aPage.$eval('#web-listen', el => el.style.display === 'none');
     ok(isHidden === true, 'join 에 room 없을 때 「브라우저로 듣기」 숨김 확인');
+    await androidCtx.close();
 
     // 2-C: web/listener 에서 broadcast: true 수신 시 번역 칸 비우고 원문 표출
     await page.goto(`${baseUrl}/web/listener/?demo=1`);
