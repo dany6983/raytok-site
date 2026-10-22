@@ -58,10 +58,57 @@ ok(!/\(\?<[=!]/.test(SRC),
 ok(/100dvh/.test(OUT), '만든 index.html 에도 100dvh 가 있다 (빌더를 다시 돌렸다)');
 ok(/safe-area-inset-bottom/.test(OUT), '만든 index.html 에도 safe-area-inset-bottom 이 있다');
 
+/* ── ⑦ 사파리에서 **통째로 죽는 모양**을 폰이 받는 파일 **전부**에서 센다 (2026-10-22) ──
+ *
+ * ⑤ 까지는 손님 화면 하나만 봤다. 그런데 폰이 받는 파일은 더 있다:
+ *   · **강사 화면**(`web/host/`) — 아이폰에서도 **원고 모드**는 돈다(🎤 만 안 된다).
+ *     그 쪽이 통째로 죽으면 아이폰 강사는 **아무것도 못 한다.**
+ *   · `/join` — QR 을 찍은 아이폰이 **가장 먼저** 받는 쪽이다.
+ *   · `web/common/*.js` — 두 화면이 **같이** 싣는다. 한 줄이 죽으면 둘이 같이 죽는다.
+ * 읽는 곳을 안 센 자리였다(§4). 웹킷이 없는 동안 이것이 **유일한 그물**이다.
+ *
+ * 세는 모양은 **버전으로 고른다** — 아이폰 사파리 16.4 미만에서 깨지는 것들이다.
+ * 새 모양이 생기면 이 표에 한 줄 더한다(사람 기억에 걸지 않는다). */
+const IOS_TRAPS = [
+  [/\(\?<[=!]/, '정규식 lookbehind — 사파리 16.4 미만이 파일을 통째로 못 읽는다'],
+  [/new Date\(\s*['"`]\d{4}-\d{2}-\d{2} /, "new Date('YYYY-MM-DD HH:mm') — 사파리는 Invalid Date"],
+  [/\.at\(\s*-/, 'Array.at(-1) — 사파리 15.4 미만에 없다'],
+  [/structuredClone\(/, 'structuredClone — 사파리 15.4 미만에 없다'],
+  [/Object\.hasOwn\(/, 'Object.hasOwn — 사파리 15.4 미만에 없다'],
+  [/\?\?=/, '??= — 사파리 14 미만에 없다']
+];
+const PHONE_FILES = [
+  'web/host/index.html',
+  'web/listener/index.src.html',
+  'web/listener/index.html',
+  'join/index.html',
+  'web/common/rec-lang.js',
+  'web/common/region.js',
+  'web/common/report.js',
+  'web/common/script-follow.js',
+  'web/common/script-play.js',
+  'web/common/voice-fallback.js'
+];
+const trapHits = [];
+for (const f of PHONE_FILES) {
+  const body = fs.readFileSync(path.join(ROOT, f), 'utf8');
+  for (const [re, why] of IOS_TRAPS) if (re.test(body)) trapHits.push(`${f}: ${why}`);
+}
+ok(trapHits.length === 0,
+   `폰이 받는 파일 ${PHONE_FILES.length}개에 사파리가 못 읽는 모양 0${trapHits.length ? ':\n    ' + trapHits.join('\n    ') : ''}`);
+/* 파일 목록이 **실제로 다 있나** — 이름이 바뀌면 조용히 0건이 되어 통과한다(빈 증거) */
+ok(PHONE_FILES.every((f) => fs.existsSync(path.join(ROOT, f))),
+   `목록의 파일이 전부 있다 (${PHONE_FILES.length}개) — 이름이 바뀌면 이 시험이 **빈손으로 통과**한다`);
+
 /* ── 되돌림 실증 (D-09) — 잣대가 살아 있나 ── */
 ok(['height: 100vh; overflow: hidden;'].every((s) => !/100dvh/.test(s)),
    '되돌림 실증: 100dvh 짝을 떼면 ①의 걸러내기가 그 줄을 잡는다');
 ok(!/safe-area-inset-bottom/.test('position: fixed; left: 0; right: 0; bottom: 0;'),
    '되돌림 실증: safe-area 를 떼면 ②의 걸러내기가 그 줄을 잡는다');
+/* ⑦ 의 잣대가 살아 있나 — 함정을 **넣어 보고** 걸리는지 본다(제품을 고치지 않는다) */
+ok(IOS_TRAPS.some(([re]) => re.test("const m = s.match(/(?<=x)y/);")),
+   '되돌림 실증: lookbehind 를 넣으면 ⑦이 잡는다');
+ok(IOS_TRAPS.some(([re]) => re.test("const last = arr.at(-1);")),
+   '되돌림 실증: .at(-1) 을 넣으면 ⑦이 잡는다');
 
 console.log(`\n전부 통과 (${n}건)`);
