@@ -111,4 +111,24 @@ ok(shape('Connection rejected:').trail !== shape(dict.strings.alert_rejected.en)
 // ④ 되돌림 실증: 한 언어를 지우면 ① 이 붉는다
 const copy = JSON.parse(JSON.stringify(dict.strings.voice_none)); delete copy.sw;
 ok(want.some(l => !copy[l]), '되돌림 실증: voice_none.sw 를 지우면 ① 의 단언이 거짓이 된다');
+/* ── ⑥ 쪽이 부르는 키가 **표에 다 있나** (2026-10-22) ──
+ *
+ * `t()` 는 모르는 키에 **빈 글자**를 돌려준다:
+ *   `if (!uiStrings || !uiStrings.strings[key]) return '';`
+ * 그래서 키 이름을 **한 글자 틀리면** 그 자리만 **조용히 빈칸**이 된다 — 터지지도, 붉지도
+ * 않는다. ①~⑤ 는 **표** 쪽을 봤다(키가 81언어에 차 있나). 이 줄은 **쪽** 쪽을 본다:
+ * `t('키')` 와 `data-i18n="키"` 를 전부 모아 표와 견준다. 강사 화면에도 같은 줄을 뒀다. */
+console.log('\n[6] 쪽이 부르는 키가 표에 다 있나 — `t()` 는 모르는 키에 **빈 글자**를 준다');
+const src = fs.readFileSync(path.join(ROOT, 'web/listener/index.src.html'), 'utf8');
+const called = [...new Set(
+  [...src.matchAll(/\bt\(\s*'([a-z0-9_]+)'/g)].map((m) => m[1])
+    .concat([...src.matchAll(/data-i18n="([a-z0-9_]+)"/g)].map((m) => m[1]))
+)];
+ok(called.length >= 60, `쪽이 부르는 키 ${called.length}개를 모았다`);
+const ghosts = called.filter((k) => !(k in dict.strings));
+ok(ghosts.length === 0,
+   `표에 **없는** 키 0 — 있으면 그 자리가 조용히 빈칸이 된다${ghosts.length ? ': ' + ghosts.join(', ') : ''}`);
+ok(called.map((k) => (k === called[0] ? k + 'x' : k)).filter((k) => !(k in dict.strings)).length === 1,
+   `되돌림 실증: 키 이름을 한 글자 틀리면 **그 하나가 잡힌다** (${called[0]}x)`);
+
 console.log(`\n전부 통과 (${n}건)`);

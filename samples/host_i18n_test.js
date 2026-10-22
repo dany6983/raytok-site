@@ -81,6 +81,30 @@ ok(/function langName\(/.test(src), '언어 이름을 고르는 곳이 langName(
 ok(!/\$\{l\.name\}/.test(src) && !/info \? info\.name : code/.test(src),
    '읽는 곳 셋이 전부 langName() 을 지난다 — ko 이름을 직접 읽는 자리가 없다');
 
+/* ── 4-1. 쪽이 부르는 키가 **표에 다 있나** (2026-10-22) ──
+ *
+ * `T()` 는 모르는 키에 **빈 글자**를 돌려준다:
+ *   `return (HOST_STR[UI_LANG] && HOST_STR[UI_LANG][key]) || HOST_STR.ko[key] || '';`
+ * 그래서 키 이름을 **한 글자 틀리면** 그 자리만 **조용히 빈칸**이 된다 — 터지지도, 붉지도
+ * 않는다. 글자를 옮기거나 이름을 바꿀 때 가장 쉽게 나는 사고이고, 10-22 까지 이것을 세는
+ * 시험이 없었다(§4 — 값을 **부르는 곳**도 센다).
+ * 표 넷(ko·en 짝 · 박힌 한국어 · 언어 이름 · 자기 참조)은 **표 쪽**만 봤다. 이 줄은
+ * **쪽 쪽**을 본다: `T('키')` 와 `data-t="키"` 를 전부 모아 표와 견준다. */
+console.log('\n[4-1] 쪽이 부르는 키가 표에 다 있나 — `T()` 는 모르는 키에 **빈 글자**를 준다');
+const calledKeys = [...new Set(
+  [...bodyNoDict.matchAll(/\bT\(\s*'([a-z0-9_]+)'\s*\)/g)].map((m) => m[1])
+    .concat([...bodyNoDict.matchAll(/data-t="([a-z0-9_]+)"/g)].map((m) => m[1]))
+)];
+ok(calledKeys.length >= 100, `쪽이 부르는 키 ${calledKeys.length}개를 모았다`);
+const ghost = calledKeys.filter((k) => !(k in HOST_STR.ko));
+ok(ghost.length === 0,
+   `표에 **없는** 키 0 — 있으면 그 자리가 조용히 빈칸이 된다${ghost.length ? ': ' + ghost.join(', ') : ''}`);
+
+/* 되돌림 실증 — 키 이름을 한 글자 틀리게 해 보면 걸리나 (제품을 고치지 않는다) */
+const typo = calledKeys.map((k) => (k === calledKeys[0] ? k + 'x' : k));
+ok(typo.filter((k) => !(k in HOST_STR.ko)).length === 1,
+   `되돌림 실증: 키 이름을 한 글자 틀리면 **그 하나가 잡힌다** (${calledKeys[0]}x)`);
+
 /* ── 5. 표가 저를 가리키지 않나 (10-16 에 두 번 당했다) ── */
 console.log('\n[5] 표 값이 **자기 키를 부르지 않는다** — 전역 치환 사고 막기');
 ok(!/T\(/.test(dictBlock),
