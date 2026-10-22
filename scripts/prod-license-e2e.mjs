@@ -2,8 +2,11 @@
 /* scripts/prod-license-e2e.mjs — 이용권 **끝에서 끝** 실측 (마스터 2026-10-16 13:40 ①)
  *
  * 돌리는 법:
- *   RELAY_URL=https://raytok-relay.raytok.workers.dev node scripts/prod-license-e2e.mjs
- *   (주소를 안 주면 로컬 127.0.0.1:8787 — wrangler dev 가 떠 있어야 한다)
+ *   (윈도) $env:RELAY_URL="https://raytok-relay.raytok.workers.dev"; node scripts\prod-license-e2e.mjs
+ *   (맥·리눅스) RELAY_URL=https://raytok-relay.raytok.workers.dev node scripts/prod-license-e2e.mjs
+ *   ★ 주소를 안 주면 **로컬 127.0.0.1:8787** 이다(wrangler dev 가 떠 있어야 한다). 10-22 에
+ *     대표님이 주소 없이 치셔서 `FAIL: fetch failed` 만 보셨다 — 지금은 **첫 줄에 크게**
+ *     "로컬입니다 + 운영은 이 한 줄" 이라고 말한다.
  *
  * ★ **비밀값이 필요 없다.** 시험 키 0 의 씨앗(`testSeed()`)은 공개값이고, 토큰은 서버가
  *   `/license/issue` 에서 자기 비밀값으로 만들어 준다. 그래서 운영 비밀값을 이 세션이
@@ -42,6 +45,10 @@ if (typeof WebSocket !== 'function') {
   try { WebSocket = (await import('ws')).default; } catch (_) { /* 아래에서 말하고 멈춘다 */ }
 }
 
+/** 운영 릴레이 주소 — 문서의 확인 줄이 이 값을 준다 */
+const PROD_URL = 'https://raytok-relay.raytok.workers.dev';
+/** 주소를 **안 준** 경우인가. 이때는 로컬(8787)을 찌르므로 첫 줄에 크게 말한다 (10-22 15:45) */
+const LOCAL_DEFAULT = !process.env.RELAY_URL;
 const BASE = (process.env.RELAY_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
 const WS_BASE = BASE.replace(/^http/, 'ws');
 const J = { 'Content-Type': 'application/json' };
@@ -79,7 +86,18 @@ async function waitFor(pred, ms = 6000) {
 }
 
 (async () => {
-  console.log(`=== 이용권 끝에서 끝 실측 — ${BASE} ===\n`);
+  /* ★ 10-22 15:45: 주소 없이 돌리면 **대표님 PC 로컬**을 찌른다. 그걸 모르고 돌리면
+     `fetch failed` 만 보이고 까닥을 알 수 없다 — 그래서 **첫 줄**에 크게 말한다. */
+  if (LOCAL_DEFAULT) {
+    console.log('############################################################');
+    console.log('#  주소를 안 주셨습니다 — 지금 찌르는 곳은 이 PC 안(로컬)입니다.');
+    console.log('#    ' + BASE + '   ← wrangler dev 가 떠 있어야 돕니다');
+    console.log('#');
+    console.log('#  운영(배포된 릴레이)을 보시려면 이 한 줄을 그대로 치세요:');
+    console.log('#    $env:RELAY_URL="' + PROD_URL + '"; node scripts\\prod-license-e2e.mjs');
+    console.log('############################################################\n');
+  }
+  console.log(`=== 이용권 끝에서 끝 실측 — ${BASE}${LOCAL_DEFAULT ? ' (로컬)' : ' (주신 주소)'} ===\n`);
   if (typeof WebSocket !== 'function') {
     console.error(`이 Node 에는 내장 WebSocket 이 없고(${process.version}) 저장소의 ws 도 없습니다.`);
     console.error('둘 중 하나만 하시면 됩니다: ① Node 22 이상으로 돌린다 ② 이 저장소에서 `npm ci` 를 한 번 한다.');

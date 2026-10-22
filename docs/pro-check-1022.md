@@ -10,12 +10,13 @@ cd C:\github\raytok-site\relay
 npx wrangler deploy
 
 cd C:\github\raytok-site
-node scripts\prod-license-e2e.mjs
+$env:RELAY_URL="https://raytok-relay.raytok.workers.dev"; node scripts\prod-license-e2e.mjs
 ```
 
 > `&&` 는 쓰지 않는다 — 대표님 PowerShell 이 그 토큰을 거부한다(10-21 확인).
-> `RELAY_URL` 을 안 주면 로컬을 본다. 운영을 보려면:
-> `$env:RELAY_URL="https://raytok-relay.raytok.workers.dev"` 를 먼저 한 줄.
+> ★ **마지막 줄의 `$env:RELAY_URL=` 를 빼면 이 PC 안(로컬 8787)을 본다** — 10-22 에 그래서
+> `FAIL: fetch failed` 만 나왔다. 빼고 치시면 스크립트가 **첫 줄에 크게** "로컬입니다" 라고
+> 말하고, 운영용 한 줄을 그대로 보여 준다.
 
 ## 이 배포로 사는 것 넷
 
@@ -30,7 +31,7 @@ node scripts\prod-license-e2e.mjs
 
 ## 확인은 마지막 줄 **⑨번**을 본다
 
-`node scripts\prod-license-e2e.mjs` 가 9줄을 찍는다. 프로는 **⑨번 한 줄**로 갈린다:
+위 마지막 한 줄이 9줄을 찍는다. 프로는 **⑨번 한 줄**로 갈린다:
 
 | ⑨번이 이렇게 나오면 | 뜻 | 할 일 |
 |---|---|---|

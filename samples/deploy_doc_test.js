@@ -42,8 +42,28 @@ for (const p of ['/pay/webhook', '/translate', '/usage']) {
   ok(doc.includes(p) && src.includes(`'${p}'`), `${p} 를 문서와 코드가 함께 안다`);
 }
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
-ok(doc.includes('npm run e2e:license') && !!pkg.scripts['e2e:license'],
-   '문서가 든 확인 한 줄(npm run e2e:license)이 package.json 에 있다');
+ok(!!pkg.scripts['e2e:license']
+   && fs.existsSync(path.join(ROOT, 'scripts', 'prod-license-e2e.mjs')),
+   '문서가 든 확인 줄의 스크립트가 실제로 있다 (scripts/prod-license-e2e.mjs)');
+/* ★ 10-22 15:45: 확인 줄에 **운영 주소**가 없어 대표님이 로컬(8787)을 찌르고
+   `FAIL: fetch failed` 만 보셨다. 문서가 주는 줄은 전부 주소를 들고 있어야 한다. */
+const PROD = 'https://raytok-relay.raytok.workers.dev';
+const runLines = (doc.match(/^.*prod-license-e2e\.mjs.*$/gm) || [])
+  .concat(doc.match(/^.*npm run e2e:license.*$/gm) || [])
+  .filter((l) => !l.trim().startsWith('|') && !l.trim().startsWith('#') && !/Cannot find module/.test(l));
+ok(runLines.length > 0, `대표님이 치는 확인 줄을 찾았다 (${runLines.length}줄)`);
+const naked = runLines.filter((l) => !l.includes(PROD));
+ok(naked.length === 0,
+   `확인 줄 전부가 운영 주소를 들고 있다 (주소 없는 줄: ${naked.length ? naked[0].trim() : '없음'})`);
+/* 대표님 PowerShell 은 `A=B cmd` 꼴을 모른다 — `$env:A="B"; cmd` 여야 한다(10-21) */
+const shellBad = runLines.filter((l) => /^RELAY_URL=/.test(l.trim()));
+ok(shellBad.length === 0,
+   `확인 줄이 PowerShell 모양이다 ($env:RELAY_URL="…"; …) — 리눅스 모양 ${shellBad.length}줄`);
+/* 스크립트도 주소가 없으면 **첫 줄에 크게** 로컬이라고 말한다 */
+const prodScript = fs.readFileSync(path.join(ROOT, 'scripts', 'prod-license-e2e.mjs'), 'utf-8');
+ok(/LOCAL_DEFAULT\s*=\s*!process\.env\.RELAY_URL/.test(prodScript)
+   && /if \(LOCAL_DEFAULT\)/.test(prodScript) && prodScript.includes('로컬'),
+   '스크립트가 주소 없이 돌면 로컬이라고 **먼저** 말한다 (10-22 15:45)');
 
 /* ④ 공개 저장소 — **값이 끼지 않았는가.** 비밀값처럼 긴 글자는 한 줄도 없어야 한다 */
 const code = doc.replace(/```[\s\S]*?```/g, (b) => b);   // 코드 묶음도 같이 본다
