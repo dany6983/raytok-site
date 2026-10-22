@@ -238,15 +238,31 @@ async function openHost(browser, base, { speech, region, locale, question }) {
        '끊긴 동안의 말이 **유실 0** 으로 도착한다 (R-15)');
     ok(texts.indexOf('끊긴 동안 1') < texts.indexOf('끊긴 동안 2'), '보낸 차례가 지켜진다');
 
-    /* 사람이 멈추면 — 다시 열지 않고 마이크·wakeLock 을 놓는다 */
+    /* 사람이 멈추면 — 다시 열지 않고 마이크를 놓는다.
+     * ★ 화면 깨우기는 **놓지 않는다**(2026-10-21, 대표님 "폰화면 꺼지면 웹도 꺼지는거냐").
+     *   임자가 🎤 였을 때는 원고 모드로만 쓰면 한 번도 안 잡혔고, ▶ 재생을 켜 두면
+     *   안드로이드 기본 시간에 화면이 꺼져 타이머가 멈췄다. 임자는 **진행 화면**이다. */
     await host.page.click('#btnMic');
     await host.page.waitForTimeout(250);
-    ok(await host.page.evaluate(() => window.__wakeLocks) === 0, '멈추면 wakeLock 을 놓는다');
+    ok(await host.page.evaluate(() => window.__wakeLocks) === 1,
+       '🎤 를 멈춰도 화면 깨우기는 **쥐고 있다** — 놓으면 ▶ 재생이 주머니에서 멈춘다');
+    ok(await host.page.evaluate(() => typeof window.rtHostMic.state.wakeLock === 'undefined'),
+       '🎤 상태에 wakeLock 칸이 없다 — 임자가 둘이면 한쪽이 남의 것을 놓는다(§4·§5)');
     ok(await host.page.evaluate(() => window.__recLog.includes('track-stop')), '멈추면 마이크 트랙을 끈다');
     const startsAfterStop = await host.page.evaluate(() => window.__recLog.filter(x => x === 'start').length);
     await host.page.waitForTimeout(200);
     ok(await host.page.evaluate(() => window.__recLog.filter(x => x === 'start').length) === startsAfterStop,
        '사람이 멈춘 뒤에는 다시 열지 않는다');
+
+    /* 끝내면 놓는다 — 끝낸 뒤에도 쥐고 있으면 폰이 안 꺼진다(D-32) */
+    await host.page.click('#btnEnd');
+    await host.page.waitForSelector('#step-end', { state: 'visible' });
+    ok(await host.page.evaluate(() => window.__wakeLocks) === 0,
+       '끝 화면으로 가면 화면 깨우기를 놓는다 — 폰을 원래대로 돌려준다(D-32)');
+    await host.page.click('#btnBackLive');
+    await host.page.waitForSelector('#step-live', { state: 'visible' });
+    ok(await host.page.evaluate(() => window.__wakeLocks) === 1,
+       '진행으로 돌아오면 다시 잡는다');
 
     /* ── 5. 청취자: 말한 줄을 원문으로 받고, 「화면 꺼도 듣기」가 기본 켬 ── */
     console.log('\n[5] 청취자 — 말한 줄 수신 · 「화면 꺼도 듣기」 기본 켬 · 첫 탭 소리');

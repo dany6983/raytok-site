@@ -115,7 +115,10 @@ class Bridge {
 
     /* 손님 셋 — en · zh-CN · ne. 셋 다 **원문 언어가 아닌** 말을 쓴다. */
     for (const lang of ['en', 'zh-CN', 'ne']) {
-      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      /* ★ 폰 언어를 **한국어로** 둔다 (B 0, 대표님 실기 10-21 13:30). 그 폰에서는 브라우저가
+         번역해 주지 않으므로 **방 번역만이 길**이다 — 여기서 자막이 손님 말로 나오면
+         그 길이 실제로 사는 것이다. 전에는 기본 폰 언어(en)로 돌아 en 손님만 운이 좋았다. */
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR' });
       const page = await ctx.newPage();
       await page.goto(`${base}/web/listener/?room=ABC123&lang=${lang}&relay=127.0.0.1:${srv.address().port}`);
       await page.waitForSelector('#btn-join');
@@ -159,6 +162,36 @@ class Bridge {
     ok(!Object.values(byLang).some((n) => n > 3),
        `④ 부른 횟수가 언어마다 몇 번뿐이다 (${JSON.stringify(byLang)}) — 손님 수로 늘지 않는다`);
     ok(!byLang.ko, '④ 원문 언어(ko)는 부르지 않았다');
+
+    /* ── ★ 대표님 지적 ⑤ "**한 번 이상 잘 안 됨**" (실기 10-21) ─────────────────
+       첫 줄·첫 문단만 되고 **두 번째부터** 안 되는 자리가 있나. 연달아 보내 센다:
+       🎤 줄 둘 + 원고 문단 둘(2·3). 하나라도 번역이 안 붙으면 여기서 붉다. */
+    {
+      hostWs.send(JSON.stringify({ seq: 11, text: '첫째 줄입니다', src_lang: 'ko', broadcast: true }));
+      await sleep(900);
+      hostWs.send(JSON.stringify({ seq: 12, text: '둘째 줄입니다', src_lang: 'ko', broadcast: true }));
+      await sleep(1200);
+      hostWs.send(JSON.stringify({ kind: 'script', para: 2, total: 2, src: '비상구를 확인하세요', srcLang: 'ko' }));
+      await sleep(1200);
+      const en = guests.find((x) => x.lang === 'en');
+      const got = await en.page.evaluate(() => {
+        const out = {};
+        for (const id of ['msg-11', 'msg-12']) {
+          const el = document.querySelector('#' + id + ' .msg-tr');
+          out[id] = el ? el.textContent : null;
+        }
+        out.scripts = [...document.querySelectorAll('.msg-script')].map((d) => {
+          const t = d.querySelector('.msg-tr');
+          return t ? t.textContent.slice(0, 40) : '';
+        });
+        return out;
+      });
+      ok(/\[en\]/.test(String(got['msg-11'])), `⑥ 🎤 **첫째** 줄에 번역이 붙었다 ("${got['msg-11']}")`);
+      ok(/\[en\]/.test(String(got['msg-12'])),
+         `⑥ 🎤 **둘째** 줄에도 붙었다 ("${got['msg-12']}") — 대표님 "한 번 이상 잘 안 됨" 자리`);
+      ok(got.scripts.length === 2 && got.scripts.every((t) => /\[en\]/.test(t)),
+         `⑥ 원고 문단 **둘 다** 번역이 붙었다 (${JSON.stringify(got.scripts)})`);
+    }
 
     /* ── ⑤ 되돌림 실증 (D-09) — 스위치를 끄면 **손님 화면에서 번역이 사라진다** ──
        위 초록들이 "방이 번역해서 보낸 결과"인지, 아니면 다른 길로 들어온 글자인지

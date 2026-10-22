@@ -34,6 +34,16 @@ const outsideRequests = [];
   try {
     // ── 1. 호스트 탭 시작 (강의 시작 → 진행 화면) ──
     const hostContext = await browser.newContext({ viewport: { width: 1100, height: 850 } });
+    /* 강사 화면이 **전선에 실제로 올린** 프레임을 모은다 — 릴레이가 받은 뒤의 모양을 보면
+       릴레이가 칸을 떨어뜨렸을 때 무엇을 보냈든 깨끗해 보인다(아래 「받기」 검사가 쓴다). */
+    await hostContext.addInitScript(() => {
+      window.__sentFrames = [];
+      const origSend = WebSocket.prototype.send;
+      WebSocket.prototype.send = function (data) {
+        try { if (typeof data === 'string') window.__sentFrames.push(data); } catch (_) {}
+        return origSend.call(this, data);
+      };
+    });
     const hostPage = await hostContext.newPage();
     watch(hostPage);
 
@@ -171,14 +181,65 @@ const outsideRequests = [];
     const activeSpeaker = await hostPage.textContent('#askActiveSpeaker');
     ok(activeSpeaker.includes('Nguyen Van A'), '강사 화면에 지명된 발언자(Nguyen Van A) 표출 확인');
 
-    // ── 8. 청취자 화면에 발언된 질문 표출 확인 (P-14 역번역) ──
+    // ── 8. 다른 청취자가 질문을 **자기 말로** 보는가 (정본 §3 4단계 · §2 ③) ──
+    //
+    // ★ 10-21 까지 이 자리는 `textContent` 로 한국어 원문을 찾아 통과했다. 정본 §2 ③ 으로
+    //   손님 화면이 **내 언어만** 보이게 된 뒤 원문은 **접힌 단추 안**에 있고, 접힌 것의
+    //   `textContent` 는 그대로 읽힌다 — 화면에 아무것도 없어도 초록인 모양이다(§12 와
+    //   같은 병). 그래서 **보이는가**를 `checkVisibility` 로 재고, 번역이 왔는지는 글자로 본다.
     await lis2Page.waitForSelector('.msg-line');
-    const lis2Chat = await lis2Page.evaluate(() => {
+    const SEE = { contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true };
+    await lis2Page.waitForFunction(() => {
+      const el = document.querySelector('.msg-line .msg-tr');
+      return el && el.textContent.indexOf('[th]') >= 0;      // 가짜 번역기가 붙이는 꼬리표
+    }, null, { timeout: 8000 });
+    const lis2Seen = await lis2Page.evaluate((see) => {
       const lines = Array.from(document.querySelectorAll('.msg-line'));
-      return lines.map(l => l.textContent);
-    });
-    const hasQuestion = lis2Chat.some(c => c.includes('이 밸브를 먼저 잠급니까?'));
-    ok(hasQuestion, '다른 청취자(Somchai)에게도 지명된 질문 본문 표출 확인');
+      const el = document.querySelector('.msg-line .msg-tr');
+      const srcEl = document.querySelector('.msg-line .msg-text');
+      const can = (n) => !!(n && n.checkVisibility && n.checkVisibility(see));
+      const shown = [srcEl, el].filter(can);
+      return { n: lines.length, text: el ? el.textContent.trim() : '',
+               vis: can(el), srcVis: can(srcEl),
+               visCls: shown.length === 1 ? shown[0].className : shown.map((x) => x.className).join('+'),
+               body: document.getElementById('chat-list').textContent };
+    }, SEE);
+    /* 한 질문에 줄 하나. 10-21 에 `question` 과 `ask_active` 가 각각 줄을 만들어 **두 줄**이
+       됐고, 늦게 온 번역은 한 줄에만 붙어 나머지 한 줄이 **한국어 원문으로** 남았다. */
+    ok(lis2Seen.n === 1, `질문 하나에 줄 하나다 (${lis2Seen.n}줄) — 둘이면 한 줄은 못 알아듣는 원문으로 남는다`);
+    ok(lis2Seen.vis === true && lis2Seen.text.indexOf('[th]') >= 0,
+       `다른 손님(Somchai, th)이 질문을 **자기 말로 보고 있다** ("${lis2Seen.text.slice(0, 40)}")`);
+    /* 보이는 칸이 **번역 칸**이어야 한다 — 가짜 번역기는 원문에 꼬리표만 붙이므로
+       "번역문에 원문 글자가 없다"로는 가를 수 없다. 어느 칸이 보이는가로 가른다. */
+    ok(lis2Seen.visCls === 'msg-tr',
+       `화면에 보이는 칸이 **번역 칸**이다 (${lis2Seen.visCls}) — 원문 칸이 아니다`);
+    ok(lis2Seen.srcVis === false,
+       '원문은 **화면에 안 보인다** — 「원문 보기」를 눌렀을 때만 보인다(정본 §2 ③)');
+    ok(lis2Seen.body.includes('이 밸브를 먼저 잠급니까?'),
+       '그래도 원문은 **잃지 않았다** — 접힌 자리에 그대로 있다(R-15)');
+    const hasQuestion = lis2Seen.text.indexOf('[th]') >= 0;
+
+    // ── 8-1. 강사는 질문을 **강사 말로** 보고, 읽어 준다 (정본 §1 ⑤ · §3 3단계) ──
+    const askLog = await hostPage.evaluate(() => (window.rtHostAsk && window.rtHostAsk.log()) || []);
+    ok(askLog.some(l => l.indexOf('ask_tr ') === 0 && l.indexOf('to=ko') > 0),
+       `강사 화면이 질문을 **강사 말로** 번역했다 (${askLog.find(l => l.indexOf('ask_tr ') === 0) || '없음'})`);
+    const askShown = await hostPage.textContent('#askActiveText');
+    ok(askShown.indexOf('[ko]') >= 0 && askShown.indexOf('이 밸브를 먼저 잠급니까?') >= 0,
+       `강사 화면에 **번역 + (원문)** 둘 다 보인다 ("${askShown.trim().slice(0, 50)}")`);
+    ok(await hostPage.evaluate(() => window.rtHostAsk.speakOn()) === true,
+       '읽어 주기는 **기본 켬** (§24 — 숨기지 않는다. 강사는 손님 말을 모른다)');
+    ok(await hostPage.isVisible('#btnAskSpeak'), '끄는 단추가 화면에 있다');
+    await hostPage.click('#btnAskSpeak');
+    ok(await hostPage.evaluate(() => window.rtHostAsk.speakOn()) === false, '끌 수 있다');
+    await hostPage.click('#btnAskSpeak');
+
+    // 강사는 **번역문을 보내지 않는다** — 받기(grant)에도 싣지 않는다 (결정장부 43 · P-14)
+    const grantFrames = (await hostPage.evaluate(() => window.__sentFrames || []))
+      .map(f => { try { return JSON.parse(f); } catch (_) { return null; } })
+      .filter(m => m && (m.kind === 'grant' || m.kind === 'ask_grant'));
+    ok(grantFrames.length >= 1, `되돌림용: 강사가 올린 「받기」 프레임을 잡았다 (${grantFrames.length}건)`);
+    ok(grantFrames.every(m => !m.trans && !m.tr),
+       '「받기」에 번역문 칸이 없다 — 강사 쪽 번역문 전송 금지(결정장부 43). 그 길은 운영에서 400 만 받던 길이다');
 
     const lis1BtnText = await lis1Page.textContent('#btn-ask');
     /* 10-15: 이 글자는 한국어로 박혀 있었다 — 손님 화면이라 사전으로 옮겼다(§18).
@@ -198,6 +259,105 @@ const outsideRequests = [];
       return cnt && cnt.textContent === '1';
     });
     ok(true, '1번 질문 종료 후 대기열에서 1번 제거 및 남은 1건 유지 확인');
+
+    // ── 8-2. **말로 묻는 질문** (정본 §3 · 대표님 10-21 "원래 음성으로 보내고") ──
+    //
+    // 손님이 자기 폰에 말한다 → **손님 폰이 글자로 바꾼다** → 릴레이로는 **글자만** 간다.
+    // 소리는 우리 서버로 가지 않는다(RULE: P-04 · P-16 ③). 그리고 그 질문이 **모든 손님**에게
+    // 각자 말로, 강사에게는 강사 말로 간다.
+    const lis3Context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US' });
+    await lis3Context.addInitScript(() => {
+      window.__sentFrames = [];
+      const origSend = WebSocket.prototype.send;
+      WebSocket.prototype.send = function (data) {
+        try { if (typeof data === 'string') window.__sentFrames.push(data); } catch (_) {}
+        return origSend.call(this, data);
+      };
+      /* 가짜 받아쓰기 — 진짜 규약대로(D-11): start 는 onstart, stop 은 onend 를 내고,
+         결과는 `results[i][0].transcript` 와 `isFinal` 로 온다. */
+      class FakeRec {
+        constructor() { this.lang = ''; this.continuous = false; this.interimResults = false; this.running = false; }
+        start() { if (this.running) throw new Error('already'); this.running = true; window.__rec = this; if (this.onstart) this.onstart(); }
+        stop() { this.running = false; if (this.onend) this.onend(); }
+        say(text) {
+          const r = [{ 0: { transcript: text }, isFinal: true, length: 1 }];
+          if (this.onresult) this.onresult({ resultIndex: 0, results: Object.assign(r, { length: 1 }) });
+        }
+      }
+      window.SpeechRecognition = FakeRec;
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: { getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }) }
+      });
+    });
+    const lis3Page = await lis3Context.newPage();
+    watch(lis3Page);
+    await lis3Page.goto(`${base}/web/listener/?room=${roomCode}&lang=en&relay=localhost:${port}`);
+    await lis3Page.waitForSelector('#room-input');
+    await lis3Page.fill('#name-input', 'Mary');
+    await lis3Page.click('#btn-join');
+    await lis3Page.waitForSelector('#chat-screen', { state: 'visible' });
+
+    await lis3Page.click('#btn-ask');
+    await lis3Page.waitForSelector('#ask-modal', { state: 'visible' });
+    await lis3Page.fill('#ask-input-text', 'hand up');
+    await lis3Page.click('#btn-ask-submit');
+    await lis3Page.waitForSelector('#ask-modal', { state: 'hidden' });
+
+    /* 강사가 Mary 를 지명한다 (사람 손으로 — P-17) */
+    await hostPage.waitForFunction(() => Array.from(document.querySelectorAll('#askQueueList > div'))
+      .some(el => el.textContent.includes('Mary')));
+    await hostPage.evaluate(() => {
+      const row = Array.from(document.querySelectorAll('#askQueueList > div')).find(el => el.textContent.includes('Mary'));
+      row.querySelector('button').click();
+    });
+    await lis3Page.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 5000 });
+    ok(true, '지명되면 손님 폰의 **받아쓰기가 열린다** (마이크는 손님 폰에 있다)');
+    const recLang = await lis3Page.evaluate(() => window.__rec.lang);
+    ok(/^en/.test(recLang), `받아쓰기 언어가 **손님이 고른 말** (${recLang}) — 표 한 곳에서 읽는다(§6)`);
+
+    await lis3Page.evaluate(() => window.__rec.say('Can we use this offline?'));
+    await lis3Page.waitForTimeout(400);
+
+    const q3 = (await lis3Page.evaluate(() => window.__sentFrames || []))
+      .map(f => { try { return JSON.parse(f); } catch (_) { return null; } })
+      .filter(m => m && m.kind === 'question');
+    ok(q3.length >= 1, `손님 폰이 **글자로 바꿔** 올렸다 (${q3.length}건)`);
+    ok(q3[0].src === 'Can we use this offline?' && q3[0].srcLang === 'en',
+       `올라간 것은 **원문 글자 + 언어**다 ("${q3[0].src}" · ${q3[0].srcLang})`);
+    const AUDIO_KEYS = ['audio', 'pcm', 'wav', 'blob', 'buf', 'buffer', 'samples', 'opus', 'webm'];
+    const audioKeys = Object.keys(q3[0]).filter(k => AUDIO_KEYS.some(a => k.toLowerCase().includes(a)));
+    ok(audioKeys.length === 0,
+       `올라간 프레임에 **소리 칸이 없다** (RULE: P-04 — 소리를 릴레이로 보내지 않는다)${audioKeys.length ? ': ' + audioKeys : ''}`);
+    ok(!q3[0].trans && !q3[0].tr, '그리고 번역 칸도 없다 — 손님은 번역하지 않는다(P-14)');
+
+    /* 모든 손님이 그 질문을 **자기 말로** 본다 (정본 §3 4단계) */
+    await lis2Page.waitForFunction(() => Array.from(document.querySelectorAll('.msg-line .msg-tr'))
+      .some(el => el.textContent.includes('[th] Can we use this offline?')), null, { timeout: 8000 });
+    ok(true, 'th 손님이 말로 한 질문을 **타이어로** 본다 (보내는 쪽이 번역해 보낸 것이 아니다)');
+    const lis1Saw = await lis1Page.evaluate(() => Array.from(document.querySelectorAll('.msg-line .msg-tr'))
+      .map(el => el.textContent).join(' | '));
+    ok(lis1Saw.indexOf('[vi]') < 0,
+       'vi 손님은 **못 받는다** — 가짜 번역기가 vi 를 거절하게 돼 있다(실패를 조용히 넘기지 않는 길, §20)');
+    const lis3Own = await lis3Page.evaluate(() => Array.from(document.querySelectorAll('.msg-line')).length);
+    ok(lis3Own >= 1, `말한 손님 화면에도 자기 질문이 남는다 (${lis3Own}줄 — R-15)`);
+
+    /* 강사는 그 질문을 **강사 말로** 보고 읽는다 */
+    await hostPage.waitForFunction(() => (window.rtHostAsk.log() || [])
+      .some(l => l.indexOf('ask_tr ') === 0 && l.indexOf('from=en') > 0), null, { timeout: 8000 });
+    const askShown2 = await hostPage.textContent('#askActiveText');
+    ok(askShown2.indexOf('[ko]') >= 0 && askShown2.indexOf('Can we use this offline?') >= 0,
+       `강사 화면: 강사 말 번역 + (원문) ("${askShown2.trim().slice(0, 48)}")`);
+    ok((await hostPage.evaluate(() => window.rtHostAsk.log()))
+       .some(l => l.indexOf('ask_speak ') === 0 && l.indexOf('lang=ko') > 0),
+       '강사 이어폰으로 **강사 말로 읽어 준다** (정본 §1 ⑤) — 소리는 강사 폰이 낸다(P-04)');
+
+    await hostPage.click('#btnAskEnd');
+    await hostPage.waitForSelector('#askActiveArea', { state: 'hidden' });
+    await lis3Page.waitForFunction(() => !window.__rec || !window.__rec.running, null, { timeout: 5000 });
+    ok(true, '회수하면 손님 폰의 받아쓰기가 **꺼진다** (마이크를 쥐고 있지 않는다)');
+    await lis3Context.close();
+
 
     // ── 10. 특허 자물쇠·기본값 되돌림 실증 4건 (D-09) ──
     //
@@ -221,7 +381,7 @@ const outsideRequests = [];
     //    릴레이가 받은 뒤의 모양을 보면 안 된다 — 릴레이가 trans 칸을 안 담으면 무엇을 보냈든
     //    깨끗해 보여서, 페이지를 되돌려도 초록이다(10-14 ⑨-1 에서 실제로 되돌려 보고 잡은 것).
     const askedItems = askRoom.askHistory || [];
-    ok(askedItems.length === 2, `되돌림용: 릴레이가 받은 질문 ${askedItems.length}건`);
+    ok(askedItems.length === 3, `되돌림용: 릴레이가 받은 질문 ${askedItems.length}건 (글자 둘 + 말 하나)`);
     const sentAsk = (await lis1Page.evaluate(() => window.__sentFrames || []))
       .map(f => { try { return JSON.parse(f); } catch (_) { return null; } })
       .find(m => m && (m.kind === 'ask' || m.kind === 'ask_req' || m.kind === 'question'));

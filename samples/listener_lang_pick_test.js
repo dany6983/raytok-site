@@ -127,6 +127,79 @@ const srv = http.createServer((q, r) => {
     r = await open({ nav: 'zh-Hant-HK', revert: true });
     ok(r.sel === 'zh-CN', `되돌림 실증: zh-Hant-HK 도 zh-CN 으로 (실기에 찍힌 값, ${r.sel})`);
 
+    /* ── 정본 §2 ② · §6 ⑤ — 언어 고르기 **옆**에 「앱 같이 받기」 ──────────────
+     * 웹 브라우저에는 언어팩을 넣을 수 없다(사실). 그래서 받는 것은 **앱**이고, 안 받아도
+     * 서버 번역으로 계속 들린다 — 그 말이 단추 옆에 **보여야** 한다. 안 적으면 손님이
+     * 받아야 하는 줄로 읽고 거기서 멈춘다. */
+    console.log('\n[언어팩] 언어 고르기 옆 받기 단추 (정본 §2 ②)');
+    {
+      const SEE = { contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true };
+      const ctx = await b.newContext({ locale: 'en-US' });
+      const page = await ctx.newPage();
+      const logs = [];
+      page.on('console', (m) => { if (/^pack_row /.test(m.text())) logs.push(m.text()); });
+      await page.goto(`http://localhost:${port}/web/listener/?room=123456&lang=vi`, { waitUntil: 'load' });
+      await page.waitForFunction(() => document.getElementById('lang-select').options.length > 1, null, { timeout: 8000 }).catch(() => {});
+      const st = await page.evaluate((see) => {
+        const row = document.getElementById('pack-row');
+        const btn = document.getElementById('btn-get-pack');
+        const sel = document.getElementById('lang-select');
+        const can = (n) => !!(n && n.checkVisibility && n.checkVisibility(see));
+        /* 구조 단언(§12) — **언어 고르기 바로 다음 형제**여야 "옆"이다 */
+        return { vis: can(row), btnVis: can(btn), txt: btn ? btn.textContent.trim() : '',
+                 note: row ? row.querySelector('span').textContent.trim() : '',
+                 noteVis: can(row && row.querySelector('span')),
+                 href: btn ? btn.getAttribute('href') : '',
+                 nextOfSelect: sel && sel.nextElementSibling ? sel.nextElementSibling.id : '' };
+      }, SEE);
+      ok(st.vis === true && st.btnVis === true, `받기 단추가 **화면에 보인다** (§24 — 숨기지 않는다)`);
+      ok(st.nextOfSelect === 'pack-row', `언어 고르기 **바로 옆**이다 (다음 형제 = ${st.nextOfSelect})`);
+      ok(/앱|app|App|Aplikas|アプリ|应用|ऐप|แอป|ایپ/.test(st.txt) || st.txt.length > 2,
+         `단추 글자가 그 손님 말로 나온다 ("${st.txt}")`);
+      ok(st.noteVis === true && st.note.length > 2,
+         `**안 받아도 들린다**는 말이 같이 보인다 ("${st.note}")`);
+      ok(st.href === '/download/', `앱 받는 곳으로 간다 (${st.href})`);
+      ok(logs.length >= 1 && /show=1/.test(logs[logs.length - 1]),
+         `첫 걸음에 기록 한 줄(§12) — "${logs[logs.length - 1] || '없음'}"`);
+
+      /* 고른 말이 **강연 말과 같으면** 번역할 것이 없다 → 단추도 없다 */
+      const same = await page.evaluate(() => {
+        srcLang = 'vi'; selectedLang = 'vi';
+        renderPackRow();
+        const row = document.getElementById('pack-row');
+        return row.style.display;
+      });
+      ok(same === 'none', '고른 말이 강연 말과 같으면 단추가 사라진다 — 받을 까닭이 없다');
+      await ctx.close();
+
+      /* 앱으로 열린 화면에는 안 보인다 — 앱은 자기 자리에서 팩을 받는다 */
+      const appCtx = await b.newContext({ locale: 'en-US' });
+      const appPage = await appCtx.newPage();
+      await appPage.goto(`http://localhost:${port}/web/listener/?room=123456&lang=vi&app=1`, { waitUntil: 'load' });
+      await appPage.waitForFunction(() => document.getElementById('lang-select').options.length > 1, null, { timeout: 8000 }).catch(() => {});
+      ok(await appPage.evaluate(() => document.getElementById('pack-row').style.display) === 'none',
+         '앱으로 열린 화면에는 「앱 같이 받기」가 없다 — 앱에 또 앱을 권하지 않는다');
+      await appCtx.close();
+
+      /* 81개 언어 전부 차 있다 (§18) — 손 표가 원본이다 */
+      const dict = JSON.parse(fs.readFileSync(path.join(ROOT, 'web', 'listener', 'ui-strings.json'), 'utf-8'));
+      for (const key of ['btn_get_pack', 'pack_optional']) {
+        const row = dict.strings[key] || {};
+        const miss = dict.langs.filter((l) => !String(row[l] || '').trim());
+        ok(miss.length === 0, `${key}: 81개 언어 전부 차 있다${miss.length ? ' — 빈 칸: ' + miss.join(',') : ''}`);
+        const sameAsEn = dict.langs.filter((l) => l !== 'en' && row[l] === row.en);
+        ok(sameAsEn.length <= 2, `${key}: en 과 **글자까지 같은** 칸이 없다 (안 번역한 것, ${sameAsEn.length}개)`);
+      }
+
+      /* 되돌림 실증 — 글자를 비우면 위 "81개 전부"가 붉어진다 */
+      let revPack = false;
+      try {
+        assert.ok(!String((dict.strings.btn_get_pack || {}).ne || '').trim(),
+                  'btn_get_pack 의 ne 칸이 비어 있다');
+      } catch (_) { revPack = true; }
+      ok(revPack, '글자 한 칸을 비우면 붉어진다 — 그 폰에 영어가 나온다 (되돌림 실증)');
+    }
+
     console.log(`\n[OK] ${checks}개 확인 — 폰 언어 → 자막 언어`);
   } finally {
     await b.close();

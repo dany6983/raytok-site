@@ -371,6 +371,21 @@ export class Room {
     }, RTR.BATCH_MS);
   }
 
+  /**
+   * 손님 질문을 **손님 언어마다 한 번씩** 번역해 보낸다 (정본 §3 4단계).
+   *
+   * 묶지 않고 바로 부른다 — 질문은 한 줄이고 **사람이 기다리고 있다**(원고 줄은 줄줄이
+   * 오니 250ms 모아서 한 번이 싸다). 말한 손님 자기 언어는 `pickLangs` 가 빼 준다(원문과
+   * 같은 언어는 번역할 것이 없다). 실패하면 그 언어 손님에게 `no_tr` 이 가므로 「번역 중」
+   * 에 갇히지 않는다(R-15).
+   */
+  roomTrAsk(opts) {
+    if (!this.roomTrOn()) return;
+    const item = RTR.askItem(opts);
+    if (!item) return;
+    this.roomTrFlush([item]).catch(() => {});
+  }
+
   /** 방 안에서만 쓰는 짧은 토큰. **비밀값을 들고 있지 않고** 깃발로 만들어 쓴다. */
   async trToken_() {
     if (this.trToken) return this.trToken;
@@ -1660,6 +1675,9 @@ export class Room {
                 hostWs.send(activeMsg);
               } catch (_) {}
             }
+            /* 정본 §3 4단계 — **글자로 적은 질문**도 각자 자기 언어로. 말로 한 질문은 아래
+               `kind === 'question'` 가지에서 같은 일을 한다(두 길 다 센다, §4). */
+            this.roomTrAsk({ id: target.id, text: target.src || target.text, srcLang: target.lang });
           }
           return;
         }
@@ -1891,6 +1909,10 @@ export class Room {
         for (const listenerWs of this.ctx.getWebSockets('listener')) {
           try { listenerWs.send(spokenMsg); } catch (_) {}
         }
+        /* 정본 §3 4단계 — 같은 질문을 **각자 자기 언어로**. 원문은 위에서 이미 갔고
+           번역은 뒤따라 `question_tr` 로 간다(먼저 보내는 까닭: 늦어도 줄은 안 잃는다, R-15). */
+        this.roomTrAsk({ id: this.activeAsk.id, text: spoken,
+                         srcLang: this.activeAsk.lang || parsed.srcLang || 'ko' });
         return;
       }
 

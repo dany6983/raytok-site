@@ -391,4 +391,104 @@ const SRC = (n, from = 1) => ({
      `미리 하기를 끄면 부르는 횟수가 2 → ${calls.length} 로 줄는다 (되돌림 실증 ③)`);
 }
 
+/* ⑱ 손님 질문도 **각자 자기 언어로** (정본 §3 4단계) ─────────────────────────
+ *
+ * 10-21 까지 질문은 **원문만** 뿌려졌다. 그리고 청취 페이지는 정본 §2 ③ 뒤로 **내 언어만**
+ * 보여 주므로, 번역이 없는 질문은 손님 화면에 **빈 줄**로 떨어진다 — 쓰는 곳(뿌리기)만
+ * 만들고 읽는 곳(손님 화면)을 안 센 자리다(§4). */
+{
+  console.log('\n[18] 손님 질문 — 방이 각자 언어로 번역해 보낸다');
+  const { room, ls, calls } = makeRoom(['en', 'vi', 'ko']);
+  room.roomTrAsk({ id: 'ask_7', text: '이 기능은 오프라인에서도 되나요?', srcLang: 'ko' });
+  await wait(60);
+
+  const en = ls[0].got.filter((m) => m.kind === 'question_tr');
+  const vi = ls[1].got.filter((m) => m.kind === 'question_tr');
+  const ko = ls[2].got.filter((m) => m.kind === 'question_tr');
+  ok(en.length === 1 && vi.length === 1, `en·vi 손님이 질문 번역을 받았다 (en ${en.length} · vi ${vi.length})`);
+  ok(en[0].id === 'ask_7' && vi[0].id === 'ask_7',
+     '번역이 **질문 id** 로 짝을 맞춘다 — 손님이 어느 질문에 붙일지 안다');
+  ok(!!en[0].trans.en && !!vi[0].trans.vi && !en[0].trans.vi,
+     '자기 언어 칸만 온다 — 남의 언어 번역문은 안 받는다(바이트도 돈이다)');
+  ok(ko.length === 0, '말한 손님과 **같은 언어**는 번역하지 않는다 — 번역할 것이 없다');
+  ok(calls.length === 2, `언어 수만큼만 샀다 (2회 — 사람 수가 아니다) ${calls.length}`);
+
+  /* 질문 길이 원고 길에 섞이면 — 질문 7번 번역이 원고 7번 문단에 붙는다 */
+  const asScript = ls[0].got.filter((m) => m.kind === 'script_tr');
+  ok(asScript.length === 0, '질문이 `script_tr` 로 가지 않는다 — 원고 문단에 붙으면 글이 뒤바뀐다');
+  ok(RTR.doneKey({ ask: '3', text: 'x' }, 'en') !== RTR.doneKey({ script: 1, para: 3 }, 'en'),
+     `질문 3번과 원고 3번 문단의 이름이 다르다 (${RTR.doneKey({ ask: '3' }, 'en')} ≠ ${RTR.doneKey({ script: 1, para: 3 }, 'en')})`);
+}
+
+/* ⑲ 질문 — 안 되면 **안 된다고** 보낸다 · 빈 말은 사지 않는다 */
+{
+  console.log('\n[19] 질문 — 실패·빈 말 (§20 · R-15)');
+  const bad = makeRoom(['en'], 'fail');
+  bad.room.roomTrAsk({ id: 'ask_9', text: '안 되는 질문', srcLang: 'ko' });
+  await wait(60);
+  const no = bad.ls[0].got.filter((m) => m.kind === 'question_tr' && m.no_tr);
+  ok(no.length === 1 && no[0].id === 'ask_9' && !!no[0].why,
+     `번역이 깨지면 「안 됨」이 간다 (why=${no.length ? no[0].why : '-'}) — 안 보내면 「번역 중」에 갇힌다`);
+  const failBand = bad.hostWs.got.filter((m) => m.kind === 'tr_fail');
+  ok(failBand.length === 1, '강사 화면에도 알린다 — 조용히 넘기지 않는다(§20)');
+
+  const blank = makeRoom(['en']);
+  blank.room.roomTrAsk({ id: 'ask_10', text: '   ', srcLang: 'ko' });
+  blank.room.roomTrAsk({ id: '', text: '아이디 없는 질문', srcLang: 'ko' });
+  blank.room.roomTrAsk(null);
+  await wait(60);
+  ok(blank.calls.length === 0, `빈 말·id 없는 질문은 **사지 않는다** (${blank.calls.length}회) — 인식기는 빈 줄도 준다(§20)`);
+  ok(blank.ls[0].got.length === 0, '그리고 손님에게 아무것도 안 간다 — 빈 줄이 화면에 떨어지지 않게');
+
+  /* 스위치를 끈 방은 질문도 번역하지 않는다 — 원문은 이미 갔다(R-15) */
+  const off = makeRoom(['en'], 'ok', { ROOM_TR: '0' });
+  off.room.roomTrAsk({ id: 'ask_11', text: '꺼진 방의 질문', srcLang: 'ko' });
+  await wait(60);
+  ok(off.calls.length === 0, 'ROOM_TR=0 이면 질문도 안 산다 — 스위치는 한 곳이다');
+}
+
+/* ⑲-1 한 질문의 글자가 **두 번** 온다 — 손들 때 적은 글자, 지명 뒤 **말한 글자** ───
+ *
+ * 10-21 에 질문 번역을 넣자마자 생긴 자리다. 적어 두는 이름이 `q<id>` 뿐이면 두 번째가
+ * "이미 샀다"로 걸러지고, 손님에게는 **손들 때 적은 글자의 번역**이 간다 — 말한 질문이
+ * 아무에게도 안 가는 모양이다. 글자가 **같을** 때는 두 번 사지 않아야 한다(그게 표의 일). */
+{
+  console.log('\n[19-1] 한 질문, 글자 둘 (손들 때 → 말한 뒤)');
+  const { room, ls, calls } = makeRoom(['th']);
+  room.roomTrAsk({ id: 'ask_20', text: 'hand up', srcLang: 'en' });
+  await wait(50);
+  room.roomTrAsk({ id: 'ask_20', text: 'Can we use this offline?', srcLang: 'en' });
+  await wait(50);
+  const got = ls[0].got.filter((m) => m.kind === 'question_tr').map((m) => m.trans.th);
+  ok(got.length === 2, `번역이 둘 다 갔다 (${got.length}건)`);
+  ok(/Can we use this offline\?/.test(got[got.length - 1] || ''),
+     `마지막에 간 것이 **말한 글자**다 ("${got[got.length - 1] || '없음'}")`);
+  ok(calls.length === 2, `두 번 샀다 (${calls.length}회) — 글자가 다르니 당연하다`);
+
+  /* 같은 글자가 또 오면 **사지 않는다** */
+  room.roomTrAsk({ id: 'ask_20', text: 'Can we use this offline?', srcLang: 'en' });
+  await wait(50);
+  ok(calls.length === 2, `같은 글자가 또 오면 안 산다 (${calls.length}회 그대로) — 돈이다`);
+
+  /* 되돌림 실증 — 이름에서 글자의 표를 빼면 두 번째가 **걸러진다** */
+  const a = { ask: 'x', askRev: RTR.textRev('hand up'), text: 'hand up' };
+  const b = { ask: 'x', askRev: RTR.textRev('말한 글자'), text: '말한 글자' };
+  ok(RTR.doneKey(a, 'th') !== RTR.doneKey(b, 'th'),
+     `같은 질문의 다른 글자는 **다른 이름**이다 (${RTR.doneKey(a, 'th')} ≠ ${RTR.doneKey(b, 'th')})`);
+  const noRev = { ask: 'x', text: 'hand up' };
+  const noRev2 = { ask: 'x', text: '말한 글자' };
+  ok(RTR.doneKey(noRev, 'th') === RTR.doneKey(noRev2, 'th'),
+     '글자의 표를 빼면 둘이 **같은 이름**이 된다 — 두 번째가 걸러진다 (되돌림 실증 ⑤)');
+}
+
+/* ⑳ 되돌림 실증 ④ — 질문 번역을 안 밀면 손님은 **빈 줄**을 본다 */
+{
+  const { room, ls } = makeRoom(['en']);
+  room.roomTrAsk = function () { /* 10-21 이전의 모양: 원문만 뿌리고 끝 */ };
+  room.roomTrAsk({ id: 'ask_12', text: '되돌린 질문', srcLang: 'ko' });
+  await wait(60);
+  ok(ls[0].got.length === 0,
+     '질문 번역을 밀지 않게 되돌리면 en 손님에게 아무 번역도 안 온다 (되돌림 실증 ④)');
+}
+
 console.log(`\n[OK] ${pass}개 확인 — 방이 번역한다`);
