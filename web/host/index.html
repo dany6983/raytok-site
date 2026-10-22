@@ -287,6 +287,12 @@
     .qr-box { background: #fff; border-radius: 8px; padding: 10px; display: flex; justify-content: center; }
     .qr-box svg, .qr-box img { width: 220px; height: 220px; display: block; }
     .room-code { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.15em; color: #38bdf8; text-align: center; }
+    /* 갈림 QR 스위치 (데모용). 손가락 칸 44px 은 접근성 시험(samples/a11y_test.js)과 같은 값 */
+    .qr-target { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; justify-content: center; margin-top: 8px; }
+    .qr-target-label { font-size: 0.75rem; color: var(--text-muted); margin-right: 2px; }
+    .qr-target-btn { min-height: 44px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+                     background: #0f172a; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; }
+    .qr-target-btn.on { background: #38bdf8; color: #0a0f1f; border-color: #38bdf8; font-weight: 700; }
     .att-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 0.85rem; }
     .att-now { font-size: 1.4rem; font-weight: 700; color: var(--text); }
     .att-langs { margin-top: 6px; color: var(--text-muted); }
@@ -330,6 +336,7 @@
   <script src="../common/region.js"></script>   <!-- RULE: P-16 — 🎤 를 켤지 정하는 한 곳 -->
   <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 -->
   <script src="../common/script-follow.js"></script>   <!-- 10-20 판정 ⓐ: 원고를 읽는 중인 말은 안 보낸다 -->
+  <script src="../common/script-play.js"></script>     <!-- 정본 §1 ④: 원고 자동 넘김 시간·되켜기 판정 한 곳 -->
 </head>
 <body>
   <header>
@@ -374,13 +381,25 @@
         </div>
       </div>
 
-      <!-- ② 청취자 지원 언어 선택 -->
-      <div class="form-group" id="langChipsGroup">
-        <label data-t="prep_step2"></label>
-        <div class="lang-chips" id="langChips">
-          <!-- 동적 생성 -->
-        </div>
+      <!-- ★ 정본 v1 §1 ② (대표님 10-21 15:26): 강사는 **내가 말하는 언어 하나**만 고른다.
+           번역 대상 언어 고르기는 **없다** — 손님이 자기 언어를 고르고 방이 그 언어로 번역한다
+           (장부 51). 아래 「원고 미리 번역」은 **강사 검수용 선택**이라 접어 둔다. -->
+      <div class="form-group" id="srcLangGroup">
+        <label for="srcLangSelect" data-t="prep_src_lang"></label>
+        <select id="srcLangSelect" style="width:100%; padding:10px; border-radius:8px; background:var(--card); color:var(--text); border:1px solid var(--border); font-size:0.95rem;"></select>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;" data-t="prep_src_lang_sub"></div>
       </div>
+
+      <!-- (선택) 원고 미리 번역 — 강사가 눈으로 검수할 때만. 손님에게 가는 번역은 방이 만든다 -->
+      <details class="form-group" id="preTrDetails">
+        <summary style="cursor:pointer; font-weight:600; font-size:0.9rem;" data-t="prep_pre_open"></summary>
+        <div id="langChipsGroup" style="margin-top:10px;">
+          <label data-t="prep_step2"></label>
+          <div class="lang-chips" id="langChips">
+            <!-- 동적 생성 -->
+          </div>
+        </div>
+      </details>
 
       <!-- ②-B 번역 없이 방송 (아웃바운드 / 무선 가이드 모드, question.md §12) -->
       <div class="form-group" style="background: rgba(148, 163, 184, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
@@ -472,6 +491,9 @@
           <div id="liveParaList" class="live-list"></div>
           <div class="live-controls">
             <button id="btnPrev" class="btn secondary" title="← 키" data-t="live_prev"></button>
+            <!-- 정본 §1 ④ 재생/멈춤 — 원고를 글자 수 속도로 혼자 넘긴다. 배속은 바로 옆에서 고른다 -->
+            <button id="btnPlay" class="btn" data-t="live_play"></button>
+            <select id="playRate" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: var(--card); color: var(--text); border: 1px solid var(--border); font-size: 0.9rem;"></select>
             <button id="btnNext" class="btn" title="→ 또는 스페이스 키" data-t="live_next"></button>
             <button id="btnSkip" class="btn secondary" data-t="live_skip"></button>
             <button id="btnBreak" class="btn warn" data-t="live_break"></button>
@@ -493,6 +515,13 @@
         <div class="live-side">
           <div class="qr-box" id="qrBox"></div>
           <div class="room-code" id="roomCode">------</div>
+          <!-- 갈림 QR 스위치 (데모용, 기본 「둘 다」) — 주소는 joinQrUrl 한 자리에서 만든다 -->
+          <div class="qr-target" id="qrTargetBox">
+            <span class="qr-target-label" data-t="qr_target_label"></span>
+            <button type="button" class="qr-target-btn on" id="qrTarget-both" onclick="setQrTarget('both')" data-t="qr_target_both"></button>
+            <button type="button" class="qr-target-btn" id="qrTarget-app" onclick="setQrTarget('app')" data-t="qr_target_app"></button>
+            <button type="button" class="qr-target-btn" id="qrTarget-web" onclick="setQrTarget('web')" data-t="qr_target_web"></button>
+          </div>
           <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; overflow-wrap: anywhere;" id="joinUrl"></div>
           <div class="att-box">
             <div style="color: var(--text-muted);" data-t="att_label"></div>
@@ -529,6 +558,8 @@
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
               <div style="display: flex; gap: 6px;">
+                <!-- 정본 §1 ⑤ — 질문을 강사 말로 읽어 준다. 기본 켬(§24), 끄는 단추다 -->
+                <button id="btnAskSpeak" class="btn secondary" style="min-height: 36px; padding: 6px 10px;" data-t="ask_speak_on"></button>
                 <button id="btnAskEnd" class="btn secondary" style="flex: 1; min-height: 36px; padding: 6px;" data-t="btn_end"></button>
                 <button id="btnAskSilent" class="btn" style="min-height: 36px; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;" title="발언자가 무음이거나 응답하지 않을 때 회수" data-t="live_mute"></button>
               </div>
@@ -669,7 +700,11 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const RELAY_BASE = (urlParams.get('relay') || 'https://raytok-relay.raytok.workers.dev').replace(/\/+$/, '');
-    const SRC_LANG = 'ko';   // 원고 언어 — /translate 의 source 와 script.srcLang 이 같은 값을 쓴다
+    /* ★ **내가 말하는 언어** (정본 v1 §1 ②). 전에는 `const … = 'ko'` 로 박혀 있었다 —
+       받아쓰기(`rec.lang`)·`script.srcLang`·`/translate` 의 source 가 모두 이 값을 쓴다.
+       강사가 한국어로만 말하는 것이 아니므로 **고를 수 있어야** 한다. 바꾸는 곳은 아래
+       고르개 하나이고, 읽는 곳은 그대로다(§4). */
+    let SRC_LANG = 'ko';
 
     // ── IndexedDB 관리 ──
     const DB_NAME = 'RayTokHostDB';
@@ -734,6 +769,37 @@
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
+    const srcLangSelect = document.getElementById('srcLangSelect');
+    /** 말하는 언어 고르개를 채운다 — 목록은 손님 쪽 정본(`langs.json`)과 같은 표다(§4) */
+    function renderSrcLangSelect() {
+      if (!srcLangSelect) return;
+      const rows = (targetLangs && targetLangs.length ? targetLangs : [{ code: 'ko', name_ko: '한국어', name_en: 'Korean' }]);
+      const seen = new Set();
+      srcLangSelect.innerHTML = '';
+      for (const l of rows) {
+        if (!l || !l.code || seen.has(l.code)) continue;
+        seen.add(l.code);
+        const o = document.createElement('option');
+        o.value = l.code;
+        o.textContent = (UI_LANG === 'ko' ? (l.name_ko || l.code) : (l.name_en || l.code)) + ' (' + l.code + ')';
+        if (l.code === SRC_LANG) o.selected = true;
+        srcLangSelect.appendChild(o);
+      }
+      /* 목록에 ko 가 없으면(정본을 못 읽었을 때) 적어도 지금 값은 고를 수 있어야 한다(§20) */
+      if (!seen.has(SRC_LANG)) {
+        const o = document.createElement('option');
+        o.value = SRC_LANG; o.textContent = SRC_LANG; o.selected = true;
+        srcLangSelect.insertBefore(o, srcLangSelect.firstChild);
+      }
+    }
+    if (srcLangSelect) {
+      srcLangSelect.addEventListener('change', () => {
+        SRC_LANG = srcLangSelect.value || 'ko';
+        trLog.push(`src_lang set=${SRC_LANG}`);
+        initLangChips();                   // 말하는 언어는 번역 대상에서 빠진다
+      });
+    }
+
     const langChips = document.getElementById('langChips');
     const paraList = document.getElementById('paraList');
     const paraCount = document.getElementById('paraCount');
@@ -813,9 +879,11 @@
       stepPrepare.style.display = 'block';
       licenseInfo.textContent = `${T('auth_ok')} (${payload && payload.sub ? payload.sub : 'Host'})`;
       initLangChips();                       // 먼저 박힌 아홉으로 그린다 — 화면이 비어 보이지 않게
+      renderSrcLangSelect();                 // **내가 말하는 언어** 고르개도 같이(정본 §1 ②)
       loadTargetLangs().then((rows) => {     // 정본(82)이 오면 다시 그린다. 못 오면 아홉 그대로(§20)
         targetLangs = rows;
         initLangChips();
+        renderSrcLangSelect();
       });
       restoreSavedData();
     }
@@ -1238,7 +1306,9 @@
       }
     }
 
-    async function translateMany(texts, targetLang) {
+    /* `sourceLang` 을 받는다 — 원고는 강사 말에서 나가지만 **질문은 손님 말에서** 온다.
+       안 받으면 질문을 번역할 때 "강사 말 → 강사 말"이 되어 그대로 돌아온다(§4). */
+    async function translateMany(texts, targetLang, sourceLang) {
       try {
         const res = await fetch(`${RELAY_BASE}/translate`, {
           method: 'POST',
@@ -1246,7 +1316,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${hostToken}`
           },
-          body: JSON.stringify({ q: texts, source: SRC_LANG, target: targetLang })
+          body: JSON.stringify({ q: texts, source: sourceLang || SRC_LANG, target: targetLang })
         });
         if (!res.ok) {
           let why = '';
@@ -1369,6 +1439,13 @@
     const btnNext = document.getElementById('btnNext');
     const btnSkip = document.getElementById('btnSkip');
     const btnBreak = document.getElementById('btnBreak');
+    const btnPlay = document.getElementById('btnPlay');
+    const playRateSel = document.getElementById('playRate');
+
+    /* 정본 §1 ④ 재생 — 시간·되켜기 **판정은 `web/common/script-play.js` 한 곳**이다.
+     * 여기 두는 것은 상태뿐: 켜졌나 · 타이머 · 🎤 로 멈춘 문단 · 고른 배속.
+     * `pausedAt` 이 쓰는 곳이고 읽는 곳은 `playResume` 하나다(§4). */
+    const play = { on: false, timer: null, pausedAt: 0, rate: 1.0, log: [] };
 
     const live = {
       on: false,          // 진행 화면이 켜졌나
@@ -1403,6 +1480,54 @@
       if (live.questionEnabled) u.searchParams.set('q', '1');
       u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));  // 운영에서도 늘 넘긴다(10-20 실기)
       return u.toString();
+    }
+
+    /*
+     * ★★ **갈림 QR** (NOW 10-21 2번 · 대표님 데모 스위치). QR 은 **한 장**이고, 그 한 장이
+     * 세 가지 폰을 다 받는다 — 가르는 일은 `/join` 페이지가 한다:
+     *   · 안드로이드 + 앱 있음 → 앱(인텐트)      · 안드로이드 + 앱 없음 → 웹(+「앱 받기」)
+     *   · 아이폰 → 웹 (아이폰 앱이 아직 없다)
+     *
+     * 왜 `intent://` 를 QR 에 직접 넣지 않나: 카메라 앱은 **https 만** 링크로 본다
+     * (앱 LANG-11 실기 — `intent://` 는 아무 것도 안 띄우거나 검색으로 갔다). 그래서 QR 은
+     * 늘 우리 https 주소이고, 그 페이지가 폰을 보고 보낸다.
+     *
+     * 스위치는 **데모용**이다(기본 「둘 다」): 대표님이 "앱만"·"웹만"을 각각 보여 줄 수 있어야
+     * 한다. 세 가지 주소를 만드는 자리는 **여기 하나**다 — 두 곳에서 만들면 스위치를 켠
+     * 화면과 QR 이 어긋난다.
+     */
+    const QR_TARGETS = ['both', 'app', 'web'];
+    let qrTarget = 'both';                       // 기본 「둘 다」
+
+    function joinQrUrl(code, target) {
+      const t = QR_TARGETS.indexOf(String(target || qrTarget)) >= 0 ? String(target || qrTarget) : 'both';
+      if (t === 'web') return listenerJoinUrl(code);          // 지금까지의 주소 그대로
+      const u = new URL('../../join/', window.location.href);
+      u.searchParams.set('room', code);
+      /* 릴레이는 **늘 싣는다** — 없으면 손님이 운영 릴레이로 가서 빈 방을 본다(10-20 실기) */
+      u.searchParams.set('relay', RELAY_BASE.replace(/^https?:\/\//, ''));
+      if (live.raw) u.searchParams.set('raw', '1');
+      if (live.questionEnabled) u.searchParams.set('q', '1');
+      if (t === 'app') u.searchParams.set('only', 'app');     // 「앱만」 — 웹으로 듣는 단추를 숨긴다
+      return u.toString();
+    }
+
+    /** QR 과 그 아래 주소 글자를 **한 자리**에서 다시 그린다 (스위치·시작 둘 다 이것을 부른다) */
+    function refreshJoinQr() {
+      if (!live.code) return;
+      const url = joinQrUrl(live.code);
+      document.getElementById('joinUrl').textContent = url;
+      renderQr(url);
+      for (const t of QR_TARGETS) {
+        const b = document.getElementById('qrTarget-' + t);
+        if (b) b.classList.toggle('on', t === qrTarget);
+      }
+    }
+
+    function setQrTarget(t) {
+      if (QR_TARGETS.indexOf(t) < 0) return;
+      qrTarget = t;
+      refreshJoinQr();
     }
 
     function renderQr(text) {
@@ -1571,7 +1696,7 @@
     const micStatus = document.getElementById('micStatus');
     const micOffNote = document.getElementById('micOffNote');
 
-    const mic = { on: false, rec: null, stream: null, wakeLock: null, seq: 0, sent: [],
+    const mic = { on: false, rec: null, stream: null, seq: 0, sent: [],
                   /* 60분 무중단 (A1, 2026-10-19) */
                   live: false,          // 인식기가 **지금 열려 있나** (onstart ↔ onend)
                   reopens: 0, backoff: 0, lastWhy: '', reopenTimer: null, guard: null,
@@ -1735,18 +1860,38 @@
       }, wait);
     }
 
+    /* ── 화면 깨우기 — **진행 화면이 임자**다 (2026-10-21, 대표님 "폰화면 꺼지면 웹도 꺼지는거냐")
+     *
+     * 안드로이드 크롬은 화면이 꺼지면 페이지를 **없애지는 않고 멈춘다**: `setTimeout` 이
+     * 크게 느려지고, 음성 인식은 마이크를 놓고, 몇 분 뒤엔 페이지를 얼린다. 그래서
+     * ▶ 재생(타이머)과 🎤(인식) 둘 다 화면이 켜져 있어야 돈다.
+     *
+     * 10-21 까지 이 잠금은 **🎤 의 것**이었다(`mic.wakeLock`) — 원고 모드로만 쓰면
+     * 한 번도 안 잡혔고, ▶ 재생을 켜 두면 안드로이드 기본 시간에 화면이 꺼져 멈췄다.
+     * 그래서 임자를 **진행 화면**으로 옮긴다: 방을 열면 잡고, 끝 화면·방 닫기에서 놓는다.
+     * 🎤 는 더 이상 놓지 않는다 — 놓으면 원고 재생이 같이 멈춘다(§5: 대체하는 것을 치운다).
+     *
+     * 크롬은 페이지가 뒤로 가면 잠금을 **스스로 풀어 버린다**. 그래서 돌아올 때 다시
+     * 잡는다 — 안 하면 한 번 꺼진 뒤로는 영원히 안 잡힌다(손님 화면이 이미 그렇게 한다). */
+    const screenLock = { h: null };
+
     async function acquireWakeLock() {
       try {
-        if (navigator.wakeLock && !mic.wakeLock) {
-          mic.wakeLock = await navigator.wakeLock.request('screen');
-          mic.wakeLock.addEventListener('release', () => { mic.wakeLock = null; });
+        if (navigator.wakeLock && !screenLock.h) {
+          screenLock.h = await navigator.wakeLock.request('screen');
+          screenLock.h.addEventListener('release', () => { screenLock.h = null; });
         }
       } catch (_) {}
     }
     function releaseWakeLock() {
-      try { if (mic.wakeLock) mic.wakeLock.release(); } catch (_) {}
-      mic.wakeLock = null;
+      try { if (screenLock.h) screenLock.h.release(); } catch (_) {}
+      screenLock.h = null;
     }
+    /* 돌아오면 다시 잡는다 — 진행 중일 때만(끝 화면에서 잡으면 폰을 쓸데없이 깨운다) */
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      if (live.on && !live.ended && !live.closed) acquireWakeLock();
+    });
 
     function buildRecognition() {
       const Ctor = speechCtor();
@@ -1827,13 +1972,25 @@
       mic.rec = null;
       try { if (mic.stream) mic.stream.getTracks().forEach(t => t.stop()); } catch (_) {}
       mic.stream = null;
-      releaseWakeLock();
+      /* 화면 깨우기는 **놓지 않는다** — 임자가 진행 화면이다(위). 🎤 를 끄면 원고 재생으로
+         돌아가는 것이 보통이고, 거기서 화면이 꺼지면 재생이 멈춘다. */
       btnMic.textContent = T('mic_start');
       btnMic.classList.remove('on');
       micStatus.textContent = T('mic_idle');
     }
 
-    btnMic.addEventListener('click', () => { if (mic.on) stopMic(); else startMic(); });
+    /* 정본 §6 ④ — 🎤 로 끼어들면 원고는 **멈추고 그 문단을 기억**한다. 🎤 를 한 번 더
+     * 누르거나 ▶ 재생을 누르면 **멈춘 문단에서** 다시 간다. 마이크가 열리지 못했으면
+     * (권한 거부·인식 없음) 원고를 멈추지 않는다 — 반쯤 바꾼 상태로 두지 않는다(D-32). */
+    btnMic.addEventListener('click', async () => {
+      if (mic.on) {
+        stopMic();
+        if (play.pausedAt) playStart('mic_off');
+      } else {
+        await startMic();
+        if (mic.on) playStop('mic_on', true);
+      }
+    });
     window.rtHostMic = { state: mic, start: startMic, stop: stopMic, apply: applyMicVisibility,
                          send: sendSpokenLine, flush: flushSpoken, log: () => mic.log.map(x => x.line) };
 
@@ -1871,6 +2028,7 @@
       btnPrev.disabled = live.cur <= 1;
       btnNext.disabled = live.cur >= total;
       btnSkip.disabled = live.cur >= total;
+      playRenderBtn();   // 재생은 **마지막 문단에서 끝난다** — 글자·꺼짐을 거기서 맞춘다
       const curEl = document.getElementById(`live-para-${live.cur}`);
       if (curEl && curEl.scrollIntoView) curEl.scrollIntoView({ block: 'nearest' });
     }
@@ -1883,6 +2041,7 @@
       live.state[para] = 'read';
       sendScript(para);
       renderLive();
+      if (play.on) playArm();     // 재생 중이면 이 문단의 글자 수만큼 다시 기다린다
     }
     function doNext() { goTo(live.cur + 1); }
     function doPrev() { goTo(live.cur - 1); }
@@ -1894,8 +2053,102 @@
       live.state[para] = 'skip';
       wsSend({ kind: 'skip', para });
       renderLive();
+      if (play.on) playArm();     // 건너뛴 자리에서 다시 센다
     }
     function doBreak() { setBreak(!live.breakOn); }
+
+    /* ── 정본 §1 ④ 재생/멈춤 ──────────────────────────────────────────────
+     * 재생 = 원고를 **글자 수 속도**로 혼자 넘긴다. 시간은 `rtScriptPlay.paraMs` 가
+     * 답하고(판정 한 곳), 여기서는 타이머만 돈다. 마지막 문단에 닿으면 스스로 끈다.
+     * 🎤 끼어들기는 재생을 **멈추고 그 문단을 기억한다** — 되켜면 거기서 다시(정본 §6 ④).
+     * 기능의 첫 걸음에 기록 한 줄(§12): `play_on`·`play_tick`·`play_off`. */
+    const PLAY = (typeof rtScriptPlay !== 'undefined' && rtScriptPlay) ? rtScriptPlay : null;
+
+    function playLog(line) { play.log.push(line); if (play.log.length > 200) play.log.shift(); }
+
+    /* 글자와 **꺼짐**을 같이 맞춘다 — 재생이 스스로 꺼질 때 renderLive 는 이미 지나갔다
+     * (10-21 시험이 잡았다: 마지막 문단에서 글자는 「▶ 재생」인데 단추가 눌리는 채였다) */
+    function playRenderBtn() {
+      if (!btnPlay) return;
+      btnPlay.textContent = play.on ? T('live_stop') : T('live_play');
+      btnPlay.classList.toggle('on', play.on);
+      const total = paragraphs.length;
+      btnPlay.disabled = !total || (!play.on && live.cur >= total);
+    }
+
+    function playClearTimer() {
+      if (play.timer) { clearTimeout(play.timer); play.timer = null; }
+    }
+
+    /* 지금 문단을 보여 준 만큼 머문 뒤 다음으로. 머무는 시간은 **지금 문단의 글자 수**다 */
+    function playArm() {
+      playClearTimer();
+      if (!play.on || !PLAY) return;
+      const total = paragraphs.length;
+      const nxt = PLAY.nextPara({ cur: live.cur, total });
+      if (nxt == null) { playStop('end'); return; }
+      const cur = paragraphs[live.cur - 1];
+      const ms = PLAY.paraMs(cur ? cur.src : '', play.rate);
+      playLog(`play_tick para=${live.cur} next=${nxt} ms=${ms} rate=${play.rate} chars=${cur ? String(cur.src || '').trim().length : 0}`);
+      play.timer = setTimeout(() => {
+        play.timer = null;
+        if (!play.on) return;
+        /* 잠든 사이 사람이 「건너뛰기」·「이전」을 눌렀을 수 있다 — **깨어날 때 다시 센다** */
+        const go = PLAY.nextPara({ cur: live.cur, total: paragraphs.length });
+        if (go == null) { playStop('end'); return; }
+        goTo(go);
+      }, ms);
+    }
+
+    function playStart(why) {
+      if (!PLAY || !paragraphs.length) return;
+      /* 멈춘 문단이 있으면 **거기서 다시** — 그 사이 딴 문단을 봤으면 되돌아가 다시 보낸다 */
+      const r = PLAY.resumeFrom({ pausedAt: play.pausedAt, cur: live.cur, total: paragraphs.length });
+      play.on = true;
+      play.pausedAt = 0;
+      playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${r.go ? r.para : '-'} rate=${play.rate}`);
+      playRenderBtn();
+      if (r.go) { goTo(r.para); return; }        // goTo 가 renderLive → playArm 을 부른다
+      if (live.cur < 1) { goTo(1); return; }     // 아직 시작 전이면 첫 문단부터
+      playArm();
+    }
+
+    /* `keep` 이면 멈춘 문단을 적어 둔다(🎤). 사람이 ■ 를 누른 것은 적지 않는다 */
+    function playStop(why, keep) {
+      playClearTimer();
+      if (!play.on && !keep) { playRenderBtn(); return; }
+      play.on = false;
+      if (keep) play.pausedAt = live.cur;
+      playLog(`play_off why=${why || 'btn'} at=${live.cur} keep=${keep ? play.pausedAt : '-'}`);
+      playRenderBtn();
+    }
+
+    function playRenderRates() {
+      if (!playRateSel || !PLAY) return;
+      play.rate = PLAY.clampRate(play.rate);
+      playRateSel.setAttribute('aria-label', T('live_rate'));
+      playRateSel.innerHTML = '';
+      PLAY.RATES.forEach((r) => {
+        const o = document.createElement('option');
+        o.value = String(r);
+        o.textContent = `${r}×`;
+        if (r === play.rate) o.selected = true;
+        playRateSel.appendChild(o);
+      });
+    }
+
+    if (btnPlay) btnPlay.addEventListener('click', () => {
+      btnPlay.blur();
+      if (play.on) playStop('btn'); else playStart('btn');
+    });
+    if (playRateSel) playRateSel.addEventListener('change', () => {
+      play.rate = PLAY ? PLAY.clampRate(playRateSel.value) : 1.0;
+      playLog(`play_rate set=${play.rate}`);
+      if (play.on) playArm();                   // 남은 기다림을 새 배속으로 다시 잡는다
+    });
+
+    window.rtHostPlay = { state: play, start: playStart, stop: playStop,
+                          arm: playArm, log: () => play.log.slice() };
 
     // 단추를 누른 뒤 초점을 빼 둔다 — 스페이스가 초점 잡힌 단추를 다시 누르지 않게(키는 늘 문서에서 받는다)
     btnNext.addEventListener('click', () => { btnNext.blur(); doNext(); });
@@ -2065,42 +2318,101 @@
       });
     }
 
-    async function grantQuestion(id) {
+    /**
+     * 「받기」 — 발언권만 준다. **번역문을 싣지 않는다**(결정장부 43 · RULE: P-14).
+     *
+     * 10-21 까지 여기서 역번역을 만들어 `grant.trans` 에 실어 보냈다. 둘이 틀렸다:
+     *  ① 강사 쪽이 번역문을 보내는 길이다 — 장부 43 이 없앤 길이고 손님 번역은 방이 한다
+     *  ② 부르는 모양이 **운영에서 400 만 받는 모양**이었다(`q` 가 글자 하나, 답은
+     *     `translatedText`). 운영 규약은 배열·`{t:[]}` 다 — 그래서 한 번도 안 됐다(D-11).
+     * 강사가 **자기 화면·이어폰으로 보는** 번역은 받은 뒤에 만든다(`renderAskSpoken`) —
+     * 그것은 **받는 쪽 번역**이라 괜찮다(정본 §3 3단계).
+     */
+    function grantQuestion(id) {
       if (liveActiveAsk) return;
       const item = liveAskQueue.find(q => q.id === id);
       if (!item) return;
-      // P-14: 역번역(강사 언어로) 생성하여 함께 인가 메시지 송출
-      let trans = {};
-      try {
-        const targetLang = SRC_LANG || 'ko';
-        if (item.lang !== targetLang) {
-          const res = await fetch(`${RELAY_BASE}/translate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ q: item.text, target: targetLang, source: item.lang })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            trans[targetLang] = data.translatedText || item.text;
-          }
-        }
-      } catch (_) {}
-      wsSend({ kind: 'grant', id, trans });
+      wsSend({ kind: 'grant', id });
     }
+
+    /* ── 강사 이어폰 — 질문을 **강사 말로 읽어 준다** (정본 §1 ⑤ · §3 3단계) ──
+     * 강사는 손님 말을 모른다. 글자만 보여 주면 읽을 수 없는 글자다. 읽는 곳은 이 한
+     * 함수이고, 켜고 끌 수 있다(기본 **켬** — §24: 문은 숨기지 않는다). 소리는 **폰이**
+     * 낸다 — 릴레이로 소리를 보내지 않는다(RULE: P-04). */
+    let askSpeakOn = (() => { try { return localStorage.getItem('raytok_ask_speak') !== '0'; } catch (_) { return true; } })();
+
+    function speakHost(text, lang) {
+      if (!askSpeakOn) return false;
+      try {
+        if (!window.speechSynthesis) return false;
+        const u = new SpeechSynthesisUtterance(String(text || ''));
+        u.lang = (window.rtRecLang && window.rtRecLang.tag) ? window.rtRecLang.tag(lang || SRC_LANG) : (lang || SRC_LANG);
+        window.speechSynthesis.cancel();        // 앞 질문을 읽는 중이면 끊고 새것을
+        window.speechSynthesis.speak(u);
+        askLog.push(`ask_speak lang=${u.lang} chars=${String(text || '').length}`);
+        return true;
+      } catch (_) { return false; }
+    }
+
+    const askLog = [];
 
     // 7번: 마이크로 말한 질문 원문을 발언 칸에 적는다.
     // P-14 — 강사 화면이 **청취자의 번역문을 받아 쓰지 않는다**. 받는 것은 원문뿐이고,
-    // 강사 언어로 보는 역번역은 지명할 때 강사 쪽에서 만든 것(grantQuestion)만 쓴다.
-    function renderAskSpoken(msg) {
+    // 강사 말로 보는 번역은 **받은 뒤 여기서** 만든다(받는 쪽 번역이라 괜찮다).
+    async function renderAskSpoken(msg) {
       const spoken = (msg && typeof msg.src === 'string') ? msg.src.trim() : '';
       if (!spoken) return;                                  // §20 빈 답은 화면을 지우지 않는다
       if (!liveActiveAsk || liveActiveAsk.id !== msg.id) return;
+      const askId = msg.id;
+      const fromLang = msg.srcLang || liveActiveAsk.lang || '';
       liveActiveAsk = { ...liveActiveAsk, src: spoken, text: spoken };
       const textEl = document.getElementById('askActiveText');
-      if (textEl) textEl.textContent = `"${spoken}"`;
-      const hItem = liveAskQueue.find(q => q.id === msg.id);
+      if (textEl) textEl.textContent = `"${spoken}"`;        // 원문을 **먼저** 보여 준다(R-15)
+      const hItem = liveAskQueue.find(q => q.id === askId);
       if (hItem) { hItem.text = spoken; hItem.src = spoken; }
+
+      const target = SRC_LANG || 'ko';
+      if (!fromLang || fromLang === target) {               // 같은 말이면 번역할 것이 없다
+        askLog.push(`ask_spoken id=${askId} same_lang=${target}`);
+        speakHost(spoken, target);
+        return;
+      }
+      askLog.push(`ask_tr id=${askId} from=${fromLang} to=${target}`);
+      const out = await translateMany([spoken], target, fromLang);
+      const tr = (out && out[0]) || '';
+      /* 번역이 안 되면 **원문을 그대로 둔다** — 지우지 않는다(R-15). 그 사이 질문이
+         끝났거나 다음 사람으로 넘어갔으면 화면을 덮지 않는다(늦게 온 답이다). */
+      if (!liveActiveAsk || liveActiveAsk.id !== askId) return;
+      if (tr && tr !== spoken) {
+        liveActiveAsk.tr = tr;
+        if (hItem) hItem.tr = tr;
+        if (textEl) textEl.textContent = `"${tr}" (${T('label_src')}: ${spoken})`;
+        speakHost(tr, target);
+      } else {
+        askLog.push(`ask_tr_fail id=${askId} to=${target}`);
+        speakHost(spoken, fromLang);     // 못 바꿨으면 원문이라도 읽는다 — 침묵보다 낫다
+      }
     }
+
+    const btnAskSpeak = document.getElementById('btnAskSpeak');
+    function renderAskSpeakBtn() {
+      if (!btnAskSpeak) return;
+      btnAskSpeak.textContent = askSpeakOn ? T('ask_speak_on') : T('ask_speak_off');
+      btnAskSpeak.classList.toggle('on', askSpeakOn);
+    }
+    if (btnAskSpeak) btnAskSpeak.addEventListener('click', () => {
+      btnAskSpeak.blur();
+      askSpeakOn = !askSpeakOn;
+      try { localStorage.setItem('raytok_ask_speak', askSpeakOn ? '1' : '0'); } catch (_) {}
+      if (!askSpeakOn) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (_) {} }
+      askLog.push(`ask_speak_set on=${askSpeakOn ? 1 : 0}`);
+      renderAskSpeakBtn();
+    });
+    /* ★ 여기서 `renderAskSpeakBtn()` 을 부르면 **스크립트가 죽는다** — `T()` 가 읽는
+       `HOST_STR` 은 이 아래에서 `const` 로 만들어진다(TDZ). 글자는 발언 칸이 열릴 때
+       맞춘다(`renderAskActive`). 10-21 에 이것 때문에 화면 전체가 안 떴다. */
+
+    window.rtHostAsk = { speakOn: () => askSpeakOn, log: () => askLog.slice() };
 
     function renderAskActive(msg) {
       liveActiveAsk = msg;
@@ -2110,6 +2422,7 @@
       const timerEl = document.getElementById('askTimer');
       if (area) area.style.display = 'block';
       if (speakerEl) speakerEl.textContent = `${T('ask_speaking')}: ${msg.name} (${msg.lang})`;
+      renderAskSpeakBtn();      // 🔊 글자를 그때 맞춘다 (표는 이 시점엔 다 차 있다)
       if (textEl) {
         // grant 에는 글자 칸이 없다 — 마이크 질문은 말한 뒤에 온다(아래 renderAskSpoken).
         const raw = msg.text || msg.src || '';
@@ -2209,10 +2522,10 @@
         stepPrepare.style.display = 'none';
         stepLive.style.display = 'block';
         document.getElementById('roomCode').textContent = live.code;
-        const joinUrl = listenerJoinUrl(live.code);
-        document.getElementById('joinUrl').textContent = joinUrl;
-        renderQr(joinUrl);
+        refreshJoinQr();                     // 주소를 만드는 자리는 하나다 (joinQrUrl)
         renderAtt({ now: 0, max: 0, langs: {} });
+        playRenderRates();       // 배속 표 (기본 1.0배 · 정본 §6 ③)
+        acquireWakeLock();       // 화면이 꺼지면 ▶ 재생 타이머도 🎤 도 멈춘다 (10-21 대표님)
         renderLive();
         mic.seq = 0;
         mic.sent = [];
@@ -2246,6 +2559,9 @@
         auth_ask: '이용권 발급 문의 →',
         auth_ok: '강사 이용권 인증됨',
         prep_title: '강의 원고 준비 및 사전 번역',
+        prep_src_lang: '내가 말하는 언어',
+        prep_src_lang_sub: '이 언어로 받아쓰고, 손님은 각자 고른 언어로 듣습니다. (손님 언어를 강사가 고르지 않습니다)',
+        prep_pre_open: '원고 미리 번역 (선택 · 강사 검수용)',
         prep_step1: '① 원고 파일 올리기 (TXT · PDF · DOCX · HWPX)',
         prep_drop: '강의 원고 파일(TXT · PDF · DOCX)을 마우스로 끌어다 놓으세요',
         prep_drop_sub: '또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)',
@@ -2259,6 +2575,10 @@
         prep_tr_busy: '번역 중...',
         prep_tr_done: '번역 완료!',
         prep_para: '문단',
+        qr_target_label: '손님을 어디로',
+        qr_target_both: '둘 다',
+        qr_target_app: '앱만',
+        qr_target_web: '웹만',
         live_qr_show: 'QR 보기',
         live_qr_hide: 'QR 닫기',
         live_connected: '연결됨',
@@ -2302,12 +2622,17 @@
         prep_start: '강의 시작하기',
         live_title: '강의 진행',
         live_break_badge: '⏸ 쉬는 시간',
+        ask_speak_on: '🔊 읽어 줌',
+        ask_speak_off: '🔇 안 읽음',
         live_prev: '◀ 이전',
+        live_play: '▶ 재생',
+        live_stop: '■ 멈춤',
+        live_rate: '재생 배속',
         live_next: '다음 ▶',
         live_skip: '건너뜀',
         live_break: '쉬는 시간',
         live_connecting: '연결 중…',
-        live_keys: '키보드: → 또는 스페이스 = 다음, ← = 이전. 넘길 때 미리 번역해 둔 문단만 보냅니다 — 번역이 없는 언어의 청취자는 원문을 봅니다.',
+        live_keys: '키보드: → 또는 스페이스 = 다음, ← = 이전. ▶ 재생은 글자 수에 맞춰 혼자 넘깁니다. 🎤 로 끼어들면 멈추고, 🎤 를 한 번 더 누르거나 ▶ 를 누르면 멈춘 문단에서 다시 갑니다. 번역은 청취자 쪽에서 각자 언어로 만듭니다.',
         att_label: '참석',
         att_unit: '명 (최대',
         qr_title: '손님 이용권 QR',
@@ -2383,6 +2708,9 @@
         auth_ask: 'Ask about licences →',
         auth_ok: 'Instructor licence verified',
         prep_title: 'Prepare the script and pre-translate',
+        prep_src_lang: 'The language I speak',
+        prep_src_lang_sub: 'Dictation uses this language; each listener hears their own. (You do not pick listener languages.)',
+        prep_pre_open: 'Pre-translate the script (optional · for your own review)',
         prep_step1: '① Upload the script (TXT · PDF · DOCX · HWPX)',
         prep_drop: 'Drag the script file (TXT · PDF · DOCX) here',
         prep_drop_sub: 'or click to choose a file — handled in this browser, nothing is uploaded',
@@ -2396,6 +2724,10 @@
         prep_tr_busy: 'Translating…',
         prep_tr_done: 'Translation finished',
         prep_para: 'Paragraph',
+        qr_target_label: 'Send guests to',
+        qr_target_both: 'Both',
+        qr_target_app: 'App only',
+        qr_target_web: 'Web only',
         live_qr_show: 'Show QR',
         live_qr_hide: 'Hide QR',
         live_connected: 'Connected',
@@ -2439,12 +2771,17 @@
         prep_start: 'Start the session',
         live_title: 'Session',
         live_break_badge: '⏸ Break',
+        ask_speak_on: '🔊 Read aloud',
+        ask_speak_off: '🔇 Muted',
         live_prev: '◀ Back',
+        live_play: '▶ Play',
+        live_stop: '■ Stop',
+        live_rate: 'Playback speed',
         live_next: 'Next ▶',
         live_skip: 'Skip',
         live_break: 'Break',
         live_connecting: 'Connecting…',
-        live_keys: 'Keys: → or Space = next, ← = back. Only pre-translated paragraphs are sent; listeners in other languages see the original.',
+        live_keys: 'Keys: → or Space = next, ← = back. ▶ Play advances on its own, paced by paragraph length. 🎤 pauses it; press 🎤 again or ▶ to resume from the paragraph where it stopped. Translation is produced for each listener in their own language.',
         att_label: 'Attending',
         att_unit: 'people (peak',
         qr_title: 'Visitor pass QR',
@@ -2701,6 +3038,10 @@
     function showEndScreen() {
       if (!live.on) return;
       live.ended = true;
+      /* 끝 화면으로 가면 재생을 **끈다** — 타이머가 살아 있으면 끝낸 뒤에도 문단이
+       * 손님에게 간다(D-32: 반쯤 바꾼 상태로 두지 않는다). */
+      playStop('end_screen');
+      releaseWakeLock();      // 끝났으면 폰을 놓아 준다 (D-32: 반쯤 바꾼 폰을 남기지 않는다)
       if (!live.endedAt) live.endedAt = Date.now();
       stepLive.style.display = 'none';
       stepEnd.style.display = 'block';
@@ -2715,6 +3056,7 @@
       live.endedAt = null;
       stepEnd.style.display = 'none';
       stepLive.style.display = 'block';
+      acquireWakeLock();      // 진행으로 돌아왔다 — 다시 잡는다
       renderLive();
     }
 
@@ -2770,7 +3112,8 @@
         sent = wsSend({ end: 1, summary: { lines: s.lines, minutes: Math.round(s.durationMs / 60000), joined_max: s.maxConcurrent } });
       }
       live.closing = true;   // 다시 붙지 않는다
-      stopMic();   // B 9 — 방이 끝나면 마이크·wakeLock 을 놓는다
+      stopMic();           // B 9 — 방이 끝나면 마이크를 놓는다
+      releaseWakeLock();   // 그리고 화면 깨우기도 (임자는 진행 화면이다)
       live.closed = true;
       live.on = false;
       clearInterval(live.pingTimer);

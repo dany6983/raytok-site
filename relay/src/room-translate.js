@@ -91,9 +91,11 @@ export function trMessages(items, lang, texts) {
     const it = items[i];
     const text = typeof texts[i] === 'string' ? texts[i] : '';
     if (!text) return { ok: false, msgs: [], why: 'empty' };   // 빈 답은 답이 아니다(§20)
-    msgs.push(it.script
-      ? { kind: 'script_tr', para: it.para, trans: { [code]: text } }
-      : { seq: it.seq, tr: { [code]: text } });
+    msgs.push(it.ask
+      ? { kind: 'question_tr', id: it.ask, trans: { [code]: text } }
+      : it.script
+        ? { kind: 'script_tr', para: it.para, trans: { [code]: text } }
+        : { seq: it.seq, tr: { [code]: text } });
   }
   return { ok: true, msgs, why: null };
 }
@@ -103,14 +105,29 @@ export function trMessages(items, lang, texts) {
  * 글자는 원문으로 화면에 남아 있다 — 유실이 아니다(R-15).
  */
 export function noTrMessages(items, why) {
-  return (items || []).map((it) => (it.script
-    ? { kind: 'script_tr', para: it.para, trans: {}, no_tr: 1, why: why || 'tr_fail' }
-    : { seq: it.seq, no_tr: 1, why: why || 'tr_fail' }));
+  return (items || []).map((it) => (it.ask
+    ? { kind: 'question_tr', id: it.ask, trans: {}, no_tr: 1, why: why || 'tr_fail' }
+    : it.script
+      ? { kind: 'script_tr', para: it.para, trans: {}, no_tr: 1, why: why || 'tr_fail' }
+      : { seq: it.seq, no_tr: 1, why: why || 'tr_fail' }));
 }
 
-/** 그 (줄, 언어) 짝의 이름 — 🎤 줄은 `seq`, 원고 문단은 `para` 다(둘은 번호가 섞인다) */
+/**
+ * 그 (줄, 언어) 짝의 이름 — 🎤 줄은 `seq`, 원고 문단은 `para`, 손님 질문은 `ask` 다.
+ *
+ * 셋을 **갈라 세는** 까닭: 질문을 원고 길(`para`)에 태우면 질문 3번과 원고 3번 문단이
+ * 같은 이름이 되어, 질문 번역이 원고 문단에 붙는다(그리고 반대로도). 10-21 에 청취
+ * 페이지가 질문을 `script:1, para:seq` 로 밀어 넣고 있었다 — 그 길을 여기서 가른다.
+ */
 export function doneKey(item, lang) {
-  const who = item && item.script ? 'p' + item.para : 's' + (item && item.seq);
+  /* ★ 질문 이름에는 **글자의 표**(`askRev`)도 넣는다. 한 질문(`id`)의 글자가 **두 번**
+     오기 때문이다: 손들 때 적은 글자, 그리고 지명 뒤 **말한 글자**. 이름이 `q<id>` 뿐이면
+     두 번째가 "이미 샀다"로 걸러지고, 손님에게는 **첫 번째(손들 때 적은) 글자의 번역**이
+     간다 — 말한 질문이 아무에게도 안 가는 모양이다. 10-21 코드 되읽기에서 잡았다(§4).
+     같은 글자가 두 번 오면 이름이 같으니 **두 번 사지는 않는다**(그게 이 표의 일이다). */
+  const who = item && item.ask ? 'q' + item.ask + '#' + (item.askRev || '')
+    : item && item.script ? 'p' + item.para
+      : 's' + (item && item.seq);
   return who + '|' + normLang(lang);
 }
 
@@ -134,6 +151,29 @@ export function markDone(item, lang, done) {
     const it = done.values();
     for (let i = 0; i < 5000; i += 1) { const v = it.next(); if (v.done) break; done.delete(v.value); }
   }
+}
+
+/**
+ * 손님 질문에서 **번역할 것**을 집는다 (정본 §3 4단계: 질문 원문이 모든 손님에게 →
+ * 각자 자기 언어로). 보내는 쪽(질문한 손님)이 번역해 보내지 않는다 — **방이** 한다(P-14).
+ *
+ * 빈 말은 집지 않는다(§20: 인식기는 빈 줄도 준다). `id` 가 없으면 손님이 그 번역을
+ * 어느 질문에 붙일지 모른다 — 그래서 집지 않는다.
+ */
+export function askItem(opts) {
+  const o = opts || {};
+  const id = o.id == null ? '' : String(o.id);
+  const text = typeof o.text === 'string' ? o.text.trim() : '';
+  if (!id || !text) return null;
+  return { ask: id, askRev: textRev(text), text, srcLang: o.srcLang || 'ko' };
+}
+
+/** 글자의 짧은 표 — **같은 글자인가**만 가린다(이름 길이를 글자 길이에 매달지 않게) */
+export function textRev(text) {
+  const s = String(text == null ? '' : text);
+  let h = 5381;
+  for (let i = 0; i < s.length; i += 1) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return s.length + '-' + h.toString(36);
 }
 
 /** 릴레이 답(`{t:[...]}`)에서 글자만 꺼낸다. 다른 모양이면 **빈 배열** — 모름을 됨으로 읽지 않는다. */

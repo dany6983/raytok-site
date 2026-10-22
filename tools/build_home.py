@@ -211,18 +211,20 @@ TECH = '''<section id="tech"><div class="wrap">
 
 # ───────────── 첫 화면 ─────────────
 home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣습니다",
-            "외국인 근로자 현장교육, 다국어 관광 가이드, 나눠 끼는 통역 이어폰, 화상회의 통역. 듣는 사람은 앱 설치도, 인터넷도 필요 없습니다.", "/", img("yard")) + top("home") + f'''
+            "외국인 근로자 현장교육, 다국어 관광 가이드, 나눠 끼는 통역 이어폰, 화상회의 통역. 듣는 사람은 앱을 깔지 않고 QR만 찍습니다 — 아이폰도 됩니다.", "/", img("yard")) + top("home") + f'''
 <!--
   제품 포장에는 짧은 주소(raytok.kr)만 인쇄될 수 있다. 그래서 첫 화면에서
   한 번 눌러 설치까지 가야 한다 — 머리의 "앱 설치"와 아래 "앱 설치하기"가
   모두 /download/ 로 간다. 설치를 실제로 처리하는 곳은 /download/ 하나뿐이다.
+  단 히어로 버튼 순서는 체험 → 구매 → 설치다(결정장부 38: 11월의 얼굴은 웹).
+  "앱 설치하기"를 다시 맨 앞으로 옮기지 않는다.
 -->
 <div class="hero"><img src="{img("yard")}" alt="아침 조회에서 조장의 말이 근로자 각자의 언어로 전달되는 장면">
 <div class="wrap">
 <p class="kick">RAYTOK · 실시간 통역</p>
 <h1>한 사람이 말하면,<br>모두가 각자의 말로 듣습니다.</h1>
-<p class="lead">듣는 사람은 앱을 깔지 않아도 되고, 인터넷도 필요 없습니다. 네팔어·미얀마어 등 일부 언어는 말하는 사람 휴대폰의 인터넷이 필요합니다.</p>
-<div class="btns"><a class="btn w" href="/download/">앱 설치하기</a><a class="btn g" href="/buy/">이용권 구매</a><a class="btn g" href="{mailto("[RayTok] 무료 체험·도입 문의", BODY)}">무료 체험·도입 문의</a></div>
+<p class="lead">듣는 사람은 앱을 깔지 않습니다. QR을 찍고 자기 언어를 고르면 됩니다 — 아이폰도 됩니다. 나눠 주고 걷고 충전할 수신기가 없습니다.</p>
+<div class="btns"><a class="btn w" href="{mailto("[RayTok] 무료 체험·도입 문의", BODY)}">무료 체험·도입 문의</a><a class="btn g" href="/buy/">이용권 구매</a><a class="btn g" href="/download/">앱 설치하기</a></div>
 {HPAT}
 </div></div>
 
@@ -272,17 +274,26 @@ home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣�
 <section class="alt"><div class="wrap">
 <p class="eyebrow">어떻게 되나요</p>
 <h2>폰 하나로 시작합니다</h2>
-<p class="sub">수신기도, 통역 부스도 필요 없습니다. 듣는 사람 휴대폰은 인터넷이 없어도 됩니다.</p>
+<p class="sub">수신기도, 통역 부스도 필요 없습니다. 듣는 사람은 자기 폰으로 듣습니다.</p>
 <div class="g3">
 <div class="step"><div class="n">1</div><h3>말하는 사람</h3><p>가슴에 작은 무선 마이크를 달고 폰은 주머니에. 평소처럼 한국어로 말합니다.</p></div>
 <div class="step"><div class="n">2</div><h3>듣는 사람</h3><p>자기 폰으로 QR을 찍으면 브라우저가 열립니다. 설치·가입 없이 언어만 고릅니다.</p></div>
 <div class="step"><div class="n">3</div><h3>각자의 언어로</h3><p>이어폰으로 듣고 화면으로 자막을 봅니다. 눈은 강사와 현장, 풍경에 둡니다.</p></div>
 </div>
 <div class="g4" style="margin-top:18px">
-<div class="step"><h3>대부분의 언어는 인터넷 없이</h3><p>언어 팩을 미리 받아 두면 지하·공장·산·바다에서도 됩니다.</p></div>
-<div class="step"><h3>일부 언어는 인터넷</h3><p>네팔어·미얀마어 등은 말하는 사람 휴대폰의 인터넷이 필요합니다.</p></div>
-<div class="step"><h3>수신기 없음</h3><p>나눠 주고 걷고 충전하고 소독할 장비가 없습니다.</p></div>
-<div class="step"><h3>밖으로 안 나감</h3><p>오프라인 모드에서는 음성이 폰 밖으로 나가지 않습니다.</p></div>
+<div class="step"><h3>QR로 듣기</h3><p>설치도 가입도 없습니다. <b>아이폰을 포함해 기종을 가리지 않습니다.</b> 듣는 폰이 인터넷에 닿아 있으면 됩니다.</p></div>
+<div class="step"><h3>앱으로 듣기</h3><p>언어 팩을 미리 받아 두면 전용 공유기 하나로 됩니다. 인터넷 회선이 들어오지 않는 공장·지하에서 쓰는 방식입니다.</p></div>
+<div class="step"><h3>수신기 없음</h3><p>나눠 주고 걷고 충전하고 소독할 장비가 없습니다. 잃어버릴 것도 없습니다.</p></div>
+<div class="step"><h3>오가는 것은 글자</h3><p>소리를 실어 나르지 않습니다. 음성은 듣는 사람 폰이 만듭니다. 그래서 <b>하루 여덟 시간을 써도 1MB가 안 됩니다.</b></p></div>
+</div>
+
+<p class="eyebrow" style="margin-top:34px">거리</p>
+<h2>얼마나 떨어져 있든 들립니다</h2>
+<p class="sub">무선 수신기는 전파가 닿는 범위에서만 들립니다. RayTok은 그 범위에 묶이지 않습니다. 듣는 폰이 인터넷이나 같은 공유기에 닿아 있으면 됩니다.</p>
+<div class="g3">
+<div class="step"><h3>뒤처져도</h3><p>앞 전시실이나 다음 코스에 남은 분께도 설명이 그대로 들어갑니다.</p></div>
+<div class="step"><h3>층이 갈려도</h3><p>벽과 층이 막지 않습니다. 2층과 3층이 같은 해설을 듣습니다.</p></div>
+<div class="step"><h3>흩어진 뒤에도</h3><p>"로비로 오세요"가 흩어진 전원에게 한 번에 갑니다. 자막이 화면에 남습니다.</p></div>
 </div></div></section>
 
 <section class="dark"><div class="wrap">

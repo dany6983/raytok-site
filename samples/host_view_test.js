@@ -150,6 +150,53 @@ const srv = http.createServer(async (req, res) => {
   ok(await page.isVisible('#step-prepare'), '올바른 토큰 인증 성공 ➔ 준비 화면 활성화');
   ok(!(await page.isVisible('#step-auth')), '준비 화면 진입 후 인증 화면 숨김');
 
+  /* ── ★ 정본 v1 §1 ②: 강사는 **내가 말하는 언어 하나**만 고른다 (대표님 10-21 15:26) ──
+     번역 대상 언어를 고르는 일은 **없어졌다** — 손님이 자기 언어를 고르고 방이 번역한다.
+     그 칩은 「원고 미리 번역(선택)」 안으로 **접혔다**: 강사 검수용으로만 남는다. */
+  const prep = await page.evaluate(() => {
+    const sel = document.getElementById('srcLangSelect');
+    const det = document.getElementById('preTrDetails');
+    const chips = document.getElementById('langChips');
+    return {
+      srcVisible: !!sel && getComputedStyle(sel).display !== 'none',
+      srcValue: sel ? sel.value : null,
+      srcCount: sel ? sel.options.length : 0,
+      detOpen: det ? det.open : null,
+      /* ★ 접힘은 `checkVisibility()` 로 센다 (10-21 에 두 번 틀렸다).
+         닫힌 `<details>` 안의 요소는 **폭도 높이도 그대로 가진다** — details 가 그리지
+         않을 뿐이라 `offsetWidth/offsetHeight` 로 세면 화면에 아무것도 없는데 "보인다"고
+         읽는다. `checkVisibility` 가 브라우저의 **그리나/안 그리나**를 그대로 답한다. */
+      chipsShown: chips && chips.checkVisibility
+        ? chips.checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })
+        : null
+    };
+  });
+  ok(prep.srcVisible && prep.srcValue === 'ko' && prep.srcCount >= 9,
+     `강사는 **말하는 언어**를 고른다 (지금 ${prep.srcValue} · 고를 수 있는 것 ${prep.srcCount}개)`);
+  ok(prep.detOpen === false && prep.chipsShown === false,
+     `번역 대상 언어 칩은 **접혀 있다** (열림=${prep.detOpen} 그려짐=${prep.chipsShown}) — 손님이 고른다`);
+
+  /* 펼치면 보인다 — 강사가 검수하려면 쓸 수 있어야 한다(없앤 것이 아니라 접은 것이다) */
+  await page.evaluate(() => { document.getElementById('preTrDetails').open = true; });
+  await page.waitForTimeout(150);
+  const opened = await page.evaluate(() => document.getElementById('langChips')
+    .checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true }));
+  ok(opened === true, `펼치면 칩이 보인다 (그려짐=${opened}) — 접은 것이고 없앤 것이 아니다`);
+  await page.evaluate(() => { document.getElementById('preTrDetails').open = false; });
+
+  /* 말하는 언어를 바꾸면 **그 값이 쓰인다**(받아쓰기·script.srcLang·/translate 가 같은 값을 읽는다) */
+  await page.selectOption('#srcLangSelect', 'en');
+  const after = await page.evaluate(() => (typeof SRC_LANG !== 'undefined' ? SRC_LANG : null));
+  ok(after === 'en', `고르면 그 값이 바뀐다 (SRC_LANG=${after}) — 전에는 'ko' 로 박혀 있었다`);
+  await page.selectOption('#srcLangSelect', 'ko');
+
+  /* 되돌림 실증 — 고르개를 지우면 위 단언이 잡는가(화면에서 읽은 값으로 센다) */
+  let revertSrcFailed = false;
+  try {
+    assert.ok(prep.srcVisible === false, '고르개가 없는데 보인다고 읽혔다');
+  } catch (e) { revertSrcFailed = true; }
+  ok(revertSrcFailed === true, '말하는 언어 고르개가 사라지면 붉어진다 (되돌림 실증 3)');
+
   // 4. 원고 파일(TXT) 처리 및 문단 분리 테스트
   const sampleTxt = `안녕하세요. 오늘 현장 교육을 시작하겠습니다.\n\n첫 번째 안전 수칙은 보호구 착용입니다.\n작업장 내에서는 안전모와 안전화를 반드시 착용해 주세요.\n\n두 번째는 비상 대피로 확인입니다.`;
 

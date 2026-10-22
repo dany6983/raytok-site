@@ -20,7 +20,8 @@ import { Room } from '../relay/src/room.js';
 import { mintLicenseToken } from '../relay/tools/mint-license.mjs';
 import {
   PRO_FLAG, PRO_FALLBACK, buildProPrompt, oneSentence,
-  numbersOf, inventedNumbers, stripWrapping
+  numbersOf, inventedNumbers, stripWrapping,
+  PROVIDERS, PRO_SYSTEM_RULES
 } from '../relay/src/pro-translate.js';
 
 console.log('=== B 10 프로(LLM) 번역 — 0x20 · 상한 · 숫자 · 느림 · 맥락 ===\n');
@@ -88,6 +89,14 @@ globalThis.fetch = async (url, init) => {
       choices: [{ message: { content: llm.reply(prompt) } }],
       usage: { prompt_tokens: 20, completion_tokens: 10 }
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+  /* 제3 공급자(아래 ⑥) — **그 공급자의 규약 그대로** 답한다. 느슨하게 만들면 "표에 한 줄
+     더하면 된다"가 거짓이 된다(D-11: 가짜가 실기와 다르면 안 된다). */
+  if (u.startsWith('https://third.invalid')) {
+    const body = JSON.parse(init.body);
+    llm.calls.push({ prompt: body.input, system: body.rules, third: true, url: u, hdr: init.headers });
+    return new Response(JSON.stringify({ output: { translated: llm.reply(body.input) }, meter: { in: 7, out: 3 } }),
+                        { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
   return realFetch(url, init);
 };
@@ -210,6 +219,54 @@ const call = (token, body, env = baseEnv) => relayWorker.fetch(new Request('http
   let revCap = false;
   try { assert.notEqual(dCap.why, PRO_FALLBACK.CAP, `상한을 넘겼는데 LLM 을 불렀다 (${dCap.tier})`); } catch (_) { revCap = true; }
   ok(revCap, '일일 상한을 빼면 붉어진다 — 10-14 사고가 돌아온다 (되돌림 실증 4)');
+
+  /* ── ⑥ 공급자를 **바꿔 끼우는 자리** (site NOW 10, 2026-10-21) ─────────────
+   *
+   * 대표님이 공급자를 아직 안 정하셨다. 그래서 "정하면 **표에 한 줄**"이 참인지 지금 센다 —
+   * 모양이 전혀 다른 제3 공급자(`input`/`rules` 로 보내고 `output.translated` 로 답하는)를
+   * 표에 더하고, **릴레이 코드는 한 줄도 고치지 않고** 같은 `/translate` 로 돈다.
+   */
+  PROVIDERS.third = {
+    defaultBase: 'https://third.invalid/v9',
+    defaultModel: 'third-mini',
+    url: ({ base }) => `${base}/translate`,
+    headers: ({ key }) => ({ 'Content-Type': 'application/json', 'X-Third-Key': key }),
+    body: ({ prompt }) => ({ input: prompt, rules: PRO_SYSTEM_RULES }),
+    parse: (d) => ({ text: ((d.output || {}).translated || ''),
+                     tokIn: Number((d.meter || {}).in || 0), tokOut: Number((d.meter || {}).out || 0) })
+  };
+  llm.calls.length = 0;
+  const thirdEnv = { ...baseEnv, LLM_PROVIDER: 'third', LLM_BASE_URL: '', LLM_MODEL: '' };
+  const r6 = await call(mk(0x10 | 0x20, 'third'), { q: ['안전모를 쓰세요'], source: 'ko', target: 'en', engine: 'pro' }, thirdEnv);
+  const d6 = await r6.json();
+  ok(r6.status === 200 && d6.tier === 'pro' && !d6.why,
+     `⑥ 표에 한 줄 더하니 제3 공급자로 **그대로 돈다** (tier=${d6.tier} why=${d6.why || '없음'})`);
+  ok(llm.calls.length === 1 && llm.calls[0].third === true && /third\.invalid\/v9\/translate$/.test(llm.calls[0].url),
+     `⑥ 그 공급자 주소·모양으로 보냈다 (${llm.calls[0] && llm.calls[0].url})`);
+  ok(llm.calls[0].hdr && llm.calls[0].hdr['X-Third-Key'] === 'test-key-not-real',
+     '⑥ 키를 그 공급자가 받는 칸에 실었다');
+  ok(llm.calls[0].system === PRO_SYSTEM_RULES,
+     '⑥ 규칙 셋은 **한 곳**에서 온다 — 공급자를 바꿔도 "지어내지 말라"가 같이 간다');
+  ok(d6.t[0] === llm.reply('') || typeof d6.t[0] === 'string' && d6.t[0].startsWith('LLM: '),
+     `⑥ 그 공급자의 답 칸(output.translated)에서 글자를 꺼냈다 ("${d6.t[0]}")`);
+
+  /* ⑦ **모르는 공급자 이름**이면 basic 으로 내려앉는다 — else 로 떨어져 남의 꼴로 보내지 않는다 */
+  llm.calls.length = 0;
+  const r7 = await call(mk(0x10 | 0x20, 'bad'), { q: ['안전모를 쓰세요'], source: 'ko', target: 'en', engine: 'pro' },
+                        { ...baseEnv, LLM_PROVIDER: 'gemni' });
+  const d7 = await r7.json();
+  ok(r7.status === 200 && d7.tier === 'basic' && d7.why === PRO_FALLBACK.NO_PROVIDER,
+     `⑦ 이름을 잘못 적으면 basic 으로 내려앉고 까닭을 적는다 (tier=${d7.tier} why=${d7.why})`);
+  ok(llm.calls.length === 0, '⑦ 그때 **아무 공급자도 부르지 않았다** (모르는 것을 지어내지 않는다, §20)');
+  ok(Array.isArray(d7.t) && typeof d7.t[0] === 'string' && d7.t[0].length > 0,
+     `⑦ 그래도 손님은 번역을 받는다 ("${d7.t[0]}") — 유실이 아니다(R-15)`);
+
+  /* ⑧ 되돌림 실증 — 표에서 그 줄을 지우면 ⑥ 이 붉어진다(즉 ⑥ 의 초록은 표에서 왔다) */
+  delete PROVIDERS.third;
+  const r8 = await call(mk(0x10 | 0x20, 'gone'), { q: ['안전모를 쓰세요'], source: 'ko', target: 'en', engine: 'pro' }, thirdEnv);
+  const d8 = await r8.json();
+  ok(d8.tier === 'basic' && d8.why === PRO_FALLBACK.NO_PROVIDER,
+     `⑧ 표에서 그 줄을 지우면 basic 으로 떨어진다 (${d8.why}) — 되돌림 실증 5`);
 
   globalThis.fetch = realFetch;
   console.log(`\n전부 통과 (${checks}건)`);

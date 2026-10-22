@@ -101,7 +101,10 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
     /* ⑥-2 안내 띠 — 손님 말이 원문과 다를 때만. 「서버 번역으로」는 보조 길.
        §12: 칸을 넣으면 **구조 단언**(어느 부모의 어느 형제인지)을 같이 넣는다. */
     {
-      const pageN = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      /* ★ 폰 언어를 **손님이 고른 말(vi)로** 둔다 (B 0, 10-21). 까닭: 브라우저 번역은
+         **브라우저 언어**로 번역하므로, 그 말이 아닌 폰에서 이 띠는 **거짓**이다 —
+         그런 폰은 방 번역으로 간다(아래 ⑦ 에서 그 경우를 따로 센다). */
+      const pageN = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'vi-VN' });
       await pageN.goto(`${base}/web/listener/?lang=vi`);
       await pageN.waitForSelector('#lang-select');
       const before = await pageN.evaluate(() => {
@@ -153,7 +156,8 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
 
     /* ⑦ 소리는 **번역된 글자**를 읽는다 — 번역 전 원문을 읽으면 손님은 모르는 말을 듣는다.
        말하기를 기록으로 바꿔 놓고(가짜가 실기보다 느슨하지 않게 **같은 함수**를 거친다) 센다. */
-    const page3 = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    /* 폰 언어 = 손님 말(vi) — 이 묶음은 **브라우저가 번역해 주는 폰**의 길을 본다(B 0) */
+    const page3 = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'vi-VN' });
     await page3.addInitScript(() => {
       window.__spoken = [];
       window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
@@ -223,6 +227,43 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
     ok((await page2.evaluate(() => rtGuestTr.mode())) === 'none',
        '적어 둔 글자가 없으면 못 센다 — 그 메모가 판정의 근거다 (되돌림 실증 ②)');
     await page2.close();
+
+    /* ── ⑦ ★ B 0: **폰 언어가 손님 말이 아니면** 브라우저는 번역해 주지 않는다 ──
+       대표님 실기(10-21 13:30) 그 자리다: 한국어 폰 + 영어 손님 → 크롬 번역 메뉴가 안 뜨고,
+       우리 화면은 그 번역을 기다리다 소리 없이 끝났다. 이제 **방 번역(서버)으로 간다**. */
+    {
+      const ctxK = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR' });
+      const pageK = await ctxK.newPage();
+      const spoke = [];
+      pageK.on('console', (m) => { const t = m.text(); if (/guest_tr/.test(t)) spoke.push(t); });
+      await pageK.goto(`${base}/web/listener/?lang=en`);
+      await pageK.waitForSelector('#lang-select');
+      const got = await pageK.evaluate(() => {
+        srcLang = 'ko'; selectedLang = 'en';
+        document.querySelectorAll('.screen').forEach((el) => { if (el.id !== 'chat-screen') el.style.display = 'none'; });
+        document.getElementById('chat-screen').style.display = 'flex';
+        renderTrNotice();
+        return { plan: rtTrPlan.plan(), can: rtTrPlan.canBrowser(), langs: rtTrPlan.langs(),
+                 band: getComputedStyle(document.getElementById('tr-notice')).display !== 'none' };
+      });
+      ok(got.can === false && got.plan === 'server',
+         `⑦ 한국어 폰 + 영어 손님 → 브라우저는 못 한다 · 길은 **server** (폰 말 ${got.langs.join(',')})`);
+      ok(got.band === false,
+         '⑦ 그 폰에 「브라우저 번역을 켜면…」 띠를 **띄우지 않는다** — 눌러도 아무 일이 없는 거짓 안내다');
+      ok(spoke.some((l) => /guest_tr_plan plan=server/.test(l)),
+         `⑦ 기록 한 줄 (${spoke.filter((l) => /plan=/.test(l)).slice(-1)[0] || '없음'})`);
+
+      /* 되돌림 실증 — 같은 폰에서 **폰 말과 같은 언어**를 고르면 길이 browser 로 바뀐다.
+         즉 코드가 지어낸 것이 아니라 **폰 말을 읽는다**. */
+      const flip = await pageK.evaluate(() => {
+        srcLang = 'en'; selectedLang = 'ko';            // 원문 en · 손님 ko = 이 폰의 말
+        renderTrNotice();
+        return { plan: rtTrPlan.plan(), band: getComputedStyle(document.getElementById('tr-notice')).display !== 'none' };
+      });
+      ok(flip.plan === 'browser' && flip.band === true,
+         `⑦ 폰 말과 같은 언어를 고르면 길이 **browser** 로 바뀌고 띠가 돌아온다 (${flip.plan}) — 되돌림 실증 ③`);
+      await ctxK.close();
+    }
   } finally {
     await browser.close();
     srv.close();
