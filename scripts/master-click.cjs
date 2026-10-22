@@ -29,6 +29,13 @@ const RELAY = process.env.E2E_RELAY || 'http://127.0.0.1:8787';
 const TOK = (process.env.TOK || '').trim();
 const ENGINE = process.env.ENGINE || 'chromium';
 const SHOT = process.env.SHOT_DIR || '';
+/* ★ `TOUCH=1` 이면 **안드로이드 크롬 흉내**로 돈다 — 손가락 기기(hasTouch·isMobile)와
+   그 UA. 대표님 폰에서 단추가 안 먹는다는데 이 엔진에서는 먹었다(마스터 18:05). 폰과
+   PC 의 차이 중 **여기서 잴 수 있는 것**이 이것이다. 운영 주소·운영 릴레이는 이 컨테이너의
+   망 정책에 막혀 있어 못 잰다 — 짐작하지 않고 그렇게 적는다(MISTAKES #8). */
+const TOUCH = process.env.TOUCH === '1';
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+const MOBILE_CTX = TOUCH ? { userAgent: ANDROID_UA, hasTouch: true, isMobile: true, deviceScaleFactor: 3 } : {};
 const rows = [];
 const row = (screen, btn, state, note) => { rows.push({ screen, btn, state, note }); };
 
@@ -99,7 +106,8 @@ async function putScript(host) {
 }
 
 async function openHost(b, withScript, errs) {
-  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, permissions: ENGINE === 'chromium' ? ['microphone'] : [] });
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, ...MOBILE_CTX,
+    permissions: ENGINE === 'chromium' ? ['microphone'] : [] });
   await ctx.addInitScript(FRAMES);
   const host = await ctx.newPage();
   host.on('pageerror', (e) => errs.push('강사 ' + e.message));
@@ -207,7 +215,7 @@ async function openHost(b, withScript, errs) {
   row('B 강사 진행', '방 번호', /^[A-Z0-9]{6}$/.test(code) ? 'PASS' : 'FAIL', code);
 
   /* 손님 하나 */
-  const gctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+  const gctx = await b.newContext({ viewport: { width: 390, height: 844 }, ...MOBILE_CTX });
   await gctx.addInitScript(FRAMES);
   const g = await gctx.newPage();
   g.on('pageerror', (e) => errs.push('손님 ' + e.message));
@@ -248,7 +256,7 @@ async function report(b, errs) {
   await b.close();
   const fail = rows.filter((r) => r.state === 'FAIL').length;
   const na = rows.filter((r) => r.state === 'N/A').length;
-  console.log(`\n=== 마스터 누르기 시험 (${ENGINE}, 폰 390px) — 통과 ${rows.length - fail - na} / ${rows.length - na}${na ? ` (해당 없음 ${na})` : ''} ===`);
+  console.log(`\n=== 마스터 누르기 시험 (${ENGINE}${TOUCH ? '·손가락 안드로이드 흉내' : ''}, 폰 390px) — 통과 ${rows.length - fail - na} / ${rows.length - na}${na ? ` (해당 없음 ${na})` : ''} ===`);
   for (const r of rows) console.log(`${r.state} | ${r.screen} | ${r.btn} | ${r.note}`);
   if (errs.length) { console.log('\n페이지 오류:'); errs.slice(0, 10).forEach((e) => console.log(' - ' + e)); }
   process.exit(fail ? 1 : 0);
