@@ -291,6 +291,58 @@ const srv = http.createServer(async (req, res) => {
   ok(revertAuthFailed === true, '인증을 마치면 준비 화면이 열린다 — 잠금이 굳어 있으면 붉어진다 (되돌림 실증 2)');
 
 
+  /* ── 강사 화면을 **영어로 열어 본다** (2026-10-22) ──────────────────────────
+   *
+   * `host_i18n_test.js` 는 **소스**를 센다(표에 ko·en 짝이 있나 · 코드에 박힌 한국어가
+   * 없나). 그것으로는 **화면에 영어로 뜨는가**를 알 수 없다 — 표가 꽉 차 있어도 `T()` 를
+   * 안 거치는 자리가 하나 있으면 그 자리만 한국어로 남고, 소스 검사는 초록이다.
+   * 손님 화면은 10-22 에 그 그물을 놓았다(`listener_lang_pick_test`). 강사 화면은 **없었다**.
+   * 아이폰·해외 강사가 `?lang=en` 으로 열었을 때 보는 것이 이 자리다. */
+  {
+    const enCtx = await browser.newContext({ viewport: { width: 1100, height: 850 }, locale: 'en-US' });
+    const enPage = await enCtx.newPage();
+    await enPage.goto(`http://localhost:${port}/?lang=en&relay=http://localhost:${port}`);
+    await enPage.waitForFunction(() => {
+      const el = document.querySelector('[data-t="auth_title"]');
+      return el && el.textContent.trim().length > 0;
+    }, null, { timeout: 8000 });
+    /* 표를 쪽에서 꺼내 **그 en 값과 글자까지** 견준다 — 시험 안에 영어를 적으면
+       제품을 되돌려도 통과한다(빈 증거). */
+    const seen = await enPage.evaluate(() => {
+      const out = { lang: typeof UI_LANG !== 'undefined' ? UI_LANG : '?', items: [] };
+      const dict = typeof HOST_STR !== 'undefined' ? HOST_STR : null;
+      for (const el of document.querySelectorAll('[data-t]')) {
+        const k = el.getAttribute('data-t');
+        const txt = (el.textContent || '').trim();
+        if (!txt || !dict || !dict.en[k]) continue;
+        out.items.push({ k, txt, en: String(dict.en[k]).trim(), ko: String(dict.ko[k] || '').trim() });
+      }
+      return out;
+    });
+    ok(seen.lang === 'en', `?lang=en 이면 화면 글자가 en (UI_LANG=${seen.lang})`);
+    ok(seen.items.length >= 20, `글자를 채운 자리 ${seen.items.length}곳을 쟀다`);
+    const koLeft = seen.items.filter((x) => x.txt === x.ko && x.ko !== x.en);
+    ok(koLeft.length === 0,
+       `영어로 열었는데 **한국어로 남은 자리 0** (§18)${koLeft.length ? ': ' + koLeft.slice(0, 6).map((x) => x.k).join(', ') : ''}`);
+    const wrong = seen.items.filter((x) => x.txt !== x.en);
+    ok(wrong.length === 0,
+       `보이는 글자가 표의 en 값과 **글자까지 같다**${wrong.length ? ': ' + wrong.slice(0, 6).map((x) => `${x.k}("${x.txt}")`).join(', ') : ''}`);
+
+    /* 되돌림 실증 — 표의 en 칸을 비우면 `T()` 가 **ko 로 떨어진다**. 쪽이 들고 있는
+       값으로 센다(시험 안 상수가 아니다). */
+    const fall = await enPage.evaluate(() => {
+      if (typeof HOST_STR === 'undefined' || typeof T !== 'function') return null;
+      const keep = HOST_STR.en.auth_title;
+      HOST_STR.en.auth_title = '';
+      const got = T('auth_title');
+      HOST_STR.en.auth_title = keep;
+      return { got, ko: HOST_STR.ko.auth_title };
+    });
+    ok(!!fall && fall.got === fall.ko,
+       `되돌림 실증: en 칸을 비우면 **ko 로 떨어진다**("${fall ? fall.got : '?'}") — 그래서 위 단언이 증거다`);
+    await enCtx.close();
+  }
+
   await browser.close();
   srv.close();
 
