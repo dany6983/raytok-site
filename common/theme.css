@@ -66,8 +66,13 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   font-weight: 400;
 }
 
+/* ★ 자막(번역) 줄 — 크기는 `--font-tr` 로 받는다. 기본은 `--font-lg` 라 **지금까지와 같다.**
+   까닭(10-22 대표님 실기): 여기 `!important` 가 박혀 있어 손님 화면의 「글자 크게/작게」가
+   **자막에는 안 먹었다.** 단추는 거품(`.msg-bubble`)만 키웠고 손님이 읽는 줄은 그대로였다 —
+   그래서 「아무 일도 안 일어난다」로 보였다. 이 파일을 읽는 쪽 넷(손님·강사·Desk·확인)은
+   변수를 안 주면 전과 똑같다. */
 .pair-tr, .msg-tr, .line-tr {
-  font-size: var(--font-lg) !important;
+  font-size: var(--font-tr, var(--font-lg)) !important;
   font-weight: 700 !important;
   color: var(--ink-high) !important;
   line-height: 1.4;

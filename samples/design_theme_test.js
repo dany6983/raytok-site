@@ -23,6 +23,13 @@ function ok(cond, msg) {
 
 const ROOT = process.cwd();
 const THEME_CSS_PATH = path.join(ROOT, 'web', 'common', 'theme.css');
+/* ★ 10-22: 화면들은 `<link href="/common/theme.css">` 로 **뿌리의 복사본**을 받는다
+   (이 저장소의 뿌리가 곧 raytok.kr 이다). 이 시험은 `web/common/theme.css` 만 보고 있었고,
+   아래 목업 서버도 `/common/theme.css` 요청에 그 파일을 돌려줬다 — 그래서 **사이트가
+   내보내는 파일이 낡아도 초록**이었다. 실제로 10-22 에 자막 글자 크기 고침이 `web/` 쪽에만
+   들어가 손님 화면에서는 아무 일도 일어나지 않았다(§4: 같은 값이 두 곳에 있다).
+   두 복사본이 **한 글자라도 다르면 붉다.** */
+const SERVED_CSS_PATH = path.join(ROOT, 'common', 'theme.css');
 const TARGET_FILES = [
   { name: 'listener', path: path.join(ROOT, 'web', 'listener', 'index.html'), url: '/web/listener/' },
   { name: 'host', path: path.join(ROOT, 'web', 'host', 'index.html'), url: '/web/host/' },
@@ -36,6 +43,9 @@ console.log('=== 줄 20 웹 화면 디자인 1차 검증 시험 ===\n');
 console.log('[Test 1] web/common/theme.css 디자인 체계 토큰 검증');
 ok(fs.existsSync(THEME_CSS_PATH), 'web/common/theme.css 파일 존재');
 const themeCss = fs.readFileSync(THEME_CSS_PATH, 'utf-8');
+ok(fs.existsSync(SERVED_CSS_PATH), '사이트가 내보내는 common/theme.css 파일 존재');
+ok(fs.readFileSync(SERVED_CSS_PATH, 'utf-8') === themeCss,
+   '뿌리 common/theme.css 와 web/common/theme.css 가 **같다** — 화면이 받는 것은 뿌리 쪽이다');
 
 ok(themeCss.includes('--font-xs: 11px'), '글자 xs: 11px 확인');
 ok(themeCss.includes('--font-sm: 13px'), '글자 sm: 13px (원문) 확인');
@@ -69,8 +79,9 @@ TARGET_FILES.forEach(t => {
     let reqPath = parsed.pathname;
 
     if (reqPath.startsWith('/common/theme.css')) {
+      // 브라우저가 받는 것과 **같은 파일**을 준다 — 목업이 다른 파일을 주면 실기와 갈린다(D-11)
       res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
-      res.end(fs.readFileSync(THEME_CSS_PATH));
+      res.end(fs.readFileSync(SERVED_CSS_PATH));
       return;
     }
 

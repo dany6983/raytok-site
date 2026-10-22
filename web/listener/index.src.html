@@ -163,6 +163,11 @@
     .font-s .msg-bubble { font-size: 13px; }
     .font-l .msg-bubble { font-size: 20px; }
     .font-l .msg-src { font-size: 15px; }
+    /* ★ 손님이 **읽는 줄은 자막**(`.msg-tr`)이다. 그 크기는 `web/common/theme.css` 가
+       `!important` 로 잡고 있어 위 규칙이 안 먹는다 — 그래서 `--font-tr` 변수로 넘긴다.
+       (10-22 대표님: 「글자 크게 눌러도 아무 일 없음」. 거품만 커지고 자막은 그대로였다) */
+    .font-s { --font-tr: 15px; }
+    .font-l { --font-tr: 23px; }
     .font-group { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
     .font-group .tool-btn { border: 0; border-radius: 0; margin: 0; min-width: 34px; }
     .font-group .tool-btn.active { background: var(--primary); color: #0f172a; }
@@ -233,6 +238,10 @@
 
     /* ── 큰 화면 보기 (?view=screen) — 회의실 TV·빔. 원문과 고른 언어를 나란히, 최근 줄만 ── */
     .tool-btn-screen { display: none; }
+    /* ★ 10-22 대표님 실기: 「큰 화면」 단추가 **안 보였다.** 지금까지 `?view=screen`(강연장
+       화면)에서만 보였는데, 폰 손님도 자막을 전체화면으로 보고 싶다. **되는 폰에서만** 낸다 —
+       아이폰 사파리는 `requestFullscreen` 이 없어 눌러도 아무 일이 없다(§20). */
+    .fs-ok .tool-btn-screen { display: inline-block; }
     .view-screen.in-chat .header { display: none; }
     .view-screen #chat-screen { height: 100vh; height: 100dvh; overflow: hidden; }
     .view-screen #chat-list { overflow: hidden; justify-content: flex-end; padding: 4vh 4vw; gap: 3vh; }
@@ -520,6 +529,7 @@
     let isConnected = false;
     let isTtsEnabled = new URLSearchParams(location.search).get('view') !== 'screen'; // 큰 화면 보기는 소리 끔으로 시작(도구 막대에서 켠다)
     let currentVoice = null;
+    var voicePickSeen = 0;        // 읽기 목소리를 기록에 한 번만 적는다(§12)
 
     let wakeLock = null;
     let noSleepVideo = null;
@@ -693,13 +703,27 @@
         toolsTimer = setTimeout(() => document.documentElement.classList.remove('show-tools'), SCREEN_TOOLS_MS);
       };
       ['pointerdown', 'pointermove', 'keydown'].forEach(ev => document.addEventListener(ev, showTools, { passive: true }));
-      document.getElementById('btn-fullscreen').addEventListener('click', () => {
-        try {
-          if (document.fullscreenElement) document.exitFullscreen();
-          else document.documentElement.requestFullscreen();
-        } catch (e) {}
-      });
     }
+    /* 전체화면 — **큰 화면 보기 안에만** 달려 있던 손잡이를 밖으로 뺐다(10-22). 폰 손님도 쓴다.
+       되는 폰에서만 단추를 보인다. 첫 걸음에 기록 한 줄(§12). */
+    var fsLog = [];
+    window.rtFullscreen = { log: function () { return fsLog.slice(); },
+                            can: function () { return typeof document.documentElement.requestFullscreen === 'function'; } };
+    (function () {
+      var el = document.getElementById('btn-fullscreen');
+      var can = typeof document.documentElement.requestFullscreen === 'function';
+      if (can) document.documentElement.classList.add('fs-ok');
+      fsLog.push('fullscreen can=' + (can ? 1 : 0));
+      if (!el || !can) return;
+      el.addEventListener('click', function () {
+        var want = !document.fullscreenElement;
+        fsLog.push('fullscreen go=' + (want ? 1 : 0));
+        try {
+          if (!want) document.exitFullscreen();
+          else document.documentElement.requestFullscreen();
+        } catch (e) { fsLog.push('fullscreen err=' + (e && e.message)); }
+      });
+    })();
 
     function normalizeLangCode(code) {
       if (!code) return '';
@@ -904,12 +928,18 @@
 
     // ④ 자막 글자 크기 소·중·대 — localStorage 'raytok_font' (s|m|l), 기본 m. 시연에서도 같은 길.
     const FONT_SIZES = ['s', 'm', 'l'];
+    var fontLog = [];
+    window.rtFont = { log: function () { return fontLog.slice(); },
+                      size: function () { return document.documentElement.classList.contains('font-l') ? 'l'
+                                               : document.documentElement.classList.contains('font-s') ? 's' : 'm'; } };
     function applyFontSize(size, save) {
       if (!FONT_SIZES.includes(size)) size = 'm';
       document.documentElement.classList.remove('font-s', 'font-l');
       if (size !== 'm') document.documentElement.classList.add('font-' + size);
       document.querySelectorAll('#font-group .tool-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-font') === size));
       if (save) { try { localStorage.setItem('raytok_font', size); } catch (e) {} }
+      var line = 'font_size=' + size;          // §12 첫 걸음에 기록 한 줄
+      if (fontLog[fontLog.length - 1] !== line) { fontLog.push(line); try { console.log(line); } catch (e) {} }
     }
     document.querySelectorAll('#font-group .tool-btn').forEach(b => b.addEventListener('click', () => applyFontSize(b.getAttribute('data-font'), true)));
     (function () { let saved = 'm'; try { saved = localStorage.getItem('raytok_font') || 'm'; } catch (e) {} applyFontSize(saved, false); })();
@@ -1192,6 +1222,20 @@
       if (typeof window.speechSynthesis === 'undefined') return { voice: null, via: '' };
       const voices = speechSynthesis.getVoices() || [];
       const want = normalizeLangCode(via || lang || '');
+      /* ★ 10-22 대표님 실기 ⓒ: 「미리듣기는 좋은데 **읽을 때 기계음**」.
+         까닭은 여기였다 — 미리듣기는 **고른 목소리**(`currentVoice`, 없으면 순위 1등)로
+         말하는데, 읽기는 그걸 안 보고 `voices.find` 로 **그 언어 첫 목소리**를 집었다.
+         폰 목록의 첫 목소리는 흔히 기계음(compact)이다. 고른 것을 **먼저** 본다.
+         `via`(대체어로 읽는 중)일 때는 고른 목소리가 **다른 언어**라 쓰지 않는다. */
+      if (!via) {
+        const mine = currentVoice && currentVoice.lang && normalizeLangCode(currentVoice.lang) === want
+          ? currentVoice
+          : (getRankedVoicesForLang(lang || selectedLang) || [])[0];
+        if (mine && mine.lang && normalizeLangCode(mine.lang) === want) {
+          if (!voicePickSeen) { voicePickSeen = 1; try { console.log('voice_read name=' + mine.name + ' lang=' + mine.lang); } catch (e) {} }
+          return { voice: mine, via: '' };
+        }
+      }
       let voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(want));
       if (!voice && via) {
         const back = normalizeLangCode(lang || '');
@@ -1499,6 +1543,19 @@
       speechSynthesis.speak(uttr);
     }
 
+    /* 시험이 들여다보는 창 — **화면이 쓰는 그 함수들**을 그대로 부른다(가짜를 따로 두지
+       않는다, D-11). `say()` 는 진짜 읽기 길(`speakWebTts`)로 가므로, 폰이 어느 목소리로
+       읽는지를 시험이 **읽는 길에서** 잴 수 있다 (10-22 ⓒ: 고른 목소리 = 읽는 목소리). */
+    window.rtVoiceRead = {
+      pick: function (lang, via) {
+        var g = pickVoice(lang || selectedLang, via || '');
+        return { name: g.voice ? g.voice.name : '', lang: g.voice ? g.voice.lang : '', via: g.via };
+      },
+      chosen: function () { return currentVoice ? { name: currentVoice.name, lang: currentVoice.lang } : null; },
+      ranked: function (lang) { return getRankedVoicesForLang(lang || selectedLang).map(function (v) { return v.name; }); },
+      say: function (text, via) { speakWebTts(text, via || ''); }
+    };
+
     // 연결 관리
     function connect() {
       if (ws) ws.close();
@@ -1746,7 +1803,7 @@
           tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
           /* 번역을 기다리는 중이면 「번역 중…」 — 빈 줄로 두지 않는다. 내 말이 질문한
              사람 말과 같으면 번역할 것이 없으니 기다리지 않는다. */
-          pending: !!qSrc && trPlan() === 'server' && !!(qLang && selectedLang &&
+          pending: !!qSrc && onServerTr() && !!(qLang && selectedLang &&
                    normalizeLangCode(qLang) !== normalizeLangCode(selectedLang)),
           via: undefined
         };
@@ -1814,7 +1871,7 @@
              화면만 보고 갈린다(콘솔을 열지 않아도 된다). 와이어는 손대지 않는다 —
              이 판단은 **이 폰의 것**이다(방은 그 폰이 어느 길인지 모른다). */
           pending: !!msg.pending || (!msg.tr || !msg.tr[selectedLang])
-                   && trPlan() === 'server'
+                   && onServerTr()
                    && !!(srcLang && selectedLang && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)),
           via: msg.via,
           broadcast: isBroadcast
@@ -1960,6 +2017,16 @@
     }
     var trPlanLog = [];
     /** 어느 길로 갈까 — 'browser' 또는 'server'. 바뀔 때만 기록한다(§12 첫 걸음에 한 줄) */
+    /** 지금 **서버(방) 번역 길**인가 — 손님이 스스로 고른 것도 센다.
+     *
+     *  ★ 10-22 대표님 실기: 「서버 번역」을 눌렀는데 「원문 보기」 단추가 끝까지 안 나왔다.
+     *  까닭은 `trPlan()` 이 **브라우저가 할 수 있나**만 보고 **손님이 고른 것**(`guestTr`)을
+     *  안 봤기 때문이다. 누른 뒤에도 plan 은 여전히 'browser' 였다 → 단추는 숨은 채였다.
+     *  판정을 **이 한 함수**로 모은다(§4 — 묻는 곳이 넷이다: 원문 보임·단추·질문 둘). */
+    function onServerTr() {
+      return guestTr === 'server' || trPlan() === 'server';
+    }
+
     function trPlan() {
       var plan = browserCanTranslate() ? 'browser' : 'server';
       /* 칸 이름에 s-r-c 를 쓰지 않는다 — 링크 검사기가 그 글자 뒤의 따옴표를 **링크로
@@ -2145,7 +2212,7 @@
       if (isScreenView) return true;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
       if (sameLang) return true;
-      if (trPlan() === 'browser') return true;
+      if (!onServerTr()) return true;
       if (showSrc) return true;
       return !(line.tr && line.tr[selectedLang]);
     }
@@ -2154,7 +2221,7 @@
     function renderSrcBtn() {
       if (!btnToggleSrc) return;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-      const useful = !isScreenView && !sameLang && trPlan() === 'server';
+      const useful = !isScreenView && !sameLang && onServerTr();
       btnToggleSrc.style.display = useful ? '' : 'none';
       btnToggleSrc.classList.toggle('active', !!showSrc);
       btnToggleSrc.setAttribute('aria-pressed', showSrc ? 'true' : 'false');
