@@ -67,12 +67,20 @@ const FAKE_DICTATION = () => {
   if (o) window.speechSynthesis.speak = (u) => { window.__spoken.push({ t: u.text, l: u.lang }); };
 };
 
-const SCRIPT_TXT = '안전 교육을 시작하겠습니다.\n\n안전모를 반드시 착용하십시오.\n\n비상구 위치를 확인하세요.';
-const GUEST_LANGS = ['en', 'zh-CN', 'ne'];
+/* 강사가 **한국어로 말할 때**와 **영어로 말할 때**를 둘 다 돈다 (대표님 10-22 15:40:
+   「강사 말하는 언어는 한국어만이 아니라 81개에서 고른다」). 영어 강사 쪽에는 손님에
+   **ko** 를 넣는다 — 한국어 손님이 영어 강연을 자기 말로 받는지 본다. */
+const CASES = [
+  { src: 'ko', txt: '안전 교육을 시작하겠습니다.\n\n안전모를 반드시 착용하십시오.\n\n비상구 위치를 확인하세요.',
+    mic: '오늘 점심은 12시에 먹습니다', ask: 'Can we use this offline?', guests: ['en', 'zh-CN', 'ne'] },
+  { src: 'en', txt: 'Safety training starts now.\n\nAlways wear your helmet.\n\nCheck the emergency exits.',
+    mic: 'Lunch is at twelve today', ask: '인터넷 없이도 됩니까?', guests: ['ko', 'vi', 'ne'] }
+];
 
-async function runOne(engineName, launcher) {
-  const tag = `[${engineName}]`;
-  console.log(`\n=== ${engineName} ===`);
+async function runOne(engineName, launcher, kase) {
+  const C = kase || CASES[0];
+  const tag = `[${engineName}·말=${C.src}]`;
+  console.log(`\n=== ${engineName} · 강사가 ${C.src} 로 말한다 ===`);
   const b = await launcher();
   try {
     const hostCtx = await b.newContext();
@@ -90,15 +98,20 @@ async function runOne(engineName, launcher) {
       dt.items.add(new File([t], 'l.txt', { type: 'text/plain' }));
       const i = document.getElementById('fileInput');
       i.files = dt.files; i.dispatchEvent(new Event('change', { bubbles: true }));
-    }, SCRIPT_TXT);
+    }, C.txt);
     await host.waitForFunction(() => document.querySelectorAll('.para-item').length === 3);
 
-    /* 정본 §1 ② — 강사는 **말하는 언어 하나**만 고른다 */
-    const srcLang = await host.evaluate(() => {
+    /* 정본 §1 ② — 강사는 **말하는 언어 하나**만 고른다. 그 목록은 손님 표(82)와 같다 */
+    const langPick = await host.evaluate(async (want) => {
       const s = document.getElementById('srcLangSelect');
-      return s ? s.value : '(없음)';
-    });
-    ok(srcLang === 'ko', `${tag} 강사 말하는 언어 하나 = ${srcLang}`);
+      if (!s) return { n: 0, val: '(없음)' };
+      /* 정본이 올 때까지 기다린다 — 처음엔 박힌 열로 서고 뒤에 82로 다시 그린다 */
+      for (let i = 0; i < 40 && s.options.length < 20; i += 1) await new Promise((r) => setTimeout(r, 100));
+      if (want !== s.value) { s.value = want; s.dispatchEvent(new Event('change', { bubbles: true })); }
+      return { n: s.options.length, val: s.value };
+    }, C.src);
+    ok(langPick.n >= 80, `${tag} 고르개에 **81개 넘게** 선다 (${langPick.n}개) — 못 읽으면 열로 선다`);
+    ok(langPick.val === C.src, `${tag} 강사 말하는 언어 = ${langPick.val}`);
 
     await host.click('#btnPreTranslate');
     await host.waitForSelector('#readyArea', { state: 'visible', timeout: 20000 });
@@ -109,7 +122,7 @@ async function runOne(engineName, launcher) {
     log(`${tag} 2 방`, code);
 
     const guests = [];
-    for (const lang of GUEST_LANGS) {
+    for (const lang of C.guests) {
       const ctx = await b.newContext({ viewport: { width: 390, height: 800 } });
       await ctx.addInitScript(CATCH_FRAMES);
       await ctx.addInitScript(FAKE_DICTATION);
@@ -121,7 +134,7 @@ async function runOne(engineName, launcher) {
       await p.click('#btn-toggle-tts');            // 소리 켠다
       guests.push({ lang, p });
     }
-    log(`${tag} 3 손님 ${GUEST_LANGS.join('·')}`, '붙음');
+    log(`${tag} 3 손님 ${C.guests.join('·')}`, '붙음');
 
     /* ① 원고 문단 — 각자 말로 */
     await host.waitForTimeout(800);
@@ -168,13 +181,13 @@ async function runOne(engineName, launcher) {
     /* ★ `sendSpokenLine` 은 **전역이 아니다**(쪽 스크립트 안에 있다) — 창에 내놓은
        `window.rtHostMic.send` 로 부른다. 전역으로 부르면 조용히 'no fn' 이 되고 🎤 줄이
        아무에게도 안 간다(10-22 실측에서 그렇게 셋 다 빈손이었다). */
-    const micSent = await host.evaluate(() => {
+    const micSent = await host.evaluate((micLine) => {
       if (window.rtHostMic && typeof window.rtHostMic.send === 'function') {
-        window.rtHostMic.send('오늘 점심은 12시에 먹습니다');
+        window.rtHostMic.send(micLine);
         return 'rtHostMic.send';
       }
       return 'no fn';
-    });
+    }, C.mic);
     ok(micSent !== 'no fn', `${tag} 🎤 줄을 보낼 자리가 있다 (${micSent})`);
     await host.waitForTimeout(3000);
     for (const g of guests) {
@@ -212,13 +225,13 @@ async function runOne(engineName, launcher) {
     ok(granted === true, `${tag} 질문 — 강사가 **사람 손으로** 지명했다 (P-17)`);
     await asker.p.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 10000 });
     ok(true, `${tag} 질문 — 지명되면 손님 폰의 받아쓰기가 열린다`);
-    await asker.p.evaluate(() => window.__rec.say('Can we use this offline?'));
+    await asker.p.evaluate((t) => window.__rec.say(t), C.ask);
     await host.waitForTimeout(3000);
 
     const qFrames = (await asker.p.evaluate(() => window.__sentFrames || []))
       .map((f) => { try { return JSON.parse(f); } catch (_) { return null; } })
       .filter((m) => m && m.kind === 'question');
-    ok(qFrames.length >= 1 && qFrames[0].src === 'Can we use this offline?',
+    ok(qFrames.length >= 1 && qFrames[0].src === C.ask,
        `${tag} 질문 — 손님 폰이 **글자로** 올렸다 ("${qFrames[0] ? qFrames[0].src : '없음'}")`);
     const AUDIO = ['audio', 'pcm', 'wav', 'blob', 'buf', 'samples', 'opus', 'webm'];
     const audioKeys = qFrames.length ? Object.keys(qFrames[0]).filter((k) => AUDIO.some((a) => k.toLowerCase().includes(a))) : [];
@@ -226,12 +239,12 @@ async function runOne(engineName, launcher) {
 
     for (const g of guests.slice(1)) {              // 질문한 손님 말고 **나머지 전부**
       const got = await g.p.$$eval('#chat-list .msg-line .msg-tr', (els) =>
-        els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()).filter((t) => /offline|오프라인|离线|अफलाइन/i.test(t)).slice(-1)[0] || '');
+        els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()).slice(-1)[0] || '');
       ok(!!got, `${tag} 질문 — ${g.lang} 손님이 **자기 말로** 받았다: "${got.slice(0, 70)}"`);
       log(`${tag} 7 ${g.lang} 질문`, got.slice(0, 90));
     }
     const askShown = await host.textContent('#askActiveText');
-    ok(/Can we use this offline\?/.test(askShown), `${tag} 질문 — 강사 화면에 원문이 있다`);
+    ok(askShown.indexOf(C.ask) >= 0, `${tag} 질문 — 강사 화면에 원문이 있다`);
     const askLog = await host.evaluate(() => (window.rtHostAsk && window.rtHostAsk.log()) || []);
     ok(askLog.some((l) => l.indexOf('ask_tr ') === 0), `${tag} 질문 — 강사가 **강사 말로** 번역했다 (${askLog.find((l) => l.indexOf('ask_tr ') === 0) || '없음'})`);
     log(`${tag} 8 강사 질문 칸`, askShown.replace(/\s+/g, ' ').slice(0, 110));
@@ -264,13 +277,15 @@ async function runOne(engineName, launcher) {
 }
 
 (async () => {
-  await runOne('chromium', () => playwright.chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }));
+  for (const kase of CASES) {
+    await runOne('chromium', () => playwright.chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }), kase);
+  }
 
   /* ④ 웹킷 — 아이폰 사파리와 같은 엔진. 없으면 **건너뛰고 적는다**(§20: 조용히 반만 돌지 않는다) */
   let webkitPath = null;
   try { webkitPath = playwright.webkit.executablePath(); } catch (_) {}
   if (webkitPath && fs.existsSync(webkitPath)) {
-    await runOne('webkit', () => playwright.webkit.launch());
+    for (const kase of CASES) await runOne('webkit', () => playwright.webkit.launch(), kase);
   } else {
     log('웹킷', `안 깔렸다 — 건너뛴다 (${webkitPath || '경로 없음'}). 아이폰 사파리는 **실기 목록**이다`);
     console.log('  [SKIP] 웹킷이 이 환경에 없다. `npx playwright install webkit` 이 되는 곳에서 다시 돌린다');

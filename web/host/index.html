@@ -640,6 +640,9 @@
     /* 언어 이름도 **손님이 보는 글자**다 (B 12). name=ko · name_en=en 두 칸을 두고
        읽는 곳은 langName() 한 함수로 모은다 — 읽는 자리가 셋이었다(칩·고르기·리포트, §4). */
     const SUPPORTED_TARGET_LANGS = [
+      /* ko 는 **고르개**에 있어야 한다(강사가 한국어로 말한다). 번역 대상 칩에서는
+         `syncTargetLangs()` 가 지금 말하는 언어를 빼므로 ko 가 칩에 끼지 않는다. */
+      { code: 'ko', name: '한국어 (Korean)',              name_en: 'Korean' },
       { code: 'en', name: '영어 (English)',              name_en: 'English' },
       { code: 'ja', name: '일본어 (日本語)',               name_en: 'Japanese (日本語)' },
       /* ⚠ 'zh' 가 아니라 **'zh-CN'** 이다 — 손님 화면의 자막 언어 목록이 `zh-CN`·`zh-TW` 로
@@ -676,8 +679,12 @@
         const rows = await res.json();
         /* 기록에만 남는 말이라 영어다 — 손님·대표님 화면에 뜨는 글이 아니다(§18 시험이 센다) */
         if (!Array.isArray(rows) || rows.length < 20) throw new Error('list too short');
+        /* ★ **거르지 않고 통째로** 담는다 (2026-10-22 대표님: 강사 말하는 언어는 81개에서
+           고른다). 전에는 여기서 `SRC_LANG` 을 걸렀는데, 그러면 ① 고르개에 그 언어가 없고
+           ② 강사가 말을 바꿔도 **옛 말이 번역 대상에 남는다**(불러올 때 한 번만 걸렀으니).
+           번역 대상은 아래 `syncTargetLangs()` 가 **그때그때 파생**시킨다 — 거르는 곳 하나(§4). */
         const out = rows
-          .filter((l) => l && typeof l.code === 'string' && l.code !== SRC_LANG)
+          .filter((l) => l && typeof l.code === 'string')
           .map((l) => ({
             code: l.code,
             name: l.name_ko ? `${l.name_ko} (${l.name_en || l.code})` : l.code,
@@ -754,9 +761,22 @@
     // ── 전역 상태 ──
     let hostToken = localStorage.getItem('raytok_host_token') || '';
     let selectedLangs = ['en', 'ja', 'vi'];
+    /** 실제로 **번역을 부를** 언어 — 고른 것에서 **지금 말하는 언어**를 뺀다.
+     *  고른 것(`selectedLangs`)은 지우지 않는다: 말을 바꿨다 되돌아오면 그대로 살아 있어야
+     *  한다(R-15). 자기 말로 번역하는 일만 막는다(돈·무의미). */
+    function activeTargets() {
+      return (selectedLangs || []).filter((c) => c && c !== SRC_LANG);
+    }
     /* 지금 화면이 쓰는 자막 언어 표 — **읽는 곳은 이 한 칸**이다(§4).
        처음엔 박혀 있던 아홉이고, 준비 화면을 열 때 정본(82)으로 갈린다. */
-    let targetLangs = SUPPORTED_TARGET_LANGS.slice();
+    /** 불러온 **통째 표**(82). 고르개는 이것을 그대로 쓴다 */
+    let allLangs = SUPPORTED_TARGET_LANGS.slice();
+    /** 번역 대상(칩) — **지금 말하는 언어를 뺀** 것. 여기 한 곳에서만 거른다(§4) */
+    let targetLangs = [];
+    function syncTargetLangs() {
+      targetLangs = allLangs.filter((l) => l && l.code !== SRC_LANG);
+    }
+    syncTargetLangs();
     let paragraphs = []; // { id, src, trans: { [lang]: text } }
 
     // ── DOM 엘리먼트 ──
@@ -773,7 +793,11 @@
     /** 말하는 언어 고르개를 채운다 — 목록은 손님 쪽 정본(`langs.json`)과 같은 표다(§4) */
     function renderSrcLangSelect() {
       if (!srcLangSelect) return;
-      const rows = (targetLangs && targetLangs.length ? targetLangs : [{ code: 'ko', name_ko: '한국어', name_en: 'Korean' }]);
+      /* ★ **통째 표**를 쓴다 — 번역 대상(칩)이 아니라 강사가 **말하는 언어**를 고르는 자리다.
+         이름은 `langName()` 한 함수를 지난다. 10-22 까지 여기서 `l.name_ko` 를 직접 읽었는데
+         `loadTargetLangs()` 는 그 칸을 **`name`** 으로 바꿔 담는다 — 그래서 화면에 「en (en)」
+         처럼 **코드만** 나왔다(§4: 값의 모양을 바꾸면 읽는 곳을 전부 센다). */
+      const rows = (allLangs && allLangs.length ? allLangs : [{ code: 'ko', name: '한국어 (Korean)', name_en: 'Korean' }]);
       const seen = new Set();
       srcLangSelect.innerHTML = '';
       for (const l of rows) {
@@ -781,7 +805,7 @@
         seen.add(l.code);
         const o = document.createElement('option');
         o.value = l.code;
-        o.textContent = (UI_LANG === 'ko' ? (l.name_ko || l.code) : (l.name_en || l.code)) + ' (' + l.code + ')';
+        o.textContent = langName(l, l.code) + ' (' + l.code + ')';
         if (l.code === SRC_LANG) o.selected = true;
         srcLangSelect.appendChild(o);
       }
@@ -795,8 +819,15 @@
     if (srcLangSelect) {
       srcLangSelect.addEventListener('change', () => {
         SRC_LANG = srcLangSelect.value || 'ko';
-        trLog.push(`src_lang set=${SRC_LANG}`);
-        initLangChips();                   // 말하는 언어는 번역 대상에서 빠진다
+        trLog.push(`src_lang set=${SRC_LANG} n=${allLangs.length}`);
+        /* 고른 말을 번역 대상에서 뺀다 — **바꿀 때마다** 다시 센다(한 번만 걸렀더니 옛
+           말이 칩에 남았다).
+           ★ `selectedLangs` 는 **건드리지 않는다.** 한 번 지우면 말을 바꿨다 되돌아올 때
+           강사가 고른 칩이 **조용히 사라진다**(10-22 에 그 꼴로 시험이 붉었다 — 미리 번역이
+           en 을 빼먹었다). 자기 말로 번역하지 않는 것은 **쓰는 자리**(`activeTargets()`)가
+           거른다 — 거르는 곳 하나(§4), 고른 것은 그대로 남는다(R-15). */
+        syncTargetLangs();
+        initLangChips();
       });
     }
 
@@ -880,8 +911,9 @@
       licenseInfo.textContent = `${T('auth_ok')} (${payload && payload.sub ? payload.sub : 'Host'})`;
       initLangChips();                       // 먼저 박힌 아홉으로 그린다 — 화면이 비어 보이지 않게
       renderSrcLangSelect();                 // **내가 말하는 언어** 고르개도 같이(정본 §1 ②)
-      loadTargetLangs().then((rows) => {     // 정본(82)이 오면 다시 그린다. 못 오면 아홉 그대로(§20)
-        targetLangs = rows;
+      loadTargetLangs().then((rows) => {     // 정본(82)이 오면 다시 그린다. 못 오면 아홉+ko 그대로(§20)
+        allLangs = rows;
+        syncTargetLangs();
         initLangChips();
         renderSrcLangSelect();
       });
@@ -1278,7 +1310,7 @@
       const F = window.rtScriptFollow;
       if (!F || !lang || lateBusy) return;
       if (!Array.isArray(paragraphs) || !paragraphs.length) return;
-      const fresh = F.newLangs(lateSeen.langs.concat(selectedLangs || []), [lang], SRC_LANG);
+      const fresh = F.newLangs(lateSeen.langs.concat(activeTargets()), [lang], SRC_LANG);
       if (!fresh.length) return;                       // 이미 있던 언어다
       lateBusy = true;
       const t0 = Date.now();
@@ -1358,14 +1390,14 @@
         } else {
           if (langGroup) langGroup.style.opacity = '1';
           btnPreTranslate.textContent = T('prep_pre_btn');
-          if (paragraphs.length === 0 || selectedLangs.length === 0) btnPreTranslate.disabled = true;
+          if (paragraphs.length === 0 || activeTargets().length === 0) btnPreTranslate.disabled = true;
         }
       });
     }
 
     btnPreTranslate.addEventListener('click', async () => {
       const isRaw = chkBroadcastRaw && chkBroadcastRaw.checked;
-      if (!isRaw && (paragraphs.length === 0 || selectedLangs.length === 0)) {
+      if (!isRaw && (paragraphs.length === 0 || activeTargets().length === 0)) {
         alert(T('err_pick_lang'));
         return;
       }
@@ -1394,7 +1426,7 @@
          이것이 언어를 9개에서 전부로 여는 전제다(마스터 NOW ③). */
       for (const p of paragraphs) p.trans = p.trans || {};
       const trJobs = [];
-      for (const lang of selectedLangs) {
+      for (const lang of activeTargets()) {
         const need = paragraphs.map((p, i) => ({ p, i })).filter(({ p }) => !p.trans[lang]);
         if (!need.length) continue;
         for (const group of chunkForTranslate(need.map(({ p }) => p.src))) {
@@ -1403,7 +1435,7 @@
       }
       const totalJobs = Math.max(1, trJobs.length);
       let completedJobs = 0;
-      trLog.push(`tr_plan langs=${selectedLangs.length} paras=${paragraphs.length} calls=${trJobs.length}`);
+      trLog.push(`tr_plan langs=${activeTargets().length} paras=${paragraphs.length} calls=${trJobs.length} src=${SRC_LANG}`);
 
       for (const job of trJobs) {
         const got = await translateMany(job.group, job.lang);
@@ -2960,7 +2992,7 @@
     function reportLangCodes() {
       const set = new Set();
       for (const m of live.sent) for (const k of Object.keys(paraTransOf(m.para))) set.add(k);
-      if (!set.size) for (const k of selectedLangs) set.add(k);
+      if (!set.size) for (const k of activeTargets()) set.add(k);
       if (!set.size) set.add('en');
       return [...set];
     }

@@ -78,6 +78,27 @@ const srv = http.createServer(async (req, res) => {
   }
 
   // Vendor 서빙
+  /* ★ 강사 쪽은 운영에서 `/web/host/` 에 있고, 손님 표를 **상대 경로**로 읽는다
+     (`../listener/langs.json`). 이 서버는 강사 쪽을 `/` 에 띄우므로 그 경로가
+     `/listener/langs.json` 이 된다 — 안 이어 주면 **정본을 못 읽고 아홉으로 선다**.
+     10-22 까지 그 상태였고, 단언이 `>= 9` 였던 탓에 **초록이었다**(대표님 15:40). */
+  /* ★ 공통 파일(`web/common/*.js`)도 **줘야 한다**. 10-22 까지 이 서버는 그것을 안 줬고,
+     그래서 `rtRecLang`(받아쓰기 언어 표)·`rtRegion`·`script-play` 가 **전부 없는 채로**
+     시험이 돌았다 — 운영과 다른 환경이다(D-11). 상대 경로는 `../common/...` 이다. */
+  if (url.pathname.startsWith('/common/') || url.pathname.startsWith('/web/common/')) {
+    const cf = path.join(__dirname, '..', 'web', 'common', url.pathname.replace(/^\/(web\/)?common\//, ''));
+    if (fs.existsSync(cf)) {
+      res.writeHead(200, { 'Content-Type': 'text/javascript' });
+      return res.end(fs.readFileSync(cf));
+    }
+  }
+
+  if (url.pathname === '/listener/langs.json' || url.pathname === '/web/listener/langs.json') {
+    const lf = path.join(__dirname, '..', 'web', 'listener', 'langs.json');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(fs.readFileSync(lf));
+  }
+
   if (url.pathname.startsWith('/web/vendor/') || url.pathname.startsWith('/vendor/')) {
     const vf = path.join(VENDOR_DIR, url.pathname.replace(/^\/(web\/)?vendor\//, ''));
     if (fs.existsSync(vf)) {
@@ -161,6 +182,8 @@ const srv = http.createServer(async (req, res) => {
       srcVisible: !!sel && getComputedStyle(sel).display !== 'none',
       srcValue: sel ? sel.value : null,
       srcCount: sel ? sel.options.length : 0,
+      srcNames: sel ? [...sel.options].slice(0, 3).map((o) => o.textContent.trim()) : [],
+      langsSrc: ((window.rtHostTr && window.rtHostTr.log()) || []).filter((l) => l.indexOf('langs_src=') === 0).pop() || '',
       detOpen: det ? det.open : null,
       /* ★ 접힘은 `checkVisibility()` 로 센다 (10-21 에 두 번 틀렸다).
          닫힌 `<details>` 안의 요소는 **폭도 높이도 그대로 가진다** — details 가 그리지
@@ -171,8 +194,16 @@ const srv = http.createServer(async (req, res) => {
         : null
     };
   });
-  ok(prep.srcVisible && prep.srcValue === 'ko' && prep.srcCount >= 9,
-     `강사는 **말하는 언어**를 고른다 (지금 ${prep.srcValue} · 고를 수 있는 것 ${prep.srcCount}개)`);
+  /* ★ `>= 9` 로는 못 가린다 — 아홉은 **못 읽었을 때 서는 수**다(§20). 정본(`langs.json`)을
+     읽었으면 **그 줄 수만큼** 서야 하고, 안 읽혔으면 이 단언이 붉어야 한다. 10-22 까지
+     `>= 9` 였고, 그래서 **아홉으로 선 채로도 초록**이었다(대표님 15:40 이 그 자리를 짚었다). */
+  const langRows = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'web', 'listener', 'langs.json'), 'utf8'));
+  ok(prep.srcVisible && prep.srcValue === 'ko' && prep.srcCount === langRows.length,
+     `강사는 **말하는 언어**를 고른다 — 정본 ${langRows.length}개가 다 선다 (지금 ${prep.srcValue} · ${prep.srcCount}개)`);
+  ok(prep.srcNames && prep.srcNames.every((t) => /[가-힣A-Za-z]/.test(t)),
+     `고르개에 **언어 이름**이 뜬다 (${(prep.srcNames || []).slice(0, 3).join(' · ')}) — 코드만 나오면 못 고른다`);
+  ok(prep.langsSrc === `langs_src=json n=${langRows.length}`,
+     `정본을 읽었다고 기록에 남는다 ("${prep.langsSrc}") — 못 읽으면 builtin 으로 남는다(§20)`);
   ok(prep.detOpen === false && prep.chipsShown === false,
      `번역 대상 언어 칩은 **접혀 있다** (열림=${prep.detOpen} 그려짐=${prep.chipsShown}) — 손님이 고른다`);
 
@@ -189,6 +220,39 @@ const srv = http.createServer(async (req, res) => {
   const after = await page.evaluate(() => (typeof SRC_LANG !== 'undefined' ? SRC_LANG : null));
   ok(after === 'en', `고르면 그 값이 바뀐다 (SRC_LANG=${after}) — 전에는 'ko' 로 박혀 있었다`);
   await page.selectOption('#srcLangSelect', 'ko');
+
+  /* ── **ko 아닌 강사**가 말을 고르면 전부 따라가나 (대표님 10-22 15:40) ──────────
+   *
+   * 「강사 말하는 언어는 한국어만이 아니라 81개에서 고른다」. 고르개에 81개가 서는 것만으로는
+   * 모자란다 — 고른 값이 **받아쓰기**·**원고 `srcLang`**·**번역의 출발 언어** 를 다 끌고
+   * 가야 한다. 한 자리라도 'ko' 로 굳어 있으면 영어로 말하는 강사의 말이 한국어로 인식되고
+   * (엉뚱한 글자), 손님 번역의 출발 언어도 틀린다. */
+  for (const lang of ['en', 'vi']) {
+    await page.selectOption('#srcLangSelect', lang);
+    const got = await page.evaluate(() => ({
+      src: typeof SRC_LANG !== 'undefined' ? SRC_LANG : null,
+      recTag: (window.rtRecLang && window.rtRecLang.tag) ? window.rtRecLang.tag(SRC_LANG) : null,
+      targets: (typeof activeTargets === 'function') ? activeTargets() : null,
+      chipHasSrc: [...document.querySelectorAll('#langChips input')].some((i) => i.value === SRC_LANG),
+      srcInSelect: [...document.getElementById('srcLangSelect').options].some((o) => o.value === SRC_LANG)
+    }));
+    ok(got.src === lang, `${lang}: 고르면 SRC_LANG=${got.src}`);
+    ok(!!got.recTag && got.recTag.indexOf(lang) === 0,
+       `${lang}: **받아쓰기 언어**가 따라간다 (${got.recTag}) — 'ko' 로 굳어 있으면 엉뚱한 글자가 된다`);
+    ok(got.srcInSelect === true, `${lang}: 고르개에 그 언어가 **있다** (81개에서 고른다)`);
+    ok(got.targets && got.targets.indexOf(lang) < 0,
+       `${lang}: 번역을 **자기 말로** 부르지 않는다 (고른 것 중 쓰는 것: ${(got.targets || []).join(',') || '없음'})`);
+    ok(got.chipHasSrc === false, `${lang}: 번역 대상 칩에서도 빠진다`);
+  }
+  /* 되돌아오면 **고른 칩이 살아 있다** — 지우면 대표님 선택이 조용히 사라진다(R-15) */
+  await page.selectOption('#srcLangSelect', 'ko');
+  const backSrc = await page.evaluate(() => ({
+    src: SRC_LANG,
+    picked: (typeof selectedLangs !== 'undefined' ? selectedLangs.slice() : null),
+    targets: (typeof activeTargets === 'function') ? activeTargets() : null
+  }));
+  ok(backSrc.src === 'ko' && backSrc.picked.indexOf('en') >= 0 && backSrc.targets.indexOf('en') >= 0,
+     `ko 로 돌아오면 고른 칩이 **살아 있다** (고른 것 ${backSrc.picked.join(',')}) — 지우면 조용히 사라진다(R-15)`);
 
   /* 되돌림 실증 — 고르개를 지우면 위 단언이 잡는가(화면에서 읽은 값으로 센다) */
   let revertSrcFailed = false;

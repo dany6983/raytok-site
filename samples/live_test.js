@@ -61,7 +61,9 @@ const { rooms, hostReceived } = relay;
      이 줄은 **돈과 한도를 지키는 자물쇠**다 — 늘어나면 그만큼 비싸진다. */
   ok(callsAfterPrep === 3, `미리 번역: /translate ${callsAfterPrep}회 — 언어마다 한 번(문단 4개를 묶어서)`);
   const trPlan = await host.evaluate(() => window.rtHostTr.log());
-  ok(trPlan.some(l => /^tr_plan langs=3 paras=4 calls=3$/.test(l)),
+  /* `src=` 는 2026-10-22 에 더했다 — 강사가 **어느 말로** 말하는지가 기록에 있어야
+     "왜 그 언어로 번역했나"를 가릴 수 있다(대표님 15:40: 말하는 언어는 81개). 그 칸까지 센다. */
+  ok(trPlan.some(l => /^tr_plan langs=3 paras=4 calls=3 src=ko$/.test(l)),
      `부른 횟수를 기록에 남긴다 — ${trPlan.filter(l => l.startsWith('tr_')).join(' · ') || '없음'}`);
 
   await host.click('#btnStartLecture');

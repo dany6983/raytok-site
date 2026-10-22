@@ -59,8 +59,22 @@ ok(guestFb.length < canon.length / 2,
 /* ★ 10-20: 강사 화면이 **정본을 읽는다**. 아홉이 아니라 82 다(ko 는 원고 언어라 뺀다). */
 ok(/const LANGS_URL = '\.\.\/listener\/langs\.json'/.test(hostHtml),
    '강사 화면이 손님 쪽 정본 파일을 가리킨다 — 표를 두 벌 들지 않는다(§4)');
-ok(/targetLangs = rows/.test(hostHtml) && /targetLangs\.forEach/.test(hostHtml),
-   '읽은 정본을 **쓰는 칸**이 하나다 (targetLangs)');
+/* ★ 10-22: 정본이 들어가는 칸은 **`allLangs` 하나**다. 말하는 언어 고르개는 그 통째 표를
+   쓰고, 번역 대상(칩)은 거기서 **한 함수**(`syncTargetLangs`)로 갈린다 — 표가 두 벌이 되는
+   것을 막는 것이 이 줄의 뜻이다(§4). 거르는 자리가 둘이 되면 아래 수가 2 가 되어 붉다. */
+const allWrites = (hostHtml.match(/\ballLangs = (?!SUPPORTED_TARGET_LANGS)/g) || []).length;
+const tgtWrites = (hostHtml.match(/\btargetLangs = (?!\[\];)/g) || []).length;
+ok(/allLangs = rows/.test(hostHtml) && allWrites === 1 && tgtWrites === 1
+   && /targetLangs = allLangs\.filter/.test(hostHtml) && /targetLangs\.forEach/.test(hostHtml),
+   `읽은 정본을 **쓰는 칸**이 하나다 (allLangs ${allWrites}곳 → targetLangs ${tgtWrites}곳)`);
+/* 고르개는 **통째 표**를 쓴다 — 칩 표(말하는 언어가 빠진 것)를 쓰면 자기 말을 못 고른다 */
+ok(/function renderSrcLangSelect/.test(hostHtml)
+   && /const rows = \(allLangs && allLangs\.length/.test(hostHtml),
+   '말하는 언어 고르개는 통째 표(82)를 쓴다 — 칩 표가 아니다');
+/* 고른 것은 말을 바꿔도 **지우지 않는다**(R-15) — 거르기는 쓰는 자리에서 한다 */
+ok(/function activeTargets/.test(hostHtml)
+   && /return \(selectedLangs \|\| \[\]\)\.filter/.test(hostHtml),
+   '말을 바꿔도 고른 칩은 살아 있다 — 거르기는 activeTargets() 한 곳');
 ok(/langs_src=builtin/.test(hostHtml),
    '못 읽으면 박힌 목록으로 서고 **왜 그랬는지 기록**한다 (§20 빈 답)');
 
