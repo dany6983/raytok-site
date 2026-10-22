@@ -131,4 +131,68 @@ ok(ghosts.length === 0,
 ok(called.map((k) => (k === called[0] ? k + 'x' : k)).filter((k) => !(k in dict.strings)).length === 1,
    `되돌림 실증: 키 이름을 한 글자 틀리면 **그 하나가 잡힌다** (${called[0]}x)`);
 
+/* ── ⑦ 고를 수 있는 **모든** 언어에 **자기 말 조각**이 있나 (2026-10-22) ──
+ *
+ * 손님이 고르는 코드는 정본 `langs.json`(82)에서 온다. 글자 조각은 `ui-strings/<코드>.json`
+ * 이고, 두 목록을 잇는 것은 쪽 안의 `normalizeLangCode()` **한 함수**다. 그 함수가 바뀌거나
+ * 정본에 언어가 한 줄 늘면, 손님은 **말은 고를 수 있는데 둘레 글자는 영어**가 된다 —
+ * `t()` 가 `item[lang] || item.en` 으로 조용히 떨어지기 때문에 **터지지도 않는다**.
+ * 그래서 이 줄은 규칙을 **베끼지 않고** 쪽에서 **꺼내 쓴다**(§4: 같은 규칙을 두 벌 들지 않는다). */
+console.log('\n[7] 정본 82개 전부에 **자기 말 조각**이 있나 — 없으면 둘레 글자만 조용히 영어');
+const normSrc = (src.match(/function normalizeLangCode\(code\)\s*\{[\s\S]*?\n    \}/) || [])[0];
+ok(!!normSrc, '쪽에서 `normalizeLangCode` 를 꺼냈다 — 규칙을 베끼지 않는다');
+// eslint-disable-next-line no-new-func
+const normalize = new Function(`${normSrc}; return normalizeLangCode;`)();
+ok(normalize('zh-CN') === 'zh' && normalize('en-US') === 'en',
+   '꺼낸 함수가 실제로 돈다 (zh-CN→zh · en-US→en)');
+const SLICES = path.join(ROOT, 'web/listener/ui-strings');
+const availFile = JSON.parse(fs.readFileSync(path.join(SLICES, '_langs.json'), 'utf8'));
+const avail = Array.isArray(availFile) ? availFile : (availFile.langs || []);
+ok(avail.length > 50, `조각 목록(_langs.json)을 읽었다 (${avail.length}개)`);
+const noSlice = langs
+  .map((l) => ({ code: l.code, norm: normalize(l.code) }))
+  .filter((x) => !avail.includes(x.norm) || !fs.existsSync(path.join(SLICES, x.norm + '.json')));
+ok(noSlice.length === 0,
+   `조각이 없는 코드 0 — 있으면 그 손님은 둘레 글자가 영어다${noSlice.length ? ': ' + noSlice.map((x) => x.code + '→' + x.norm).join(', ') : ''}`);
+/* 되돌림 실증: 정본에 조각 없는 언어를 한 줄 **넣어** 보면 위 단언이 거짓이 된다 */
+ok([...langs, { code: 'xx-YY' }].some((l) => !avail.includes(normalize(l.code))),
+   '되돌림 실증: 조각 없는 언어(xx-YY)를 정본에 넣으면 위 단언이 거짓이 된다');
+/* 두 키가 **고르는 코드 그대로**(zh-CN 같은 것)로도 읽히나 — `t()` 는 정규화하지 않는다.
+   쪽은 `applyStrings(currentUiLang)` 로 **정규화된** 코드를 쓴다. 그 약속이 깨지면
+   중국어 손님이 「번역 중」 자리에서 영어를 본다. 그래서 둘을 **같이** 센다. */
+for (const k of ['badge_pending', 'btn_show_src']) {
+  const item = dict.strings[k];
+  const viaNorm = langs.filter((l) => !item[normalize(l.code)]);
+  ok(viaNorm.length === 0,
+     `${k}: 정본 82개를 정규화해 찾으면 전부 있다${viaNorm.length ? ' — 빠짐 ' + viaNorm.map((l) => l.code).join(',') : ''}`);
+}
+
+/* ── ⑧ **영어가 한 언어에만 남은 자리** (2026-10-22) ──
+ *
+ * `badge_via` 의 `fil` 이 「Fallback」 — 나머지 80개 언어는 다 자기 말로 옮겼는데 거기만
+ * 영어 낱말이 남아 있었다. 비어 있지 않으니 ①도, 모양 검사도, 유령 키 검사도 못 잡는다.
+ * 잡는 길은 **언어들끼리 견주는** 것뿐이다: 어떤 키에서 **대다수가 영어와 다른데 소수만
+ * 같으면** 그 소수는 빠뜨린 자리다. 많은 언어가 같이 영어와 같은 키(`TXT`·`6`·단위 같은
+ * 것)는 원래 그런 말이라 세지 않는다.
+ *
+ * 아래 둘은 **그 말이 실제로 그렇다** — 지우면 틀린 번역이 된다:
+ *   name_label.de  「Name (optional)」 — 독일어도 그대로다
+ *   font_medium.af 「Medium」        — 아프리칸스어도 그대로다 */
+console.log('\n[8] 영어 낱말이 **한두 언어에만** 남은 자리 — 언어들끼리 견준다');
+const ENGLISH_IS_RIGHT = new Set(['name_label:de', 'font_medium:af']);
+const others = dict.langs.filter((l) => l !== 'en');
+const leftovers = [];
+for (const k of Object.keys(dict.strings)) {
+  const item = dict.strings[k];
+  const same = others.filter((l) => item[l] != null && String(item[l]) === String(item.en || ''));
+  if (same.length === 0 || same.length > 3) continue;   // 아무도/다수가 같으면 그 말이 그런 것이다
+  for (const l of same) if (!ENGLISH_IS_RIGHT.has(k + ':' + l)) leftovers.push(k + ':' + l);
+}
+ok(leftovers.length === 0,
+   `영어가 홀로 남은 자리 0${leftovers.length ? ': ' + leftovers.join(', ') : ''}`);
+/* 되돌림 실증: 한 칸을 영어로 되돌려 보면 이 줄이 거짓이 된다 */
+const probe = JSON.parse(JSON.stringify(dict.strings.badge_via)); probe.fil = probe.en;
+ok(others.filter((l) => probe[l] != null && String(probe[l]) === String(probe.en || '')).length === 1,
+   '되돌림 실증: badge_via.fil 을 영어로 되돌리면 홀로 남은 자리가 1개로 잡힌다');
+
 console.log(`\n전부 통과 (${n}건)`);
