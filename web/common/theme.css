@@ -20,17 +20,34 @@
   --sp-lg: 16px;
   --sp-xl: 24px;
 
-  /* 불투명도 및 잉크 체계 (Ink) */
+  /* 앱 배색 (= raytok-native1/src/theme.js). 밝은 바탕이 기본. 화면 넷이 var(--rt-…, 떨어짐)
+     으로 받고, 둘이 어긋나면 design_theme_test 가 붉다. 자세한 것은 docs/click-1022.md */
+  --rt-bg: #f3f2f2;
+  --rt-surface: #eae9e9;
+  --rt-text: #201e1d;
+  --rt-muted: #605d5d;       /* 바탕 위 5.9:1 */
+  --rt-border: #d7d3d3;
+  --rt-accent: #0088b0;      /* 띠·테두리만 — 글자로는 3.4:1 */
+  --rt-primary: #006786;     /* 단추 바탕(흰 글자)·밝은 바탕 위 글자 6.3:1 */
+  --rt-accent2: #d6006c;
+  --rt-brand: #0A0F1F;
+  --rt-danger: #c62828;
+  --rt-success: #0f7a56;
+  --rt-warning: #f59e0b;     /* 띠·배지 **바탕** */
+  --rt-warning-ink: #8a5a00; /* 그 위 **글자** */
+
+  /* 잉크 — 여기 값은 **어두운 바탕**(/buy/, 카드 심사 중이라 안 건드린다)의 흰 잉크다.
+     화면 넷은 자기 :root 에서 어두운 잉크로 덮어쓴다(§4). */
   --ink-high: #ffffff;
-  --ink-mid: rgba(255, 255, 255, 0.65); /* 접근성 향상을 위해 0.5 -> 0.65 상향 */
-  --ink-low: rgba(255, 255, 255, 0.5); /* 접근성 향상을 위해 0.45 -> 0.5 상향 */
+  --ink-mid: rgba(255, 255, 255, 0.65);
+  --ink-low: rgba(255, 255, 255, 0.5);
 
   /* 띠 및 동그라미 규격 */
   --band-height: 78px;
   --circle-size: 64px;
   --icon-scale: 1.5;
 
-  /* 테마 기본 색상 */
+  /* 구매 쪽(/buy/)이 쓰는 어두운 값. 앱 배색은 위 --rt-… 로 따로 있다. */
   --bg-dark: #0b0f19;
   --bg-card: #1e293b;
   --border-color: #334155;
@@ -66,8 +83,10 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   font-weight: 400;
 }
 
+/* 자막 줄 크기는 `--font-tr` 로 받는다(기본 `--font-lg` = 전과 같다). 여기 !important 때문에
+   손님 화면의 「글자 크게」가 자막에 안 먹었다 — 10-22. */
 .pair-tr, .msg-tr, .line-tr {
-  font-size: var(--font-lg) !important;
+  font-size: var(--font-tr, var(--font-lg)) !important;
   font-weight: 700 !important;
   color: var(--ink-high) !important;
   line-height: 1.4;

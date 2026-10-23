@@ -80,7 +80,7 @@ console.log('=== 줄 23 출시 전 끝까지 시험 (운영 환경 실측) ===\n
     ok(true, 'TXT 원고: 4개 문단 분리 확인');
 
     await hostPage.click('#btnPreTranslate');
-    await hostPage.waitForSelector('#readyArea', { state: 'visible', timeout: 20000 });
+    await hostPage.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 20000 });
     ok(await hostPage.isVisible('#readyArea'), '4개 문단 다국어 사전 번역 완료');
 
     await hostPage.click('#btnStartLecture');

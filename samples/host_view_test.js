@@ -284,9 +284,17 @@ const srv = http.createServer(async (req, res) => {
   ok(mergedCount === 2, '문단 합치기 후 2개 문단으로 축소 확인');
 
   // 6. 사전 번역 실행 (릴레이 호출)
+  /* ★ 10-22: 시작 칸(`#readyArea`)은 이제 **늘 보인다**(원고는 선택 — 정본 v1 §1 ②).
+     그래서 「보이면 번역이 끝났다」는 더 이상 참이 아니다 — 그대로 두면 이 시험은
+     번역이 끝나기 **전에** 다음 줄로 가서 IndexedDB 가 비어 붉어진다(실제로 그랬다).
+     화면이 쓰는 그 값(`rtHostReady.mode()`)으로 **끝났음**을 본다. */
+  ok(await page.isVisible('#readyArea'), '원고가 있으면 시작 칸이 보인다 (번역 전에도)');
+  ok(await page.evaluate(() => window.rtHostReady.mode()) === 'script',
+     '번역 전 시작 칸은 「원고 있음」 모양이다 (mode=script)');
   await page.click('#btnPreTranslate');
-  await page.waitForSelector('#readyArea', { state: 'visible', timeout: 8000 });
-  ok(await page.isVisible('#readyArea'), '미리 번역 완료 후 준비 완료 영역 표시');
+  await page.waitForFunction(() => window.rtHostReady.mode() === 'done', { timeout: 15000 });
+  ok(await page.evaluate(() => window.rtHostReady.mode()) === 'done',
+     '미리 번역이 끝나면 시작 칸이 「사전 번역 완료」 모양으로 바뀐다 (mode=done)');
 
   // 7. IndexedDB 저장 검증
   const dbData = await page.evaluate(async () => {

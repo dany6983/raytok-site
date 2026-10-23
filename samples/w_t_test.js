@@ -75,7 +75,7 @@ console.log('=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16)
 
     // 사전 번역 실행
     await hostPage.click('#btnPreTranslate');
-    await hostPage.waitForSelector('#readyArea', { state: 'visible', timeout: 15000 });
+    await hostPage.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 15000 });
     ok(await hostPage.isVisible('#readyArea'), '사전 번역 완료 및 강의 시작 준비 완료');
 
     // 강의 시작

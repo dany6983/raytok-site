@@ -53,7 +53,9 @@ const { rooms, hostReceived } = relay;
   }, txt);
   await host.waitForFunction(() => document.querySelectorAll('.para-item').length === 4);
   await host.click('#btnPreTranslate');
-  await host.waitForSelector('#readyArea', { state: 'visible', timeout: 10000 });
+  /* ★ 10-22: 시작 칸(`#readyArea`)이 **늘 보이게** 바뀌었다(원고는 선택 — 정본 v1 §1 ②).
+     그래서 「보이면 번역이 끝났다」가 더는 참이 아니다 — 화면이 쓰는 값으로 기다린다. */
+  await host.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 10000 });
   const callsAfterPrep = relay.counters.translate;
   /* ★ 2026-10-19: 전에는 **문단 × 언어**(12회)였다. 지금은 **언어마다 한 번**(3회) —
      문단을 묶어 보낸다. 릴레이는 분당 60회라, 문단 10 × 언어 20 이면 200회로 429 가 난다.

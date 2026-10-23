@@ -71,7 +71,7 @@ async function openHost(browser, base) {
   }, PARAS);
   await page.waitForFunction((n) => document.querySelectorAll('.para-item').length === n, PARAS.length);
   await page.click('#btnPreTranslate');
-  await page.waitForSelector('#readyArea', { state: 'visible', timeout: 8000 });
+  await page.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 8000 });
   await page.click('#btnStartLecture');
   await page.waitForSelector('#step-live', { state: 'visible' });
   await page.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 8000 });

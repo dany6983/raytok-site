@@ -63,7 +63,9 @@ const outsideRequests = [];
 
     // 사전 번역 단추 클릭 (/translate 호출 0회)
     await hostPage.click('#btnPreTranslate');
-    await hostPage.waitForSelector('#readyArea', { state: 'visible', timeout: 5000 });
+    /* ★ 10-22: 시작 칸(`#readyArea`)이 **늘 보이게** 바뀌었다(원고는 선택 — 정본 v1 §1 ②).
+     그래서 「보이면 번역이 끝났다」가 더는 참이 아니다 — 화면이 쓰는 값으로 기다린다. */
+    await hostPage.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'raw', null, { timeout: 5000 });
     ok(relay.counters.translate === 0, '번역 없이 방송: translate 가 한 번도 안 불린다 (호출: 0회)');
 
     // 강의 시작

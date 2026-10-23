@@ -20,22 +20,29 @@
       --sp-md: 12px;
       --sp-lg: 16px;
       --sp-xl: 24px;
-      --ink-high: #ffffff;
-      --ink-mid: rgba(255, 255, 255, 0.5);
-      --ink-low: rgba(255, 255, 255, 0.45);
+      --ink-high: var(--rt-text, #201e1d);
+      --ink-mid: rgba(32, 30, 29, 0.72);
+      --ink-low: rgba(32, 30, 29, 0.56);
 
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --card-hover: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #38bdf8;
-      --primary-hover: #0284c7;
-      --border: #334155;
-      --success: #10b981;
-      --danger: #ef4444;
-      --badge-bg: rgba(56, 189, 248, 0.15);
-      --badge-text: #38bdf8;
+      /* ★ 2026-10-22 대표님 "웹 색이 너무 칙칙하다 — 앱과 같은 배색".
+         정본은 `/common/theme.css` 의 `--rt-…`(= 앱 `src/theme.js`). 여기 값은 그 파일이
+         안 실릴 때의 떨어짐이고, 어긋나면 `test:design` 이 붉다. */
+      --bg: var(--rt-bg, #f3f2f2);
+      --card-bg: var(--rt-surface, #eae9e9);
+      --border: var(--rt-border, #d7d3d3);
+      --text: var(--rt-text, #201e1d);
+      --text-muted: var(--rt-muted, #605d5d);
+      --primary: var(--rt-primary, #006786);
+      --primary-hover: var(--rt-accent, #0088b0);
+      --success: var(--rt-success, #0f7a56);
+      --warning: var(--rt-warning, #f59e0b);
+      --warning-ink: var(--rt-warning-ink, #8a5a00);
+      --danger: var(--rt-danger, #c62828);
+      --brand: var(--rt-brand, #0A0F1F);
+      --card-hover: #ded9d9;
+      --badge-bg: rgba(0, 136, 176, 0.15);
+      --badge-text: var(--rt-primary, #006786);
+
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -74,9 +81,9 @@
     input[type="text"], input[type="password"] {
       flex: 1 1 140px;
       min-width: 0;
-      background: #090d16;
+      background: #ffffff;
       border: 1px solid var(--border);
-      color: #fff;
+      color: var(--text);
       padding: 12px 14px;
       border-radius: 8px;
       font-size: 14px;
@@ -86,7 +93,7 @@
     input[type="text"]:focus, input[type="password"]:focus { border-color: var(--primary); }
     .btn {
       background: var(--primary);
-      color: #0f172a;
+      color: #ffffff;
       border: none;
       font-weight: 700;
       padding: 12px 20px;
@@ -102,10 +109,10 @@
     }
     .btn:hover { background: var(--primary-hover); }
     .btn-secondary {
-      background: #334155;
-      color: #f8fafc;
+      background: var(--border);
+      color: var(--text);
     }
-    .btn-secondary:hover { background: #475569; }
+    .btn-secondary:hover { background: #9b9797; }
 
     /* 세션 목록 */
     .session-item {
@@ -127,7 +134,7 @@
     .session-meta { display: flex; flex-direction: column; gap: 4px; }
     .session-code { font-size: 16px; font-weight: 700; color: var(--primary); }
     .session-time { font-size: 13px; color: var(--text-muted); }
-    .session-host { font-size: 12px; color: #64748b; }
+    .session-host { font-size: 12px; color: var(--text-muted); }
     .session-badge {
       background: var(--badge-bg);
       color: var(--badge-text);
@@ -148,7 +155,7 @@
     }
     .detail-actions { display: flex; gap: 8px; }
     .timeline {
-      background: #090d16;
+      background: #ffffff;
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 16px;
@@ -169,17 +176,17 @@
       margin-bottom: 4px;
     }
     .speaker-badge {
-      background: rgba(148, 163, 184, 0.2);
-      color: #e2e8f0;
+      background: rgba(32, 30, 29, 0.2);
+      color: var(--text);
       padding: 2px 6px;
       border-radius: 4px;
       font-size: 11px;
     }
-    .msg-src { font-size: 14px; color: #f8fafc; font-weight: 500; }
+    .msg-src { font-size: 14px; color: var(--text); font-weight: 500; }
     .msg-tr { font-size: 13px; color: var(--primary); margin-top: 2px; }
     .msg-notice {
       font-size: 12px;
-      color: #64748b;
+      color: var(--text-muted);
       font-style: italic;
       text-align: center;
       padding: 6px 0;

@@ -92,7 +92,7 @@ const ttsStub = () => {
   }, txt);
   await host.waitForFunction(() => document.querySelectorAll('.para-item').length === 4);
   await host.click('#btnPreTranslate');
-  await host.waitForSelector('#readyArea', { state: 'visible', timeout: 10000 });
+  await host.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 10000 });
   await host.click('#btnStartLecture');
   await host.waitForSelector('#step-live', { state: 'visible', timeout: 5000 });
   await host.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 5000 });
@@ -417,7 +417,7 @@ const ttsStub = () => {
 
     // ── 릴레이와 끊긴 채로 방 닫기: 종료 신호를 못 보냈다고 말하고, 그래도 명단은 지우고, 다시 붙지 않는다 ──
     en.on('dialog', d => d.accept());
-    await en.waitForSelector('#readyArea', { state: 'visible', timeout: 8000 });   // 같은 브라우저의 IndexedDB 원고가 되살아난다
+    await en.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 8000 });   // 같은 브라우저의 IndexedDB 원고가 되살아난다
     await en.click('#btnStartLecture');
     // B 12: 이 화면은 ?lang=en 이다 — 상태 글도 표(HOST_STR.en)에서 나온다.
     // 전에는 한국어가 박혀 있어 en 에서도 '연결됨' 이었고, 이 시험이 그 결함을 못박아 뒀다.
@@ -448,7 +448,7 @@ const ttsStub = () => {
     watch(pg);
     pg.on('dialog', d => d.accept());
     await pg.goto(`${base}/web/host/?relay=${base}`);
-    await pg.waitForSelector('#readyArea', { state: 'visible', timeout: 8000 });
+    await pg.waitForFunction(() => window.rtHostReady && ['script', 'done', 'raw'].includes(window.rtHostReady.mode()), null, { timeout: 8000 });
     await pg.click('#btnStartLecture');
     await pg.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 5000 });
     const room3 = relay.rooms.get((await pg.textContent('#roomCode')).trim());
