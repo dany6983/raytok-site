@@ -36,6 +36,9 @@ function sliceOf(dict, lang) {
     for (const l of [lang, ...FALLBACK]) {
       if (vals[l] != null) one[l] = vals[l];
     }
+    /* 10-26: `t()` 는 `item[lang] || item.en || item.ko` 다 — en 이 있으면 ko 는 **읽히지 않는다**.
+       그래서 en 이 있는 키의 ko 는 조각에 넣지 않는다(첫 화면 gz 37KB 한도, first_load_bytes_test). */
+    if (lang !== 'ko' && one.en != null && one.ko != null) delete one.ko;
     // 그 언어에도, en·ko 에도 없으면 키를 넣지 않는다 — 없는 것을 있는 척하지 않는다(§20)
     if (Object.keys(one).length) strings[key] = one;
   }

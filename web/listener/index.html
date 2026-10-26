@@ -311,7 +311,6 @@
 
   <div class="screen" id="chat-screen">
 
-
     <div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
       <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
       <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
@@ -342,7 +341,6 @@
     </div>
   </div>
 
-
   <div id="voice-picker-modal" style="display:none; position:fixed; bottom:70px; left:16px; z-index:60; width:280px; background:var(--card-bg, var(--card-bg)); border:1px solid var(--border); border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <div style="font-weight:bold; font-size:14px; color:var(--text);" data-i18n="voice_pick_title">목소리 선택</div>
@@ -350,7 +348,6 @@
     </div>
     <div id="voice-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
-
 
   <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, var(--card-bg));" data-i18n="ask_title">✋ 질문하기</div>
@@ -361,7 +358,6 @@
       <button class="tool-btn" id="btn-ask-submit" style="padding:4px 12px; background:var(--primary); color:#ffffff; font-weight:600;" data-i18n="btn_ask_submit">손들기 전송</button>
     </div>
   </div>
-
 
   <div id="save-picker-modal" style="display:none; position:fixed; bottom:70px; right:16px; z-index:60; width:260px; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25); text-align:left;">
     <div>
@@ -393,7 +389,6 @@
     </div>
   </div>
 
-
   <div class="modal" id="end-modal">
     <div class="modal-content">
       <div class="modal-title" data-i18n="end_title">세션·안내 종료</div>
@@ -413,7 +408,6 @@
       <button class="btn" onclick="location.reload()" data-i18n="reload_button">새로고침</button>
     </div>
   </div>
-
 
   <div style="display:none" aria-hidden="true">
     <span data-i18n="status_connecting">연결 중...</span>
@@ -1279,7 +1273,7 @@
     let ttsTouched = false;   // 청취자가 단추를 직접 눌렀나 (L4-3: 원고 줄 기본 끔을 가를 때 본다)
     function setTtsEnabled(on) {
       isTtsEnabled = !!on;
-      if (!isTtsEnabled) { try { speechSynthesis.cancel(); } catch (_) {} }
+      if (!isTtsEnabled) { reader = null; try { speechSynthesis.cancel(); } catch (_) {} }
       btnToggleTts.textContent = isTtsEnabled ? t('tts_on', currentUiLang) : t('tts_off', currentUiLang);
       btnToggleTts.classList.toggle('active', !isTtsEnabled);
     }
@@ -1300,6 +1294,11 @@
     function sayOnce(line, text, via, audioUrl) {
       if (!line || line.said) return false;
       line.said = 1;
+      if (PAUSE_READ && line.script && !audioUrl) {
+        if (!isTtsEnabled) return true;
+        readScript(line, text, via);
+        return true;
+      }
       speak(text, via, audioUrl);
       return true;
     }
@@ -1324,6 +1323,10 @@
 
     function speakWebTts(text, via) {
       if (!text) return;
+      speechSynthesis.speak(makeUtter(text, via));
+    }
+
+    function makeUtter(text, via) {
       const uttr = new SpeechSynthesisUtterance(text);
 
       const got = pickVoice(selectedLang, via);
@@ -1336,8 +1339,50 @@
         const short = String(targetLang || '').split(/[-_]/)[0].toLowerCase();
         uttr.lang = /[-_]/.test(targetLang || '') ? targetLang : (FULL[short] || targetLang);
       }
-      speechSynthesis.speak(uttr);
+      return uttr;
     }
+
+    const PAUSE_READ = true;
+    let reader = null;   // { line, sents, idx, via, paused, cur }
+    const readLog = [];  // 시험·실기 기록: 무엇을 왜 (§12)
+    function rlog(l) { readLog.push(l); if (readLog.length > 200) readLog.shift(); }
+    function splitSentences(text) {
+      const t = String(text || '').trim();
+      const parts = (t.match(/[^.!?。！？\n]+[.!?。！？]*/g) || []).map(x => x.trim()).filter(Boolean);
+      return parts.length ? parts : (t ? [t] : []);
+    }
+    function readScript(line, text, via) {
+      speechSynthesis.cancel();
+      reader = { line, sents: splitSentences(text), idx: 0, via, paused: false, cur: null };
+      rlog(`script ${line.para} n=${reader.sents.length}`);
+      readNext();
+    }
+    function readNext() {
+      const r = reader;
+      if (!r || r.paused || !isTtsEnabled) return;
+      if (r.idx >= r.sents.length) { reader = null; return; }
+      const u = r.cur = makeUtter(r.sents[r.idx], r.via);
+      const advance = () => {
+        if (reader !== r || r.cur !== u || r.paused) return;   // cancel 로 끝난 것·옛 발화는 안 센다
+        r.idx += 1; r.cur = null; readNext();
+      };
+      u.onend = advance;
+      u.onerror = (e) => { if (!e || !/interrupted|canceled/.test(e.error)) advance(); };
+      speechSynthesis.speak(u);
+    }
+    function pauseReading(why) {
+      if (!PAUSE_READ) return;
+      if (reader && !reader.paused) { reader.paused = true; reader.cur = null; rlog(`pause ${why || ''} ${reader.line.para}@${reader.idx}`); }
+      speechSynthesis.cancel();
+    }
+    function resumeReading(why) {
+      if (!PAUSE_READ || !reader || !reader.paused) return;
+      reader.paused = false;
+      rlog(`resume ${why || ''} ${reader.line.para}@${reader.idx}`);
+      readNext();
+    }
+    window.rtRead = { state: () => reader && { para: reader.line.para, idx: reader.idx, n: reader.sents.length, paused: reader.paused },
+                      log: () => readLog.slice(), split: splitSentences };
 
     window.rtVoiceRead = {
       pick: function (lang, via) {
@@ -1501,8 +1546,11 @@
       }
       if (msg.kind === 'break') {
         setBreakBand(!!msg.on);
+        if (msg.on) pauseReading('break'); else resumeReading('break_end');
         return;
       }
+      if (msg.kind === 'pause') { pauseReading(msg.why); return; }
+      if (msg.kind === 'resume') { resumeReading('host'); return; }
 
       if (msg.kind === 'ask_queue') {
         const userName = myName || (nameInput && nameInput.value) || '';

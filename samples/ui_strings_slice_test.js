@@ -57,9 +57,11 @@ for (const d of DICTS) {
     ok(wrong.length === 0, `${d.out}/${lang}: 글자가 손 표와 같다 (다른 키 ${wrong.length})`);
     const noFall = srcKeys.filter((k) => {
       const v = dict.strings[k], sv = slice.strings[k];
-      return (v.en != null && sv.en !== v.en) || (v.ko != null && sv.ko !== v.ko);
+      /* en 이 있으면 ko 는 t() 가 안 읽으니 조각에 없어야 한다(10-26, 첫 화면 크기) */
+      const koNeeded = v.en == null || lang === 'ko';
+      return (v.en != null && sv.en !== v.en) || (v.ko != null && (koNeeded ? sv.ko !== v.ko : sv.ko != null));
     });
-    ok(noFall.length === 0, `${d.out}/${lang}: en·ko 떨어짐도 조각 안에 있다 (t() 가 그 순서로 읽는다)`);
+    ok(noFall.length === 0, `${d.out}/${lang}: en 떨어짐은 있고, en 이 있는 키의 ko 는 없다 (t() 가 읽는 것만)`);
 
     /* ④ 다른 언어가 섞여 있지 않은가 — 섞이면 줄인 뜻이 없다 */
     const strays = new Set();
