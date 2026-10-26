@@ -173,6 +173,79 @@ const MEASURE = `(() => {
       await page.close();
     }
 
+    /* ── 상태에 따라 뜨는 띠 — **띄워 놓고** 잰다 (10-23, B) ───────────────────
+     *
+     * 위 고리는 "보이는 것만 잰다". 그래서 평소 `display:none` 인 띠는 **한 번도 안 쟀다** —
+     * 10-22 에 배색을 밝게 바꿨을 때 이 띠들의 글자색만 어두운 배색 값으로 남았는데도
+     * 시험은 초록이었다. 띠가 실제로 뜬 것은 10-23 웹킷 누르기 시험의 사진에서였다
+     * (노란 바탕에 노란 글씨 — 1.05:1). **내가 만든 그물이 내 편을 들지 않게** 여기서 센다.
+     *
+     * 띄우는 것은 **보이기(display)뿐**이다 — 색·글자 크기는 손대지 않는다. 그래야 지금
+     * 재는 값이 손님이 그 상태에서 실제로 보는 값과 같다.
+     */
+    console.log('\n[상태 띠 — 떴을 때의 대비]');
+    {
+      const BANDS = [
+        { id: 'tr-notice',   what: '브라우저 번역 안내 띠' },
+        { id: 'voice-notice', what: '음성 없음 띠' },
+        { id: 'ios-chrome',  what: '아이폰 크롬 안내 띠' },
+        { id: 'break-band',  what: '쉬는 시간 띠' },
+      ];
+      const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(base + '/web/listener/', { waitUntil: 'load' });
+      await page.waitForTimeout(400);
+      const shown = await page.evaluate((bands) => {
+        const miss = [];
+        /* 띠는 전부 **대화 화면 안**에 있고, 그 화면은 들어가기 전까지 `display:none` 이다.
+           부모가 숨어 있으면 띠를 띄워도 크기가 0 이라 **한 덩이도 안 잡힌다** — 10-23 에
+           여기서 한 번 속았다. 들어간 뒤와 같은 자리로 바꿔 놓고 잰다. */
+        const join = document.getElementById('join-screen');
+        const chat = document.getElementById('chat-screen');
+        if (join) join.style.display = 'none';
+        if (chat) chat.style.display = 'flex';
+        else miss.push('chat-screen');
+        for (const b of bands) {
+          const el = document.getElementById(b.id);
+          if (!el) { miss.push(b.id); continue; }
+          el.style.display = 'block';
+          /* 빈 띠는 글자가 없어 못 잰다 — 그 자리에 들어갈 **실제 길이**의 글을 넣는다.
+             이미 글이 있으면 그대로 둔다(화면이 쓰는 문구가 더 참되다). */
+          if (!el.textContent.trim()) el.textContent = '이 언어는 음성이 없어 자막만 나옵니다';
+          for (const kid of el.querySelectorAll('*')) {
+            if (!kid.textContent.trim() && kid.tagName !== 'BUTTON') kid.textContent = '안내 문구';
+          }
+        }
+        return miss;
+      }, BANDS);
+      ok(shown.length === 0, shown.length === 0
+        ? `띠 ${BANDS.length}개가 화면에 다 있다 (${BANDS.map(b => '#' + b.id).join(' · ')})`
+        : `화면에 없는 띠: ${shown.join(', ')} — 이름이 바뀌었으면 이 목록도 고친다`);
+      /* 띠를 띄운 채 **화면 전체**를 다시 잰다 — 띠 안의 글은 id 없는 자식(span)에 있어서
+         id 로 고르면 놓친다. 전체를 재면 띠 글도 그 안에 들어온다. */
+      const m = await page.evaluate(MEASURE);
+      const dim = m.texts.filter((t) => t.ratio < (t.large ? 3 : 4.5));
+      ok(dim.length === 0, dim.length === 0
+        ? `띠를 띄운 채 글자 ${m.texts.length}덩이 전부 WCAG AA`
+        : `띠가 떴을 때 대비가 모자란 글 ${dim.length}개: ` + dim.slice(0, 6).map((t) => `"${t.text}" ${t.ratio}:1`).join(', '));
+      /* 되돌림 실증 — 띠 글자색을 옛 어두운 배색 값으로 되돌리면 **붉어야** 한다 */
+      const back = await page.evaluate(() => {
+        const v = document.getElementById('voice-notice');
+        if (!v) return null;
+        /* 화면의 제 코드가 그 사이에 다시 숨겼을 수 있다 — 띄우는 것부터 다시 한다 */
+        v.style.display = 'block';
+        if (!v.textContent.trim()) v.textContent = '이 언어는 음성이 없어 자막만 나옵니다';
+        v.style.color = '#fef08a';                  // 10-22 이전 값
+        return getComputedStyle(v).color;
+      });
+      const m2 = await page.evaluate(MEASURE);
+      const dim2 = m2.texts.filter((t) => t.ratio < (t.large ? 3 : 4.5));
+      ok(back !== null && dim2.length > 0,
+         dim2.length > 0
+           ? `음성 없음 띠를 옛 색(#fef08a)으로 되돌리면 붉어진다 — ${dim2[0].ratio}:1 (되돌림 실증 3)`
+           : `⚠ 옛 색으로 되돌려도 통과한다 — 이 시험은 띠를 못 보고 있다 (색=${back} · 잰 글 ${m2.texts.length}덩이)`);
+      await page.close();
+    }
+
     /* ── 되돌림 실증 ──
        ⚠ 되돌림은 **그 화면에서 실제로 잰 값**으로 한다. 시험 안에서 만든 상수로 하면
           화면을 되돌려도 그대로 통과한다 — 증거가 아니다(10-14 ⑨-1 전수 점검). */

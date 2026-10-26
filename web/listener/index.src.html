@@ -158,12 +158,12 @@
     /* L4-2 원고 문단(script)·건너뜀·쉬는 시간 */
     .badge-script { background-color: var(--border); color: var(--text); }
     .msg-line.msg-skip .msg-bubble { opacity: 0.6; font-size: 13px; color: var(--text-muted); border-style: dashed; }
-    #break-band { display: none; margin: 0 16px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: #b45309; font-weight: 700; text-align: center; }
+    #break-band { display: none; margin: 0 16px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: var(--warning-ink); font-weight: 700; text-align: center; }
     #break-band.on { display: block; }
     /* ④ 방이 비었을 때(줄 0) 보이는 문구 — 대기·끊김·끝남 셋. 줄이 하나라도 오면 숨긴다 */
     #room-state { display: none; margin: auto 16px; padding: 18px 14px; border-radius: 10px; border: 1px dashed var(--border); color: var(--text-muted); text-align: center; font-size: 15px; line-height: 1.5; }
     #room-state.on { display: block; }
-    #room-state.state-disconnected { border-color: var(--warning); color: #b45309; }
+    #room-state.state-disconnected { border-color: var(--warning); color: var(--warning-ink); }
     #room-state.state-ended { border-color: var(--border); }
     /* ④ 자막 글자 크기 소·중·대 — html 의 font-s / font-l (기본 = 중). 큰 화면 보기(.view-screen)는 자기 크기를 쓴다 */
     .font-s .msg-bubble { font-size: 13px; }
@@ -342,11 +342,18 @@
       <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
       <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
     </div>
-    <div id="tr-notice" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#bae6fd; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+    <!-- ★ 10-23 (B): 글자색이 **어두운 배색 때 값**(#bae6fd)으로 남아 있었다. 10-22 에 배색을
+         밝게 바꾸면서 이 띠만 따라오지 않아 바탕 위 **1.09:1** — 사실상 안 보였다. 띠는
+         평소 `display:none` 이라 a11y 시험의 "보이는 것만 잰다"에 걸리지 않았다(그물이 내
+         편을 들었다). 이제 색은 토큰에서 받고, `test:a11y` 가 **띠를 띄워 놓고** 잰다. -->
+    <div id="tr-notice" translate="no" style="display:none; background:rgba(0,103,134,0.10); border:1px solid var(--primary); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
       <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
       <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
     </div>
-    <div id="voice-notice" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
+    <!-- ★ 10-23 (B): 같은 일 — 글자 #fef08a 가 밝은 띠 위에서 **1.05:1** 이었다. 웹킷으로
+         누르기 시험을 돌렸을 때 이 띠가 실제로 떠서(그 엔진은 음성이 없다고 답한다) 사진에
+         **노란 바탕에 노란 글씨**로 찍혀 드러났다. 글자는 `--warning-ink`(바탕 위 4.9:1). -->
+    <div id="voice-notice" style="display:none; background:rgba(245,158,11,0.15); border:1px solid var(--warning); color:var(--warning-ink); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
     <div id="room-state" role="status" aria-live="polite"></div>
     <div id="chat-list"></div>
