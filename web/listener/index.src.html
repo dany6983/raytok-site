@@ -577,6 +577,27 @@
       } catch (e) {}
     }
 
+    let keepAliveAudioCtx = null;
+    function startAudioKeepAlive() {
+      try {
+        if (!keepAliveAudioCtx) {
+          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) { keepAliveAudioCtx = new AudioCtx(); }
+        }
+        if (keepAliveAudioCtx && keepAliveAudioCtx.state === 'suspended') {
+          keepAliveAudioCtx.resume();
+        }
+        if (keepAliveAudioCtx) {
+          var osc = keepAliveAudioCtx.createOscillator();
+          var gain = keepAliveAudioCtx.createGain();
+          gain.gain.value = 0.0001;
+          osc.connect(gain);
+          gain.connect(keepAliveAudioCtx.destination);
+          osc.start(0);
+        }
+      } catch (e) {}
+    }
+
     async function keepAwake() {
       isSessionActive = true;
       if ('wakeLock' in navigator && navigator.wakeLock) {
@@ -584,6 +605,7 @@
       } else {
         playNoSleepVideo();
       }
+      startAudioKeepAlive();
     }
 
     function releaseWake() {
