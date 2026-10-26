@@ -2171,17 +2171,6 @@
       setBreak(false);
       live.cur = para;
       live.state[para] = 'read';
-      const p = paragraphs[para - 1];
-      if (p) {
-        try {
-          if (window.speechSynthesis) {
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(p.src);
-            u.lang = 'ko-KR';
-            window.speechSynthesis.speak(u);
-          }
-        } catch (_) {}
-      }
       sendScript(para);
       renderLive();
       if (play.on) playArm();     // 재생 중이면 이 문단의 글자 수만큼 다시 기다린다
