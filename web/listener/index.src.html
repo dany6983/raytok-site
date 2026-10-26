@@ -158,6 +158,14 @@
     /* L4-2 원고 문단(script)·건너뜀·쉬는 시간 */
     .badge-script { background-color: var(--border); color: var(--text); }
     .msg-line.msg-skip .msg-bubble { opacity: 0.6; font-size: 13px; color: var(--text-muted); border-style: dashed; }
+    /* ★ 10-26 (B): 안내 띠 셋(#ios-chrome · #tr-notice · #voice-notice)이 **거의 같은**
+       inline style 을 저마다 들고 있었다. 고치는 자리를 하나로 모으고(§4) 첫 화면이 받는
+       양도 줄인다 — 색만 저마다 다르다. */
+    .notice-band { display: none; font-size: 12px; padding: 6px 12px; border-radius: 6px; margin: 6px 16px; text-align: center; }
+    #ios-chrome { background: rgba(148,163,184,0.12); border: 1px solid var(--text-muted); color: var(--text); }
+    #tr-notice { background: rgba(0,103,134,0.10); border: 1px solid var(--primary); color: var(--text); }
+    #voice-notice { background: rgba(245,158,11,0.15); border: 1px solid var(--warning); color: var(--warning-ink); }
+    .notice-band .tool-btn { margin-left: 8px; padding: 2px 8px; }
     #break-band { display: none; margin: 0 16px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: var(--warning-ink); font-weight: 700; text-align: center; }
     #break-band.on { display: block; }
     /* ④ 방이 비었을 때(줄 0) 보이는 문구 — 대기·끊김·끝남 셋. 줄이 하나라도 오면 숨긴다 */
@@ -338,22 +346,22 @@
          크롬이 있으면 손님이 한 번 눌러 옮겨 갈 수 있고, 없으면 아무 일도 일어나지 않는다
          — 그때는 사파리 번역 → 「서버 번역으로」(아래 띠) 가 그대로 받친다.
          자리: #chat-screen > #ios-chrome (#tr-notice **바로 앞** 형제) -->
-    <div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+    <div id="ios-chrome" class="notice-band" translate="no">
       <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
-      <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
+      <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn"></button>
     </div>
     <!-- ★ 10-23 (B): 글자색이 **어두운 배색 때 값**(#bae6fd)으로 남아 있었다. 10-22 에 배색을
          밝게 바꾸면서 이 띠만 따라오지 않아 바탕 위 **1.09:1** — 사실상 안 보였다. 띠는
          평소 `display:none` 이라 a11y 시험의 "보이는 것만 잰다"에 걸리지 않았다(그물이 내
          편을 들었다). 이제 색은 토큰에서 받고, `test:a11y` 가 **띠를 띄워 놓고** 잰다. -->
-    <div id="tr-notice" translate="no" style="display:none; background:rgba(0,103,134,0.10); border:1px solid var(--primary); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+    <div id="tr-notice" class="notice-band" translate="no">
       <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
-      <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
+      <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn"></button>
     </div>
     <!-- ★ 10-23 (B): 같은 일 — 글자 #fef08a 가 밝은 띠 위에서 **1.05:1** 이었다. 웹킷으로
          누르기 시험을 돌렸을 때 이 띠가 실제로 떠서(그 엔진은 음성이 없다고 답한다) 사진에
          **노란 바탕에 노란 글씨**로 찍혀 드러났다. 글자는 `--warning-ink`(바탕 위 4.9:1). -->
-    <div id="voice-notice" style="display:none; background:rgba(245,158,11,0.15); border:1px solid var(--warning); color:var(--warning-ink); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
+    <div id="voice-notice" class="notice-band"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
     <div id="room-state" role="status" aria-live="polite"></div>
     <div id="chat-list"></div>

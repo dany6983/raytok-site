@@ -2131,7 +2131,9 @@
         const el = document.createElement('div');
         el.className = 'live-para';
         el.style.cssText = 'padding: 24px; text-align: center; color: var(--text-muted); font-size: 15px;';
-        el.textContent = paragraphs.length ? '강의가 준비되었습니다. ▶ 재생 또는 다음(▶)을 누르면 시작됩니다.' : '원고가 없습니다. 🎤 실시간 말하기로 진행합니다.';
+        /* 글은 표에서 — 삼항으로 적으면 `test:host-i18n` 의 그물에 안 걸린다(10-26 에 그렇게
+           빠져 있었다). 그물도 삼항을 보게 넓혔다. */
+        el.textContent = paragraphs.length ? T('live_ready_hint') : T('live_no_script_mic');
         liveParaList.appendChild(el);
         btnPrev.disabled = true;
         btnNext.disabled = !total;
@@ -2201,8 +2203,11 @@
 
     function playLog(line) { play.log.push(line); if (play.log.length > 200) play.log.shift(); }
 
-    /* 글자와 **꺼짐**을 같이 맞춘다 — 재생이 스스로 꺼질 때 renderLive 는 이미 지나갔다
-     * (10-21 시험이 잡았다: 마지막 문단에서 글자는 「▶ 재생」인데 단추가 눌리는 채였다) */
+    /* 글자와 **꺼짐**을 같이 맞춘다 — 재생이 스스로 꺼질 때 renderLive 는 이미 지나갔다.
+     * ★ 10-26 (5be9901): 꺼지는 조건은 **원고가 0 일 때 하나뿐**이다. 전에는 마지막 문단에
+     *   닿아도 껐는데, 그러면 강사 손에 죽은 단추가 남는다(되감아 다시 틀 수도 없게 보인다).
+     *   마지막 문단에서는 **글자만** 「▶ 재생」으로 돌아오고 단추는 눌리는 채다.
+     *   그 셋을 `samples/host_play_test.js` [6] 이 센다. */
     function playRenderBtn() {
       if (!btnPlay) return;
       btnPlay.textContent = play.on ? T('live_stop') : T('live_play');
@@ -2601,7 +2606,9 @@
       if (!ansContainer) return;
       const div = document.createElement('div');
       div.style.cssText = 'padding: 4px 6px; background: rgba(0, 136, 176, 0.15); border-radius: 4px; margin-bottom: 4px;';
-      div.textContent = `[강사 답변] ${msg.src}`;
+      /* 글은 표에서 받는다 — 영어 폰에 한국어가 나오지 않게(§18). 10-26 에 이 한 줄이
+         코드에 박혀 `test:host-i18n` 이 붉었다. */
+      div.textContent = `${T('ask_answer_prefix')} ${msg.src}`;
       ansContainer.appendChild(div);
       ansContainer.scrollTop = ansContainer.scrollHeight;
       speakHost(msg.src, msg.srcLang || SRC_LANG);
@@ -2718,7 +2725,11 @@
     // 규칙: 참석 명단(이름·언어·붙은 시각)은 이 화면의 메모리에만 있다. 서버로 보내지 않고 localStorage·IndexedDB 에도
     //       쓰지 않으며, 방을 닫으면 지운다. 리포트·CSV 는 브라우저 안에서 만들어 내려받는다(바깥 요청 0).
     // 글자: 이 화면에서 새로 쓰는 글은 HOST_STR(ko·en) 한 곳. 기본 ko, `?lang=en` 이면 en(화면의 다른 글은 아직 ko 뿐이다).
-    const UI_LANG = 'ko';
+    /* ★ 10-26 (B): `d9468a8` 가 이 줄을 `'ko'` 로 **박아** 놓았다 — `?lang=en` 으로 열어도
+     * 화면이 한국어였다(`test:host`·`test:end` 둘이 그래서 붉었다). 커밋 글 어디에도
+     * "한국어로 고정한다"는 말이 없으니 **설계 바꿈이 아니라 흘린 것**으로 보고 되돌린다.
+     * 글을 표에서 받는 일(§18)은 이 한 줄이 받쳐야 뜻이 있다. */
+    const UI_LANG = urlParams.get('lang') === 'en' ? 'en' : 'ko';
     const HOST_STR = {
       ko: {
         /* B 12 (마스터 10-16 21:00) — 손님이 보는 글은 전부 이 표에서 나온다.
@@ -2767,6 +2778,9 @@
         ask_empty: '대기 중인 질문이 없습니다.',
         btn_answer_send: '답변 전송',
         ask_answer_placeholder: '강사 답변 입력 (단답형 / 대화)...',
+        ask_answer_prefix: '[강사 답변]',
+        live_ready_hint: '강의가 준비되었습니다. ▶ 재생 또는 다음(▶)을 누르면 시작됩니다.',
+        live_no_script_mic: '원고가 없습니다. 🎤 실시간 말하기로 진행합니다.',
         err_need_code: '이용권 코드를 입력하세요.',
         err_lang_cap: '한 번에 고를 수 있는 언어는 {n}개까지입니다. 하나를 빼고 다시 고르세요.',
         tr_fail_note: '번역 안 됨: {langs} — 그 언어 청취자는 원문을 봅니다.',
@@ -2926,6 +2940,9 @@
         ask_empty: 'No questions waiting.',
         btn_answer_send: 'Send Answer',
         ask_answer_placeholder: 'Type instructor answer...',
+        ask_answer_prefix: '[Instructor answer]',
+        live_ready_hint: 'Ready. Press ▶ Play or Next (▶) to start.',
+        live_no_script_mic: 'No script — use 🎤 live speaking.',
         err_need_code: 'Enter the licence code.',
         err_lang_cap: 'You can pick up to {n} languages at once. Unpick one first.',
         tr_fail_note: 'Not translated: {langs} — those listeners see the original text.',

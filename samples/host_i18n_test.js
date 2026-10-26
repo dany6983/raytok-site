@@ -63,6 +63,15 @@ const jsLeft = [];
 for (const m of script.matchAll(/\.(textContent|innerHTML|placeholder|title|value)\s*=\s*(['"`])((?:[^\\]|\\.)*?)\2/gs)) {
   if (HAN.test(m[3])) jsLeft.push(m[1] + ': ' + m[3].replace(/\s+/g, ' ').slice(0, 50));
 }
+/* ★ 10-26 (B): 위 그물은 **대입 바로 뒤의 따옴표**만 본다. 그래서
+ *   `el.textContent = n ? '한국어…' : '한국어…'` 는 **그냥 지나갔다** — 10-26 에 강사
+ *   진행 화면의 안내 두 줄이 그렇게 들어와 있었다. 삼항·`||`·`&&` 로 이어 붙인 꼴도 센다.
+ *   대입 한 줄(세미콜론까지)을 통째로 떼어 그 안의 한국어 따옴표를 찾는다. */
+for (const m of script.matchAll(/\.(textContent|innerHTML|placeholder|title|value)\s*=\s*([^;\n]*[?|&][^;\n]*);/g)) {
+  for (const q of m[2].matchAll(/(['"`])((?:[^\\]|\\.)*?)\1/g)) {
+    if (HAN.test(q[2])) jsLeft.push(m[1] + ' (삼항·논리): ' + q[2].replace(/\s+/g, ' ').slice(0, 50));
+  }
+}
 ok(jsLeft.length === 0, `화면에 직접 박은 한국어 0곳${jsLeft.length ? ':\n    ' + jsLeft.join('\n    ') : ''}`);
 
 const msgLeft = [];
@@ -127,5 +136,16 @@ ok(revMarkup, 'data-t 를 떼면 붉어진다 — 영어 폰에 한국어가 돌
 let revEn = false;
 try { assert.ok(emptyEn.length > 0 || missEn.length > 0, `en 빈 칸 ${emptyEn.length}·빠진 키 ${missEn.length}`); } catch (_) { revEn = true; }
 ok(revEn, 'en 칸을 비우면 붉어진다 — 빈 값은 ko 로 떨어진다 (되돌림 실증 3)');
+
+/* ★ 10-26 (B · 되돌림 실증 4): 삼항 그물이 **진짜 잡나**. 10-26 에 빠져나간 것과 같은 꼴을
+   한 줄 만들어 돌려 본다 — 그물을 되돌리면(옛 정규식만 쓰면) 이 줄은 0곳으로 나온다. */
+const TERNARY_SAMPLE = `el.textContent = n ? '강의가 준비되었습니다.' : '원고가 없습니다.';`;
+const caught = [];
+for (const m of TERNARY_SAMPLE.matchAll(/\.(textContent|innerHTML|placeholder|title|value)\s*=\s*([^;\n]*[?|&][^;\n]*);/g)) {
+  for (const q of m[2].matchAll(/(['"`])((?:[^\\]|\\.)*?)\1/g)) if (HAN.test(q[2])) caught.push(q[2]);
+}
+const oldNetMisses = !/\.(textContent)\s*=\s*(['"`])/.test(TERNARY_SAMPLE);
+ok(caught.length === 2 && oldNetMisses,
+   `삼항으로 숨긴 한국어 ${caught.length}곳을 잡는다 — 옛 그물은 이 줄을 못 봤다 (되돌림 실증 4)`);
 
 console.log(`\n전부 통과 (${checks}건)`);

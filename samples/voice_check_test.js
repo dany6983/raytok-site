@@ -69,7 +69,13 @@ function fakeVoices(mode, langs) {
     const seen = await page.evaluate(() => (window.__rtVoiceCheck || []).map((x) => ({ lang: x.lang, have: x.have })));
     const shown = await page.evaluate(() => {
       const el = document.getElementById('voice-notice');
-      return el ? { visible: el.style.display !== 'none', text: el.textContent } : null;
+      /* ★ 10-26 (B): 전에는 `el.style.display`(**inline** 값)만 봤다. 10-26 에 띠 셋의
+       * 같은 꼴을 class 하나(`.notice-band`)로 모으면서 숨김이 inline 이 아니라 CSS 가
+       * 되자, 안 띄운 띠가 **"보인다"로 찍혔다**. 재는 것을 **실제로 그려지는 값**으로
+       * 바꾼다 — 숨긴 자리가 inline 이든 class 든 같은 답이 나온다.
+       * (부모까지 보는 `offsetParent` 는 안 쓴다: 이 띠는 들어가기 전 화면에서도 떠야
+       *  하고 그때는 부모가 숨어 있다 — 그러면 "없으면 알린다"가 거짓으로 붉어진다.) */
+      return el ? { visible: getComputedStyle(el).display !== 'none', text: el.textContent } : null;
     });
     return { ctx, page, logs, seen, shown };
   }

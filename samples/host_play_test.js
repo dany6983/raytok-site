@@ -226,8 +226,30 @@ function sentParas(room) {
        `마지막 ${PARAS.length}번 문단에 닿으면 재생이 **스스로** 꺼진다`);
     const offLine = (await page.evaluate(() => window.rtHostPlay.log())).filter(l => l.indexOf('play_off') === 0).pop();
     ok(/why=end\b/.test(offLine), `왜 꺼졌는지 기록에 있다 — "${offLine}"`);
-    ok(await page.evaluate(() => document.getElementById('btnPlay').disabled) === true,
-       '더 넘길 것이 없으면 재생 단추도 꺼진다');
+    /* ★ 10-26 (B · 마스터 18:30 ②): 여기는 전에 "더 넘길 것이 없으면 재생 단추도 꺼진다"
+     * 였다. 10-26 에 **설계가 바뀌었다** — `5be9901` "ensure play/stop button is never
+     * disabled": 마지막 문단에서 단추를 꺼 버리면 강사 손에 **죽은 단추**가 남는다
+     * (되감아 다시 틀 수도, 멈출 수도 없게 보인다). 이제 규칙은 `btnPlay.disabled = !total`
+     * — **원고가 아예 없을 때만** 꺼진다.
+     *
+     * 그래서 시험을 **설계에 맞게** 옮긴다. 단언을 지우는 것이 아니라 바꾼다 —
+     * ① 마지막에서도 단추는 **눌리는 채**고 ② 글자는 「▶ 재생」으로 돌아와 있고
+     * ③ 원고가 0 이면 그때는 **꺼진다**. 셋을 다 세야 "늘 켜 둔다"가 참이 된다. */
+    ok(await page.evaluate(() => document.getElementById('btnPlay').disabled) === false,
+       '마지막 문단에서도 재생 단추는 눌리는 채다 — 죽은 단추를 남기지 않는다 (설계 10-26)');
+    ok(await page.evaluate(() => document.getElementById('btnPlay').textContent.indexOf('▶') >= 0),
+       '그러면서 글자는 「▶ 재생」으로 돌아와 있다 — 상태와 글자가 어긋나지 않는다');
+    const offWhenNoScript = await page.evaluate(() => {
+      /* 원고 0 으로 그려 보고 **되돌린다** — 화면을 망가뜨린 채 다음 단언으로 가지 않는다 */
+      const keep = paragraphs.slice();
+      paragraphs.length = 0;
+      playRenderBtn();
+      const d = document.getElementById('btnPlay').disabled;
+      paragraphs.push(...keep);
+      playRenderBtn();
+      return d;
+    });
+    ok(offWhenNoScript === true, '원고가 아예 없을 때는 꺼진다 — 꺼지는 조건은 그것 하나다');
 
     /* 끝내기 — 타이머가 살아 있으면 끝낸 뒤에도 문단이 간다(D-32) */
     await page.click('#btnPrev');             // 다시 넘길 수 있는 자리로

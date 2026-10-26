@@ -91,8 +91,19 @@ const { rooms, hostReceived } = relay;
   ok(room.hosts.size === 1, '호스트 /ws 연결(role=host, 토큰)');
   ok(hostReceived.some(m => m.welcome === 1), '호스트가 welcome 을 먼저 보낸다(링버퍼 → 늦게 온 청취자도 받는다)');
 
-  // 현재 강조 / 다음 흐림 — 시작 전엔 1번이 "다음"
-  ok(await host.$eval('#live-para-1', el => el.classList.contains('is-next')), '시작 전: 1번 문단이 다음(흐림)');
+  /* ★ 10-26 (B · 마스터 18:30): 전에는 진행 화면에 들어서자마자 1번 문단이 「다음(흐림)」으로
+   * 그려져 있었고 이 줄이 그것을 셌다. 10-26 에 **설계가 바뀌었다** — `8e01465`
+   * "prevent auto-starting lecture on entry so instructor can check seating and press Play
+   * manually" · `9fc5e3f` "start with live.cur=0 and hidden script preview until Play/Next".
+   * 강사가 자리 정돈을 끝내고 **직접 누를 때까지** 원고를 안 보여 준다.
+   *
+   * 그래서 시험도 **그 설계**를 센다: 누르기 전에는 문단 줄이 없고 안내 한 줄만 · 「다음」을
+   * 누르면 1번이 **지금**이 된다. 「누르기 전에 안 보인다」와 「눌러도 안 나온다」를 가르려고
+   * 둘 다 센다 — 하나만 세면 영영 안 나오는 고장을 통과로 적는다. */
+  ok(await host.$('#live-para-1') === null, '시작 전: 원고 줄이 아직 없다 (강사가 누를 때까지 — 설계 10-26)');
+  ok((await host.textContent('#liveProgress')).trim().startsWith('0 /'), '시작 전: 진행이 0 / N');
+  /* 「눌렀을 때 나온다」는 아래 문단 넘기기에서 **첫 누름 뒤**에 센다 — 여기서 한 번 더
+     누르면 문단 하나를 써 버려 그 아래의 셈(문단 3개·번역 3회)이 다 어긋난다. */
 
   // ── 청취자 탭: 같은 방에 en 으로 참여 ──
   const lisCtx = await browser.newContext({ viewport: { width: 420, height: 800 } });
@@ -119,6 +130,9 @@ const { rooms, hostReceived } = relay;
   // ── 문단 3개 넘기기: 단추 → 키보드 → 스페이스 ──
   const before = relay.counters.roomTranslate;
   await host.click('#btnNext');
+  /* 첫 누름 — 여기서 원고가 **처음 보인다**(설계 10-26). 누르기 전 둘과 짝이다 */
+  await host.waitForSelector('#live-para-1', { timeout: 5000 });
+  ok(await host.$eval('#live-para-1', el => el.classList.contains('is-current')), '「다음」을 처음 누르면 1번 문단이 지금(강조)');
   await host.keyboard.press('ArrowRight');
   await host.keyboard.press('Space');
   await lis.waitForFunction(() => document.querySelectorAll('#chat-list .msg-line.msg-script').length === 3, null, { timeout: 5000 });
