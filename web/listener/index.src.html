@@ -382,8 +382,8 @@
   <!-- 질문 모달 (N:1, question.md) -->
   <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, var(--card-bg));" data-i18n="ask_title">✋ 질문하기</div>
-    <div id="ask-status-msg" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" data-i18n="ask_notice">질문 내용을 입력하세요 (마이크 없이 글자로 전송됩니다).</div>
-    <textarea id="ask-input-text" style="width:100%; height:64px; box-sizing:border-box; border:1px solid #444141; border-radius:6px; padding:8px; font-size:13px; resize:none; margin-bottom:8px;" placeholder="질문 내용을 입력하세요..."></textarea>
+    <div id="ask-status-msg" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" data-i18n="ask_speaking">🎤 말씀하세요 — 끝나면 자동 전송</div>
+    <textarea id="ask-input-text" style="width:100%; height:64px; box-sizing:border-box; border:1px solid #444141; border-radius:6px; padding:8px; font-size:13px; resize:none; margin-bottom:8px;" data-i18n-placeholder="ask_input_placeholder" placeholder="질문 내용을 입력하세요..."></textarea>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
       <button class="tool-btn" id="btn-ask-cancel" style="padding:4px 10px;" data-i18n="btn_ask_cancel">취소</button>
       <button class="tool-btn" id="btn-ask-submit" style="padding:4px 12px; background:var(--primary); color:#ffffff; font-weight:600;" data-i18n="btn_ask_submit">손들기 전송</button>
@@ -855,6 +855,15 @@
           el.placeholder = val;
         } else {
           el.textContent = val;
+        }
+      });
+
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        const val = t(key, lang);
+        el.setAttribute('translate', 'no');
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+          el.placeholder = val;
         }
       });
 
