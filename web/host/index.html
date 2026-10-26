@@ -2110,6 +2110,9 @@
     function setBreak(on) {
       if (live.breakOn === on) return;
       live.breakOn = on;
+      if (on && play.on) {
+        playStop('break');
+      }
       wsSend({ kind: 'break', on });
       breakBand.classList.toggle('on', on);
       btnBreak.classList.toggle('on', on);
@@ -2186,7 +2189,7 @@
       btnPlay.textContent = play.on ? T('live_stop') : T('live_play');
       btnPlay.classList.toggle('on', play.on);
       const total = paragraphs.length;
-      btnPlay.disabled = !total || (!play.on && live.cur >= total);
+      btnPlay.disabled = !total;
     }
 
     function playClearTimer() {
@@ -2672,6 +2675,8 @@
           live.cur = 1;
           live.state[1] = 'read';
           renderLive();
+          sendScript(1);
+          playStart('auto');
         }
         renderLive();
         mic.seq = 0;
