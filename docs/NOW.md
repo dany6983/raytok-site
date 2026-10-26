@@ -8,6 +8,7 @@
 2. `test:host-play` — 「더 넘길 것 없으면 재생 단추 끔」. 오늘 설계가 「재생 단추는 절대 안 꺼진다」(5be9901)면 **시험을 그 설계로 고치고** 주석에 커밋 해시. 아니면 코드.
 3. `test:listener-build` — `web/listener/index.html` 에 손으로 넣은 변경을 `index.src.html` 로 옮기고 `node tools/build-listener.js` → 둘 같이 커밋. (안 하면 다음 빌드 때 날아간다)
 4. 전부터 깨진 host · end · live · broadcast-raw · web-host-mic 다섯 — 하나씩: 시험이 옛 설계면 시험을, 코드가 틀렸으면 코드를. 커밋마다 어느 쪽인지 한 줄.
+4-1. **마스터 행동 시험(18:55)에서 잡은 것 하나**: ■ 멈춤(3문단) → ◀ 이전(2) → ▶ 재생하면 `play.pausedAt=3` 이 이겨서 **3으로 튄다**. `goTo()`·`doSkip()` 에서 `play.pausedAt = 0` 으로 지운다(사람이 자리를 옮기면 멈춘 자리는 버린다). 시험: 멈춤→이전→재생 = cur 2.
 5. `npm test` 전체 초록 → `docs/REPORT.md` 맨 위 다섯 줄(커밋 해시 · 바꾼 파일 · 시험 결과). 릴레이 배포는 대표님 손 — 보고에 「릴레이 배포 필요」 한 줄.
 P-14: 강사·릴레이가 번역문을 먼저 만들어 보내지 않는다 — 4번에서 번역 길 건드리면 `docs/RayTok-특허회피규칙_v1.md` 확인.
 
