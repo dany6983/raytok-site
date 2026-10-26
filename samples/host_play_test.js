@@ -217,6 +217,33 @@ function sentParas(room) {
     ok(reSent[reSent.length - 1] === paused.at, `그 문단을 손님에게 **다시 보냈다** — 건너뛰지 않는다(R-15)`);
     ok(await page.evaluate(() => window.rtHostPlay.state.pausedAt) === 0, '되켠 뒤 기억은 비운다 — 다음 멈춤이 덮어쓰게');
 
+    /* ── 5-1. ■ 멈춤 → ◀ 이전 → ▶ 재생 = **옮긴 자리에서** (마스터 NOW 4-1) ──────────
+     * 대표님 실기: 3문단에서 ■ · ◀ 이전으로 2 · ▶ 를 누르면 **3으로 튀었다**. ■ 가 자리를
+     * 적어 두는데(오늘 설계) `playStart` 가 그 기억을 `live.cur` 보다 먼저 보기 때문이다.
+     * 사람이 손으로 옮겼으면 그 기억은 낡았다 — 버린다. (🎤 는 예외: 바로 위 [5] 가 그 길이다) */
+    console.log('\n[5-1] 멈춤 → 이전 → 재생 — 사람이 옮긴 자리에서 간다');
+    await page.waitForFunction(() => window.rtHostPlay.state.on === true, null, { timeout: 4000 });
+    const stopAt = await page.evaluate(() => {
+      window.rtHostPlay && null;
+      return Number(document.getElementById('liveProgress').textContent.split('/')[0].trim());
+    });
+    await page.click('#btnPlay');                        // ■ 멈춤 — 여기 자리를 적어 둔다
+    await page.waitForFunction(() => window.rtHostPlay.state.on === false, null, { timeout: 3000 });
+    ok(await page.evaluate(() => window.rtHostPlay.state.pausedAt) === stopAt,
+       `■ 멈춤이 자리를 적어 둔다 (pausedAt=${stopAt})`);
+    await page.click('#btnPrev');                        // ◀ 이전 — 사람이 옮겼다
+    const movedTo = await page.evaluate(() => Number(document.getElementById('liveProgress').textContent.split('/')[0].trim()));
+    ok(movedTo === stopAt - 1, `◀ 이전으로 ${movedTo} 번에 섰다`);
+    ok(await page.evaluate(() => window.rtHostPlay.state.pausedAt) === 0,
+       '옮기는 순간 멈춘 자리 기억을 버린다 — 낡은 자리가 ▶ 를 이기지 못하게');
+    await page.click('#btnPlay');                        // ▶ 재생
+    await page.waitForFunction(() => window.rtHostPlay.state.on === true, null, { timeout: 3000 });
+    const resumedAt = await page.evaluate(() => Number(document.getElementById('liveProgress').textContent.split('/')[0].trim()));
+    ok(resumedAt === movedTo, `▶ 가 **옮긴 자리 ${movedTo}** 에서 간다 — ${stopAt} 으로 튀지 않는다 (마스터 4-1)`);
+    await page.click('#btnPlay');                        // 다시 멈춰 두고 아래로
+    await page.waitForFunction(() => window.rtHostPlay.state.on === false, null, { timeout: 3000 });
+    await page.click('#btnPlay');
+
     /* ── 6. 마지막 문단 · 끝 화면 ── */
     console.log('\n[6] 마지막 문단에서 스스로 끝난다 · 끝 화면에서 꺼진다');
     await page.waitForFunction((n) => window.rtHostPlay.state.on === false &&

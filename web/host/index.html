@@ -2177,12 +2177,29 @@
       renderLive();
       if (play.on) playArm();     // 재생 중이면 이 문단의 글자 수만큼 다시 기다린다
     }
+    /* ★ 10-26 (B · 마스터 NOW 4-1): **사람이 자리를 옮기면 멈춘 자리는 버린다.**
+     * 대표님 실기 — ■ 멈춤(3문단) → ◀ 이전(2) → ▶ 재생이 **3으로 튀었다**. ■ 는 이제 자리를
+     * 적어 두는데(`playStop('btn', true)`, 오늘 설계), `playStart` 가 그 기억을 `live.cur`
+     * 보다 먼저 보기 때문이다. 사람이 손으로 옮긴 뒤라면 그 기억은 낡았다.
+     *
+     * ⚠ **🎤 는 예외다**(정본 §6 ④): 끼어든 동안 손으로 앞뒤로 넘겨도, 🎤 를 다시 끄면
+     *   **끼어들기 직전 문단으로 돌아가야** 한다. 그 길은 `samples/host_play_test.js` [5] 가
+     *   센다 — 여기서 무턱대고 지우면 그것이 붉어진다(그리고 정본을 어긴다).
+     * 그래서 지우는 조건은 "사람이 옮겼고 **🎤 가 꺼져 있을 때**" 하나다. */
+    function forgetPausedOnMove() {
+      if (mic.on) return;                 // 끼어든 동안의 기억은 지키다
+      if (!play.pausedAt) return;
+      playLog(`play_forget at=${live.cur} was=${play.pausedAt}`);
+      play.pausedAt = 0;
+    }
     function doNext() {
+      forgetPausedOnMove();
       if (live.cur < 1) { goTo(1); return; }
       goTo(live.cur + 1);
     }
-    function doPrev() { goTo(live.cur - 1); }
+    function doPrev() { forgetPausedOnMove(); goTo(live.cur - 1); }
     function doSkip() {
+      forgetPausedOnMove();
       const para = live.cur + 1;
       if (para > paragraphs.length) return;
       setBreak(false);
