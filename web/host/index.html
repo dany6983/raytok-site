@@ -1566,6 +1566,7 @@
       code: null,         // 방 코드(6자)
       token: null,        // 호스트 토큰(/ws 용) — 화면·기록에 안 적는다
       ws: null,
+      wsQueue: [],        // 소켓이 열리기 전에 보낸 메시지 큐 (R-15)
       cur: 0,             // 지금 읽는 문단(1부터). 0 = 아직 시작 전
       state: {},          // para -> 'read' | 'skip'
       breakOn: false,
@@ -1751,7 +1752,10 @@
     }
 
     function wsSend(obj) {
-      if (!live.ws || live.ws.readyState !== WebSocket.OPEN) return false;
+      if (!live.ws || live.ws.readyState !== WebSocket.OPEN) {
+        live.wsQueue.push(obj);
+        return false;
+      }
       live.ws.send(JSON.stringify(obj));
       return true;
     }
@@ -2633,6 +2637,10 @@
         /* 원고 **원문**을 방에 올린다 — 방이 「다음」 때와 새 언어가 올 때 번역한다(B 4).
            다시 붙을 때도 보낸다: 방이 살아 있으면 `para` 로 합쳐지고, 새 방이면 꼭 필요하다. */
         try { sendScriptSrc(); } catch (_) {}
+        while (live.wsQueue && live.wsQueue.length > 0) {
+          const msg = live.wsQueue.shift();
+          try { live.ws.send(JSON.stringify(msg)); } catch (_) {}
+        }
         if (paragraphs.length > 0) {
           renderLive();
         }
