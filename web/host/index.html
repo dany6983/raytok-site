@@ -2123,6 +2123,18 @@
       const total = paragraphs.length;
       liveProgress.textContent = live.cur > 0 ? `${live.cur} / ${total}` : `0 / ${total}`;
       liveParaList.innerHTML = '';
+      if (live.cur === 0) {
+        const el = document.createElement('div');
+        el.className = 'live-para';
+        el.style.cssText = 'padding: 24px; text-align: center; color: var(--text-muted); font-size: 15px;';
+        el.textContent = paragraphs.length ? '강의가 준비되었습니다. ▶ 재생 또는 다음(▶)을 누르면 시작됩니다.' : '원고가 없습니다. 🎤 실시간 말하기로 진행합니다.';
+        liveParaList.appendChild(el);
+        btnPrev.disabled = true;
+        btnNext.disabled = !total;
+        btnSkip.disabled = true;
+        playRenderBtn();
+        return;
+      }
       paragraphs.forEach((p, i) => {
         const n = i + 1;
         const el = document.createElement('div');
@@ -2159,7 +2171,10 @@
       renderLive();
       if (play.on) playArm();     // 재생 중이면 이 문단의 글자 수만큼 다시 기다린다
     }
-    function doNext() { goTo(live.cur + 1); }
+    function doNext() {
+      if (live.cur < 1) { goTo(1); return; }
+      goTo(live.cur + 1);
+    }
     function doPrev() { goTo(live.cur - 1); }
     function doSkip() {
       const para = live.cur + 1;
@@ -2619,7 +2634,6 @@
            다시 붙을 때도 보낸다: 방이 살아 있으면 `para` 로 합쳐지고, 새 방이면 꼭 필요하다. */
         try { sendScriptSrc(); } catch (_) {}
         if (paragraphs.length > 0) {
-          if (live.cur <= 0) live.cur = 1;
           renderLive();
         }
         /* 끊긴 동안 말한 확정 줄을 **순서대로** 흘려보낸다 (R-15) */
@@ -2669,10 +2683,7 @@
         refreshJoinQr();                     // 주소를 만드는 자리는 하나다 (joinQrUrl)
         renderAtt({ now: 0, max: 0, langs: {} });
         acquireWakeLock();       // 화면이 꺼지면 ▶ 재생 타이머도 🎤 도 멈춘다 (10-21 대표님)
-        if (paragraphs.length > 0) {
-          live.cur = 1;
-          renderLive();
-        }
+        live.cur = 0;
         renderLive();
         mic.seq = 0;
         mic.sent = [];
