@@ -601,7 +601,6 @@
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
               <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                 <input type="text" id="askAnswerInput" placeholder="강사 답변 입력 (단답형 / 대화)..." data-t-placeholder="ask_answer_placeholder" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;" />
-                <button id="btnAskMicAnswer" class="btn secondary" data-t="btn_ask_mic_answer" style="padding: 6px 10px; font-size: 0.8rem; background: var(--warning); color: #000; font-weight: 600;" title="음성으로 답변">🎤 음성 답변</button>
                 <button id="btnAskAnswer" class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: var(--primary); color: #fff; font-weight: 600;" data-t="btn_answer_send">답변 전송</button>
               </div>
               <div id="askInstructorAnswers" style="font-size: 0.8rem; color: var(--text); margin-bottom: 8px; max-height: 80px; overflow-y: auto;"></div>
@@ -2113,7 +2112,7 @@
     btnMic.addEventListener('click', async () => {
       if (mic.on) {
         stopMic();
-        playStart('mic_off');
+        if (play.pausedAt) playStart('mic_off');
       } else {
         await startMic();
         if (mic.on) playStop('mic_on', true);
@@ -2177,6 +2176,7 @@
       if (curEl && curEl.scrollIntoView) curEl.scrollIntoView({ block: 'nearest' });
     }
 
+    // 단추 넷. 쉬는 시간 중에 넘기면 먼저 쉬는 시간을 끝낸다(받는 쪽이 멈춘 채로 남지 않게).
     function goTo(para) {
       if (para < 1 || para > paragraphs.length) return;
       setBreak(false);
@@ -2193,11 +2193,7 @@
       if (live.cur < 1) { goTo(1); return; }
       goTo(live.cur + 1);
     }
-    function doPrev() {
-      if (live.cur <= 1) return;
-      play.pausedAt = 0;
-      goTo(live.cur - 1);
-    }
+    function doPrev() { goTo(live.cur - 1); }
     function doSkip() {
       const para = live.cur + 1;
       if (para > paragraphs.length) return;
@@ -2230,11 +2226,8 @@
       btnPlay.disabled = !total;
     }
 
-    const PARA_DONE_WIRE = true;
-
     function playClearTimer() {
       if (play.timer) { clearTimeout(play.timer); play.timer = null; }
-      if (play.pollInterval) { clearInterval(play.pollInterval); play.pollInterval = null; }
     }
 
     /* 지금 문단을 보여 준 만큼 머문 뒤 다음으로. 머무는 시간은 **지금 문단의 글자 수**다 */
@@ -2246,36 +2239,15 @@
       if (nxt == null) { playStop('end'); return; }
       const cur = paragraphs[live.cur - 1];
       const ms = PLAY.paraMs(cur ? cur.src : '', play.rate);
-      const maxMs = ms * 1.5;
-      playLog(`play_tick para=${live.cur} next=${nxt} ms=${ms} rate=${play.rate} chars=${cur ? String(cur.src || '').trim().length : 0} maxMs=${maxMs}`);
-
-      if (PARA_DONE_WIRE) {
-        const pollInterval = setInterval(() => {
-          if (!play.on) { clearInterval(pollInterval); return; }
-          const totalListeners = (live.att && live.att.now) ? live.att.now : 0;
-          const receipts = (live.paraDoneReceipts && live.paraDoneReceipts[live.cur]) ? live.paraDoneReceipts[live.cur].size : 0;
-          const half = Math.ceil(totalListeners / 2);
-          if (totalListeners > 0 && receipts >= half) {
-            clearInterval(pollInterval);
-            play.pollInterval = null;
-            playClearTimer();
-            const go = PLAY.nextPara({ cur: live.cur, total: paragraphs.length });
-            if (go == null) { playStop('end'); return; }
-            goTo(go);
-          }
-        }, 250);
-        play.pollInterval = pollInterval;
-      }
-
+      playLog(`play_tick para=${live.cur} next=${nxt} ms=${ms} rate=${play.rate} chars=${cur ? String(cur.src || '').trim().length : 0}`);
       play.timer = setTimeout(() => {
         play.timer = null;
-        if (play.pollInterval) { clearInterval(play.pollInterval); play.pollInterval = null; }
         if (!play.on) return;
         /* 잠든 사이 사람이 「건너뛰기」·「이전」을 눌렀을 수 있다 — **깨어날 때 다시 센다** */
         const go = PLAY.nextPara({ cur: live.cur, total: paragraphs.length });
         if (go == null) { playStop('end'); return; }
         goTo(go);
-      }, PARA_DONE_WIRE ? maxMs : ms);
+      }, ms);
     }
 
     function playStart(why) {
@@ -2300,13 +2272,13 @@
       }
     }
 
+    /* `keep` 이면 멈춘 문단을 적어 둔다(🎤). 사람이 ■ 를 누른 것은 적지 않는다 */
     function playStop(why, keep) {
       playClearTimer();
       play.on = false;
-      if (why !== 'end' && live.cur >= 1) {
+      if (keep && live.cur >= 1) {
         play.pausedAt = live.cur;
       }
-      wsSend({ kind: 'pause' });
       try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (_) {}
       if (why !== 'end' && why !== 'end_screen') sendPause(why || 'btn');
       playLog(`play_off why=${why || 'btn'} at=${live.cur} pausedAt=${play.pausedAt}`);
@@ -2348,12 +2320,6 @@
       let msg;
       try { msg = JSON.parse(raw); } catch (_) { return; }
       if (msg.__ping) return;
-      if (msg.kind === 'para_done' && msg.para) {
-        if (!live.paraDoneReceipts) live.paraDoneReceipts = {};
-        if (!live.paraDoneReceipts[msg.para]) live.paraDoneReceipts[msg.para] = new Set();
-        live.paraDoneReceipts[msg.para].add(msg.from || Math.random());
-        return;
-      }
       if (msg.att) {
         live.att = msg;
         rosterApplyAtt(msg, Date.now());
@@ -2646,34 +2612,6 @@
         askAnswerInput.value = '';
       }
       if (btnAskAnswer) btnAskAnswer.onclick = sendAskAnswer;
-      const btnAskMicAnswer = document.getElementById('btnAskMicAnswer');
-      if (btnAskMicAnswer) {
-        btnAskMicAnswer.onclick = () => {
-          const SpeechRec = speechCtor();
-          if (!SpeechRec) {
-            alert(T('err_speech_unsupported'));
-            return;
-          }
-          try {
-            const rec = new SpeechRec();
-            rec.lang = 'ko-KR';
-            rec.interimResults = false;
-            btnAskMicAnswer.textContent = T('btn_ask_listening');
-            rec.onresult = (e) => {
-              const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
-              if (transcript && askAnswerInput) {
-                askAnswerInput.value = transcript;
-              }
-              btnAskMicAnswer.textContent = T('btn_ask_mic_answer');
-            };
-            rec.onerror = () => { btnAskMicAnswer.textContent = T('btn_ask_mic_answer'); };
-            rec.onend = () => { btnAskMicAnswer.textContent = T('btn_ask_mic_answer'); };
-            rec.start();
-          } catch (e) {
-            btnAskMicAnswer.textContent = T('btn_ask_mic_answer');
-          }
-        };
-      }
       if (askAnswerInput) askAnswerInput.onkeydown = (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -2805,7 +2743,7 @@
     // 규칙: 참석 명단(이름·언어·붙은 시각)은 이 화면의 메모리에만 있다. 서버로 보내지 않고 localStorage·IndexedDB 에도
     //       쓰지 않으며, 방을 닫으면 지운다. 리포트·CSV 는 브라우저 안에서 만들어 내려받는다(바깥 요청 0).
     // 글자: 이 화면에서 새로 쓰는 글은 HOST_STR(ko·en) 한 곳. 기본 ko, `?lang=en` 이면 en(화면의 다른 글은 아직 ko 뿐이다).
-    // const UI_LANG removed, using requestedLang UI_LANG below
+    const UI_LANG = urlParams.get('lang') === 'en' ? 'en' : 'ko';   // 기본 ko · `?lang=en` 이면 en (10-26 13:25 에 'ko' 로 박혔던 것을 되돌림 — 시험 host·end 가 잡았다)
     const HOST_STR = {
       ko: {
         /* B 12 (마스터 10-16 21:00) — 손님이 보는 글은 전부 이 표에서 나온다.
@@ -2853,9 +2791,6 @@
         ask_speaking: '말하는 중',
         ask_empty: '대기 중인 질문이 없습니다.',
         btn_answer_send: '답변 전송',
-        btn_ask_mic_answer: '🎤 음성 답변',
-        btn_ask_listening: '🎤 듣는 중...',
-        ans_prefix: '강사 답변',
         ask_answer_placeholder: '강사 답변 입력 (단답형 / 대화)...',
         ask_answer_tag: '[강사 답변]',
         err_need_code: '이용권 코드를 입력하세요.',
@@ -2863,7 +2798,6 @@
         tr_fail_note: '번역 안 됨: {langs} — 그 언어 청취자는 원문을 봅니다.',
         tr_cap_note: '한 번에 번역하는 언어 {n}개가 찼습니다. {d}개 언어의 청취자는 원문을 봅니다.',
         err_timeout: '서버 응답 시간 초과 (5초)',
-        err_speech_unsupported: '브라우저가 음성 인식을 지원하지 않습니다.',
         err_unreachable: '서버에 닿지 않습니다: ',
         err_bad_json: '서버로부터 올바르지 않은(빈) 응답을 받았습니다.',
         err_bad_license: '이용권이 유효하지 않습니다.',
@@ -3017,7 +2951,6 @@
         ask_speaking: 'Speaking',
         ask_empty: 'No questions waiting.',
         btn_answer_send: 'Send Answer',
-        ans_prefix: 'Instructor Answer',
         ask_answer_placeholder: 'Type instructor answer...',
         ask_answer_tag: '[Answer]',
         err_need_code: 'Enter the licence code.',
@@ -3088,8 +3021,6 @@
         batch_stats: 'Today {t} / total {n}',
         batch_default: 'Today 0 / total 0',
         btn_end: 'Finish',
-        btn_ask_mic_answer: '🎤 Voice Answer',
-        btn_ask_listening: '🎤 Listening...',
         end_title: 'Session finished',
         sum_att: 'Attendees',
         sum_max: 'Peak concurrent',
@@ -3134,13 +3065,9 @@
         mic_listening: 'Listening — each finished sentence is sent.',
         mic_denied: 'Microphone unavailable. Allow the microphone from the lock icon in the address bar.',
         mic_unsupported: 'This browser has no speech recognition. Please use script mode (works on Chrome, Edge, Safari 16.4+, Samsung Internet).',
-        err_speech_unsupported: 'Browser does not support speech recognition.',
         mic_region_off: 'Live speaking is available in Korea only for now. Please use script mode.'
       }
     };
-    const requestedLang = urlParams.get('lang');
-    const UI_LANG = (HOST_STR[requestedLang] ? requestedLang : null) || 'ko';
-    try { document.documentElement.lang = UI_LANG; } catch (_) {}
     function T(key) {
       return (HOST_STR[UI_LANG] && HOST_STR[UI_LANG][key]) || HOST_STR.ko[key] || '';
     }

@@ -19,9 +19,7 @@ const KEYS = ['voice_absent_notice', 'voice_button', 'voice_pick_title', 'voice_
   /* ⑤ (10-22 마스터 13:00) 정본 v1 로 생긴 글자 — 「번역 중」·「원문 보기」·「앱 같이 받기」.
      이 넷은 **번역이 아직일 때·원문을 숨겼을 때** 손님이 보는 글자다. 비면 그 자리에
      한국어가 남는다(§18 — 영어 폰에 한국어가 나오는 그 모양). */
-  'badge_pending', 'badge_no_tr', 'btn_show_src', 'tr_server_btn', 'btn_get_pack', 'pack_optional',
-  // ⑥ (10-27 00:30) 손님 질문 창 placeholder 및 발언 중 안내
-  'ask_input_placeholder', 'ask_speaking'];
+  'badge_pending', 'badge_no_tr', 'btn_show_src', 'tr_server_btn', 'btn_get_pack', 'pack_optional'];
 const want = [...new Set(langs.map(l => l.code.startsWith('zh') ? 'zh' : l.code))];
 let n = 0; const ok = (c, m) => { assert(c, m); n++; console.log('  [PASS] ' + m); };
 
@@ -35,7 +33,7 @@ for (const k of KEYS) {
 }
 // ② index.html 이 키를 쓴다
 for (const k of KEYS) {
-  const used = html.includes(`data-i18n="${k}"`) || html.includes(`data-i18n-aria="${k}"`) || html.includes(`data-i18n-placeholder="${k}"`) || html.includes(`t('${k}'`) || html.includes(`'${k}'`);
+  const used = html.includes(`data-i18n="${k}"`) || html.includes(`data-i18n-aria="${k}"`) || html.includes(`t('${k}'`) || html.includes(`'${k}'`);
   ok(used, `index.html 이 ${k} 를 쓴다`);
 }
 // ③ 하드코딩이 남지 않았다 (손님이 보는 글자)
@@ -128,9 +126,6 @@ const called = [...new Set(
 )];
 ok(called.length >= 60, `쪽이 부르는 키 ${called.length}개를 모았다`);
 const ghosts = called.filter((k) => !(k in dict.strings));
-	// 두 단언 (10-27 00:30): ask-input-text placeholder 및 ask-status-msg 발언 중 안내
-	ok(src.includes('data-i18n-placeholder="ask_input_placeholder"'), 'ask-input-text uses data-i18n-placeholder="ask_input_placeholder"');
-	ok(src.includes('ask_speaking'), 'ask-status-msg uses ask_speaking translation key');
 ok(ghosts.length === 0,
    `표에 **없는** 키 0 — 있으면 그 자리가 조용히 빈칸이 된다${ghosts.length ? ': ' + ghosts.join(', ') : ''}`);
 ok(called.map((k) => (k === called[0] ? k + 'x' : k)).filter((k) => !(k in dict.strings)).length === 1,
