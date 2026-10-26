@@ -223,8 +223,15 @@ function sentParas(room) {
        `마지막 ${PARAS.length}번 문단에 닿으면 재생이 **스스로** 꺼진다`);
     const offLine = (await page.evaluate(() => window.rtHostPlay.log())).filter(l => l.indexOf('play_off') === 0).pop();
     ok(/why=end\b/.test(offLine), `왜 꺼졌는지 기록에 있다 — "${offLine}"`);
-    ok(await page.evaluate(() => document.getElementById('btnPlay').disabled) === true,
-       '더 넘길 것이 없으면 재생 단추도 꺼진다');
+    /* 10-26 대표님 설계(5be9901): 재생 단추는 **꺼지지 않는다** — 마지막 문단에서 눌러도 바로 끝나고
+       글자는 「▶ 재생」으로 돌아온다(사람이 눌렀는데 안 눌리는 단추가 더 헷갈린다). */
+    ok(await page.evaluate(() => document.getElementById('btnPlay').disabled) === false,
+       '마지막 문단에서도 재생 단추는 눌린다(10-26 설계)');
+    await page.click('#btnPlay');
+    await page.waitForTimeout(300);
+    ok(await page.evaluate(() => window.rtHostPlay.state.on) === false &&
+       (await page.textContent('#btnPlay')).trim() === '▶ 재생',
+       '마지막 문단에서 ▶ 를 눌러도 바로 끝나고 글자는 「▶ 재생」');
 
     /* 끝내기 — 타이머가 살아 있으면 끝낸 뒤에도 문단이 간다(D-32) */
     await page.click('#btnPrev');             // 다시 넘길 수 있는 자리로

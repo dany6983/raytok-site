@@ -91,8 +91,10 @@ const { rooms, hostReceived } = relay;
   ok(room.hosts.size === 1, '호스트 /ws 연결(role=host, 토큰)');
   ok(hostReceived.some(m => m.welcome === 1), '호스트가 welcome 을 먼저 보낸다(링버퍼 → 늦게 온 청취자도 받는다)');
 
-  // 현재 강조 / 다음 흐림 — 시작 전엔 1번이 "다음"
-  ok(await host.$eval('#live-para-1', el => el.classList.contains('is-next')), '시작 전: 1번 문단이 다음(흐림)');
+  // 10-26 대표님 설계(9fc5e3f): 시작 전에는 원고를 펼치지 않는다 — 「준비됨」 한 줄과 0 / N 만.
+  // 강사가 자리 확인 뒤 ▶ 또는 다음을 눌러야 1번이 나간다(8e01465: 들어오자마자 읽지 않는다).
+  ok((await host.$$('#live-para-1')).length === 0, '시작 전: 문단 목록을 펼치지 않는다(원고가 혼자 나가지 않는다)');
+  ok(/^0\s*\/\s*\d+/.test((await host.textContent('#liveProgress')).trim()), '시작 전: 진행 0 / N');
 
   // ── 청취자 탭: 같은 방에 en 으로 참여 ──
   const lisCtx = await browser.newContext({ viewport: { width: 420, height: 800 } });

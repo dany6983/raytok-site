@@ -12,6 +12,21 @@
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
 ---
+## 10-27 01:00 — [세션] 계획표 0~3번
+했다: 손님 질문 창 placeholder 및 `ask_speaking` 81개 언어 i18n 적용, 설계 C `para_done` 전선 및 강사 조기 진척(>50%, 상한 paraMs×1.5) 구현 완료. npm test 초록.
+어디서 보나: 손님 질문 입력창 플레이스홀더 및 발언 중 상태 메시지(`web/listener/index.html`), 강사 화면 `PARA_DONE_WIRE`. 시험 `samples/listener_i18n_test.js`, `samples/host_play_test.js`, `samples/host_pause_wire_test.js`
+막힘: 없음
+확인만: 대표님 실기 목록에 올린 것
+다음: 완료 (계획표 0~3번 완료)
+
+---
+## 10-26 23:20 — [마스터] 웹 멈춤·휴식·재생 (설계 host-play-pause A·B)
+했다: 7bbfd8c — 강사 pause/resume 전선 + 손님 문장 단위 읽기·자리 기억. 되돌림 둘: `?lang=en`(13:25 ko 고정), P-16 🎤 국내 조건(14:53 빠짐). npm test 88/88.
+어디서 보나: raytok.kr/web/host → ▶ → ■ → ▶ (손님 폰이 멈춘 문장부터) · 휴식 → 손님 소리 멈춤. 시험 `samples/host_pause_wire_test.js`
+막힘: 없음. 특허 — 14:53 커밋이 P-16 국내 조건을 뺐었다 → 되돌림(대표님께 보고).
+확인만: 대표님 폰 실기 ▶→■→▶ · 휴식 · 🎤(한국어 폰이면 보인다, 아니면 주소 끝 ?region=KR)
+다음: 설계 C(손님 「다 읽었다」로 넘김) 는 실기 뒤.
+
 
 ## 10-26 19:20 — [B] 계획표 10-26 19:20 (host play-pause & resume)
 했다: 강사 멈춤·휴식·mic 시 pause 및 같은 문단 재생 시 resume 전선 메시지 전송, 자리 이동 시 pausedAt=0 처리, 호스트 플레이 테스트 초록
