@@ -2395,7 +2395,7 @@
         row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.8rem;';
         const info = document.createElement('div');
         info.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px;';
-        info.textContent = `${item.seq}. ${item.name} (${item.lang}) - ${item.text}`;
+        info.textContent = `${item.seq}. ${item.name} [질문자 언어: ${item.lang}] — "${item.text}"`;
         const btnGrant = document.createElement('button');
         btnGrant.className = 'btn';
         btnGrant.style.cssText = 'padding:2px 8px; font-size:0.75rem; min-height:28px; white-space:nowrap;';
@@ -2627,6 +2627,9 @@
         if (paragraphs.length > 0) {
           live.cur = 1;
           live.state[1] = 'read';
+          renderLive();
+          sendScript(1);
+          playStart('auto');
         }
         renderLive();
         mic.seq = 0;
