@@ -128,6 +128,8 @@ const srv = http.createServer(async (req, res) => {
   );
   const context = await browser.newContext({ viewport: { width: 1000, height: 800 } });
   const page = await context.newPage();
+  page.on('console', msg => console.log('PAGE:', msg.text()));
+  page.on('pageerror', err => console.log('PAGE ERROR:', err));
 
   // 1. 외부 요청 0건 (relay 및 localhost 제외) 검증
   const outsideRequests = [];

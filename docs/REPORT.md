@@ -13,6 +13,15 @@
 
 ---
 
+## 10-26 19:20 — [B] 계획표 10-26 19:20 (host play-pause & resume)
+했다: 강사 멈춤·휴식·mic 시 pause 및 같은 문단 재생 시 resume 전선 메시지 전송, 자리 이동 시 pausedAt=0 처리, 호스트 플레이 테스트 초록
+어디서 보나: `web/host/index.html`, `samples/host_play_test.js` (테스트 이름: `samples/host_play_test.js` ▶→■→▶ 같은 문장부터)
+막힘: 없음
+확인만: 대표님 실기 목록(멈춤 후 재생 시 문단 처음으로 돌아가지 않고 이어 읽기)
+다음: 마스터 검증 및 배포 준비
+
+---
+
 ## 10-23 10:00 — [B] 전체 테스트(npm test) 전수 통과 확인
 했다: `npm test` 전체 82개 테스트 스위트 및 되돌림 실증·N:1 질문 대기열 E2E 검증 완료 (클린 커밋)
 어디서 고르나: `npm test` 콘솔 출력 및 `docs/REPORT.md`

@@ -297,7 +297,33 @@
     <div class="card">
       <h2 data-i18n="join_title">세션 참여</h2>
       <label data-i18n="room_code_label">세션 코드 (6자리)</label>
-      <input type="text" id="room-input" translate="no" placeholder="000000" maxlength="6" inputmode="numeric" data-i18n="room_code_placeholder">
+      <input type="text" id="room-input" translate="no" placeholder="ABC123" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" oninput="this.value=this.value.toUpperCase().slice(0,6)" data-i18n="room_code_placeholder">
+      <div id="room-keypad" style="display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 12px; justify-content: center; user-select: none;"></div>
+      <script>
+        (function() {
+          const kp = document.getElementById('room-keypad');
+          const inp = document.getElementById('room-input');
+          if (!kp || !inp) return;
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789⌫'.split('');
+          chars.forEach(c => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = c;
+            btn.style.cssText = 'flex: 0 0 calc(10% - 4px); padding: 8px 1px; font-size: 12px; font-weight: 700; background: #fff; border: 1px solid var(--border, #ccc); border-radius: 6px; cursor: pointer; text-align: center; color: var(--text, #201e1d);';
+            if (c === '⌫') btn.style.flex = '0 0 calc(20% - 4px)';
+            btn.addEventListener('click', () => {
+              let v = inp.value || '';
+              if (c === '⌫') {
+                inp.value = v.slice(0, -1);
+              } else if (v.length < 6) {
+                inp.value = (v + c).slice(0, 6);
+              }
+              inp.focus();
+            });
+            kp.appendChild(btn);
+          });
+        })();
+      </script>
 
       <div style="font-size: 13px; color: var(--warning-ink); margin-bottom: 8px;" data-i18n="hint_keep_screen">화면을 켜 둔 채로 두세요</div>
       <label data-i18n="lang_select_label">언어 선택</label>
@@ -379,14 +405,18 @@
     <div id="voice-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 
-  <!-- 질문 모달 (N:1, question.md) -->
+  <!-- 질문 모달 (N:1, question.md) — 음성 인식 우선 -->
   <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
-    <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, var(--card-bg));" data-i18n="ask_title">✋ 질문하기</div>
-    <div id="ask-status-msg" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" data-i18n="ask_notice">질문 내용을 입력하세요 (마이크 없이 글자로 전송됩니다).</div>
-    <textarea id="ask-input-text" style="width:100%; height:64px; box-sizing:border-box; border:1px solid #444141; border-radius:6px; padding:8px; font-size:13px; resize:none; margin-bottom:8px;" placeholder="질문 내용을 입력하세요..."></textarea>
-    <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="tool-btn" id="btn-ask-cancel" style="padding:4px 10px;" data-i18n="btn_ask_cancel">취소</button>
-      <button class="tool-btn" id="btn-ask-submit" style="padding:4px 12px; background:var(--primary); color:#ffffff; font-weight:600;" data-i18n="btn_ask_submit">손들기 전송</button>
+    <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text);" data-i18n="ask_title">✋ 음성 질문하기</div>
+    <div id="ask-status-msg" style="font-size:12px; color:var(--primary); font-weight:600; margin-bottom:8px;" data-i18n="ask_notice">🎤 마이크에 대고 말씀하세요 (음성 인식 중...)</div>
+    <div id="ask-transcript-view" style="width:100%; min-height:48px; background:rgba(0,0,0,0.04); border:1px solid var(--border); border-radius:6px; padding:8px; font-size:14px; margin-bottom:8px; color:var(--text);">말씀하시면 여기에 음성이 문자로 변환됩니다...</div>
+    <textarea id="ask-input-text" style="display:none; width:100%; height:40px;"></textarea>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <button class="tool-btn" id="btn-ask-mic-retry" style="padding:4px 10px; background:var(--primary); color:#fff; font-weight:600;">🎤 다시 말하기</button>
+      <div style="display:flex; gap:8px;">
+        <button class="tool-btn" id="btn-ask-cancel" style="padding:4px 10px;" data-i18n="btn_ask_cancel">취소</button>
+        <button class="tool-btn" id="btn-ask-submit" style="padding:4px 12px; background:var(--success); color:#ffffff; font-weight:600;" data-i18n="btn_ask_submit">음성 전송</button>
+      </div>
     </div>
   </div>
 
@@ -1719,8 +1749,13 @@
         };
         lines.push(line);
         addLine(line);
-        scriptTtsDefault();   // 원고 줄은 기본 끔 — 청취자가 소리 단추를 켠 때만 아래 speak 가 소리를 낸다
-        if (line.tr[selectedLang]) sayOnce(line, line.tr[selectedLang]);
+        if (ttsAutoOff || !isTtsEnabled) { ttsAutoOff = false; setTtsEnabled(true); }
+        const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+        if (sameLang) {
+          sayOnce(line, line.text, srcLang);
+        } else if (line.tr[selectedLang]) {
+          sayOnce(line, line.tr[selectedLang]);
+        }
         return;
       }
       /* ★ 원고 문단의 **늦게 온 번역** (B 3). 문단은 `seq` 가 없어 `para` 로 짝을 맞춘다.
@@ -1741,7 +1776,7 @@
           line.pending = false;
           updateLineUI(line);
           if (!msg.no_tr && line.tr[selectedLang]) {
-            scriptTtsDefault();
+            if (ttsAutoOff || !isTtsEnabled) { ttsAutoOff = false; setTtsEnabled(true); }
             sayOnce(line, line.tr[selectedLang], line.via);
           }
         }
@@ -2583,15 +2618,69 @@
     const btnAskCancel = document.getElementById('btn-ask-cancel');
     const btnAskSubmit = document.getElementById('btn-ask-submit');
     const askInputText = document.getElementById('ask-input-text');
+    const askTranscriptView = document.getElementById('ask-transcript-view');
+    const btnAskMicRetry = document.getElementById('btn-ask-mic-retry');
+
+    let modalSpeechRec = null;
+    function startModalSpeechRec() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        if (askTranscriptView) askTranscriptView.textContent = '브라우저 음성 인식을 지원하지 않습니다. 마이크로 말씀하세요.';
+        return;
+      }
+      try {
+        if (modalSpeechRec) { modalSpeechRec.stop(); modalSpeechRec = null; }
+        modalSpeechRec = new SpeechRec();
+        modalSpeechRec.lang = (window.rtRecLang && window.rtRecLang.tag) ? window.rtRecLang.tag(selectedLang || 'ko') : (selectedLang || 'ko');
+        modalSpeechRec.continuous = true;
+        modalSpeechRec.interimResults = true;
+        modalSpeechRec.onresult = (e) => {
+          let interim = '';
+          let final = '';
+          for (let i = e.resultIndex; i < e.results.length; ++i) {
+            if (e.results[i].isFinal) {
+              final += e.results[i][0].transcript;
+            } else {
+              interim += e.results[i][0].transcript;
+            }
+          }
+          const text = (final || interim).trim();
+          if (text) {
+            if (askTranscriptView) askTranscriptView.textContent = text;
+            if (askInputText) askInputText.value = text;
+          }
+        };
+        modalSpeechRec.onerror = () => {};
+        modalSpeechRec.start();
+        if (askTranscriptView) askTranscriptView.textContent = '🎤 듣고 있습니다... 말씀하세요';
+      } catch (e) {
+        if (askTranscriptView) askTranscriptView.textContent = '마이크 권한을 확인해주세요.';
+      }
+    }
 
     if (btnAsk) {
       btnAsk.addEventListener('click', () => {
-        if (askModal) askModal.style.display = askModal.style.display === 'none' ? 'block' : 'none';
+        const isOpen = askModal.style.display !== 'none';
+        if (isOpen) {
+          askModal.style.display = 'none';
+          if (modalSpeechRec) { modalSpeechRec.stop(); modalSpeechRec = null; }
+        } else {
+          askModal.style.display = 'block';
+          if (askInputText) askInputText.value = '';
+          if (askTranscriptView) askTranscriptView.textContent = '🎤 말씀하세요...';
+          startModalSpeechRec();
+        }
       });
     }
     if (btnAskCancel) {
       btnAskCancel.addEventListener('click', () => {
-        if (askModal) askModal.style.display = 'none';
+        askModal.style.display = 'none';
+        if (modalSpeechRec) { modalSpeechRec.stop(); modalSpeechRec = null; }
+      });
+    }
+    if (btnAskMicRetry) {
+      btnAskMicRetry.addEventListener('click', () => {
+        startModalSpeechRec();
       });
     }
     if (btnAskSubmit) {
@@ -2603,8 +2692,9 @@
         if (!text) return;
         if (!(ws && ws.readyState === WebSocket.OPEN)) return;
         const userName = myName || (nameInput && nameInput.value) || t('anon_name', currentUiLang) || 'Anonymous';
+        if (modalSpeechRec) { try { modalSpeechRec.stop(); modalSpeechRec = null; } catch(_) {} }
         if (askSpeakingFor) {
-          // 발언권을 받은 사람이 글자로 말한다 — 원문+언어만(P-14)
+          // 발언권을 받은 사람이 말한다 — 원문+언어만(P-14)
           ws.send(JSON.stringify({
             kind: 'question',
             id: askSpeakingFor.id,
@@ -2615,15 +2705,6 @@
             at: Date.now()
           }));
         } else {
-          /* ★ **내 질문의 이름(id)을 내가 만들어 보낸다** (2026-10-22, 진짜 릴레이 실측).
-           *
-           * 10-22 까지 `myAskId` 는 `ask_queue` 가 올 때 **이름을 견주어** 찾았다. 그런데
-           * 이름 칸은 「선택 사항」이다 — 이름을 안 적은 손님은 견줄 것이 없어 `myAskId` 가
-           * 끝까지 비고, 강사가 지명해도 `grant` 가 **내 것이 아니라서** 받아쓰기가 열리지
-           * 않는다. ✋ 는 눌리고 대기줄에도 뜨는데 **말을 할 수 없다** — 조용히 고장이다.
-           * 릴레이는 `parsed.id` 를 그대로 받아 쓰므로(없으면 스스로 만든다) 여기서 정하면
-           * **보낸 순간부터** 내 것을 안다. 흉내는 못 낸다 — 릴레이는 발언권을 **소켓 쪽지**로
-           * 지키므로(P-17) 남의 id 를 외쳐도 말할 수 없다. */
           myAskId = 'q_web_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
           ws.send(JSON.stringify({
             kind: 'ask',

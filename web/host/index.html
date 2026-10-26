@@ -601,6 +601,7 @@
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
               <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                 <input type="text" id="askAnswerInput" placeholder="강사 답변 입력 (단답형 / 대화)..." data-t-placeholder="ask_answer_placeholder" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;" />
+                <button id="btnAskMicAnswer" class="btn secondary" data-t="btn_ask_mic_answer" style="padding: 6px 10px; font-size: 0.8rem; background: var(--warning); color: #000; font-weight: 600;" title="음성으로 답변">🎤 음성 답변</button>
                 <button id="btnAskAnswer" class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: var(--primary); color: #fff; font-weight: 600;" data-t="btn_answer_send">답변 전송</button>
               </div>
               <div id="askInstructorAnswers" style="font-size: 0.8rem; color: var(--text); margin-bottom: 8px; max-height: 80px; overflow-y: auto;"></div>
@@ -2102,7 +2103,7 @@
     btnMic.addEventListener('click', async () => {
       if (mic.on) {
         stopMic();
-        if (play.pausedAt) playStart('mic_off');
+        playStart('mic_off');
       } else {
         await startMic();
         if (mic.on) playStop('mic_on', true);
@@ -2114,7 +2115,7 @@
     function setBreak(on) {
       if (live.breakOn === on) return;
       live.breakOn = on;
-      if (on && play.on) {
+      if (on) {
         playStop('break');
       }
       wsSend({ kind: 'break', on });
@@ -2169,6 +2170,7 @@
     function goTo(para) {
       if (para < 1 || para > paragraphs.length) return;
       setBreak(false);
+      play.pausedAt = 0;
       live.cur = para;
       live.state[para] = 'read';
       sendScript(para);
@@ -2179,11 +2181,16 @@
       if (live.cur < 1) { goTo(1); return; }
       goTo(live.cur + 1);
     }
-    function doPrev() { goTo(live.cur - 1); }
+    function doPrev() {
+      if (live.cur <= 1) return;
+      play.pausedAt = 0;
+      goTo(live.cur - 1);
+    }
     function doSkip() {
       const para = live.cur + 1;
       if (para > paragraphs.length) return;
       setBreak(false);
+      play.pausedAt = 0;
       live.cur = para;
       live.state[para] = 'skip';
       wsSend({ kind: 'skip', para });
@@ -2208,7 +2215,7 @@
       btnPlay.textContent = play.on ? T('live_stop') : T('live_play');
       btnPlay.classList.toggle('on', play.on);
       const total = paragraphs.length;
-      btnPlay.disabled = !total;
+      btnPlay.disabled = !total || (live.cur >= total && !play.on);
     }
 
     function playClearTimer() {
@@ -2240,21 +2247,28 @@
       const resumePara = (play.pausedAt >= 1 && play.pausedAt <= paragraphs.length)
         ? play.pausedAt
         : (live.cur >= 1 ? live.cur : 1);
+      const samePara = (resumePara === live.cur && live.state[resumePara] === 'read');
       play.on = true;
       play.pausedAt = 0;
       playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${resumePara}`);
       playRenderBtn();
-      goTo(resumePara);
-      playArm();
+      if (samePara && live.cur >= 1) {
+        setBreak(false);
+        wsSend({ kind: 'resume' });
+        playArm();
+      } else {
+        goTo(resumePara);
+        playArm();
+      }
     }
 
-    /* `keep` 이면 멈춘 문단을 적어 둔다(🎤). 사람이 ■ 를 누른 것은 적지 않는다 */
     function playStop(why, keep) {
       playClearTimer();
       play.on = false;
-      if (keep && live.cur >= 1) {
+      if (why !== 'end' && live.cur >= 1) {
         play.pausedAt = live.cur;
       }
+      wsSend({ kind: 'pause' });
       try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (_) {}
       playLog(`play_off why=${why || 'btn'} at=${live.cur} pausedAt=${play.pausedAt}`);
       playRenderBtn();
@@ -2587,6 +2601,34 @@
         askAnswerInput.value = '';
       }
       if (btnAskAnswer) btnAskAnswer.onclick = sendAskAnswer;
+      const btnAskMicAnswer = document.getElementById('btnAskMicAnswer');
+      if (btnAskMicAnswer) {
+        btnAskMicAnswer.onclick = () => {
+          const SpeechRec = speechCtor();
+          if (!SpeechRec) {
+            alert(T('err_speech_unsupported'));
+            return;
+          }
+          try {
+            const rec = new SpeechRec();
+            rec.lang = 'ko-KR';
+            rec.interimResults = false;
+            btnAskMicAnswer.textContent = T('btn_ask_listening');
+            rec.onresult = (e) => {
+              const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
+              if (transcript && askAnswerInput) {
+                askAnswerInput.value = transcript;
+              }
+              btnAskMicAnswer.textContent = T('btn_ask_mic_answer');
+            };
+            rec.onerror = () => { btnAskMicAnswer.textContent = T('btn_ask_mic_answer'); };
+            rec.onend = () => { btnAskMicAnswer.textContent = T('btn_ask_mic_answer'); };
+            rec.start();
+          } catch (e) {
+            btnAskMicAnswer.textContent = T('btn_ask_mic_answer');
+          }
+        };
+      }
       if (askAnswerInput) askAnswerInput.onkeydown = (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -2601,7 +2643,7 @@
       if (!ansContainer) return;
       const div = document.createElement('div');
       div.style.cssText = 'padding: 4px 6px; background: rgba(0, 136, 176, 0.15); border-radius: 4px; margin-bottom: 4px;';
-      div.textContent = `[강사 답변] ${msg.src}`;
+      div.textContent = `[${T('ans_prefix') || 'Answer'}] ${msg.src}`;
       ansContainer.appendChild(div);
       ansContainer.scrollTop = ansContainer.scrollHeight;
       speakHost(msg.src, msg.srcLang || SRC_LANG);
@@ -2718,7 +2760,6 @@
     // 규칙: 참석 명단(이름·언어·붙은 시각)은 이 화면의 메모리에만 있다. 서버로 보내지 않고 localStorage·IndexedDB 에도
     //       쓰지 않으며, 방을 닫으면 지운다. 리포트·CSV 는 브라우저 안에서 만들어 내려받는다(바깥 요청 0).
     // 글자: 이 화면에서 새로 쓰는 글은 HOST_STR(ko·en) 한 곳. 기본 ko, `?lang=en` 이면 en(화면의 다른 글은 아직 ko 뿐이다).
-    const UI_LANG = 'ko';
     const HOST_STR = {
       ko: {
         /* B 12 (마스터 10-16 21:00) — 손님이 보는 글은 전부 이 표에서 나온다.
@@ -2766,12 +2807,16 @@
         ask_speaking: '말하는 중',
         ask_empty: '대기 중인 질문이 없습니다.',
         btn_answer_send: '답변 전송',
+        btn_ask_mic_answer: '🎤 음성 답변',
+        btn_ask_listening: '🎤 듣는 중...',
+        ans_prefix: '강사 답변',
         ask_answer_placeholder: '강사 답변 입력 (단답형 / 대화)...',
         err_need_code: '이용권 코드를 입력하세요.',
         err_lang_cap: '한 번에 고를 수 있는 언어는 {n}개까지입니다. 하나를 빼고 다시 고르세요.',
         tr_fail_note: '번역 안 됨: {langs} — 그 언어 청취자는 원문을 봅니다.',
         tr_cap_note: '한 번에 번역하는 언어 {n}개가 찼습니다. {d}개 언어의 청취자는 원문을 봅니다.',
         err_timeout: '서버 응답 시간 초과 (5초)',
+        err_speech_unsupported: '브라우저가 음성 인식을 지원하지 않습니다.',
         err_unreachable: '서버에 닿지 않습니다: ',
         err_bad_json: '서버로부터 올바르지 않은(빈) 응답을 받았습니다.',
         err_bad_license: '이용권이 유효하지 않습니다.',
@@ -2925,6 +2970,7 @@
         ask_speaking: 'Speaking',
         ask_empty: 'No questions waiting.',
         btn_answer_send: 'Send Answer',
+        ans_prefix: 'Instructor Answer',
         ask_answer_placeholder: 'Type instructor answer...',
         err_need_code: 'Enter the licence code.',
         err_lang_cap: 'You can pick up to {n} languages at once. Unpick one first.',
@@ -2994,6 +3040,8 @@
         batch_stats: 'Today {t} / total {n}',
         batch_default: 'Today 0 / total 0',
         btn_end: 'Finish',
+        btn_ask_mic_answer: '🎤 Voice Answer',
+        btn_ask_listening: '🎤 Listening...',
         end_title: 'Session finished',
         sum_att: 'Attendees',
         sum_max: 'Peak concurrent',
@@ -3038,9 +3086,13 @@
         mic_listening: 'Listening — each finished sentence is sent.',
         mic_denied: 'Microphone unavailable. Allow the microphone from the lock icon in the address bar.',
         mic_unsupported: 'This browser has no speech recognition. Please use script mode (works on Chrome, Edge, Safari 16.4+, Samsung Internet).',
+        err_speech_unsupported: 'Browser does not support speech recognition.',
         mic_region_off: 'Live speaking is available in Korea only for now. Please use script mode.'
       }
     };
+    const requestedLang = urlParams.get('lang');
+    const UI_LANG = (HOST_STR[requestedLang] ? requestedLang : null) || 'ko';
+    try { document.documentElement.lang = UI_LANG; } catch (_) {}
     function T(key) {
       return (HOST_STR[UI_LANG] && HOST_STR[UI_LANG][key]) || HOST_STR.ko[key] || '';
     }
