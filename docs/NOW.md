@@ -1,5 +1,6 @@
 # NOW — 웹 세션(B) 계획표 (마스터가 쓴다 · 세션은 이것만 본다)
 
+★★★★ **10-27 01:20 마스터 — 코드셰어 00:40 결과(403df79) 되돌림(d-revert)**: 8개 붉음(a11y·terms·end·live·listener-build·first-load·question·listener-mic-voice). 다시 할 때 규칙: ① **한 번에 하나**(1번 끝나고 npm test 전체 초록 → 커밋 → 그다음 2번) ② 새 파일 금지(`web/raytok-web-console.html` 같은 것) ③ `samples/host_play_test.js` 의 🎤 되켜기(정본 §6 ④)는 **그대로** — 자리 비움은 ■·휴식 뒤 사람이 옮길 때만 ④ 원고 줄은 기본 소리 끔(L4-3) 유지 ⑤ 첫 화면 gz 37KB 안 ⑥ `node tools/build-listener.js` 같이 커밋 ⑦ 보고의 「초록」은 전체 `npm test` 를 돌린 뒤 **붉은 수 0** 을 적는다.
 ★★★ **10-27 00:30 마스터 → 코드셰어 (07시 뒤) — 웹 남은 것 둘, 순서대로**
 0. `docs/MISTAKES.md` 읽고 시작. `scripts/master-click.cjs`·`samples/host_pause_wire_test.js` 는 건드리지 않는다. 시험 먼저 붉게(D-09).
 1. 손님 질문 창: `#ask-input-text` placeholder 한국어 직박 → `data-i18n-placeholder` 키로(80개 언어 + ko·en 손 표, §18). 지명돼 「🎤 발언 중」이 되면 `#ask-status-msg` 자리에 안내 한 줄(「말씀하세요 — 끝나면 자동 전송」 뜻)을 손님 말로. 시험 `samples/listener_i18n_test.js` 에 두 단언.
