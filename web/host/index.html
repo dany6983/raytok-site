@@ -2172,7 +2172,16 @@
       live.cur = para;
       live.state[para] = 'read';
       const p = paragraphs[para - 1];
-      if (p) speakHost(p.src, SRC_LANG);
+      if (p) {
+        try {
+          if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(p.src);
+            u.lang = 'ko-KR';
+            window.speechSynthesis.speak(u);
+          }
+        } catch (_) {}
+      }
       sendScript(para);
       renderLive();
       if (play.on) playArm();     // 재생 중이면 이 문단의 글자 수만큼 다시 기다린다
@@ -2239,10 +2248,12 @@
 
     function playStart(why) {
       if (!PLAY || !paragraphs.length) return;
-      const resumePara = (play.pausedAt >= 1 && play.pausedAt <= paragraphs.length) ? play.pausedAt : (live.cur >= 1 ? live.cur : 1);
+      const resumePara = (play.pausedAt >= 1 && play.pausedAt <= paragraphs.length)
+        ? play.pausedAt
+        : (live.cur >= 1 ? live.cur : 1);
       play.on = true;
       play.pausedAt = 0;
-      playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${resumePara} rate=${play.rate}`);
+      playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${resumePara}`);
       playRenderBtn();
       goTo(resumePara);
       playArm();
@@ -2251,11 +2262,12 @@
     /* `keep` 이면 멈춘 문단을 적어 둔다(🎤). 사람이 ■ 를 누른 것은 적지 않는다 */
     function playStop(why, keep) {
       playClearTimer();
-      if (!play.on && !keep) { playRenderBtn(); return; }
       play.on = false;
-      if (keep) play.pausedAt = live.cur;
+      if (keep && live.cur >= 1) {
+        play.pausedAt = live.cur;
+      }
       try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (_) {}
-      playLog(`play_off why=${why || 'btn'} at=${live.cur} keep=${keep ? play.pausedAt : '-'}`);
+      playLog(`play_off why=${why || 'btn'} at=${live.cur} pausedAt=${play.pausedAt}`);
       playRenderBtn();
     }
 
