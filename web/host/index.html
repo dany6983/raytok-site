@@ -2218,6 +2218,7 @@
 
     function playStart(why) {
       if (!PLAY || !paragraphs.length) return;
+      if (live.cur < 1) live.cur = 1;
       /* 멈춘 문단이 있으면 **거기서 다시** — 그 사이 딴 문단을 봤으면 되돌아가 다시 보낸다 */
       const r = PLAY.resumeFrom({ pausedAt: play.pausedAt, cur: live.cur, total: paragraphs.length });
       play.on = true;
@@ -2225,7 +2226,7 @@
       playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${r.go ? r.para : '-'} rate=${play.rate}`);
       playRenderBtn();
       if (r.go) { goTo(r.para); return; }        // goTo 가 renderLive → playArm 을 부른다
-      if (live.cur < 1) { goTo(1); return; }     // 아직 시작 전이면 첫 문단부터
+      goTo(live.cur);
       playArm();
     }
 
@@ -2241,7 +2242,7 @@
 
     if (btnPlay) btnPlay.addEventListener('click', () => {
       btnPlay.blur();
-      if (play.on) playStop('btn'); else playStart('btn');
+      if (play.on) playStop('btn', true); else playStart('btn');
     });
 
     window.rtHostPlay = { state: play, start: playStart, stop: playStop,
