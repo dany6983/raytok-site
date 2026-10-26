@@ -2,6 +2,15 @@
 
 > **일 시작 전 `docs/MISTAKES.md` 를 읽는다**(되풀이한 실수 표 — 대표님 10-22 "멍청한 실수를 반복하지 말라"). 같은 실수를 또 하면 보고 맨 위에 「되풀이 #번호」.
 
+★★★ **10-26 18:40 마스터 → 코드셰어 세션 (B 대신) — 순서대로, 묻지 말고**
+0. `docs/MISTAKES.md` 읽고 시작. `scripts/master-click.cjs` 는 건드리지 않는다(마스터 파일).
+1. `test:host-i18n` — `web/host/index.html` 의 `[강사 답변] ${msg.src}` 를 표(`T()` 키, ko·en 둘 다, §18)로. 시험 먼저 붉은지 → 고침 → 초록(D-09).
+2. `test:host-play` — 「더 넘길 것 없으면 재생 단추 끔」. 오늘 설계가 「재생 단추는 절대 안 꺼진다」(5be9901)면 **시험을 그 설계로 고치고** 주석에 커밋 해시. 아니면 코드.
+3. `test:listener-build` — `web/listener/index.html` 에 손으로 넣은 변경을 `index.src.html` 로 옮기고 `node tools/build-listener.js` → 둘 같이 커밋. (안 하면 다음 빌드 때 날아간다)
+4. 전부터 깨진 host · end · live · broadcast-raw · web-host-mic 다섯 — 하나씩: 시험이 옛 설계면 시험을, 코드가 틀렸으면 코드를. 커밋마다 어느 쪽인지 한 줄.
+5. `npm test` 전체 초록 → `docs/REPORT.md` 맨 위 다섯 줄(커밋 해시 · 바꾼 파일 · 시험 결과). 릴레이 배포는 대표님 손 — 보고에 「릴레이 배포 필요」 한 줄.
+P-14: 강사·릴레이가 번역문을 먼저 만들어 보내지 않는다 — 4번에서 번역 길 건드리면 `docs/RayTok-특허회피규칙_v1.md` 확인.
+
 ★★ **10-26 18:30 마스터 점검 — 오늘 13커밋(5be8c87~2877007) 뒤**: 마스터 누르기 38/38 통과. `npm test` 새로 깨진 둘 → ① `test:host-i18n` host/index.html 에 `[강사 답변] ${msg.src}` 한국어 직박 → 표(ko·en, §18)로 ② `test:host-play` 「더 넘길 것 없으면 재생 단추 끔」 단언 깨짐 — 설계 바꿨으면 시험을 설계에 맞게, 아니면 코드. 전부터 깨진 것: `listener-build`(index.html ↔ index.src.html 다름 → `node tools/build-listener.js` 돌려 같이 커밋) · host · end · live · broadcast-raw · web-host-mic. 릴레이 `answer` 길(room.js) 바뀜 → **`npx wrangler deploy` 대표님 손**(원문만 보냄, P-14 유지 확인).
 
 갱신: 2026-10-21 12:00 KST · 대표님 11:50 "고" — 일하는 법을 바꿨다(아래).
