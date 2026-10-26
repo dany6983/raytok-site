@@ -2620,10 +2620,7 @@
         try { sendScriptSrc(); } catch (_) {}
         if (paragraphs.length > 0) {
           if (live.cur <= 0) live.cur = 1;
-          live.state[live.cur] = 'read';
           renderLive();
-          sendScript(live.cur);
-          if (!play.on) playStart('auto');
         }
         /* 끊긴 동안 말한 확정 줄을 **순서대로** 흘려보낸다 (R-15) */
         try { flushSpoken(); } catch (_) {}
@@ -2674,10 +2671,7 @@
         acquireWakeLock();       // 화면이 꺼지면 ▶ 재생 타이머도 🎤 도 멈춘다 (10-21 대표님)
         if (paragraphs.length > 0) {
           live.cur = 1;
-          live.state[1] = 'read';
           renderLive();
-          sendScript(1);
-          playStart('auto');
         }
         renderLive();
         mic.seq = 0;
