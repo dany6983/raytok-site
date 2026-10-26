@@ -1592,6 +1592,7 @@
        `speechSynthesis.pause()` 는 믿을 수 없어(10-20 실기 `515bfd8`) 쓰지 않는다.
        새 원고 줄이 오면 적어 둔 것은 버린다. 스위치 기본 켬(§3). */
     const PAUSE_READ = true;
+    const PARA_DONE_WIRE = true;
     let reader = null;   // { line, sents, idx, via, paused, cur }
     const readLog = [];  // 시험·실기 기록: 무엇을 왜 (§12)
     function rlog(l) { readLog.push(l); if (readLog.length > 200) readLog.shift(); }
@@ -1610,7 +1611,17 @@
     function readNext() {
       const r = reader;
       if (!r || r.paused || !isTtsEnabled) return;
-      if (r.idx >= r.sents.length) { reader = null; return; }
+      if (r.idx >= r.sents.length) {
+        const finishedPara = r.line.para;
+        reader = null;
+        if (PARA_DONE_WIRE && ws && ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({ kind: 'para_done', para: finishedPara }));
+            rlog(`para_done para=${finishedPara}`);
+          } catch (e) {}
+        }
+        return;
+      }
       const u = r.cur = makeUtter(r.sents[r.idx], r.via);
       const advance = () => {
         if (reader !== r || r.cur !== u || r.paused) return;   // cancel 로 끝난 것·옛 발화는 안 센다

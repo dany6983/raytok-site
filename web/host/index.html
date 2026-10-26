@@ -2213,6 +2213,7 @@
      * 🎤 끼어들기는 재생을 **멈추고 그 문단을 기억한다** — 되켜면 거기서 다시(정본 §6 ④).
      * 기능의 첫 걸음에 기록 한 줄(§12): `play_on`·`play_tick`·`play_off`. */
     const PLAY = (typeof rtScriptPlay !== 'undefined' && rtScriptPlay) ? rtScriptPlay : null;
+    const PARA_DONE_WIRE = true;
 
     function playLog(line) { play.log.push(line); if (play.log.length > 200) play.log.shift(); }
 
@@ -2228,6 +2229,7 @@
 
     function playClearTimer() {
       if (play.timer) { clearTimeout(play.timer); play.timer = null; }
+      if (play.pollInterval) { clearInterval(play.pollInterval); play.pollInterval = null; }
     }
 
     /* 지금 문단을 보여 준 만큼 머문 뒤 다음으로. 머무는 시간은 **지금 문단의 글자 수**다 */
@@ -2239,15 +2241,36 @@
       if (nxt == null) { playStop('end'); return; }
       const cur = paragraphs[live.cur - 1];
       const ms = PLAY.paraMs(cur ? cur.src : '', play.rate);
-      playLog(`play_tick para=${live.cur} next=${nxt} ms=${ms} rate=${play.rate} chars=${cur ? String(cur.src || '').trim().length : 0}`);
+      const maxMs = ms * 1.5;
+      playLog(`play_tick para=${live.cur} next=${nxt} ms=${ms} rate=${play.rate} chars=${cur ? String(cur.src || '').trim().length : 0} maxMs=${maxMs}`);
+
+      if (PARA_DONE_WIRE) {
+        const pollInterval = setInterval(() => {
+          if (!play.on) { clearInterval(pollInterval); return; }
+          const totalListeners = (live.att && live.att.now) ? live.att.now : 0;
+          const receipts = (live.paraDoneReceipts && live.paraDoneReceipts[live.cur]) ? live.paraDoneReceipts[live.cur].size : 0;
+          const half = Math.ceil(totalListeners / 2);
+          if (totalListeners > 0 && receipts >= half) {
+            clearInterval(pollInterval);
+            play.pollInterval = null;
+            playClearTimer();
+            const go = PLAY.nextPara({ cur: live.cur, total: paragraphs.length });
+            if (go == null) { playStop('end'); return; }
+            goTo(go);
+          }
+        }, 250);
+        play.pollInterval = pollInterval;
+      }
+
       play.timer = setTimeout(() => {
         play.timer = null;
+        if (play.pollInterval) { clearInterval(play.pollInterval); play.pollInterval = null; }
         if (!play.on) return;
         /* 잠든 사이 사람이 「건너뛰기」·「이전」을 눌렀을 수 있다 — **깨어날 때 다시 센다** */
         const go = PLAY.nextPara({ cur: live.cur, total: paragraphs.length });
         if (go == null) { playStop('end'); return; }
         goTo(go);
-      }, ms);
+      }, PARA_DONE_WIRE ? maxMs : ms);
     }
 
     function playStart(why) {
@@ -2320,6 +2343,12 @@
       let msg;
       try { msg = JSON.parse(raw); } catch (_) { return; }
       if (msg.__ping) return;
+      if (msg.kind === 'para_done' && msg.para) {
+        if (!live.paraDoneReceipts) live.paraDoneReceipts = {};
+        if (!live.paraDoneReceipts[msg.para]) live.paraDoneReceipts[msg.para] = new Set();
+        live.paraDoneReceipts[msg.para].add(msg.from || Math.random());
+        return;
+      }
       if (msg.att) {
         live.att = msg;
         rosterApplyAtt(msg, Date.now());

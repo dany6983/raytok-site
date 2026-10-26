@@ -12,6 +12,14 @@
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
 ---
+## 10-27 02:00 — [세션] 계획표 0~3번 완료
+했다: 손님 질문 창 i18n(81개 언어 + data-i18n-placeholder) 및 설계 C `para_done` 전선 반영, npm test 전체 초록 (붉은 수 0).
+어디서 보나: 손님 질문 입력창 및 발언 중 안내 (`web/listener/index.html`), 강사 화면 `PARA_DONE_WIRE`. 시험 `samples/listener_i18n_test.js`, `samples/host_play_test.js`, `samples/host_pause_wire_test.js`
+막힘: 없음
+확인만: 대표님 실기 목록에 올린 것
+다음: 완료 (계획표 0~3번 완료)
+
+---
 ## 10-26 23:20 — [마스터] 웹 멈춤·휴식·재생 (설계 host-play-pause A·B)
 했다: 7bbfd8c — 강사 pause/resume 전선 + 손님 문장 단위 읽기·자리 기억. 되돌림 둘: `?lang=en`(13:25 ko 고정), P-16 🎤 국내 조건(14:53 빠짐). npm test 88/88.
 어디서 보나: raytok.kr/web/host → ▶ → ■ → ▶ (손님 폰이 멈춘 문장부터) · 휴식 → 손님 소리 멈춤. 시험 `samples/host_pause_wire_test.js`
