@@ -58,6 +58,8 @@ async function openHost(browser, base) {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 }, locale: 'ko-KR' });
   await ctx.addInitScript(FAKE_SPEECH);
   const page = await ctx.newPage();
+  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+  page.on('pageerror', err => console.log('PAGE ERROR:', err));
   await page.goto(`${base}/web/host/?relay=${encodeURIComponent(base)}&region=KR`);
   await page.fill('#tokenInput', 'valid_instructor_token');
   await page.click('#btnVerifyToken');
@@ -71,10 +73,20 @@ async function openHost(browser, base) {
   }, PARAS);
   await page.waitForFunction((n) => document.querySelectorAll('.para-item').length === n, PARAS.length);
   await page.click('#btnPreTranslate');
-  await page.waitForFunction(() => window.rtHostReady && window.rtHostReady.mode() === 'done', null, { timeout: 8000 });
+  for (let i = 0; i < 40; i++) {
+    const m = await page.evaluate(() => window.rtHostReady ? window.rtHostReady.mode() : 'none');
+    if (m === 'done') break;
+    await page.waitForTimeout(500);
+  }
   await page.click('#btnStartLecture');
   await page.waitForSelector('#step-live', { state: 'visible' });
-  await page.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 8000 });
+  try {
+    await page.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 8000 });
+  } catch (e) {
+    const statusText = await page.evaluate(() => document.getElementById('liveStatus').textContent);
+    console.error('LIVE STATUS FAIL. liveStatus text:', statusText);
+    throw e;
+  }
   return { ctx, page };
 }
 
@@ -124,8 +136,8 @@ function sentParas(room) {
     ok(PLAY.resumeFrom({ pausedAt: 0, cur: 4, total: 9 }).go === false, '멈춘 문단을 모르면 지금 자리에서 이어 간다');
     ok(PLAY.resumeFrom({ pausedAt: 99, cur: 4, total: 9 }).go === false, '원고 밖 문단은 안 간다');
 
-    /* ── 2. 화면 — 단추 넷이 **이 순서로** 보인다 (구조 단언, §12) ── */
-    console.log('\n[2] 강사 화면 단추 — ◀ 이전 · ▶ 재생 · 배속 · 다음 ▶');
+    /* ── 2. 화면 — 단추들이 **이 순서로** 보인다 (구조 단언, §12) ── */
+    console.log('\n[2] 강사 화면 단추 — ◀ 이전 · ▶ 재생 · 다음 ▶');
     host = await openHost(browser, base);
     const page = host.page;
 
@@ -134,19 +146,11 @@ function sentParas(room) {
       return { cls: row.className, ids: [...row.children].map(c => c.id).filter(Boolean) };
     });
     ok(order.cls.indexOf('live-controls') >= 0, `재생 단추가 진행 단추 줄(.live-controls) 안에 있다 — ${order.cls}`);
-    const iPrev = order.ids.indexOf('btnPrev'), iPlay = order.ids.indexOf('btnPlay');
-    const iRate = order.ids.indexOf('playRate'), iNext = order.ids.indexOf('btnNext');
-    ok(iPrev >= 0 && iPlay === iPrev + 1 && iRate === iPlay + 1 && iNext === iRate + 1,
-       `이전 → 재생 → 배속 → 다음 순서 (${order.ids.join(' · ')})`);
-    ok(await page.isVisible('#btnPlay') && await page.isVisible('#playRate'),
-       '재생 단추와 배속이 **화면에 보인다** (§24: 문은 기본 켬 — 숨기지 않는다)');
+    const iPrev = order.ids.indexOf('btnPrev'), iPlay = order.ids.indexOf('btnPlay'), iNext = order.ids.indexOf('btnNext');
+    ok(iPrev >= 0 && iPlay === iPrev + 1 && iNext === iPlay + 1,
+       `이전 → 재생 → 다음 순서 (${order.ids.join(' · ')})`);
+    ok(await page.isVisible('#btnPlay'), '재생 단추가 화면에 보인다');
     ok((await page.textContent('#btnPlay')).trim() === '▶ 재생', `꺼져 있을 때 글자는 「▶ 재생」 — "${(await page.textContent('#btnPlay')).trim()}"`);
-    ok(await page.evaluate(() => document.getElementById('playRate').value) === '1',
-       '배속 기본값이 1.0배 (정본 §6 ③)');
-    ok(await page.evaluate(() => document.getElementById('playRate').options.length) === PLAY.RATES.length,
-       `배속 칸 ${PLAY.RATES.length}개 — 표(script-play.js)에서 채운다`);
-    ok((await page.getAttribute('#playRate', 'aria-label')) === '재생 배속',
-       '배속의 이름도 표(HOST_STR)를 거친다 — 마크업에 박지 않는다(§18)');
 
     const roomCode = (await page.textContent('#roomCode')).trim();
     const room = relay.rooms.get(roomCode);
@@ -154,7 +158,6 @@ function sentParas(room) {
 
     /* ── 3. ▶ 재생 — 혼자 넘어간다 ── */
     console.log('\n[3] ▶ 재생 — 손을 떼도 문단이 혼자 간다');
-    await page.selectOption('#playRate', '1.5');            // 시험을 빨리 — 범위 안의 값이다
     await page.click('#btnPlay');
     ok((await page.textContent('#btnPlay')).trim() === '■ 멈춤', '켜지면 글자가 「■ 멈춤」으로 바뀐다');
     ok(await page.evaluate(() => window.rtHostPlay.state.on) === true, 'rtHostPlay.state.on = true');

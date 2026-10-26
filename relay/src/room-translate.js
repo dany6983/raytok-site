@@ -109,7 +109,9 @@ export function trMessages(items, lang, texts) {
     const text = typeof texts[i] === 'string' ? texts[i] : '';
     if (!text) return { ok: false, msgs: [], why: 'empty' };   // 빈 답은 답이 아니다(§20)
     msgs.push(it.ask
-      ? { kind: 'question_tr', id: it.ask, trans: { [code]: text } }
+      ? (it.answer
+          ? { kind: 'answer_tr', id: it.ask, trans: { [code]: text } }
+          : { kind: 'question_tr', id: it.ask, trans: { [code]: text } })
       : it.script
         ? { kind: 'script_tr', para: it.para, trans: { [code]: text } }
         : { seq: it.seq, tr: { [code]: text } });
@@ -123,7 +125,9 @@ export function trMessages(items, lang, texts) {
  */
 export function noTrMessages(items, why) {
   return (items || []).map((it) => (it.ask
-    ? { kind: 'question_tr', id: it.ask, trans: {}, no_tr: 1, why: why || 'tr_fail' }
+    ? (it.answer
+        ? { kind: 'answer_tr', id: it.ask, trans: {}, no_tr: 1, why: why || 'tr_fail' }
+        : { kind: 'question_tr', id: it.ask, trans: {}, no_tr: 1, why: why || 'tr_fail' })
     : it.script
       ? { kind: 'script_tr', para: it.para, trans: {}, no_tr: 1, why: why || 'tr_fail' }
       : { seq: it.seq, no_tr: 1, why: why || 'tr_fail' }));
@@ -137,12 +141,8 @@ export function noTrMessages(items, why) {
  * 페이지가 질문을 `script:1, para:seq` 로 밀어 넣고 있었다 — 그 길을 여기서 가른다.
  */
 export function doneKey(item, lang) {
-  /* ★ 질문 이름에는 **글자의 표**(`askRev`)도 넣는다. 한 질문(`id`)의 글자가 **두 번**
-     오기 때문이다: 손들 때 적은 글자, 그리고 지명 뒤 **말한 글자**. 이름이 `q<id>` 뿐이면
-     두 번째가 "이미 샀다"로 걸러지고, 손님에게는 **첫 번째(손들 때 적은) 글자의 번역**이
-     간다 — 말한 질문이 아무에게도 안 가는 모양이다. 10-21 코드 되읽기에서 잡았다(§4).
-     같은 글자가 두 번 오면 이름이 같으니 **두 번 사지는 않는다**(그게 이 표의 일이다). */
-  const who = item && item.ask ? 'q' + item.ask + '#' + (item.askRev || '')
+  const prefix = item && item.answer ? 'ans' : 'q';
+  const who = item && item.ask ? prefix + item.ask + '#' + (item.askRev || '')
     : item && item.script ? 'p' + item.para
       : 's' + (item && item.seq);
   return who + '|' + normLang(lang);
@@ -182,7 +182,8 @@ export function askItem(opts) {
   const id = o.id == null ? '' : String(o.id);
   const text = typeof o.text === 'string' ? o.text.trim() : '';
   if (!id || !text) return null;
-  return { ask: id, askRev: textRev(text), text, srcLang: o.srcLang || 'ko' };
+  const isAns = !!o.answer;
+  return { ask: id, askRev: textRev(text), text, srcLang: o.srcLang || 'ko', answer: isAns };
 }
 
 /** 글자의 짧은 표 — **같은 글자인가**만 가린다(이름 길이를 글자 길이에 매달지 않게) */

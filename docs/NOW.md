@@ -2,6 +2,8 @@
 
 > **일 시작 전 `docs/MISTAKES.md` 를 읽는다**(되풀이한 실수 표 — 대표님 10-22 "멍청한 실수를 반복하지 말라"). 같은 실수를 또 하면 보고 맨 위에 「되풀이 #번호」.
 
+★★ **10-26 18:30 마스터 점검 — 오늘 13커밋(5be8c87~2877007) 뒤**: 마스터 누르기 38/38 통과. `npm test` 새로 깨진 둘 → ① `test:host-i18n` host/index.html 에 `[강사 답변] ${msg.src}` 한국어 직박 → 표(ko·en, §18)로 ② `test:host-play` 「더 넘길 것 없으면 재생 단추 끔」 단언 깨짐 — 설계 바꿨으면 시험을 설계에 맞게, 아니면 코드. 전부터 깨진 것: `listener-build`(index.html ↔ index.src.html 다름 → `node tools/build-listener.js` 돌려 같이 커밋) · host · end · live · broadcast-raw · web-host-mic. 릴레이 `answer` 길(room.js) 바뀜 → **`npx wrangler deploy` 대표님 손**(원문만 보냄, P-14 유지 확인).
+
 갱신: 2026-10-21 12:00 KST · 대표님 11:50 "고" — 일하는 법을 바꿨다(아래).
 
 ## 일하는 법 (10-21, 대표님)

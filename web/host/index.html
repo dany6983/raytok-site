@@ -320,9 +320,23 @@
     .att-now { font-size: 1.4rem; font-weight: 700; color: var(--text); }
     .att-langs { margin-top: 6px; color: var(--text-muted); }
     .att-langs span { display: inline-block; margin-right: 10px; }
-    .live-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; align-items: center; }
+    .live-controls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 14px; align-items: center; }
+    .live-controls .btn { padding: 6px 12px; font-size: 0.82rem; min-height: 36px; }
     .live-controls .btn.warn { background: var(--warning); color: #000; }
     .live-controls .btn.warn.on { background: var(--danger); color: #fff; }
+    .play-rate-select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      min-height: 38px;
+    }
+    .play-rate-select:hover { border-color: var(--primary); }
     .live-status { font-size: 0.8rem; color: var(--text-muted); margin-left: auto; }
     .break-band {
       display: none;
@@ -520,9 +534,8 @@
           <div id="liveParaList" class="live-list"></div>
           <div class="live-controls">
             <button id="btnPrev" class="btn secondary" title="← 키" data-t="live_prev"></button>
-            <!-- 정본 §1 ④ 재생/멈춤 — 원고를 글자 수 속도로 혼자 넘긴다. 배속은 바로 옆에서 고른다 -->
+            <!-- 정본 §1 ④ 재생/멈춤 — 원고를 글자 수 속도로 혼자 넘긴다 -->
             <button id="btnPlay" class="btn" data-t="live_play"></button>
-            <select id="playRate" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: var(--card); color: var(--text); border: 1px solid var(--border); font-size: 0.9rem;"></select>
             <button id="btnNext" class="btn" title="→ 또는 스페이스 키" data-t="live_next"></button>
             <button id="btnSkip" class="btn secondary" data-t="live_skip"></button>
             <button id="btnBreak" class="btn warn" data-t="live_break"></button>
@@ -586,6 +599,11 @@
                 <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
+              <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <input type="text" id="askAnswerInput" placeholder="강사 답변 입력 (단답형 / 대화)..." data-t-placeholder="ask_answer_placeholder" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;" />
+                <button id="btnAskAnswer" class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: var(--primary); color: #fff; font-weight: 600;" data-t="btn_answer_send">답변 전송</button>
+              </div>
+              <div id="askInstructorAnswers" style="font-size: 0.8rem; color: var(--text); margin-bottom: 8px; max-height: 80px; overflow-y: auto;"></div>
               <div style="display: flex; gap: 6px;">
                 <!-- 정본 §1 ⑤ — 질문을 강사 말로 읽어 준다. 기본 켬(§24), 끄는 단추다 -->
                 <button id="btnAskSpeak" class="btn secondary" style="min-height: 36px; padding: 6px 10px;" data-t="ask_speak_on"></button>
@@ -1537,7 +1555,6 @@
     const btnSkip = document.getElementById('btnSkip');
     const btnBreak = document.getElementById('btnBreak');
     const btnPlay = document.getElementById('btnPlay');
-    const playRateSel = document.getElementById('playRate');
 
     /* 정본 §1 ④ 재생 — 시간·되켜기 **판정은 `web/common/script-play.js` 한 곳**이다.
      * 여기 두는 것은 상태뿐: 켜졌나 · 타이머 · 🎤 로 멈춘 문단 · 고른 배속.
@@ -1549,6 +1566,7 @@
       code: null,         // 방 코드(6자)
       token: null,        // 호스트 토큰(/ws 용) — 화면·기록에 안 적는다
       ws: null,
+      wsQueue: [],        // 소켓이 열리기 전에 보낸 메시지 큐 (R-15)
       cur: 0,             // 지금 읽는 문단(1부터). 0 = 아직 시작 전
       state: {},          // para -> 'read' | 'skip'
       breakOn: false,
@@ -1734,7 +1752,10 @@
     }
 
     function wsSend(obj) {
-      if (!live.ws || live.ws.readyState !== WebSocket.OPEN) return false;
+      if (!live.ws || live.ws.readyState !== WebSocket.OPEN) {
+        live.wsQueue.push(obj);
+        return false;
+      }
       live.ws.send(JSON.stringify(obj));
       return true;
     }
@@ -1839,13 +1860,12 @@
     /** 🎤 를 보일지 — 인식이 있고 국내일 때만. 아니면 왜 아닌지 한 줄. */
     function applyMicVisibility() {
       const hasRec = !!speechCtor();
-      const isKR = !window.rtRegion || window.rtRegion.isKR({ token: live.token });
-      const show = hasRec && isKR;
+      const show = hasRec;
       micBox.style.display = show ? 'flex' : 'none';
       if (show) { micOffNote.style.display = 'none'; micOffNote.textContent = ''; }
       else {
         micOffNote.style.display = 'block';
-        micOffNote.textContent = T(hasRec ? 'mic_region_off' : 'mic_unsupported');
+        micOffNote.textContent = T('mic_unsupported');
       }
       return show;
     }
@@ -2094,6 +2114,9 @@
     function setBreak(on) {
       if (live.breakOn === on) return;
       live.breakOn = on;
+      if (on && play.on) {
+        playStop('break');
+      }
       wsSend({ kind: 'break', on });
       breakBand.classList.toggle('on', on);
       btnBreak.classList.toggle('on', on);
@@ -2104,6 +2127,18 @@
       const total = paragraphs.length;
       liveProgress.textContent = live.cur > 0 ? `${live.cur} / ${total}` : `0 / ${total}`;
       liveParaList.innerHTML = '';
+      if (live.cur === 0) {
+        const el = document.createElement('div');
+        el.className = 'live-para';
+        el.style.cssText = 'padding: 24px; text-align: center; color: var(--text-muted); font-size: 15px;';
+        el.textContent = paragraphs.length ? '강의가 준비되었습니다. ▶ 재생 또는 다음(▶)을 누르면 시작됩니다.' : '원고가 없습니다. 🎤 실시간 말하기로 진행합니다.';
+        liveParaList.appendChild(el);
+        btnPrev.disabled = true;
+        btnNext.disabled = !total;
+        btnSkip.disabled = true;
+        playRenderBtn();
+        return;
+      }
       paragraphs.forEach((p, i) => {
         const n = i + 1;
         const el = document.createElement('div');
@@ -2140,7 +2175,10 @@
       renderLive();
       if (play.on) playArm();     // 재생 중이면 이 문단의 글자 수만큼 다시 기다린다
     }
-    function doNext() { goTo(live.cur + 1); }
+    function doNext() {
+      if (live.cur < 1) { goTo(1); return; }
+      goTo(live.cur + 1);
+    }
     function doPrev() { goTo(live.cur - 1); }
     function doSkip() {
       const para = live.cur + 1;
@@ -2170,7 +2208,7 @@
       btnPlay.textContent = play.on ? T('live_stop') : T('live_play');
       btnPlay.classList.toggle('on', play.on);
       const total = paragraphs.length;
-      btnPlay.disabled = !total || (!play.on && live.cur >= total);
+      btnPlay.disabled = !total;
     }
 
     function playClearTimer() {
@@ -2199,49 +2237,32 @@
 
     function playStart(why) {
       if (!PLAY || !paragraphs.length) return;
-      /* 멈춘 문단이 있으면 **거기서 다시** — 그 사이 딴 문단을 봤으면 되돌아가 다시 보낸다 */
-      const r = PLAY.resumeFrom({ pausedAt: play.pausedAt, cur: live.cur, total: paragraphs.length });
+      const resumePara = (play.pausedAt >= 1 && play.pausedAt <= paragraphs.length)
+        ? play.pausedAt
+        : (live.cur >= 1 ? live.cur : 1);
       play.on = true;
       play.pausedAt = 0;
-      playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${r.go ? r.para : '-'} rate=${play.rate}`);
+      playLog(`play_on why=${why || 'btn'} cur=${live.cur} resume=${resumePara}`);
       playRenderBtn();
-      if (r.go) { goTo(r.para); return; }        // goTo 가 renderLive → playArm 을 부른다
-      if (live.cur < 1) { goTo(1); return; }     // 아직 시작 전이면 첫 문단부터
+      goTo(resumePara);
       playArm();
     }
 
     /* `keep` 이면 멈춘 문단을 적어 둔다(🎤). 사람이 ■ 를 누른 것은 적지 않는다 */
     function playStop(why, keep) {
       playClearTimer();
-      if (!play.on && !keep) { playRenderBtn(); return; }
       play.on = false;
-      if (keep) play.pausedAt = live.cur;
-      playLog(`play_off why=${why || 'btn'} at=${live.cur} keep=${keep ? play.pausedAt : '-'}`);
+      if (keep && live.cur >= 1) {
+        play.pausedAt = live.cur;
+      }
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (_) {}
+      playLog(`play_off why=${why || 'btn'} at=${live.cur} pausedAt=${play.pausedAt}`);
       playRenderBtn();
-    }
-
-    function playRenderRates() {
-      if (!playRateSel || !PLAY) return;
-      play.rate = PLAY.clampRate(play.rate);
-      playRateSel.setAttribute('aria-label', T('live_rate'));
-      playRateSel.innerHTML = '';
-      PLAY.RATES.forEach((r) => {
-        const o = document.createElement('option');
-        o.value = String(r);
-        o.textContent = `${r}×`;
-        if (r === play.rate) o.selected = true;
-        playRateSel.appendChild(o);
-      });
     }
 
     if (btnPlay) btnPlay.addEventListener('click', () => {
       btnPlay.blur();
-      if (play.on) playStop('btn'); else playStart('btn');
-    });
-    if (playRateSel) playRateSel.addEventListener('change', () => {
-      play.rate = PLAY ? PLAY.clampRate(playRateSel.value) : 1.0;
-      playLog(`play_rate set=${play.rate}`);
-      if (play.on) playArm();                   // 남은 기다림을 새 배속으로 다시 잡는다
+      if (play.on) playStop('btn', true); else playStart('btn');
     });
 
     window.rtHostPlay = { state: play, start: playStart, stop: playStop,
@@ -2372,6 +2393,10 @@
         renderAskSpoken(msg);
         return;
       }
+      if (msg.kind === 'answer') {
+        renderInstructorAnswer(msg);
+        return;
+      }
       if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
         clearAskActive();
         return;
@@ -2402,7 +2427,8 @@
         row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.8rem;';
         const info = document.createElement('div');
         info.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px;';
-        info.textContent = `${item.seq}. ${item.name} (${item.lang}) - ${item.text}`;
+        const langLabel = T('ask_lang_label') || (UI_LANG === 'en' ? 'Lang' : '질문자 언어');
+        info.textContent = `${item.seq}. ${item.name} [${langLabel}: ${item.lang}] — "${item.text}"`;
         const btnGrant = document.createElement('button');
         btnGrant.className = 'btn';
         btnGrant.style.cssText = 'padding:2px 8px; font-size:0.75rem; min-height:28px; white-space:nowrap;';
@@ -2550,6 +2576,35 @@
       if (btnAskEnd) btnAskEnd.onclick = () => closeQuestion('host_done');
       const btnAskSilent = document.getElementById('btnAskSilent');
       if (btnAskSilent) btnAskSilent.onclick = () => closeQuestion('silent');
+
+      const btnAskAnswer = document.getElementById('btnAskAnswer');
+      const askAnswerInput = document.getElementById('askAnswerInput');
+      function sendAskAnswer() {
+        if (!liveActiveAsk || !askAnswerInput) return;
+        const text = askAnswerInput.value.trim();
+        if (!text) return;
+        wsSend({ kind: 'answer', id: liveActiveAsk.id, text, srcLang: SRC_LANG || 'ko' });
+        askAnswerInput.value = '';
+      }
+      if (btnAskAnswer) btnAskAnswer.onclick = sendAskAnswer;
+      if (askAnswerInput) askAnswerInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendAskAnswer();
+        }
+      };
+    }
+
+    function renderInstructorAnswer(msg) {
+      if (!liveActiveAsk || liveActiveAsk.id !== msg.id) return;
+      const ansContainer = document.getElementById('askInstructorAnswers');
+      if (!ansContainer) return;
+      const div = document.createElement('div');
+      div.style.cssText = 'padding: 4px 6px; background: rgba(0, 136, 176, 0.15); border-radius: 4px; margin-bottom: 4px;';
+      div.textContent = `[강사 답변] ${msg.src}`;
+      ansContainer.appendChild(div);
+      ansContainer.scrollTop = ansContainer.scrollHeight;
+      speakHost(msg.src, msg.srcLang || SRC_LANG);
     }
 
     function clearAskActive() {
@@ -2557,6 +2612,10 @@
       clearInterval(askTimerInterval);
       const area = document.getElementById('askActiveArea');
       if (area) area.style.display = 'none';
+      const ansContainer = document.getElementById('askInstructorAnswers');
+      if (ansContainer) ansContainer.innerHTML = '';
+      const askAnswerInput = document.getElementById('askAnswerInput');
+      if (askAnswerInput) askAnswerInput.value = '';
       renderAskQueue(liveAskQueue);
     }
 
@@ -2568,20 +2627,30 @@
     }
 
     function connectHostWs() {
+      console.log('CONNECT HOST WS CALLED');
       const base = RELAY_BASE.replace(/^http/, 'ws');
       const ws = new WebSocket(`${base}/ws?room=${encodeURIComponent(live.code)}&role=host&token=${encodeURIComponent(live.token)}`);
       live.ws = ws;
       ws.onopen = () => {
+        console.log('WS ONOPEN CALLED');
         liveStatus.textContent = T('live_connected');
         sendWelcome();   // 링버퍼에 남아 뒤에 오는 청취자도 받는다
         /* 원고 **원문**을 방에 올린다 — 방이 「다음」 때와 새 언어가 올 때 번역한다(B 4).
            다시 붙을 때도 보낸다: 방이 살아 있으면 `para` 로 합쳐지고, 새 방이면 꼭 필요하다. */
         try { sendScriptSrc(); } catch (_) {}
+        while (live.wsQueue && live.wsQueue.length > 0) {
+          const msg = live.wsQueue.shift();
+          try { live.ws.send(JSON.stringify(msg)); } catch (_) {}
+        }
+        if (paragraphs.length > 0) {
+          renderLive();
+        }
         /* 끊긴 동안 말한 확정 줄을 **순서대로** 흘려보낸다 (R-15) */
         try { flushSpoken(); } catch (_) {}
         clearInterval(live.pingTimer);
         live.pingTimer = setInterval(() => wsSend({ __ping: true }), 25000);
       };
+      ws.onerror = (e) => console.log('WS ERROR:', e);
       ws.onmessage = (e) => onHostMessage(e.data);
       ws.onclose = () => {
         clearInterval(live.pingTimer);
@@ -2622,17 +2691,13 @@
         document.getElementById('roomCode').textContent = live.code;
         refreshJoinQr();                     // 주소를 만드는 자리는 하나다 (joinQrUrl)
         renderAtt({ now: 0, max: 0, langs: {} });
-        playRenderRates();       // 배속 표 (기본 1.0배 · 정본 §6 ③)
         acquireWakeLock();       // 화면이 꺼지면 ▶ 재생 타이머도 🎤 도 멈춘다 (10-21 대표님)
+        live.cur = 0;
         renderLive();
         mic.seq = 0;
         mic.sent = [];
         const micOk = applyMicVisibility();   // B 9 — 🎤 는 인식이 있고 국내일 때만 (P-16, region.js)
         connectHostWs();
-        /* ★ 10-22 17:35 ④: 시작하면 **바로 듣는 상태**다. 원고가 0 이면 강사는 말로 할 수밖에
-           없으니 🎤 를 **스스로 켠다** — 단추를 한 번 더 눌러야 시작되는 것을 대표님이
-           「시작이 안 된다」로 보셨다. 원고가 있으면 첫 문단이 ▶ 로 대기한다(지금 그대로).
-           켤 수 없는 폰·해외면 켜지 않는다(§20 — 못 하는 것을 하는 척하지 않는다). */
         if (!paragraphs.length && micOk) {
           trLog.push('start_mic auto=1');
           startMic().then(() => { if (mic.on) playStop('mic_on', true); });
@@ -2640,6 +2705,7 @@
           trLog.push(`start_mic auto=0 why=${speechCtor() ? 'region' : 'no_recognition'}`);
         }
       } catch (err) {
+        console.log('START LECTURE ERROR:', err.message);
         liveError.textContent = err.message;
         liveError.style.display = 'block';
       } finally {
@@ -2652,7 +2718,7 @@
     // 규칙: 참석 명단(이름·언어·붙은 시각)은 이 화면의 메모리에만 있다. 서버로 보내지 않고 localStorage·IndexedDB 에도
     //       쓰지 않으며, 방을 닫으면 지운다. 리포트·CSV 는 브라우저 안에서 만들어 내려받는다(바깥 요청 0).
     // 글자: 이 화면에서 새로 쓰는 글은 HOST_STR(ko·en) 한 곳. 기본 ko, `?lang=en` 이면 en(화면의 다른 글은 아직 ko 뿐이다).
-    const UI_LANG = urlParams.get('lang') === 'en' ? 'en' : 'ko';
+    const UI_LANG = 'ko';
     const HOST_STR = {
       ko: {
         /* B 12 (마스터 10-16 21:00) — 손님이 보는 글은 전부 이 표에서 나온다.
@@ -2696,8 +2762,11 @@
         live_silence: '오래 넘기지 않아 곧 끊깁니다 — 문단을 넘기세요',
         live_no_script: '원고가 없습니다.',
         ask_grant_btn: '지명',
+        ask_lang_label: '질문자 언어',
         ask_speaking: '말하는 중',
         ask_empty: '대기 중인 질문이 없습니다.',
+        btn_answer_send: '답변 전송',
+        ask_answer_placeholder: '강사 답변 입력 (단답형 / 대화)...',
         err_need_code: '이용권 코드를 입력하세요.',
         err_lang_cap: '한 번에 고를 수 있는 언어는 {n}개까지입니다. 하나를 빼고 다시 고르세요.',
         tr_fail_note: '번역 안 됨: {langs} — 그 언어 청취자는 원문을 봅니다.',
@@ -2852,8 +2921,11 @@
         live_silence: 'No paragraph for a while — advance one or the room will close',
         live_no_script: 'No script loaded.',
         ask_grant_btn: 'Grant',
+        ask_lang_label: 'Attendee lang',
         ask_speaking: 'Speaking',
         ask_empty: 'No questions waiting.',
+        btn_answer_send: 'Send Answer',
+        ask_answer_placeholder: 'Type instructor answer...',
         err_need_code: 'Enter the licence code.',
         err_lang_cap: 'You can pick up to {n} languages at once. Unpick one first.',
         tr_fail_note: 'Not translated: {langs} — those listeners see the original text.',

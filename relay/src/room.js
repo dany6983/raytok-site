@@ -389,6 +389,13 @@ export class Room {
     this.roomTrFlush([item]).catch(() => {});
   }
 
+  roomTrAnswer(opts) {
+    if (!this.roomTrOn()) return;
+    const item = RTR.askItem({ ...opts, answer: true });
+    if (!item) return;
+    this.roomTrFlush([item]).catch(() => {});
+  }
+
   /** 방 안에서만 쓰는 짧은 토큰. **비밀값을 들고 있지 않고** 깃발로 만들어 쓴다. */
   async trToken_() {
     if (this.trToken) return this.trToken;
@@ -1935,6 +1942,39 @@ export class Room {
            번역은 뒤따라 `question_tr` 로 간다(먼저 보내는 까닭: 늦어도 줄은 안 잃는다, R-15). */
         this.roomTrAsk({ id: this.activeAsk.id, text: spoken,
                          srcLang: this.activeAsk.lang || parsed.srcLang || 'ko' });
+        return;
+      }
+
+      if (parsed && parsed.kind === 'answer') {
+        const askId = parsed.id;
+        const answerText = typeof parsed.text === 'string' ? parsed.text.trim() : '';
+        if (!askId || !answerText) return;
+        if (this.activeAsk && this.activeAsk.id === askId) {
+          this.activeAsk.answer = answerText;
+        }
+        if (this.askHistory) {
+          const hItem = this.askHistory.find(h => h.id === askId);
+          if (hItem) {
+            hItem.answer = answerText;
+            hItem.answeredAt = Date.now();
+          }
+        }
+        const answerMsg = JSON.stringify({
+          kind: 'answer',
+          id: askId,
+          seq: this.activeAsk ? this.activeAsk.seq : 0,
+          name: '강사 (Instructor)',
+          src: answerText,
+          srcLang: parsed.srcLang || 'ko',
+          at: Date.now()
+        });
+        for (const hostWs of this.ctx.getWebSockets('host')) {
+          try { hostWs.send(answerMsg); } catch (_) {}
+        }
+        for (const listenerWs of this.ctx.getWebSockets('listener')) {
+          try { listenerWs.send(answerMsg); } catch (_) {}
+        }
+        this.roomTrAnswer({ id: askId, text: answerText, srcLang: parsed.srcLang || 'ko' });
         return;
       }
 
