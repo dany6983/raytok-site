@@ -2404,7 +2404,8 @@
         row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.8rem;';
         const info = document.createElement('div');
         info.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px;';
-        info.textContent = `${item.seq}. ${item.name} [질문자 언어: ${item.lang}] — "${item.text}"`;
+        const langLabel = T('ask_lang_label') || (UI_LANG === 'en' ? 'Lang' : '질문자 언어');
+        info.textContent = `${item.seq}. ${item.name} [${langLabel}: ${item.lang}] — "${item.text}"`;
         const btnGrant = document.createElement('button');
         btnGrant.className = 'btn';
         btnGrant.style.cssText = 'padding:2px 8px; font-size:0.75rem; min-height:28px; white-space:nowrap;';
@@ -2614,14 +2615,12 @@
         /* 원고 **원문**을 방에 올린다 — 방이 「다음」 때와 새 언어가 올 때 번역한다(B 4).
            다시 붙을 때도 보낸다: 방이 살아 있으면 `para` 로 합쳐지고, 새 방이면 꼭 필요하다. */
         try { sendScriptSrc(); } catch (_) {}
-        if (paragraphs.length > 0 && live.cur <= 0) {
-          live.cur = 1;
-          live.state[1] = 'read';
+        if (paragraphs.length > 0) {
+          if (live.cur <= 0) live.cur = 1;
+          live.state[live.cur] = 'read';
           renderLive();
-          sendScript(1);
-          playStart('auto');
-        } else if (live.cur > 0) {
           sendScript(live.cur);
+          if (!play.on) playStart('auto');
         }
         /* 끊긴 동안 말한 확정 줄을 **순서대로** 흘려보낸다 (R-15) */
         try { flushSpoken(); } catch (_) {}
@@ -2674,8 +2673,6 @@
           live.cur = 1;
           live.state[1] = 'read';
           renderLive();
-          sendScript(1);
-          playStart('auto');
         }
         renderLive();
         mic.seq = 0;
@@ -2746,6 +2743,7 @@
         live_silence: '오래 넘기지 않아 곧 끊깁니다 — 문단을 넘기세요',
         live_no_script: '원고가 없습니다.',
         ask_grant_btn: '지명',
+        ask_lang_label: '질문자 언어',
         ask_speaking: '말하는 중',
         ask_empty: '대기 중인 질문이 없습니다.',
         btn_answer_send: '답변 전송',
@@ -2904,6 +2902,7 @@
         live_silence: 'No paragraph for a while — advance one or the room will close',
         live_no_script: 'No script loaded.',
         ask_grant_btn: 'Grant',
+        ask_lang_label: 'Attendee lang',
         ask_speaking: 'Speaking',
         ask_empty: 'No questions waiting.',
         btn_answer_send: 'Send Answer',
