@@ -320,8 +320,8 @@
     .att-now { font-size: 1.4rem; font-weight: 700; color: var(--text); }
     .att-langs { margin-top: 6px; color: var(--text-muted); }
     .att-langs span { display: inline-block; margin-right: 10px; }
-    .live-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; align-items: center; }
-    .live-controls .btn { padding: 8px 14px; font-size: 0.85rem; min-height: 38px; }
+    .live-controls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 14px; align-items: center; }
+    .live-controls .btn { padding: 6px 12px; font-size: 0.82rem; min-height: 36px; }
     .live-controls .btn.warn { background: var(--warning); color: #000; }
     .live-controls .btn.warn.on { background: var(--danger); color: #fff; }
     .play-rate-select {
@@ -599,6 +599,11 @@
                 <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
+              <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <input type="text" id="askAnswerInput" placeholder="강사 답변 입력 (단답형 / 대화)..." data-t-placeholder="ask_answer_placeholder" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;" />
+                <button id="btnAskAnswer" class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: var(--primary); color: #fff; font-weight: 600;" data-t="btn_answer_send">답변 전송</button>
+              </div>
+              <div id="askInstructorAnswers" style="font-size: 0.8rem; color: var(--text); margin-bottom: 8px; max-height: 80px; overflow-y: auto;"></div>
               <div style="display: flex; gap: 6px;">
                 <!-- 정본 §1 ⑤ — 질문을 강사 말로 읽어 준다. 기본 켬(§24), 끄는 단추다 -->
                 <button id="btnAskSpeak" class="btn secondary" style="min-height: 36px; padding: 6px 10px;" data-t="ask_speak_on"></button>
@@ -2365,6 +2370,10 @@
         renderAskSpoken(msg);
         return;
       }
+      if (msg.kind === 'answer') {
+        renderInstructorAnswer(msg);
+        return;
+      }
       if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
         clearAskActive();
         return;
@@ -2543,6 +2552,35 @@
       if (btnAskEnd) btnAskEnd.onclick = () => closeQuestion('host_done');
       const btnAskSilent = document.getElementById('btnAskSilent');
       if (btnAskSilent) btnAskSilent.onclick = () => closeQuestion('silent');
+
+      const btnAskAnswer = document.getElementById('btnAskAnswer');
+      const askAnswerInput = document.getElementById('askAnswerInput');
+      function sendAskAnswer() {
+        if (!liveActiveAsk || !askAnswerInput) return;
+        const text = askAnswerInput.value.trim();
+        if (!text) return;
+        wsSend({ kind: 'answer', id: liveActiveAsk.id, text, srcLang: SRC_LANG || 'ko' });
+        askAnswerInput.value = '';
+      }
+      if (btnAskAnswer) btnAskAnswer.onclick = sendAskAnswer;
+      if (askAnswerInput) askAnswerInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendAskAnswer();
+        }
+      };
+    }
+
+    function renderInstructorAnswer(msg) {
+      if (!liveActiveAsk || liveActiveAsk.id !== msg.id) return;
+      const ansContainer = document.getElementById('askInstructorAnswers');
+      if (!ansContainer) return;
+      const div = document.createElement('div');
+      div.style.cssText = 'padding: 4px 6px; background: rgba(0, 136, 176, 0.15); border-radius: 4px; margin-bottom: 4px;';
+      div.textContent = `[강사 답변] ${msg.src}`;
+      ansContainer.appendChild(div);
+      ansContainer.scrollTop = ansContainer.scrollHeight;
+      speakHost(msg.src, msg.srcLang || SRC_LANG);
     }
 
     function clearAskActive() {
@@ -2550,6 +2588,10 @@
       clearInterval(askTimerInterval);
       const area = document.getElementById('askActiveArea');
       if (area) area.style.display = 'none';
+      const ansContainer = document.getElementById('askInstructorAnswers');
+      if (ansContainer) ansContainer.innerHTML = '';
+      const askAnswerInput = document.getElementById('askAnswerInput');
+      if (askAnswerInput) askAnswerInput.value = '';
       renderAskQueue(liveAskQueue);
     }
 
@@ -2573,7 +2615,11 @@
            다시 붙을 때도 보낸다: 방이 살아 있으면 `para` 로 합쳐지고, 새 방이면 꼭 필요하다. */
         try { sendScriptSrc(); } catch (_) {}
         if (paragraphs.length > 0 && live.cur <= 0) {
-          setTimeout(() => goTo(1), 50);
+          live.cur = 1;
+          live.state[1] = 'read';
+          renderLive();
+          sendScript(1);
+          playStart('auto');
         } else if (live.cur > 0) {
           sendScript(live.cur);
         }
@@ -2702,6 +2748,8 @@
         ask_grant_btn: '지명',
         ask_speaking: '말하는 중',
         ask_empty: '대기 중인 질문이 없습니다.',
+        btn_answer_send: '답변 전송',
+        ask_answer_placeholder: '강사 답변 입력 (단답형 / 대화)...',
         err_need_code: '이용권 코드를 입력하세요.',
         err_lang_cap: '한 번에 고를 수 있는 언어는 {n}개까지입니다. 하나를 빼고 다시 고르세요.',
         tr_fail_note: '번역 안 됨: {langs} — 그 언어 청취자는 원문을 봅니다.',
@@ -2858,6 +2906,8 @@
         ask_grant_btn: 'Grant',
         ask_speaking: 'Speaking',
         ask_empty: 'No questions waiting.',
+        btn_answer_send: 'Send Answer',
+        ask_answer_placeholder: 'Type instructor answer...',
         err_need_code: 'Enter the licence code.',
         err_lang_cap: 'You can pick up to {n} languages at once. Unpick one first.',
         tr_fail_note: 'Not translated: {langs} — those listeners see the original text.',

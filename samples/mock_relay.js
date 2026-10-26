@@ -74,6 +74,8 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
       /* 손님 질문도 방이 번역한다 (정본 §3 4단계) — 운영 `relay/src/room.js` 의
          `roomTrAsk` 와 **같은 규칙**이어야 한다(D-11: 가짜가 느슨하면 시험이 거짓말한다) */
       item = { ask: String(parsed.id), text: parsed.src };
+    } else if (parsed.kind === 'answer' && typeof parsed.src === 'string' && parsed.src.trim() && parsed.id) {
+      item = { ask: String(parsed.id), text: parsed.src, answer: true };
     } else if (!parsed.kind && !parsed.pending && typeof parsed.text === 'string'
                && parsed.text.trim() && parsed.seq !== undefined) {
       item = { seq: parsed.seq, text: parsed.text };
@@ -93,18 +95,25 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
          섞으면 질문 3번 번역이 원고 3번 문단에 붙는다. */
       /* 질문 이름에 **글자 길이**도 넣는다 — 운영 `doneKey` 가 글자의 표를 넣는 것과 같은
          까닭이다(한 질문의 글자가 손들 때·말할 때 두 번 온다). 가짜가 느슨하면 안 된다(D-11). */
-      const who = item.ask ? 'q' + item.ask + '#' + String(item.text).length
+      const prefix = item.answer ? 'ans' : 'q';
+      const who = item.ask ? prefix + item.ask + '#' + String(item.text).length
         : item.script ? 'p' + item.para : 's' + item.seq;
       const text = seen.has(key) ? room.trCache.get(key + '|' + who) : trOne(item.text, lang);
       seen.add(key);
       room.trCache.set(key + '|' + who, text);
       const msg = text
-        ? (item.ask ? { kind: 'question_tr', id: item.ask, trans: { [lang]: text } }
-          : item.script ? { kind: 'script_tr', para: item.para, trans: { [lang]: text } }
-            : { seq: item.seq, tr: { [lang]: text } })
-        : (item.ask ? { kind: 'question_tr', id: item.ask, trans: {}, no_tr: 1, why: 'http_503' }
-          : item.script ? { kind: 'script_tr', para: item.para, trans: {}, no_tr: 1, why: 'http_503' }
-            : { seq: item.seq, no_tr: 1, why: 'http_503' });
+        ? (item.ask
+            ? (item.answer
+                ? { kind: 'answer_tr', id: item.ask, trans: { [lang]: text } }
+                : { kind: 'question_tr', id: item.ask, trans: { [lang]: text } })
+            : item.script ? { kind: 'script_tr', para: item.para, trans: { [lang]: text } }
+              : { seq: item.seq, tr: { [lang]: text } })
+        : (item.ask
+            ? (item.answer
+                ? { kind: 'answer_tr', id: item.ask, trans: {}, no_tr: 1, why: 'http_503' }
+                : { kind: 'question_tr', id: item.ask, trans: {}, no_tr: 1, why: 'http_503' })
+            : item.script ? { kind: 'script_tr', para: item.para, trans: {}, no_tr: 1, why: 'http_503' }
+              : { seq: item.seq, no_tr: 1, why: 'http_503' });
       try { ws.send(JSON.stringify(msg)); } catch (_) {}
     }
   }
