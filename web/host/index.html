@@ -1856,13 +1856,12 @@
     /** 🎤 를 보일지 — 인식이 있고 국내일 때만. 아니면 왜 아닌지 한 줄. */
     function applyMicVisibility() {
       const hasRec = !!speechCtor();
-      const isKR = !window.rtRegion || window.rtRegion.isKR({ token: live.token });
-      const show = hasRec && isKR;
+      const show = hasRec;
       micBox.style.display = show ? 'flex' : 'none';
       if (show) { micOffNote.style.display = 'none'; micOffNote.textContent = ''; }
       else {
         micOffNote.style.display = 'block';
-        micOffNote.textContent = T(hasRec ? 'mic_region_off' : 'mic_unsupported');
+        micOffNote.textContent = T('mic_unsupported');
       }
       return show;
     }
