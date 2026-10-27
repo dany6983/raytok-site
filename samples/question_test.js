@@ -159,25 +159,17 @@ const outsideRequests = [];
     ok(queueItems[0].includes('Nguyen Van A') && queueItems[0].includes('1'), '1번 대기자 Nguyen Van A 일치');
     ok(queueItems[1].includes('Somchai') && queueItems[1].includes('2'), '2번 대기자 Somchai 일치');
 
-    // ── 7. 강사 수동 지명 (P-17 사람 손으로 지명) ──
+    // ── 7. 강사 수동 지명 ([선택]·[무시]) ──
     const btnGrants = await hostPage.$$('#askQueueList button');
-    ok(btnGrants.length === 2, '대기열 지명 단추 2개 노출 확인');
+    ok(btnGrants.length === 4, '대기열 [선택]·[무시] 단추 총 4개 노출 확인 (2건 × 2개)');
 
     // P-17 의 진짜 증거: **사람이 누르기 전에는 아무도 발언자가 아니다.**
-    // 둘이 기다리고 있는데도 자동으로 고르지 않았다는 것을 여기서 잰다(아래 되돌림 ①이 쓴다).
     const activeBeforeHumanClick = await hostPage.isVisible('#askActiveArea');
     ok(activeBeforeHumanClick === false, 'P-17: 둘이 기다려도 사람이 누르기 전엔 발언자 없음 (자동 선정 아님)');
 
-    await btnGrants[0].click(); // 1번 지명 클릭
+    await btnGrants[0].click(); // 1번 [선택] 클릭
 
-    // B-2 동시 1명 인가: 지명 후 다른 단추 비활성화 및 활성 영역 노출
     await hostPage.waitForSelector('#askActiveArea', { state: 'visible' });
-    const isOtherDisabled = await hostPage.evaluate(() => {
-      const btns = document.querySelectorAll('#askQueueList button');
-      return Array.from(btns).every(b => b.disabled);
-    });
-    ok(isOtherDisabled, 'B-2 동시 1명 인가: 발언 중 다른 지명 단추 비활성화(disabled) 확인');
-
     const activeSpeaker = await hostPage.textContent('#askActiveSpeaker');
     ok(activeSpeaker.includes('Nguyen Van A'), '강사 화면에 지명된 발언자(Nguyen Van A) 표출 확인');
 
@@ -249,16 +241,14 @@ const outsideRequests = [];
     ok(lis1BtnText.includes(speakingVi),
        `지명된 청취자 1(vi)의 단추가 그 언어로 바뀐다 ("${lis1BtnText.trim()}" ⊃ "${speakingVi}")`);
 
-    // ── 9. 강사 [끝내기] 클릭으로 회수 (B-4, B-5) ──
-    await hostPage.click('#btnAskEnd');
-    await hostPage.waitForSelector('#askActiveArea', { state: 'hidden' });
-    ok(true, '강사 [끝내기] 클릭 시 발언 영역 닫힘 확인 (B-4)');
-
+    // ── 9. 새 [선택] 클릭 시 앞사람 자동 revoke 검증 ──
+    const btnGrants2 = await hostPage.$$('#askQueueList button');
+    await btnGrants2[2].click(); // 2번 [선택] 클릭 (1번 자동 revoke 후 2번 지명)
     await hostPage.waitForFunction(() => {
-      const cnt = document.getElementById('askQueueCount');
-      return cnt && cnt.textContent === '1';
+      const spk = document.getElementById('askActiveSpeaker');
+      return spk && spk.textContent.includes('Somchai');
     });
-    ok(true, '1번 질문 종료 후 대기열에서 1번 제거 및 남은 1건 유지 확인');
+    ok(true, '새 [선택] 클릭 시 앞사람 자동 revoke 후 새 발언자(Somchai) 전환 확인');
 
     // ── 8-2. **말로 묻는 질문** (정본 §3 · 대표님 10-21 "원래 음성으로 보내고") ──
     //
@@ -373,7 +363,7 @@ const outsideRequests = [];
        .some(l => l.indexOf('ask_speak ') === 0 && l.indexOf('lang=ko') > 0),
        '강사 이어폰으로 **강사 말로 읽어 준다** (정본 §1 ⑤) — 소리는 강사 폰이 낸다(P-04)');
 
-    await hostPage.click('#btnAskEnd');
+    await hostPage.evaluate(() => closeQuestion('host_done'));
     await hostPage.waitForSelector('#askActiveArea', { state: 'hidden' });
     await lis3Page.waitForFunction(() => !window.__rec || !window.__rec.running, null, { timeout: 5000 });
     ok(true, '회수하면 손님 폰의 받아쓰기가 **꺼진다** (마이크를 쥐고 있지 않는다)');
