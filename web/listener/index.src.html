@@ -1512,6 +1512,8 @@
     let ttsAutoOff = false;   // 원고 줄 때문에 페이지가 끈 상태(청취자가 끈 것이 아니다)
     let welcomeInfo = null;   // 환영 줄(plan·script·q) — 저장 TXT 머리에 적는다(§12 기록)
     const seenScript = new Set();   // 재연결 되풀이 거르기 — `para:at`
+    const connLog = []; let connTries = 0;   // 연결 기록 — 안 될 때의 근거(§12)
+    const ts = () => new Date().toISOString().slice(11, 19);
     function scriptTtsDefault() {
       if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
     }
@@ -1693,20 +1695,29 @@
       setStatus('status_connecting', 'status-dot reconnecting');
 
       ws = new WebSocket(wsUrl);
+      connLog.push(`${ts()} connect#${++connTries} ${relayHost}`);
 
       ws.onopen = () => {
+        connLog.push(`${ts()} open`);
         sendHello();
       };
+      ws.onerror = () => { connLog.push(`${ts()} error`); };
 
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         handleMessage(msg);
       };
 
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         isConnected = false;
+        /* ★ 안 되는 것을 **보이게** 한다(대표님 10-27 13:55 「안 되는 걸 어떻게 테스트하지」): 닫힌 까닭(코드·글)과
+           몇 번째 시도인지 상태 줄 옆에 적고, ⬇ TXT 는 연결이 한 번도 안 됐어도 이 기록을 낸다. */
+        const code = ev && ev.code, why = (ev && ev.reason) || '';
+        connLog.push(`${ts()} close code=${code} reason=${why} clean=${ev && ev.wasClean ? 1 : 0}`);
+        if (connLog.length > 60) connLog.shift();
         if (currentStatusKey !== 'status_ended' && currentStatusKey !== 'status_rejected') {
           setStatus('status_reconnecting', 'status-dot reconnecting');
+          try { statusText.textContent += ` (#${connTries} · ${code}${why ? ' ' + why.slice(0, 40) : ''})`; } catch (_) {}
           setTimeout(connect, 3000);
         }
       };
@@ -2547,6 +2558,7 @@
         const noTr = lines.filter(l => l.text && !(l.tr && l.tr[selectedLang]) && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)).length;
         out.push(`diag plan=${trPlan()} welcome=${welcomeInfo ? `plan:${welcomeInfo.plan} script:${welcomeInfo.script} q:${welcomeInfo.q}` : '-'} no_tr=${noTr}/${lines.length} tts=${isTtsEnabled ? 1 : 0} ua=${navigator.userAgent.slice(0, 60)}`);
         (window.rtRead ? window.rtRead.log().slice(-5) : []).forEach(x => out.push('read ' + x));
+        connLog.slice(-12).forEach(x => out.push('conn ' + x));
       } catch (_) {}
       out.push('');
       for (const l of lines) {
