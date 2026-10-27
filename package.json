@@ -69,6 +69,7 @@
     "test:prod": "node samples/prod_e2e_test.js",
     "test:w-t": "node samples/w_t_test.js",
     "test:listener-i18n": "node samples/listener_i18n_test.js",
+    "test:para-done": "node samples/para_done_test.js",
     "test:join-i18n": "node samples/join_i18n_test.js",
     "test:revert-audit": "node samples/revert_audit_test.js",
     "test:mailwait": "node samples/mailwait_test.js",

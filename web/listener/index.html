@@ -311,6 +311,7 @@
 
   <div class="screen" id="chat-screen">
 
+
     <div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
       <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
       <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
@@ -341,6 +342,7 @@
     </div>
   </div>
 
+
   <div id="voice-picker-modal" style="display:none; position:fixed; bottom:70px; left:16px; z-index:60; width:280px; background:var(--card-bg, var(--card-bg)); border:1px solid var(--border); border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <div style="font-weight:bold; font-size:14px; color:var(--text);" data-i18n="voice_pick_title">목소리 선택</div>
@@ -348,6 +350,7 @@
     </div>
     <div id="voice-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
+
 
   <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, var(--card-bg));" data-i18n="ask_title">✋ 질문하기</div>
@@ -358,6 +361,7 @@
       <button class="tool-btn" id="btn-ask-submit" style="padding:4px 12px; background:var(--primary); color:#ffffff; font-weight:600;" data-i18n="btn_ask_submit">손들기 전송</button>
     </div>
   </div>
+
 
   <div id="save-picker-modal" style="display:none; position:fixed; bottom:70px; right:16px; z-index:60; width:260px; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25); text-align:left;">
     <div>
@@ -389,6 +393,7 @@
     </div>
   </div>
 
+
   <div class="modal" id="end-modal">
     <div class="modal-content">
       <div class="modal-title" data-i18n="end_title">세션·안내 종료</div>
@@ -408,6 +413,7 @@
       <button class="btn" onclick="location.reload()" data-i18n="reload_button">새로고침</button>
     </div>
   </div>
+
 
   <div style="display:none" aria-hidden="true">
     <span data-i18n="status_connecting">연결 중...</span>
@@ -1375,8 +1381,13 @@
         reader = null;
         if (PARA_DONE_WIRE && ws && ws.readyState === WebSocket.OPEN) {
           try {
-            ws.send(JSON.stringify({ kind: 'para_done', para: finishedPara }));
-            rlog(`para_done para=${finishedPara}`);
+            let listenerId = sessionStorage.getItem('raytok_listener_id');
+            if (!listenerId) {
+              listenerId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'l_' + Math.random().toString(36).slice(2);
+              try { sessionStorage.setItem('raytok_listener_id', listenerId); } catch (_) {}
+            }
+            ws.send(JSON.stringify({ kind: 'para_done', para: finishedPara, from: listenerId }));
+            rlog(`para_done para=${finishedPara} from=${listenerId}`);
           } catch (e) {}
         }
         return;

@@ -1616,8 +1616,13 @@
         reader = null;
         if (PARA_DONE_WIRE && ws && ws.readyState === WebSocket.OPEN) {
           try {
-            ws.send(JSON.stringify({ kind: 'para_done', para: finishedPara }));
-            rlog(`para_done para=${finishedPara}`);
+            let listenerId = sessionStorage.getItem('raytok_listener_id');
+            if (!listenerId) {
+              listenerId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'l_' + Math.random().toString(36).slice(2);
+              try { sessionStorage.setItem('raytok_listener_id', listenerId); } catch (_) {}
+            }
+            ws.send(JSON.stringify({ kind: 'para_done', para: finishedPara, from: listenerId }));
+            rlog(`para_done para=${finishedPara} from=${listenerId}`);
           } catch (e) {}
         }
         return;

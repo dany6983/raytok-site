@@ -12,6 +12,14 @@
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
 ---
+## 10-27 12:00 — [세션] 계획표 11:35 (para_done 유니크 발신자 & 앱 같이 받기 단추 검증)
+했다: para_done 유니크 발신자(Set) 및 앱 같이 받기 단추 검증 완료
+어디서 보나: web/listener/index.src.html, samples/para_done_test.js, samples/listener_state_test.js
+막힘: 없음
+확인만: 실기 목록 w8 (앱 같이 받기 단추 · /download/ 이동 확인)
+다음: 계획표 11:35 완료
+
+---
 ## 10-27 02:00 — [세션] 계획표 0~3번 완료
 했다: 손님 질문 창 i18n(81개 언어 + data-i18n-placeholder) 및 설계 C `para_done` 전선 반영, npm test 전체 초록 (붉은 수 0).
 어디서 보나: 손님 질문 입력창 및 발언 중 안내 (`web/listener/index.html`), 강사 화면 `PARA_DONE_WIRE`. 시험 `samples/listener_i18n_test.js`, `samples/host_play_test.js`, `samples/host_pause_wire_test.js`
