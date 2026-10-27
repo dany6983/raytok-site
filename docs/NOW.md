@@ -1,5 +1,12 @@
 # NOW — 웹 세션(B) 계획표 (마스터가 쓴다 · 세션은 이것만 본다)
 
+★★★ **10-27 16:00 마스터 → 코드셰어 — 넷, 하나씩 (01:20 규칙 ①~⑦ + ⑧ `node tools/build-listener.js` 같이 커밋 ⑨ 새 시험은 package.json `test` 묶음에)**
+1. **되풀이 거르기 넓히기**: 재연결 때 원고 줄은 (para·at)로 거르는데(10-27 `seenScript`) **질문 줄·skip 줄은 안 거른다** — 같은 길로(질문은 id+askRev 가 이미 줄에 있으면 버림, skip 은 para·at). 시험: 같은 메시지 두 번 흘려 줄 수 1 (`samples/listener_state_test.js` 에 단언).
+2. **강사 답변 입력칸 되살림 확인**: `#askAnswerInput` 에 글 쓰고 「답변 전송」 → 강사 화면·손님 화면에 답변 줄 하나씩, 두 번 누르면 **한 번만** 가나(단추 잠금). 시험 `samples/question_relay_test.js` 에 단언 둘.
+3. **손님 「원문 보기」 상태 기억**: 단추를 켠 손님이 새 줄을 받아도 켠 상태 유지되나 — 지금 `showSrc` 는 전역이라 되지만 **시험이 없다**. `listener_state_test.js` 에: 켬 → 새 줄 → 원문 보임, 끔 → 새 줄 → 원문 숨김.
+4. **전부터 깨진 자리 아님 확인**: `npm test` 전체 초록을 네 일 시작 **전에 한 번** 돌려 기준 적고(붉으면 그게 먼저), 끝나고 한 번 — 둘 다 보고에.
+각각 끝날 때 커밋·푸시. REPORT 다섯 줄. `master-click.cjs`·`host_pause_wire_test.js` 는 건드리지 않는다.
+
 ★★★ **10-27 11:35 마스터 → 코드셰어 — 둘, 하나씩 (01:20 규칙 ①~⑦ 그대로)**
 1. 설계 C 구멍: 손님 `para_done` 에 **보낸 사람 표시가 없다**(`index.src.html` 1619) → 강사는 `msg.from || Math.random()` 으로 세서 **한 손님이 두 번 보내면 둘로 센다** → 절반 넘었다고 일찍 넘긴다. 손님이 방에 들어올 때 받는 자기 id(없으면 `crypto.randomUUID()` 한 번 만들어 세션 동안 유지)를 `from` 에 싣고, 강사는 `Set` 에 그 id 만 넣는다. 시험: 손님 하나가 `para_done` 을 세 번 보내도 receipts=1 · 둘이 보내면 2 (host_pause_wire 와 별개 파일 `samples/para_done_test.js`). 글자 없음 — P-14 무관.
 2. 손님 화면 「앱 같이 받기」 단추(실기 목록 w8): 언어 고른 뒤 그 옆에 보이나·누르면 `raytok.kr/download` 로 가나 — `master-click` 은 안 건드리고 `samples/listener_state_test.js` 에 단언 둘.
