@@ -547,6 +547,9 @@
           wakeLock = await navigator.wakeLock.request('screen');
           wakeLock.addEventListener('release', function() {
             wakeLock = null;
+            if (isSessionActive) {
+              requestWakeLock();
+            }
           });
         } catch (e) {
           wakeLock = null;
@@ -1448,10 +1451,7 @@
           // 인식기는 말이 끊기면 스스로 멈춘다(아이폰·안드로이드 둘 다). 발언권이 아직
           // 내 것이면 다시 연다 — 안 열면 두 번째 문장부터 조용히 사라진다.
           activeSpeechRec.onend = () => {
-            if (askMicFailed) return;
-            if (!activeSpeechRec) return;             // stopListenerMicQuestion 이 껐다
-            if (!myAskId || myAskId !== askId) return;
-            try { activeSpeechRec.start(); } catch (_) {}
+            // 10-27 18:03 대표님: 지명 중 재시작 루프 제거
           };
           activeSpeechRec.onresult = (e) => {
             const from = typeof e.resultIndex === 'number' ? e.resultIndex : 0;

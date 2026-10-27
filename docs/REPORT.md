@@ -12,7 +12,12 @@
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
 ---
-## 10-27 16:30 — [세션] 계획표 16:00 (되풀이 거르기 넓히기·답변 전송 잠금·원문 보기 상태 기억 및 기준 검증)
+## 10-27 18:30 — [세션] 계획표 18:05 (질문 흐름 단순화: 선택·무시 단추만, answer 보내는 곳 0, WakeLock 지속 유지 및 마이크 재시작 루프 제거)
+했다: 강사 화면 질문 흐름 단순화([선택]·[무시]만, 답변 서브창 및 answer 전송 제거, 선택 시 앞사람 자동 revoke), 손님 화면 WakeLock 항상 유지 및 마이크 재시작 루프(띵띵) 제거 완료
+어디서 보나: web/host/index.html, web/listener/index.src.html, samples/listener_state_test.js, relay/test/question-queue.mjs
+막힘: 없음
+확인만: `npm test` 전체 초록 (붉은 수 0)
+다음: 계획표 18:05 완료
 했다: 질문·스킵 줄 되풀이 거르기(seenAsk, seenSkip), 강사 답변 전송 단추 잠금, 손님 원문 보기 상태 기억 단언 추가 및 검증 완료
 어디서 보나: web/listener/index.src.html, web/host/index.html, samples/listener_state_test.js, relay/test/question-queue.mjs
 막힘: 없음
