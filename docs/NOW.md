@@ -1,5 +1,10 @@
 # NOW — 웹 세션(B) 계획표 (마스터가 쓴다 · 세션은 이것만 본다)
 
+★★★ **10-27 11:35 마스터 → 코드셰어 — 둘, 하나씩 (01:20 규칙 ①~⑦ 그대로)**
+1. 설계 C 구멍: 손님 `para_done` 에 **보낸 사람 표시가 없다**(`index.src.html` 1619) → 강사는 `msg.from || Math.random()` 으로 세서 **한 손님이 두 번 보내면 둘로 센다** → 절반 넘었다고 일찍 넘긴다. 손님이 방에 들어올 때 받는 자기 id(없으면 `crypto.randomUUID()` 한 번 만들어 세션 동안 유지)를 `from` 에 싣고, 강사는 `Set` 에 그 id 만 넣는다. 시험: 손님 하나가 `para_done` 을 세 번 보내도 receipts=1 · 둘이 보내면 2 (host_pause_wire 와 별개 파일 `samples/para_done_test.js`). 글자 없음 — P-14 무관.
+2. 손님 화면 「앱 같이 받기」 단추(실기 목록 w8): 언어 고른 뒤 그 옆에 보이나·누르면 `raytok.kr/download` 로 가나 — `master-click` 은 안 건드리고 `samples/listener_state_test.js` 에 단언 둘.
+각각 끝날 때 `npm test` 전체 붉은 수 0 → 커밋·푸시 → 다음. REPORT 다섯 줄.
+
 ★★★★ **10-27 01:20 마스터 — 코드셰어 00:40 결과(403df79) 되돌림(d-revert)**: 8개 붉음(a11y·terms·end·live·listener-build·first-load·question·listener-mic-voice). 다시 할 때 규칙: ① **한 번에 하나**(1번 끝나고 npm test 전체 초록 → 커밋 → 그다음 2번) ② 새 파일 금지(`web/raytok-web-console.html` 같은 것) ③ `samples/host_play_test.js` 의 🎤 되켜기(정본 §6 ④)는 **그대로** — 자리 비움은 ■·휴식 뒤 사람이 옮길 때만 ④ 원고 줄은 기본 소리 끔(L4-3) 유지 ⑤ 첫 화면 gz 37KB 안 ⑥ `node tools/build-listener.js` 같이 커밋 ⑦ 보고의 「초록」은 전체 `npm test` 를 돌린 뒤 **붉은 수 0** 을 적는다.
 ★★★ **10-27 00:30 마스터 → 코드셰어 (07시 뒤) — 웹 남은 것 둘, 순서대로**
 0. `docs/MISTAKES.md` 읽고 시작. `scripts/master-click.cjs`·`samples/host_pause_wire_test.js` 는 건드리지 않는다. 시험 먼저 붉게(D-09).
