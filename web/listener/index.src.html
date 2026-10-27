@@ -1669,6 +1669,11 @@
 
     // 연결 관리
     function connect() {
+      /* ★ 10-27 14:14 대표님 tail: 아이폰이 같은 초에 `/ws` 를 **둘** 열고 둘 다 Canceled. 이 함수가 두 곳
+         (들어가기 단추 · 화면이 다시 보일 때)에서 불리는데, 앞 것이 아직 **여는 중**(CONNECTING)이면
+         `ws.close()` 가 그것을 끊고 새것을 연다 — 아이폰은 들어가기 때 화면 깨우기(무음 영상)로 visibility 가
+         한 번 바뀐다. 여는 중이면 **기다린다**(새로 열지 않는다). 짐작은 짐작이라 적는다 — 실증은 폰 상태 줄의 conn 기록. */
+      if (ws && ws.readyState === WebSocket.CONNECTING) { connLog.push(`${ts()} connect skipped (connecting)`); return; }
       if (ws) ws.close();
 
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';

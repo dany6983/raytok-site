@@ -1425,6 +1425,7 @@ say: function (text, via) { speakWebTts(text, via || ''); }
 };
 
 function connect() {
+if (ws && ws.readyState === WebSocket.CONNECTING) { connLog.push(`${ts()} connect skipped (connecting)`); return; }
 if (ws) ws.close();
 
 const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
