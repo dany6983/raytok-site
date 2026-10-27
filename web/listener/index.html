@@ -427,8 +427,6 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 <span data-i18n="btn_save_record">내 기록 받기 (TXT)</span>
 </div>
 
-<script src="../common/rec-lang.js"></script>
-
 <script src="../common/voice-fallback.js"></script>
 <script>
 const LISTENER_VER = '1.2.0'; // v1.2.0 — 정본 v1: 내 말만 보기 · 질문도 내 말로 · 앱 같이 받기
@@ -1204,15 +1202,24 @@ let activeMediaStream = null;
 let askMicFailed = false;   // 마이크가 안 되는 폰 — 글자 칸으로 넘어갔나
 let askSpeakingFor = null;  // 지금 발언권을 받은 질문 {id, seq} — 보내는 길이 이것으로 갈린다
 
+function loadRecLang() {
+if (window.rtRecLang) return Promise.resolve();
+return new Promise((res) => {
+const sc = document.createElement('script'); sc.src = '../common/rec-lang.js';
+sc.onload = res; sc.onerror = res; document.head.appendChild(sc);
+setTimeout(res, 3000);
+});
+}
 async function startListenerMicQuestion(askId, askSeq) {
 askMicFailed = false;
 askSpeakingFor = { id: askId, seq: askSeq };
-const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const iosNoMic = ASK_IOS_TEXT && /iP(hone|od|ad)/.test(navigator.userAgent || '');
+const SpeechRec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
+if (iosNoMic) connLog.push(`${ts()} ask ios→text`);
 if (SpeechRec) {
 try {
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-activeMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
-}
+showAskModalFallback(askId, askSeq, true);
+await loadRecLang();                      // 표가 안 오면 코드를 그대로 넘긴다(§20)
 activeSpeechRec = new SpeechRec();
 activeSpeechRec.lang = (window.rtRecLang && window.rtRecLang.tag)
 ? window.rtRecLang.tag(selectedLang || 'ko')
@@ -1221,6 +1228,7 @@ activeSpeechRec.continuous = true;
 activeSpeechRec.interimResults = false;
 activeSpeechRec.onerror = (ev) => {
 const why = (ev && ev.error) || '';
+connLog.push(`${ts()} ask rec error ${why}`);
 if (why === 'aborted') return;            // 우리가 stop() 한 것
 askMicFailed = true;
 try { activeSpeechRec && activeSpeechRec.stop(); } catch (_) {}
@@ -1234,7 +1242,9 @@ if (!myAskId || myAskId !== askId) return;
 try { activeSpeechRec.start(); } catch (_) {}
 };
 activeSpeechRec.onresult = (e) => {
-const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
+const from = typeof e.resultIndex === 'number' ? e.resultIndex : 0;
+const transcript = Array.from(e.results).slice(from).filter(r => r.isFinal !== false).map(r => r[0].transcript).join(' ').trim();
+connLog.push(`${ts()} ask rec result len=${transcript.length}`);
 if (transcript && ws && ws.readyState === WebSocket.OPEN) {
 ws.send(JSON.stringify({
 kind: 'question',
@@ -1270,14 +1280,16 @@ const askModal = document.getElementById('ask-modal');
 if (askModal) askModal.style.display = 'none';
 }
 
-function showAskModalFallback(askId, askSeq) {
+function showAskModalFallback(askId, askSeq, micOn) {
 askSpeakingFor = { id: askId, seq: askSeq };
 const askModal = document.getElementById('ask-modal');
 const askInput = document.getElementById('ask-input-text');
 if (!askModal || !askInput) return;
 askModal.style.display = 'block';
 askInput.value = '';
-try { askInput.focus(); } catch (_) {}
+const st = document.getElementById('ask-status-msg');
+if (st) st.textContent = t(micOn ? 'ask_speaking' : 'ask_notice', currentUiLang);
+if (!micOn) { try { askInput.focus(); } catch (_) {} }
 }
 
 let ttsTouched = false;   // 청취자가 단추를 직접 눌렀나 (L4-3: 원고 줄 기본 끔을 가를 때 본다)
@@ -1297,6 +1309,7 @@ let ttsAutoOff = false;   // 원고 줄 때문에 페이지가 끈 상태(청취
 let welcomeInfo = null;   // 환영 줄(plan·script·q) — 저장 TXT 머리에 적는다(§12 기록)
 const seenScript = new Set();   // 재연결 되풀이 거르기 — `para:at`
 const connLog = []; let connTries = 0, connTimer = null;   // 연결 기록 — 안 될 때의 근거(§12)
+const ASK_IOS_TEXT = true;   // 아이폰은 지명 뒤 글자로 묻는다 (10-27 실기: 마이크 열면 죽음)
 const ts = () => new Date().toISOString().slice(11, 19);
 function scriptTtsDefault() {
 if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
@@ -1934,11 +1947,12 @@ if (!ios) return false;
 return !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/)/.test(u);
 }
 
+var IOS_CHROME_HINT = false;   // 기본 끔 (대표님 10-27 15:15)
 var iosChromeLog = [];
 function renderIosChrome() {
 var box = document.getElementById('ios-chrome');
 if (!box) return;
-var show = isIosSafari();
+var show = IOS_CHROME_HINT && isIosSafari();
 box.style.display = show ? 'block' : 'none';
 var line = 'ios_chrome on=' + (show ? 1 : 0);
 if (iosChromeLog[iosChromeLog.length - 1] !== line) iosChromeLog.push(line);
@@ -2015,15 +2029,18 @@ function showSrcFor(line) {
 if (isScreenView) return true;
 const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
 if (sameLang) return true;
+if (line.broadcast && !(line.tr && line.tr[selectedLang])) return true;   // 「원문만」 줄에 번역이 없으면 원문이 그 줄의 전부다
+if (SRC_ONLY_ON_TOGGLE) return !!showSrc;
 if (!onServerTr()) return true;
 if (showSrc) return true;
 return !(line.tr && line.tr[selectedLang]);
 }
+const SRC_ONLY_ON_TOGGLE = true;   // 손님 폰: 원문은 단추로만 (대표님 10-27 15:17)
 
 function renderSrcBtn() {
 if (!btnToggleSrc) return;
 const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-const useful = !isScreenView && !sameLang && onServerTr();
+const useful = !isScreenView && !sameLang && (SRC_ONLY_ON_TOGGLE || onServerTr());
 btnToggleSrc.style.display = useful ? '' : 'none';
 btnToggleSrc.classList.toggle('active', !!showSrc);
 btnToggleSrc.setAttribute('aria-pressed', showSrc ? 'true' : 'false');
@@ -2035,7 +2052,7 @@ if (!div) return;
 const textDiv = div.querySelector('.msg-text');
 if (textDiv) textDiv.style.display = showSrcFor(line) ? '' : 'none';
 const srcTag = div.querySelector('.msg-src');
-if (srcTag) srcTag.style.display = showSrcFor(line) ? '' : 'none';
+if (srcTag) srcTag.style.display = '';   // 머리줄(원고 n/n · 언어 · 꼬리표)은 한국어가 아니다 — 원문 글자만 접는다
 const trDiv = div.querySelector('.msg-tr');
 
 const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
@@ -2155,9 +2172,9 @@ out.push(`${srcLang.toUpperCase()} → ${langName} (${selectedLang})`);
 out.push(`Lines: ${lines.length}`);
 try {
 const noTr = lines.filter(l => l.text && !(l.tr && l.tr[selectedLang]) && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)).length;
-out.push(`diag plan=${trPlan()} welcome=${welcomeInfo ? `plan:${welcomeInfo.plan} script:${welcomeInfo.script} q:${welcomeInfo.q}` : '-'} no_tr=${noTr}/${lines.length} tts=${isTtsEnabled ? 1 : 0} ua=${navigator.userAgent.slice(0, 60)}`);
+out.push(`diag plan=${trPlan()} welcome=${welcomeInfo ? `plan:${welcomeInfo.plan} script:${welcomeInfo.script} q:${welcomeInfo.q}` : '-'} no_tr=${noTr}/${lines.length} tts=${isTtsEnabled ? 1 : 0}`);
 (window.rtRead ? window.rtRead.log().slice(-5) : []).forEach(x => out.push('read ' + x));
-connLog.slice(-12).forEach(x => out.push('conn ' + x));
+connLog.slice(-8).forEach(x => out.push('conn ' + x));
 } catch (_) {}
 out.push('');
 for (const l of lines) {

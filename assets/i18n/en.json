@@ -554,5 +554,17 @@
   "자기 폰으로 QR을 찍고 언어를 고릅니다. 설치·가입이 없습니다. 아이폰도 됩니다.": "Scan the QR code with your own phone and choose a language. No installation or sign-up. iPhone works too.",
   "가이드 폰이 직접 연결을 만듭니다. 산·섬·지하에서도 손님은 자기 데이터 없이 접속합니다. 네팔어·미얀마어 등 일부 언어는 인터넷이 필요합니다 — 폰에 그 언어가 없으면 서버가 번역합니다.": "The guide's phone creates the connection directly. In the mountains, on islands and underground, guests connect without using their own data. Some languages, such as Nepali and Burmese, do need internet — if the phone does not have that language, the server translates.",
   "대부분의 언어는 공유기 하나로 · 네팔어·미얀마어 등 일부 언어는 인터넷 필요": "Most languages run on one wireless router · a few, such as Nepali and Burmese, need internet",
-  "안내 데스크나 전시실 입구의 QR을 자기 폰으로 찍고 언어를 고릅니다. 설치·가입이 없습니다. 아이폰도 됩니다.": "They scan the QR code at the information desk or the gallery entrance with their own phone and pick a language. No installing, no signing up. iPhone works too."
+  "안내 데스크나 전시실 입구의 QR을 자기 폰으로 찍고 언어를 고릅니다. 설치·가입이 없습니다. 아이폰도 됩니다.": "They scan the QR code at the information desk or the gallery entrance with their own phone and pick a language. No installing, no signing up. iPhone works too.",
+  "특허 출원 8건 자세히 보기": "See the 8 patent applications",
+  "현장 용어 즉시 등록 <1>10-2026-0191072</1>": "On-site term registration <1>10-2026-0191072</1>",
+  "관내 방송 다국어 송출 <1>10-2026-0194985</1>": "Multilingual in-house broadcast <1>10-2026-0194985</1>",
+  "앱, 근거리 연결, 다국어 배포, 교육 기록까지 주식회사 피엔엘에코가 직접 설계하고 개발합니다. 현장에서 부딪힌 문제를 푼 방법 8건을 특허로 출원했습니다.": "PNL Eco Co., Ltd. designs and develops everything itself: the app, the short-range connection, multilingual distribution and training records. We have filed patent applications for eight methods that solved problems we ran into in the field.",
+  "8건": "8 applications",
+  "현장에서 바로 등록한 용어를 인식과 번역에 동시에": "Terms registered on site, applied to both recognition and translation",
+  "현장 코드 단위로 지정한 용어를 음성 인식과 번역 양쪽에 같이 적용하는 방법 및 시스템": "Method and system for applying terms designated per site code to both speech recognition and translation",
+  "특허 출원 중 · 10-2026-0191072 · 2026.10": "Patent pending · 10-2026-0191072 · 2026.10",
+  "관내 방송을 각자의 언어로, 승인 문장과 즉석 발언을 나눠 기록": "In-house broadcasts in each listener's language, with approved sentences and impromptu remarks recorded separately",
+  "승인된 문장과 실시간 발화를 구분하여 송출하고 기록하는 구역별 다국어 방송 방법 및 시스템": "Zone-based multilingual broadcasting method and system that transmits and records approved sentences and live speech separately",
+  "특허 출원 중 · 10-2026-0194985 · 2026.10": "Patent pending · 10-2026-0194985 · 2026.10",
+  "특허 출원 중 (10-2026-0166695 외 7건) · 사진과 영상은 연출 이미지입니다.": "Patent pending (10-2026-0166695 and 7 others) · Photos and videos are staged images."
 }

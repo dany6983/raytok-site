@@ -129,9 +129,8 @@ function sentParas(room) {
     ok(PLAY.nextPara({ cur: 3, total: 5 }) === 4, '다음 문단 = 지금+1');
     ok(PLAY.nextPara({ cur: 5, total: 5 }) === null, '마지막 문단이면 null — 재생이 스스로 끝난다');
     ok(PLAY.nextPara({ cur: 0, total: 5 }) === 1, '아직 시작 전(0)이면 첫 문단');
-    ok(PLAY.resumeFrom({ pausedAt: 2, cur: 5, total: 9 }).go === true &&
-       PLAY.resumeFrom({ pausedAt: 2, cur: 5, total: 9 }).para === 2,
-       '멈춘 문단이 지금 자리와 다르면 **그 문단으로 되돌아간다** (정본 §6 ④)');
+    ok(PLAY.resumeFrom({ pausedAt: 2, cur: 5, total: 9 }).para === 2,
+       '판정 모듈의 resumeFrom 은 그대로 둔다(화면은 10-27 부터 이것을 읽지 않는다 — ▶ 는 지금 문단)');
     ok(PLAY.resumeFrom({ pausedAt: 5, cur: 5, total: 9 }).go === false, '멈춘 문단이 지금 자리면 그대로 이어 간다');
     ok(PLAY.resumeFrom({ pausedAt: 0, cur: 4, total: 9 }).go === false, '멈춘 문단을 모르면 지금 자리에서 이어 간다');
     ok(PLAY.resumeFrom({ pausedAt: 99, cur: 4, total: 9 }).go === false, '원고 밖 문단은 안 간다');
@@ -202,19 +201,15 @@ function sentParas(room) {
     ok(sentParas(room).length === atMic, '🎤 를 켜 둔 동안 원고 문단이 혼자 나가지 않는다');
 
     /* 사람이 그 사이 딴 문단을 본다 → 되켜면 **멈춘 문단으로 돌아간다** */
-    await page.click('#btnNext');
-    await page.click('#btnNext');
+    await page.click('#btnNext');            // 한 번만 — 마지막 문단까지 가면 되켜자마자 스스로 끝난다
     const wandered = await page.evaluate(() => Number(document.getElementById('liveProgress').textContent.split('/')[0].trim()));
-    ok(wandered === paused.at + 2, `끼어든 동안 손으로 ${wandered} 번 문단까지 넘겼다`);
+    ok(wandered === paused.at + 1, `끼어든 동안 손으로 ${wandered} 번 문단까지 넘겼다`);
 
     await page.click('#btnMic');             // 🎤 를 한 번 더
-    await page.waitForFunction((want) => window.rtHostPlay.state.on === true &&
-      Number(document.getElementById('liveProgress').textContent.split('/')[0].trim()) === want,
-      paused.at, { timeout: 4000 });
+    await page.waitForFunction(() => window.rtHostPlay.state.on === true, null, { timeout: 4000 });
     const backTo = await page.evaluate(() => Number(document.getElementById('liveProgress').textContent.split('/')[0].trim()));
-    ok(backTo === paused.at, `🎤 를 다시 누르니 **멈춘 문단 ${paused.at}** 으로 돌아가 다시 간다 (정본 §6 ④)`);
-    const reSent = sentParas(room);
-    ok(reSent[reSent.length - 1] === paused.at, `그 문단을 손님에게 **다시 보냈다** — 건너뛰지 않는다(R-15)`);
+    /* 10-27 15:22 대표님: ▶ 는 **지금 보는 문단**에서 간다 — 멈춘 문단으로 되돌아가지 않는다(정본 §6 ④ 폐기) */
+    ok(backTo === wandered, `🎤 를 다시 누르니 **지금 보던 문단 ${wandered}** 에서 이어 간다 (되돌아가지 않는다, 10-27)`);
     ok(await page.evaluate(() => window.rtHostPlay.state.pausedAt) === 0, '되켠 뒤 기억은 비운다 — 다음 멈춤이 덮어쓰게');
 
     /* ── 6. 마지막 문단 · 끝 화면 ── */

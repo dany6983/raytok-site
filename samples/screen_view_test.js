@@ -198,6 +198,8 @@ function mockHost(wss) {
     ctx = await b.newContext({ viewport: vp }); p = await ctx.newPage();
     await p.goto(`http://localhost:${port}/?room=123456&auto=1&ws=${wrapSrv.address().port}&lang=en`, { waitUntil: 'load' });
     await p.waitForSelector('#msg-4', { timeout: 10000 }); await p.waitForTimeout(300);
+    /* 10-27 대표님: 원문은 「원문 보기」 단추를 켰을 때만 보인다 — 낱말 끊김은 켠 뒤에 잰다 */
+    await p.click('#btn-toggle-src'); await p.waitForTimeout(150);
     const w = await p.evaluate(() => {
       // 낱말 하나가 두 줄에 걸치면 그 낱말의 사각형이 둘 이상이다
       const split = [];

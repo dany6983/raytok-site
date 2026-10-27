@@ -78,22 +78,14 @@ const UA = {
   }
 
   try {
-    /* ① 아이폰 사파리 — 뜬다 */
+    /* ① 아이폰 사파리 — 10-27 15:15 대표님 「크롬 오픈도 안 되는데 안내가 있어, 없애」 → **안 뜬다**(스위치 끔).
+       자리(③)와 주소 꼴(④)은 코드에 남아 있다 — 되돌리면(IOS_CHROME_HINT=true) 다시 뜬다. */
     let r = await open(UA.iosSafari);
-    ok(r.got.shown === true, `① 아이폰 사파리에서 띠가 **화면에 보인다** (기록 ${JSON.stringify(r.got.log)})`);
-    ok(/Chrome/.test(r.got.text) && r.got.text.length > 10,
-       `① 글자가 손님 말로 들어 있다 ("${r.got.text}")`);
-    /* ③ 자리 — #chat-screen 안, #tr-notice **바로 앞** 형제 (§12 구조 단언) */
+    ok(r.got.shown === false, `① 아이폰 사파리에서도 띠가 **안 보인다** — 스위치 끔 (기록 ${JSON.stringify(r.got.log)})`);
     ok(r.got.parent === 'chat-screen' && r.got.next === 'tr-notice',
-       `③ 자리: #${r.got.parent} > #ios-chrome → 다음 형제 #${r.got.next}`);
-    /* ④ 같은 주소를 크롬 꼴로 — 방 코드·언어가 그대로 간다 */
+       `③ 자리는 그대로: #${r.got.parent} > #ios-chrome → 다음 형제 #${r.got.next}`);
     ok(r.got.url === 'googlechromes://raytok.kr/web/listener/?room=ABC123&lang=ne',
-       `④ 같은 주소를 크롬 꼴로 연다 (${r.got.url})`);
-    /* ⑤ 단추를 누르면 기록이 남는다 (크롬이 없는 기계라 실제로 넘어가지는 않는다) */
-    await r.page.click('#btn-open-chrome');
-    await r.page.waitForTimeout(200);
-    const log2 = await r.page.evaluate(() => window.rtIosChrome.log());
-    ok(log2.some((l) => l === 'ios_chrome go=1'), `⑤ 누른 것이 기록에 남는다 (${JSON.stringify(log2)})`);
+       `④ 주소 꼴 함수도 그대로 (${r.got.url})`);
     await r.ctx.close();
 
     /* ② 아이폰 크롬 — 이미 크롬이다. 뜨면 손님을 제자리로 보내는 꼴이다 */

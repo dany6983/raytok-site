@@ -461,7 +461,7 @@
     <span data-i18n="btn_save_record">내 기록 받기 (TXT)</span>
   </div>
 
-  <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 — 말하는 짝 호스트와 같은 표 -->
+  <!-- §6: 인식에 넘길 언어 태그 표(../common/rec-lang.js)는 **지명될 때** 읽는다(loadRecLang) — 첫 화면 37KB 한도(10-27) -->
   <!-- 대체어 음성 표 (site NOW 1) — **앱 src/offlineLangs.js 에서 생성된 파일**이다.
        손으로 고치지 않는다: node tools/build-voice-fallback.js --write
        ⚠ 미루지 않는다 — **참여 전** 「이 언어 음성 없음」 띠가 이 표를 본다(B 24).
@@ -1401,16 +1401,31 @@
     let askMicFailed = false;   // 마이크가 안 되는 폰 — 글자 칸으로 넘어갔나
     let askSpeakingFor = null;  // 지금 발언권을 받은 질문 {id, seq} — 보내는 길이 이것으로 갈린다
 
+    /* 인식 언어 표 — 질문으로 지명된 손님만 쓴다. 첫 화면에서 내려받지 않고 그때 읽는다 */
+    function loadRecLang() {
+      if (window.rtRecLang) return Promise.resolve();
+      return new Promise((res) => {
+        const sc = document.createElement('script'); sc.src = '../common/rec-lang.js';
+        sc.onload = res; sc.onerror = res; document.head.appendChild(sc);
+        setTimeout(res, 3000);
+      });
+    }
     async function startListenerMicQuestion(askId, askSeq) {
       askMicFailed = false;
       // 발언권을 받았다 — 마이크로 말하든 글자로 말하든 보내는 길은 같은 하나다.
       askSpeakingFor = { id: askId, seq: askSeq };
-      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      /* ★ 아이폰(사파리·아이폰 크롬 모두 WebKit): 지명 뒤 마이크 인식을 열면 **페이지가 죽는다**(대표님 실기
+         10-27 15:14). 아이폰은 글자 칸으로 간다(스위치 기본 켬, §3). 안드로이드는 전과 같다. */
+      const iosNoMic = ASK_IOS_TEXT && /iP(hone|od|ad)/.test(navigator.userAgent || '');
+      const SpeechRec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
+      if (iosNoMic) connLog.push(`${ts()} ask ios→text`);
       if (SpeechRec) {
         try {
-          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            activeMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
-          }
+          /* ★ 10-27 15:16 대표님 「안드로이드 크롬도 마이크 안 됨」: 전에는 여기서 `getUserMedia` 로 마이크를 **먼저
+             잡고** 인식기를 열었다 — 안드로이드 크롬은 그러면 인식기가 마이크를 못 잡아 `audio-capture`/빈 결과로
+             끝난다(권한 창은 인식기가 스스로 띄운다). 잡지 않는다. 창은 **보이게** 연다(말씀하세요 + 글자 칸). */
+          showAskModalFallback(askId, askSeq, true);
+          await loadRecLang();                      // 표가 안 오면 코드를 그대로 넘긴다(§20)
           activeSpeechRec = new SpeechRec();
           // 언어 이름을 분기에 두지 않는다 — 말하는 쪽 호스트와 **같은 표**를 읽는다
           // (§6, web/common/rec-lang.js). 표가 안 실렸으면 코드를 그대로 넘긴다(§20).
@@ -1423,6 +1438,7 @@
           // 그때는 글자 칸으로 넘긴다 — 손든 사람이 말을 못 하고 끝나는 것이 가장 나쁘다(R-15).
           activeSpeechRec.onerror = (ev) => {
             const why = (ev && ev.error) || '';
+            connLog.push(`${ts()} ask rec error ${why}`);
             if (why === 'aborted') return;            // 우리가 stop() 한 것
             askMicFailed = true;
             try { activeSpeechRec && activeSpeechRec.stop(); } catch (_) {}
@@ -1438,7 +1454,9 @@
             try { activeSpeechRec.start(); } catch (_) {}
           };
           activeSpeechRec.onresult = (e) => {
-            const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
+            const from = typeof e.resultIndex === 'number' ? e.resultIndex : 0;
+            const transcript = Array.from(e.results).slice(from).filter(r => r.isFinal !== false).map(r => r[0].transcript).join(' ').trim();
+            connLog.push(`${ts()} ask rec result len=${transcript.length}`);
             if (transcript && ws && ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({
                 kind: 'question',
@@ -1476,14 +1494,17 @@
 
     // 마이크가 없거나 거절당했을 때 — 글자 칸으로 대신한다.
     // 보내는 코드를 여기 또 쓰지 않는다(§12): 상태만 세우고 위의 한 길이 보낸다.
-    function showAskModalFallback(askId, askSeq) {
+    function showAskModalFallback(askId, askSeq, micOn) {
       askSpeakingFor = { id: askId, seq: askSeq };
       const askModal = document.getElementById('ask-modal');
       const askInput = document.getElementById('ask-input-text');
       if (!askModal || !askInput) return;
       askModal.style.display = 'block';
       askInput.value = '';
-      try { askInput.focus(); } catch (_) {}
+      /* 안내 한 줄: 마이크가 켜졌으면 「🎤 말씀하세요 — 끝나면 자동 전송」, 아니면 글자로(둘 다 81개 말 표) */
+      const st = document.getElementById('ask-status-msg');
+      if (st) st.textContent = t(micOn ? 'ask_speaking' : 'ask_notice', currentUiLang);
+      if (!micOn) { try { askInput.focus(); } catch (_) {} }
     }
 
     // 소리 단추 — 켜고 끄는 곳은 여기 하나(단추 글·모양이 늘 상태와 같게).
@@ -1513,6 +1534,7 @@
     let welcomeInfo = null;   // 환영 줄(plan·script·q) — 저장 TXT 머리에 적는다(§12 기록)
     const seenScript = new Set();   // 재연결 되풀이 거르기 — `para:at`
     const connLog = []; let connTries = 0, connTimer = null;   // 연결 기록 — 안 될 때의 근거(§12)
+    const ASK_IOS_TEXT = true;   // 아이폰은 지명 뒤 글자로 묻는다 (10-27 실기: 마이크 열면 죽음)
     const ts = () => new Date().toISOString().slice(11, 19);
     function scriptTtsDefault() {
       if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
@@ -2304,11 +2326,14 @@
       return !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/)/.test(u);
     }
 
+    var IOS_CHROME_HINT = false;   // 기본 끔 (대표님 10-27 15:15)
     var iosChromeLog = [];
     function renderIosChrome() {
       var box = document.getElementById('ios-chrome');
       if (!box) return;
-      var show = isIosSafari();
+      /* 10-27 15:15 대표님: 「크롬으로 열기」가 아이폰에서 안 되는데 안내만 있다 → **없앤다**(스위치 끔).
+         사파리가 아이폰 기본이다(10-22 19:10). 되돌리려면 IOS_CHROME_HINT 만 켠다. */
+      var show = IOS_CHROME_HINT && isIosSafari();
       box.style.display = show ? 'block' : 'none';
       var line = 'ios_chrome on=' + (show ? 1 : 0);
       if (iosChromeLog[iosChromeLog.length - 1] !== line) iosChromeLog.push(line);
@@ -2405,16 +2430,22 @@
       if (isScreenView) return true;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
       if (sameLang) return true;
+      /* ★ 10-27 15:17 대표님(세 번째): 「한국어 띄우지 말라고 — 손님 말만. 굳이 보고 싶으면 단추」.
+         전에는 브라우저 번역 길이거나 번역이 아직 없으면 원문을 보였다 → 손님 폰에 한국어가 떴다.
+         이제 원문은 **「원문 보기」 단추를 켰을 때만**. 번역이 없으면 「번역 대기/없음」 표만 보인다(R-15: 줄은 남고, 원문은 단추 뒤에 있다). */
+      if (line.broadcast && !(line.tr && line.tr[selectedLang])) return true;   // 「원문만」 줄에 번역이 없으면 원문이 그 줄의 전부다
+      if (SRC_ONLY_ON_TOGGLE) return !!showSrc;
       if (!onServerTr()) return true;
       if (showSrc) return true;
       return !(line.tr && line.tr[selectedLang]);
     }
+    const SRC_ONLY_ON_TOGGLE = true;   // 손님 폰: 원문은 단추로만 (대표님 10-27 15:17)
 
     /** 단추는 **숨길 원문이 있을 때만** 보인다 (위 ①②에서는 숨길 것이 없다) */
     function renderSrcBtn() {
       if (!btnToggleSrc) return;
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-      const useful = !isScreenView && !sameLang && onServerTr();
+      const useful = !isScreenView && !sameLang && (SRC_ONLY_ON_TOGGLE || onServerTr());
       btnToggleSrc.style.display = useful ? '' : 'none';
       btnToggleSrc.classList.toggle('active', !!showSrc);
       btnToggleSrc.setAttribute('aria-pressed', showSrc ? 'true' : 'false');
@@ -2427,7 +2458,7 @@
       const textDiv = div.querySelector('.msg-text');
       if (textDiv) textDiv.style.display = showSrcFor(line) ? '' : 'none';
       const srcTag = div.querySelector('.msg-src');
-      if (srcTag) srcTag.style.display = showSrcFor(line) ? '' : 'none';
+      if (srcTag) srcTag.style.display = '';   // 머리줄(원고 n/n · 언어 · 꼬리표)은 한국어가 아니다 — 원문 글자만 접는다
       const trDiv = div.querySelector('.msg-tr');
 
       const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
@@ -2574,9 +2605,9 @@
       /* 진단 한 줄(§12) — 실기에서 「번역이 안 왔다」를 가를 수 있게: 번역 길 · 환영 깃발 · 번역 없는 줄 수 */
       try {
         const noTr = lines.filter(l => l.text && !(l.tr && l.tr[selectedLang]) && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)).length;
-        out.push(`diag plan=${trPlan()} welcome=${welcomeInfo ? `plan:${welcomeInfo.plan} script:${welcomeInfo.script} q:${welcomeInfo.q}` : '-'} no_tr=${noTr}/${lines.length} tts=${isTtsEnabled ? 1 : 0} ua=${navigator.userAgent.slice(0, 60)}`);
+        out.push(`diag plan=${trPlan()} welcome=${welcomeInfo ? `plan:${welcomeInfo.plan} script:${welcomeInfo.script} q:${welcomeInfo.q}` : '-'} no_tr=${noTr}/${lines.length} tts=${isTtsEnabled ? 1 : 0}`);
         (window.rtRead ? window.rtRead.log().slice(-5) : []).forEach(x => out.push('read ' + x));
-        connLog.slice(-12).forEach(x => out.push('conn ' + x));
+        connLog.slice(-8).forEach(x => out.push('conn ' + x));
       } catch (_) {}
       out.push('');
       for (const l of lines) {

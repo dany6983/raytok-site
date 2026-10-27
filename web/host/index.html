@@ -2291,9 +2291,10 @@
 
     function playStart(why) {
       if (!PLAY || !paragraphs.length) return;
-      const resumePara = (play.pausedAt >= 1 && play.pausedAt <= paragraphs.length)
-        ? play.pausedAt
-        : (live.cur >= 1 ? live.cur : 1);
+      /* ★ 10-27 15:22 대표님 「이전 챕터로 돌렸는데 플레이하면 이전 끝 시점에서 다시 시작」 — 정본 §6 ④의
+         「멈춘 문단으로 되돌아간다」를 **버린다**. ▶ 는 언제나 **지금 보고 있는 문단**에서 간다. `pausedAt` 은
+         🎤 를 끌 때 재생을 되켤지 가르는 깃발로만 남는다. */
+      const resumePara = live.cur >= 1 ? live.cur : 1;
       play.on = true;
       play.pausedAt = 0;
       const sameSpot = resumePara === live.cur && live.state[resumePara] === 'read';

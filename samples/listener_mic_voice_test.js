@@ -142,8 +142,11 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
     await me.page.waitForTimeout(100);
     host.send(JSON.stringify({ kind: 'grant', id: myItem.id, max_sec: 90 }));
     await me.page.waitForFunction(() => (window.__micLog || []).includes('start'), null, { timeout: 5000 });
-    ok(true, '지명된 청취자: 마이크가 켜진다 (getUserMedia → 인식 start)');
-    ok(await me.page.evaluate(() => window.__micLog.includes('getUserMedia')), '마이크 권한을 먼저 묻는다');
+    ok(true, '지명된 청취자: 마이크가 켜진다 (인식 start)');
+    /* 10-27 15:16 대표님 「안드로이드 크롬도 마이크 안 됨」: getUserMedia 로 **먼저 잡지 않는다** — 안드로이드 크롬은
+       그러면 인식기가 마이크를 못 잡는다. 권한 창은 인식기가 스스로 띄운다. */
+    ok(!(await me.page.evaluate(() => window.__micLog.includes('getUserMedia'))), '마이크를 getUserMedia 로 먼저 잡지 않는다 (인식기가 직접 연다)');
+    ok(await me.page.evaluate(() => getComputedStyle(document.getElementById('ask-modal')).display !== 'none'), '지명되면 「말씀하세요」 창이 보인다');
     const speakLabel = await me.page.textContent('#btn-ask');
     ok(/🎤/.test(speakLabel), `단추가 발언 중으로 바뀐다 ("${speakLabel}")`);
 
@@ -171,7 +174,7 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
     await me.page.waitForFunction(() => (window.__micLog || []).includes('stop'), null, { timeout: 5000 });
     const micLog = await me.page.evaluate(() => window.__micLog);
     ok(micLog.includes('stop'), `인식을 멈춘다 (log: ${micLog.join('>')})`);
-    ok(micLog.includes('track-stop'), '마이크 트랙도 끈다 — 불이 꺼진다');
+    ok(!micLog.includes('getUserMedia'), '마이크 트랙은 애초에 잡지 않았다 — 인식기가 끄면 불도 꺼진다 (10-27)');
     await me.ctx.close(); await other.ctx.close();
 
     /* ── 5. 인식 없는 브라우저 → 글자 입력 칸 ── */
