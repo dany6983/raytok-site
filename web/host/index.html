@@ -2262,7 +2262,11 @@
         play.pollInterval = pollInterval;
       }
 
-      play.timer = setTimeout(() => {
+      /* 글자 수 시간(ms)에 깨어난다. 그때 「다 읽었다」가 **하나도** 안 왔으면 — 소리 켠 손님이
+         없거나(원고 줄은 기본 끔, L4-3) 손님 0명 — 전처럼 바로 넘긴다(§20 빈 답 = 기다릴 것이
+         없다). 몇은 왔는데 절반이 안 됐으면 **그때만** maxMs(1.5배)까지 더 기다린다(설계 C).
+         10-27 마스터: 전에는 늘 maxMs 까지 기다려 소리 없는 방이 1.5배 느려졌다. */
+      const fire = () => {
         play.timer = null;
         if (play.pollInterval) { clearInterval(play.pollInterval); play.pollInterval = null; }
         if (!play.on) return;
@@ -2270,7 +2274,16 @@
         const go = PLAY.nextPara({ cur: live.cur, total: paragraphs.length });
         if (go == null) { playStop('end'); return; }
         goTo(go);
-      }, PARA_DONE_WIRE ? maxMs : ms);
+      };
+      play.timer = setTimeout(() => {
+        const receipts = (live.paraDoneReceipts && live.paraDoneReceipts[live.cur]) ? live.paraDoneReceipts[live.cur].size : 0;
+        if (PARA_DONE_WIRE && receipts > 0) {
+          playLog(`play_wait para=${live.cur} receipts=${receipts} until=${Math.round(maxMs - ms)}ms`);
+          play.timer = setTimeout(fire, maxMs - ms);
+          return;
+        }
+        fire();
+      }, ms);
     }
 
     function playStart(why) {
