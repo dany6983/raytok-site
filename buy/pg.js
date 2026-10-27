@@ -21,7 +21,7 @@
     storeId: 'store-474365e4-51bf-4907-a06f-a013abe007e4',
 
     /* 포트원 콘솔의 채널 키(KCP). 운영값 형식: channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx */
-    channelKey: 'channel-key-1319ee61-bc5e-4ee0-8e1c-68b9db4d5551',
+    channelKey: 'channel-key-e21f949e-0db4-4508-a263-4aeb81c8f555',
 
     /* 포트원 V1 고객사 식별코드(공개값). 이 채널은 V1 모듈 KCP 라서 V2 SDK 로는 결제창이 안 뜬다
        ("KCP 에 대해 지원하지 않는 기능입니다", 10-19 PG 심사). V1 SDK(IMP.request_pay) + channelKey 로 부른다. */
