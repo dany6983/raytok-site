@@ -1296,7 +1296,7 @@ setTtsEnabled(!isTtsEnabled);
 let ttsAutoOff = false;   // 원고 줄 때문에 페이지가 끈 상태(청취자가 끈 것이 아니다)
 let welcomeInfo = null;   // 환영 줄(plan·script·q) — 저장 TXT 머리에 적는다(§12 기록)
 const seenScript = new Set();   // 재연결 되풀이 거르기 — `para:at`
-const connLog = []; let connTries = 0;   // 연결 기록 — 안 될 때의 근거(§12)
+const connLog = []; let connTries = 0, connTimer = null;   // 연결 기록 — 안 될 때의 근거(§12)
 const ts = () => new Date().toISOString().slice(11, 19);
 function scriptTtsDefault() {
 if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
@@ -1440,8 +1440,17 @@ setStatus('status_connecting', 'status-dot reconnecting');
 
 ws = new WebSocket(wsUrl);
 connLog.push(`${ts()} connect#${++connTries} ${relayHost}`);
+const mine = ws;
+clearTimeout(connTimer);
+connTimer = setTimeout(() => {
+if (ws === mine && mine.readyState === WebSocket.CONNECTING) {
+connLog.push(`${ts()} connect timeout 8s`);
+try { mine.close(); } catch (_) {}
+}
+}, 8000);
 
 ws.onopen = () => {
+clearTimeout(connTimer);
 connLog.push(`${ts()} open`);
 sendHello();
 };
@@ -1459,7 +1468,9 @@ connLog.push(`${ts()} close code=${code} reason=${why} clean=${ev && ev.wasClean
 if (connLog.length > 60) connLog.shift();
 if (currentStatusKey !== 'status_ended' && currentStatusKey !== 'status_rejected') {
 setStatus('status_reconnecting', 'status-dot reconnecting');
-try { statusText.textContent += ` (#${connTries} · ${code}${why ? ' ' + why.slice(0, 40) : ''})`; } catch (_) {}
+const lastLog = connLog[connLog.length - 2] || '';
+const tag = /timeout/.test(lastLog) ? 'timeout' : String(code);
+try { statusText.textContent += ` (#${connTries} · ${tag}${why ? ' ' + why.slice(0, 40) : ''})`; } catch (_) {}
 setTimeout(connect, 3000);
 }
 };
