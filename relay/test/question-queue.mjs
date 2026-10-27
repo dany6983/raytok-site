@@ -228,6 +228,16 @@ class MockContext {
   const p14Err = JSON.parse(lisP14.sent[0] || '{}');
   ok(p14Err.kind === 'ask_error' && p14Err.why === 'p14_participant_translation_forbidden', 'P-14 참여자 번역 포함 요청 차단 확인');
 
+  // 8.1. 강사 답변 전송 검증 (answer)
+  const ansReq = JSON.stringify({
+    kind: 'answer',
+    id: q3Id,
+    text: '비상구는 1층입니다.',
+    srcLang: 'ko'
+  });
+  await room.webSocketMessage(hostWs, ansReq);
+  ok(lis3.sent.some(s => s.includes('answer')), '강사 답변(answer) 브로드캐스트 확인');
+
   // 9. D-09 되돌림 실증 2건:
   // ① 건너뛰기 지명 시 앞선 순번 기록을 지우면 단언 실패 입증
   let revert1Failed = false;

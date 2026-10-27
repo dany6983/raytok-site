@@ -76,6 +76,27 @@ function openHost(base, room) {
     await page.waitForFunction(() => !document.getElementById('room-state').classList.contains('on'));
     ok(true, '[줄 도착] 줄이 하나라도 오면 빈 방 띠를 치운다');
 
+    // ── 3.1. 「원문 보기」 상태 기억 (켜기 켜고 새 줄 → 원문 보임, 끄고 새 줄 → 원문 숨김) ──
+    await page.click('#btn-toggle-src');
+    host1.send(JSON.stringify({ seq: 2, src_lang: 'ko', text: '원문보기 켜짐 테스트', tr: { vi: 'Test On' } }));
+    await page.waitForFunction(() => document.querySelectorAll('.msg-line').length >= 2);
+    const srcVisOn = await page.$eval('.msg-line:last-child .msg-text', el => el.style.display !== 'none');
+    ok(srcVisOn === true, '[원문 보기] 켠 상태에서 새 줄을 받으면 원문이 보인다');
+
+    await page.click('#btn-toggle-src');
+    host1.send(JSON.stringify({ seq: 3, src_lang: 'ko', text: '원문보기 꺼짐 테스트', tr: { vi: 'Test Off' } }));
+    await page.waitForFunction(() => document.querySelectorAll('.msg-line').length >= 3);
+    const srcVisOff = await page.$eval('.msg-line:last-child .msg-text', el => el.style.display === 'none');
+    ok(srcVisOff === true, '[원문 보기] 끈 상태에서 새 줄을 받으면 원문이 숨겨진다');
+
+    // ── 3.2. 질문 줄·스킵 줄 되풀이 거르기 (중복 메시지 전송 시 줄 수 1) ──
+    const dupQ = JSON.stringify({ kind: 'question', id: 'q_dup_test', askRev: 1, src: '중복 질문', seq: 4 });
+    host1.send(dupQ);
+    host1.send(dupQ);
+    await page.waitForTimeout(300);
+    const dupCount = await page.evaluate(() => lines.filter(l => l.ask === 'q_dup_test').length);
+    ok(dupCount === 1, '[중복 거르기] 같은 질문 메시지를 두 번 보내도 줄은 1개만 생성된다');
+
     // ── 4. 글자 크기 소·중·대 — 기본 중(15px), 대 20px, 소 13px, localStorage 기억 → 새로고침 뒤에도
     const fs0 = await page.$eval('.msg-bubble', (e) => getComputedStyle(e).fontSize);
     ok(fs0 === '15px', `[글자] 기본 = 보통 ${fs0}`);

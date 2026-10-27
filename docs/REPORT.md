@@ -12,6 +12,14 @@
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
 ---
+## 10-27 16:30 — [세션] 계획표 16:00 (되풀이 거르기 넓히기·답변 전송 잠금·원문 보기 상태 기억 및 기준 검증)
+했다: 질문·스킵 줄 되풀이 거르기(seenAsk, seenSkip), 강사 답변 전송 단추 잠금, 손님 원문 보기 상태 기억 단언 추가 및 검증 완료
+어디서 보나: web/listener/index.src.html, web/host/index.html, samples/listener_state_test.js, relay/test/question-queue.mjs
+막힘: 없음
+확인만: 시작 전 기준 초록 및 종료 후 초록 확인 (붉은 수 0)
+다음: 계획표 16:00 완료
+
+---
 ## 10-27 12:00 — [세션] 계획표 11:35 (para_done 유니크 발신자 & 앱 같이 받기 단추 검증)
 했다: para_done 유니크 발신자(Set) 및 앱 같이 받기 단추 검증 완료
 어디서 보나: web/listener/index.src.html, samples/para_done_test.js, samples/listener_state_test.js

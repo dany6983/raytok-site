@@ -2655,12 +2655,19 @@
 
       const btnAskAnswer = document.getElementById('btnAskAnswer');
       const askAnswerInput = document.getElementById('askAnswerInput');
+      let isSendingAnswer = false;
       function sendAskAnswer() {
-        if (!liveActiveAsk || !askAnswerInput) return;
+        if (!liveActiveAsk || !askAnswerInput || isSendingAnswer) return;
         const text = askAnswerInput.value.trim();
         if (!text) return;
+        isSendingAnswer = true;
+        if (btnAskAnswer) btnAskAnswer.disabled = true;
         wsSend({ kind: 'answer', id: liveActiveAsk.id, text, srcLang: SRC_LANG || 'ko' });
         askAnswerInput.value = '';
+        setTimeout(() => {
+          isSendingAnswer = false;
+          if (btnAskAnswer) btnAskAnswer.disabled = false;
+        }, 1000);
       }
       if (btnAskAnswer) btnAskAnswer.onclick = sendAskAnswer;
       if (askAnswerInput) askAnswerInput.onkeydown = (e) => {

@@ -1533,6 +1533,8 @@
     let ttsAutoOff = false;   // 원고 줄 때문에 페이지가 끈 상태(청취자가 끈 것이 아니다)
     let welcomeInfo = null;   // 환영 줄(plan·script·q) — 저장 TXT 머리에 적는다(§12 기록)
     const seenScript = new Set();   // 재연결 되풀이 거르기 — `para:at`
+    const seenAsk = new Set();      // 재연결 되풀이 거르기 — `id:askRev`
+    const seenSkip = new Set();     // 재연결 되풀이 거르기 — `para:at`
     const connLog = []; let connTries = 0, connTimer = null;   // 연결 기록 — 안 될 때의 근거(§12)
     const ASK_IOS_TEXT = true;   // 아이폰은 지명 뒤 글자로 묻는다 (10-27 실기: 마이크 열면 죽음)
     const ts = () => new Date().toISOString().slice(11, 19);
@@ -1895,6 +1897,9 @@
         return;
       }
       if (msg.kind === 'skip') {
+        const sKey = `${msg.para}:${msg.at || ''}`;
+        if (msg.at && seenSkip.has(sKey)) return;
+        if (msg.at) seenSkip.add(sKey);
         addSkipLine(Number(msg.para) || 0);
         return;
       }
@@ -1949,6 +1954,9 @@
       if (msg.kind === 'question' || msg.kind === 'ask_active') {
         currentActiveAskId = msg.id;
         const qSrc = msg.src || msg.text;
+        const askKey = `${msg.id}:${msg.askRev || ''}`;
+        if (msg.id && seenAsk.has(askKey)) return;
+        if (msg.id) seenAsk.add(askKey);
         /* ★ 한 질문에 **메시지가 둘** 온다 — 방은 `question` 과 `ask_active` 를 같이 보낸다.
            둘 다 줄로 만들면 손님 화면에 **같은 질문이 두 줄** 생기고, 늦게 온 번역은
            (마지막 줄에 붙으므로) 한 줄에만 붙는다 — 남은 한 줄은 **못 알아듣는 원문**으로
