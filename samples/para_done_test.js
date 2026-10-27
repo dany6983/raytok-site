@@ -36,4 +36,11 @@ handleParaDone({ kind: 'para_done', para: para2, from: 'listener_2' });
 const receipts2 = live.paraDoneReceipts[para2] ? live.paraDoneReceipts[para2].size : 0;
 ok(receipts2 === 2, `둘이 보내면 receipts=2 (실제: ${receipts2})`);
 
+// 되돌림 실증 1: 보낸 사람 표시(from) 없이 세면 — 옛 길(`Math.random()`) — 한 손님 셋이 셋으로 센다 → 붉다
+const live0 = { paraDoneReceipts: {} };
+for (let i = 0; i < 3; i++) { const m = { kind: 'para_done', para: 9 }; if (!live0.paraDoneReceipts[9]) live0.paraDoneReceipts[9] = new Set(); live0.paraDoneReceipts[9].add(m.from || Math.random()); }
+let revertFailed = false;
+try { assert.strictEqual(live0.paraDoneReceipts[9].size, 1); } catch (_) { revertFailed = true; }
+ok(revertFailed === true, 'from 을 빼면 한 손님이 셋으로 센다 — 되돌림 실증 ①');
+
 console.log(`\n전부 통과 (${passCount}건)`);

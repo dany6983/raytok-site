@@ -750,6 +750,7 @@
       });
     })();
 
+    function escapeHtmlText(x) { return String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
     function normalizeLangCode(code) {
       if (!code) return '';
       const lower = code.toLowerCase();
@@ -1509,6 +1510,8 @@
     // (단추가 "소리 끔"으로 바뀌어 보인다 — 한 번 누르면 켜진다), 들은 줄(line·tr)이 오면 우리가 끈 것만 도로 켠다.
     // 그래서 들은 줄은 어느 방에서나 전과 같다: 안 건드렸으면 처음 값대로, 건드렸으면 단추대로.
     let ttsAutoOff = false;   // 원고 줄 때문에 페이지가 끈 상태(청취자가 끈 것이 아니다)
+    let welcomeInfo = null;   // 환영 줄(plan·script·q) — 저장 TXT 머리에 적는다(§12 기록)
+    const seenScript = new Set();   // 재연결 되풀이 거르기 — `para:at`
     function scriptTtsDefault() {
       if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
     }
@@ -1734,6 +1737,10 @@
       if ('welcome' in msg) {
         isConnected = true;
         srcLang = msg.src_lang || 'ko';
+        welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, at: Date.now() };
+        /* 원고 강연(`script:1`)이면 원고 줄을 **읽는다** — 강사가 말하지 않는 방이라 소리를 끄면 아무것도
+           안 들린다(대표님 실기 10-27 ①). 손님이 단추를 건드린 적 있으면 그 뜻대로. */
+        if (welcomeInfo.script && !ttsTouched) { ttsTouched = true; ttsAutoOff = false; if (!isTtsEnabled) setTtsEnabled(true); }
         setStatus('status_connected', 'status-dot online');
         joinScreen.style.display = 'none';
         chatScreen.style.display = 'flex';
@@ -1786,6 +1793,11 @@
       // ── L4-2 원고 모드(웹 강사 화면): script / skip / break ──
       // script 는 미리 번역된 문단 — 받기만 한다(P-16 ①). trans[내 언어] 없으면 원문(R-15).
       if (msg.kind === 'script' && typeof msg.src === 'string') {
+        /* ★ 재연결하면 방이 최근 줄을 **다시** 보낸다(링버퍼). 원고 줄은 seq 가 없어 `resume_from` 으로
+           못 거르니 (문단·보낸 시각)으로 거른다 — 같은 문단이 되풀이되고 소리가 또 나던 것(대표님 10-27 13:19). */
+        const sKey = `${msg.para}:${msg.at || ''}`;
+        if (msg.at && seenScript.has(sKey)) return;
+        if (msg.at) seenScript.add(sKey);
         const pendingDiv = document.getElementById('msg-pending');
         if (pendingDiv) pendingDiv.remove();
         setBreakBand(false);
@@ -1945,6 +1957,7 @@
         const askId = msg.id;
         const ansSrc = msg.src || msg.text;
         if (!ansSrc) return;
+        if (askId && lines.some(l => l.ask === askId && l.isAnswer && l.text === ansSrc)) return;   // 재연결 되풀이
         const qLang = msg.srcLang || srcLang;
         const line = {
           seq: null,
@@ -1953,8 +1966,8 @@
           isAnswer: true,
           para: Number(msg.seq) || 1,
           total: Number(msg.seq) || 1,
-          text: `[강사 답변] ${ansSrc}`,
-          spk: '강사',
+          text: ansSrc,              // 머리표가 「강사 답변」을 말한다 — 글자에 한국어를 박지 않는다(§18)
+          spk: null,
           at: msg.at || Date.now(),
           tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
           pending: !!ansSrc && onServerTr() && !!(qLang && selectedLang &&
@@ -2315,18 +2328,24 @@
       const div = document.createElement('div');
       div.className = 'msg-line' + (line.script ? ' msg-script' : '');
       div.id = lineElId(line);
+      /* 질문·답변 줄은 「원고 n/n · 나(me)」 가 아니다 (대표님 실기 10-27 13:12 사진) —
+         머리에 ✋ 질문 / 강사 답변, 꼬리표에 **물은 사람 이름**(답변은 꼬리표 없음). */
+      const isAsk = !!line.ask;
       const spkClass = line.spk === 'meeting' ? 'badge-meeting' : 'badge-me';
-      const spkLabel = line.spk === 'meeting' ? '회의 (meeting)' : '나 (me)';
+      const spkLabel = isAsk ? (line.isAnswer ? '' : String(line.spk || ''))
+        : (line.spk ? (line.spk === 'meeting' ? '회의 (meeting)' : '나 (me)') : '');
       // 원고 줄 머리: "원고 n/total" (L4-2). 들은 줄 머리: "#seq".
-      const head = line.script
-        ? `<span class="badge badge-script">${t('script_prefix', currentUiLang)} ${line.para}/${line.total}</span>`
-        : `#${line.seq}`;
+      const head = isAsk
+        ? `<span class="badge badge-script">${t(line.isAnswer ? 'answer_line_tag' : 'ask_line_tag', currentUiLang)}</span>`
+        : line.script
+          ? `<span class="badge badge-script">${t('script_prefix', currentUiLang)} ${line.para}/${line.total}</span>`
+          : `#${line.seq}`;
       div.innerHTML = `
         <div class="msg-bubble">
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src" dir="ltr" translate="no">${head} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${line.spk ? '' : ' hidden'}>${line.spk ? spkLabel : ''}</span></div>
+        <div class="msg-src" dir="ltr" translate="no">${head} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${spkLabel ? '' : ' hidden'}>${escapeHtmlText(spkLabel)}</span></div>
       `;
       const textDiv = div.querySelector('.msg-text');
       setLineText(textDiv, line.text);      // 우리가 쓴 글자를 적어 둔다 — 밖에서 바뀌면 번역이다
@@ -2523,6 +2542,12 @@
       out.push(`${first.getFullYear()}-${pad2(first.getMonth() + 1)}-${pad2(first.getDate())} ${pad2(first.getHours())}:${pad2(first.getMinutes())}`);
       out.push(`${srcLang.toUpperCase()} → ${langName} (${selectedLang})`);
       out.push(`Lines: ${lines.length}`);
+      /* 진단 한 줄(§12) — 실기에서 「번역이 안 왔다」를 가를 수 있게: 번역 길 · 환영 깃발 · 번역 없는 줄 수 */
+      try {
+        const noTr = lines.filter(l => l.text && !(l.tr && l.tr[selectedLang]) && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)).length;
+        out.push(`diag plan=${trPlan()} welcome=${welcomeInfo ? `plan:${welcomeInfo.plan} script:${welcomeInfo.script} q:${welcomeInfo.q}` : '-'} no_tr=${noTr}/${lines.length} tts=${isTtsEnabled ? 1 : 0} ua=${navigator.userAgent.slice(0, 60)}`);
+        (window.rtRead ? window.rtRead.log().slice(-5) : []).forEach(x => out.push('read ' + x));
+      } catch (_) {}
       out.push('');
       for (const l of lines) {
         const d = new Date(l.at);

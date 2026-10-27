@@ -150,24 +150,24 @@ const { rooms, hostReceived } = relay;
   ok(heads.join('|') === 'Script 1/4|Script 2/4|Script 3/4', '청취자 줄 머리 "원고 n/total"(en UI: Script n/4)');
   const trs = await lis.$$eval('#chat-list .msg-line.msg-script .msg-tr', els => els.map(e => e.textContent.trim()));
   ok(trs[0].startsWith('[en] 안전 교육을 시작하겠습니다.'), '청취자: trans[en] 표시');
-  // L4-3 (MASTER 10-08 10:25): 원고 줄은 기본으로 읽지 않는다 — 소리 단추를 건드린 적 없으면 첫 원고 줄에서 "소리 끔"이 된다
+  // 10-27 (대표님 실기 13:08 ①): **원고 강연**(welcome script:1)이면 손님 폰이 읽는다 — 강사가 말하지 않는 방이다.
+  // L4-3(원고 줄 기본 끔)은 강사가 말하는 방(script:0)에만 남는다.
   const spoken = await lis.evaluate(() => window.__spoken.length);
-  ok(spoken === 0, `청취자: 원고 줄은 기본으로 읽지 않는다 (읽기 ${spoken}회)`);
-  ok((await lis.textContent('#btn-toggle-tts')).includes('Sound off'), '청취자: 소리 단추가 "소리 끔"으로 보인다(en UI: Sound off)');
+  ok(spoken >= 1, `청취자: 원고 강연이면 원고 줄을 읽는다 (읽기 ${spoken}회)`);
+  ok((await lis.textContent('#btn-toggle-tts')).includes('Sound on'), '청취자: 소리 단추가 켜진 채(en UI: Sound on)');
 
   ok(await host.$eval('#live-para-3', el => el.classList.contains('is-current')), '호스트: 3번 문단 강조(현재)');
   ok(await host.$eval('#live-para-4', el => el.classList.contains('is-next')), '호스트: 4번 문단 흐림(다음)');
   ok((await host.textContent('#liveProgress')).trim() === '3 / 4', '호스트: 진행 3 / 4');
 
-  // ── 이전(←): 2번을 다시 보낸다. 그 앞에 청취자가 소리 단추를 켠다 → 이번 원고 줄은 읽는다 ──
-  await lis.click('#btn-toggle-tts');
-  ok((await lis.textContent('#btn-toggle-tts')).includes('Sound on'), '청취자: 단추를 한 번 누르면 "소리 켜짐"');
+  // ── 이전(←): 2번을 다시 보낸다. 청취자 소리는 켜진 채다 → 이번 원고 줄도 읽는다 ──
+  ok((await lis.textContent('#btn-toggle-tts')).includes('Sound on'), '청취자: 소리 단추는 켜진 채');
   await host.keyboard.press('ArrowLeft');
   await lis.waitForFunction(() => document.querySelectorAll('#chat-list .msg-line.msg-script').length === 4, null, { timeout: 5000 });
   const last = hostReceived.filter(m => m.kind === 'script').pop();
   ok(last.para === 2, '← = 이전 문단(2) script 다시 송출');
   const spokenOn = await lis.evaluate(() => window.__spoken.slice());
-  ok(spokenOn.length === 1 && spokenOn[0] === '[en] 안전모를 반드시 착용하십시오.', `청취자: 소리 단추를 켠 뒤의 원고 줄은 읽는다 (${spokenOn.length}회)`);
+  ok(spokenOn.length === 4 && spokenOn[3] === '[en] 안전모를 반드시 착용하십시오.', `청취자: 다시 온 2번 문단도 읽는다 — 앞 셋 + 이번 하나 (${spokenOn.length}회, 마지막 "${spokenOn[3]}")`);
 
   // ── 건너뜀: 3번(다음)을 건너뛴다 ──
   await host.click('#btnSkip');

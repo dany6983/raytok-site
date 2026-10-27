@@ -1768,7 +1768,10 @@
     }
 
     function sendWelcome() {
-      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG, raw: live.raw ? 1 : 0, q: live.questionEnabled ? 1 : 0 });
+      /* `script:1` = 원고로 진행하는 강연 — 강사가 그 자리에서 말하지 않으니 손님 폰이 **읽어야** 들린다
+         (L4-3 「원고 줄 기본 끔」은 강사가 말하는 방의 규칙이다 · 대표님 실기 10-27 13:08 ①). */
+      wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG, raw: live.raw ? 1 : 0, q: live.questionEnabled ? 1 : 0,
+               script: paragraphs.length ? 1 : 0 });
     }
 
     /* 넘길 때 보내는 문단 — 와이어 정본 script 모양. **번역문은 싣지 않는다**(결정장부 43).
@@ -2518,10 +2521,15 @@
      * 강사가 **자기 화면·이어폰으로 보는** 번역은 받은 뒤에 만든다(`renderAskSpoken`) —
      * 그것은 **받는 쪽 번역**이라 괜찮다(정본 §3 3단계).
      */
+    /* ★ 10-27 13:10 대표님: 「질문 와서 지명하면 읽고 있던 지문도 정지해야」 — 지명하면 원고 재생을
+       멈추고(손님 소리까지, pause 전선) 끝내기 때 **재생 중이었으면** 멈춘 문장부터 다시 간다. */
+    let askPausedPlay = false;
     function grantQuestion(id) {
       if (liveActiveAsk) return;
       const item = liveAskQueue.find(q => q.id === id);
       if (!item) return;
+      askPausedPlay = !!play.on;
+      if (play.on) playStop('ask', true); else sendPause('ask');
       wsSend({ kind: 'grant', id });
     }
 
@@ -2691,6 +2699,8 @@
       const id = liveActiveAsk.id;
       wsSend({ kind: 'revoke', id, reason });
       clearAskActive();
+      if (askPausedPlay) { askPausedPlay = false; playStart('ask_end'); }   // 멈춘 문장부터 (같은 문단 → resume 만 간다)
+      else sendResume(live.cur);
     }
 
     function connectHostWs() {

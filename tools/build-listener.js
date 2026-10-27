@@ -54,6 +54,10 @@ function strip(src) {
   const htmlComments = (text.match(/<!--(?!\[if)[\s\S]*?-->/g) || []).length;
   text = text.replace(/<!--(?!\[if)[\s\S]*?-->/g, '');
   dropped += htmlComments;
+  /* 10-27: 줄 앞 들여쓰기도 뺀다 — 첫 화면 gz 한도(37KB) 때문. HTML·CSS·JS 모두 줄 앞 공백은 뜻이 없다
+     (<pre>·<textarea> 안 여러 줄 글은 이 파일에 없다 — 생기면 여기서 비켜 간다). 템플릿 글자열 안의
+     줄 앞 공백은 innerHTML 로 가는 마크업이라 역시 뜻이 없다. */
+  text = text.replace(/^[ \t]+/gm, '');
   return { text: text.replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n'), dropped };
 }
 

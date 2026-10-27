@@ -99,11 +99,10 @@ function sentKinds(room, k) { return (room.received || []).filter(m => m && m.ki
     await g.goto(`${base}/web/listener/?room=${code}&lang=en&auto=1&relay=localhost:${port}`);
     await g.waitForSelector('#chat-screen', { state: 'visible', timeout: 8000 });
     await h.waitForFunction(() => document.getElementById('attNow').textContent === '1', null, { timeout: 5000 });
-    /* 처음엔 켜져 있지만 원고 줄이 오면 페이지가 **스스로 끈다**(L4-3) — 손님이 단추를 건드린
-       적이 있어야 그대로 둔다. 그래서 두 번 누른다(끔 → 켬 = 건드림). */
-    await g.click('#btn-toggle-tts'); await g.click('#btn-toggle-tts');
+    /* 원고 강연(welcome script:1)이면 손님이 단추를 **건드리지 않아도** 소리가 켜져 있어야 한다
+       (대표님 실기 10-27 ①: 「▶ 눌러도 안 됨」 — 손님 폰이 원고 줄을 기본으로 안 읽고 있었다). */
     const ttsOn = await g.evaluate(() => typeof isTtsEnabled !== 'undefined' && isTtsEnabled);
-    ok(ttsOn === true, '손님 소리 켬');
+    ok(ttsOn === true, '원고 강연이면 손님 소리가 처음부터 켜져 있다 (단추 안 건드림)');
     const tts = () => g.evaluate(() => ({ n: window.__tts.speak.length, last: window.__tts.speak[window.__tts.speak.length - 1] || '', cancel: window.__tts.cancel, st: window.rtRead.state() }));
 
     /* ── 1. ▶ → 손님이 문단 1 첫 문장을 읽는다 · ■ → cancel 뒤 speak 0 ── */
@@ -172,6 +171,25 @@ function sentKinds(room, k) { return (room.received || []).filter(m => m && m.ki
     await h.waitForTimeout(300);
     const cur4 = await h.evaluate(() => live.cur);
     ok(cur4 === 1, `▶ 뒤에도 문단 1 에 머문다 (되튀지 않는다 — NOW 4-1) cur=${cur4}`);
+    await h.click('#btnPlay');
+
+    /* ── 4-1. 손님 ✋ → 강사 「지명」 → 원고 소리 멈춤 · 「끝내기」 → 멈춘 문장부터 (대표님 10-27 13:10) ── */
+    console.log('\n[4-1] 지명하면 원고가 멈추고, 끝내기면 이어 간다');
+    await h.click('#btnPlay');                                   // ▶ (문단 1 읽는 중)
+    await g.waitForFunction(() => window.rtRead.state() && !window.rtRead.state().paused, null, { timeout: 4000 });
+    await g.click('#btn-ask'); await g.fill('#ask-input-text', 'Question?'); await g.click('#btn-ask-submit');
+    await h.waitForFunction(() => !!document.querySelector('#askQueueList button, [id^=btnGrant], button[data-t=ask_grant_btn]') ||
+      [...document.querySelectorAll('button')].some(b => /지명|Grant/.test(b.textContent) && b.offsetParent), null, { timeout: 5000 });
+    await h.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /지명|Grant/.test(x.textContent) && x.offsetParent); b.click(); });
+    await g.waitForFunction(() => window.rtRead.state() && window.rtRead.state().paused, null, { timeout: 4000 });
+    t = await tts(); const nAtGrant = t.n;
+    ok(await h.evaluate(() => window.rtHostPlay.state.on) === false, '지명 → 강사 재생이 멈춘다');
+    await g.waitForTimeout(1000); t = await tts();
+    ok(t.n === nAtGrant, `지명 뒤 손님 speak 0회 (${nAtGrant} 그대로) — 질문 중에 원고를 읽지 않는다`);
+    await h.click('#btnAskEnd');
+    await g.waitForFunction((n) => window.__tts.speak.length > n, nAtGrant, { timeout: 5000 });
+    ok(await h.evaluate(() => window.rtHostPlay.state.on) === true, '끝내기 → 재생 중이었으니 다시 켜진다');
+    ok(sentKinds(room, 'resume') >= 2, `끝내기 → resume 전선 (문단 재전송 아님) ${sentKinds(room, 'resume')}건`);
     await h.click('#btnPlay');
 
     /* ── 5. 되돌림 실증 — 재전송 길이면 [2] 가 붉다 ── */

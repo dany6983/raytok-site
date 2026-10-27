@@ -124,8 +124,9 @@ const ttsStub = () => {
 
   // ① 원고 줄 TTS — 두 상태
   const spokenA = await A.p.evaluate(() => window.__spoken.slice());
-  ok(spokenA.length === 0, `TTS 기본(단추 안 건드림): 원고 줄 3개를 읽지 않는다 (읽기 ${spokenA.length}회)`);
-  ok((await A.p.textContent('#btn-toggle-tts')).includes('🔇'), 'TTS 기본: 소리 단추가 "소리 끔"으로 바뀌어 보인다');
+  /* 10-27 대표님 실기 ①: 원고 강연(welcome script:1)이면 단추를 안 건드려도 **읽는다** — 강사가 말하지 않는 방 */
+  ok(spokenA.length === 3, `TTS 기본(단추 안 건드림): 원고 강연이라 원고 줄 3개를 읽는다 (읽기 ${spokenA.length}회)`);
+  ok((await A.p.textContent('#btn-toggle-tts')).includes('🔊'), 'TTS 기본: 소리 단추가 켜진 채');
   const trsA = await A.p.$$eval('#chat-list .msg-line.msg-script .msg-tr', els => els.map(e => e.textContent.trim()));
   ok(trsA.length === 3 && trsA[0].startsWith('[en] 안전 교육을 시작하겠습니다.'), 'TTS 기본: 읽지 않아도 번역 글은 그대로 보인다');
   const spokenB = await B.p.evaluate(() => window.__spoken.slice());
