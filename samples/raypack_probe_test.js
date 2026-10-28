@@ -80,6 +80,14 @@ const ok = (cond, name) => {
   ok(/unhandledrejection/.test(html) && /addEventListener\('error'/.test(html),
     '창이 내는 오류·거절을 기록에 적는다');
   ok(/nocache=1/.test(html), '멈추면 **가볍게 다시 재는 주소**를 화면이 알려 준다');
+  // ★ 캐시 — GitHub Pages 가 `max-age=600` 을 준다. 판 번호가 없으면 새로 올려도
+  //   폰이 **10분 동안 옛 글**을 쓴다(10-28 에 대표님 아이폰이 그랬다).
+  const vImport = html.match(/from '\.\/probe\.js\?v=(\d+)'/);
+  ok(!!vImport, '★ `probe.js` 를 **판 번호와 함께** 부른다 (캐시된 옛 글을 막는다)');
+  ok(/const BUILD = 'v\d+/.test(html), '화면이 **어느 판인지** 말한다');
+  const vShown = html.match(/const BUILD = 'v(\d+)/);
+  ok(vImport && vShown && vImport[1] === vShown[1],
+    `부르는 판과 적는 판이 같다 (import v${vImport && vImport[1]} · 화면 v${vShown && vShown[1]})`);
 
   console.log('\n[3] 팩 고르기 — `ko→en` 전용 팩은 없다(1단이 모든 팩 안에 있다)');
   const rows = [

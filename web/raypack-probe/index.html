@@ -58,9 +58,12 @@
 
 <p class="note" id="env"></p>
 
-<script src="../vendor/fflate.min.js"></script>
+<script src="../vendor/fflate.min.js?v=3"></script>
 <script type="module">
-import { measure, line, PACK_BASE, mb, baseFromUrl, autoFromUrl, postFromUrl, cacheFromUrl } from './probe.js';
+// ★ **판 번호를 붙인다.** GitHub Pages 가 `max-age=600` 을 주어서, 새로 올려도 사파리가
+//   **10분 동안 옛 글**을 쓴다 — 대표님 아이폰이 실제로 그랬다(10-28: 새 판에만 있는
+//   「브라우저 살피기」 줄이 없었다). 고칠 때마다 이 번호를 올린다.
+import { measure, line, PACK_BASE, mb, baseFromUrl, autoFromUrl, postFromUrl, cacheFromUrl } from './probe.js?v=3';
 
 const BASE = baseFromUrl(location.search);
 const AUTO = autoFromUrl(location.search);
@@ -77,7 +80,8 @@ const say = (s, cls) => {
   log.scrollTop = log.scrollHeight;
 };
 
-$('env').textContent = `이 화면 주소: ${location.origin} · 팩 자리: ${BASE}`
+const BUILD = 'v3 (10-28)';     // 화면이 **어느 판인지** 말한다 — 캐시된 옛 글을 한눈에 가린다
+$('env').textContent = `판 ${BUILD} · 이 화면 주소: ${location.origin} · 팩 자리: ${BASE}`
   + (BASE === PACK_BASE ? '' : ' (시험용으로 바꿔 둠)')
   + (USE_CACHE ? '' : ' · 저장 건너뜀(nocache)')
   + ` · 브라우저: ${navigator.userAgent}`;
