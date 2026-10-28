@@ -656,7 +656,8 @@ document.documentElement.classList.add('show-tools');
 clearTimeout(toolsTimer);
 toolsTimer = setTimeout(() => document.documentElement.classList.remove('show-tools'), SCREEN_TOOLS_MS);
 };
-['pointerdown', 'pointermove', 'keydown'].forEach(ev => document.addEventListener(ev, showTools, { passive: true }));
+const onTools = (e) => { if (e.type === 'pointermove' && !e.movementX && !e.movementY) return; showTools(); };
+['pointerdown', 'pointermove', 'keydown'].forEach(ev => document.addEventListener(ev, onTools, { passive: true }));
 }
 var fsLog = [];
 window.rtFullscreen = { log: function () { return fsLog.slice(); },
