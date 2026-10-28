@@ -981,7 +981,30 @@ if (isConnected) {
 sendHello();
 renderAllLines();
 }
+rpWant();
 });
+
+let rp = null;
+function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
+function rpWant() {
+if (isDemo || isRawBroadcast) return;
+(rp ? Promise.resolve(rp) : import('./raypack.js?v=1').then(m => (rp = m.createRaypack({
+row: document.getElementById('pack-row'), t: k => t(k), src: () => srcLang, log: rpLog }))))
+.then(r => r.want(selectedLang)).catch(e => rpLog('raypack_fail load ' + e));
+}
+function rpLine(line, msg, bc) {
+rp.translate(line.text).then(out => {
+if (out && !line.tr[selectedLang]) {
+line.tr[selectedLang] = out; line.rp = 1; line.pending = false;
+updateLineUI(line);
+rpLog('guest_tr_plan plan=raypack seq=' + line.seq + ' me=' + selectedLang);
+sayOnce(line, out);
+return;
+}
+rpLog('guest_tr_plan plan=server seq=' + line.seq + ' why=' + (out ? 'late' : 'empty'));
+if (bc && !line.tr[selectedLang]) speakWhenTranslated(line, msg);
+});
+}
 
 const VOICE_WAIT_MS = 3000, VOICE_POLL_MS = 200;
 window.__rtVoiceCheck = [];                  // 마지막 판정들 — 시험과 개발자 창이 읽는 자리
@@ -1492,6 +1515,7 @@ if ('__ping' in msg) return;
 if ('welcome' in msg) {
 isConnected = true;
 srcLang = msg.src_lang || 'ko';
+rpWant();
 welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, at: Date.now() };
 if (welcomeInfo.script && !ttsTouched) { ttsTouched = true; ttsAutoOff = false; if (!isTtsEnabled) setTtsEnabled(true); }
 setStatus('status_connected', 'status-dot online');
@@ -1763,7 +1787,9 @@ localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
 addLine(line);
 liveTtsDefault();   // 원고 줄 때문에 꺼 둔 소리는 들은 줄에서 도로 켠다(L4-3)
 const isSameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-if (isBroadcast && !isSameLang) {
+if (!isSameLang && !line.tr[selectedLang] && rp && rp.ready() && normalizeLangCode(srcLang) === 'ko') {
+rpLine(line, msg, isBroadcast);
+} else if (isBroadcast && !isSameLang) {
 speakWhenTranslated(line, msg);
 } else if (isBroadcast || isSameLang) {
 sayOnce(line, line.text, srcLang, msg.audio_url || (msg.tr && msg.tr.audio_url));
@@ -1773,7 +1799,7 @@ sayOnce(line, line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.t
 } else if ('tr' in msg && !('text' in msg)) {
 const line = lines.find(l => l.seq === msg.seq);
 if (line) {
-Object.assign(line.tr, msg.tr);
+Object.assign(line.tr, msg.tr, line.rp ? { [selectedLang]: line.tr[selectedLang] } : {});
 line.pending = false;
 if (msg.via) line.via = msg.via;
 updateLineUI(line);
