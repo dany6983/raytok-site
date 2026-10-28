@@ -11,6 +11,13 @@
 ```
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
+## 10-28 23:25 — [웹 일꾼] main 이 이 상자에서 붉었다(여섯) + 웹킷 표 (NOW 10-23 09:05 끝)
+했다: 여섯 붉음을 고쳤다(79c34c6·00b0d0d) — 전부 **기계마다 다른 답**이었다: ① 시험이 강사 방에 region 을 안 줘 한국말 상자에서 kr:1 → 손님이 레이팩 팩 주소로 나감(w_t·end·live·release·broadcast-raw·question) → `?region=US` 로 못 박음 ② build-listener 빈 줄 접기가 CRLF 를 못 봄 → `--check` 늘 붉음 ③ playwright **첫** mouse.move 는 movement 0 이라 도구 막대 시험이 늘 붉음 ④ 첫 화면 한도가 CRLF 를 세어 37.1KB(리눅스 36.8) → 글자 파일은 LF 로 잼 + 안내 띠 셋의 겹친 치수를 한 곳으로(36.8KB). **웹킷을 받았다**(`npx playwright install webkit` 됨 — 21:40 의 403 은 이제 아니다) → 마스터 누르기 두 엔진 표.
+어디서 보나: `docs/click-1028-webkit.md` · `docs/reclog/2026-10-28-web/master-click-{webkit,chromium}-2320.txt`.
+막힘: 없음. NOW 21:50 ①~④ 는 **딴 세션이 5d72517 로 먼저 끝내 놔서** 내 ① 커밋은 버렸다(가지 `keep/b-wording-20261028` 에만 둔다).
+확인만: 웹킷 붉음 넷 중 셋은 🎤 — playwright 웹킷에 SpeechRecognition·speechSynthesis 가 **없다**(재 봤다). 넷째 「서버 번역」은 두 엔진 다 붉은데 `navigator.languages=ko-KR` 인 상자라 그렇다(제품 맞음). 둘 다 `master-click.cjs` 손질이 필요한데 **마스터 파일이라 안 고쳤다** — 고칠 자리는 위 문서에.
+다음: npm test 96개 붉은 수 0 · 푸시 끝. NOW 에 끝 없는 ★ 없음 — 마스터 새 줄 기다림.
+
 ## 10-28 22:30 — [웹 일꾼] 마스터 21:50 덧붙임 — 20:15·21:50 이어서 확인
 했다: git pull — 새 지시 없음. 20:15(운영 키만)은 e6b45e5 로 끝(운영 기본 PROD_KEYS · `ALLOW_TEST_KEY=1` 일 때만 0번), 21:50 ①~⑤ 는 5d72517 로 끝 — 코드 안 바꿈. 각 test:* 종료코드를 다시 재서 파일로 남김.
 어디서 보나: `docs/reclog/2026-10-28-web/test-exit-codes-2230.txt` (96줄 「test:이름 종료코드」)
