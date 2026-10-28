@@ -47,10 +47,12 @@
   <button class="go" data-lang="en">영어 (ko → en)</button>
   <button class="go" data-lang="vi">베트남어 (ko → vi)</button>
   <button id="copy" disabled>결과 복사</button>
+  <button id="again">처음부터 다시</button>
 </div>
 <p class="note">단추를 누르면 팩(약 60MB)을 받습니다. <b>와이파이에서</b> 하시고, 끝날 때까지 이 화면을 켜 두세요.</p>
 
-<div id="bar"><progress id="prog" value="0" max="100"></progress><div class="note" id="progtxt"></div></div>
+<div id="bar"><progress id="prog" value="0" max="100"></progress><div class="note" id="progtxt"></div>
+  <div class="note" id="tick"></div></div>
 <pre id="log">준비됐습니다. 위에서 말을 고르세요.</pre>
 <div id="out"></div>
 
@@ -102,14 +104,25 @@ function table() {
   $('copy').disabled = false;
 }
 
+// **살아 있다는 것을 보여 준다** — 멈춘 것처럼 보이지 않게 지금 몇 초째인지 센다
+let tickTimer = null;
+function startTick(what) {
+  const t0 = Date.now();
+  clearInterval(tickTimer);
+  tickTimer = setInterval(() => {
+    $('tick').textContent = `${what} — ${Math.round((Date.now() - t0) / 1000)}초째 (도는 중입니다)`;
+  }, 1000);
+}
+
 async function run(lang, btn) {
   document.querySelectorAll('button.go').forEach((b) => { b.disabled = true; });
   $('bar').style.display = 'block';
   log.textContent = `${lang} 측정을 시작합니다.`;
+  startTick('시작');
   try {
     const r = await measure(lang, {
       base: BASE,
-      log: (s) => say(s),
+      log: (s) => { say(s); startTick(s.replace(/…$/, '')); },
       onProgress: (got, total) => {
         const pct = total ? Math.round((got / total) * 100) : 0;
         $('prog').value = pct;
@@ -125,10 +138,21 @@ async function run(lang, btn) {
     say('※ 「CORS 필요」가 보이면 대표님이 Cloudflare 대시보드 → R2 → raytok-packs → Settings → CORS 에 '
       + `이 주소(${location.origin}) 를 GET 으로 넣어 주셔야 합니다.`);
   } finally {
+    clearInterval(tickTimer);
+    $('tick').textContent = '';
     document.querySelectorAll('button.go').forEach((b) => { b.disabled = false; });
     $('bar').style.display = 'none';
   }
 }
+
+// **처음부터 다시** — 저장까지 비우고 새로 연다(아무것도 남기지 않는다)
+$('again').addEventListener('click', async () => {
+  $('again').disabled = true;
+  if (typeof caches !== 'undefined') {
+    try { for (const k of await caches.keys()) await caches.delete(k); } catch { /* 안 되면 그냥 새로 연다 */ }
+  }
+  location.replace(location.pathname);     // 주소 구멍(auto 등)도 떼고 깨끗하게
+});
 
 document.querySelectorAll('button.go').forEach((b) => {
   b.addEventListener('click', () => run(b.dataset.lang, b));

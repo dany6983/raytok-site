@@ -38,6 +38,30 @@ export const SENTENCES = [
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 const ms = (t) => Math.round(t);
 
+/**
+ * ★ **기다리는 길에는 상한을 같이 둔다** (사이트 MISTAKES #15 — 10-27 에 아이폰 손님이
+ *   멈춘 연결을 영원히 기다린 그 사고). 상한이 없으면 화면이 **죽은 것처럼** 보이고,
+ *   보는 사람은 기다려야 하는지 다시 눌러야 하는지 모른다. 그래서 **어디서 멈췄는지 적고** 끝낸다.
+ */
+export const LIMIT = {
+  index: 15000,      // 목록(32KB)
+  stall: 25000,      // 받다가 **더 이상 늘지 않는** 시간
+  unzip: 120000,     // 60MB 풀기 (낡은 폰은 느리다)
+  engine: 120000,    // 엔진 띄우기 + 모델 싣기 + 첫 문장
+  sentence: 60000,   // 한 문장
+};
+
+export function withLimit(p, msLimit, why) {
+  let t;
+  return Promise.race([
+    Promise.resolve(p).finally(() => clearTimeout(t)),
+    new Promise((_, bad) => {
+      t = setTimeout(() => bad(new Error(`${why} — ${Math.round(msLimit / 1000)}초를 넘겼다. `
+        + '멈춘 자리가 여기다(죽은 것이 아니라 상한에 걸렸다).')), msLimit);
+    }),
+  ]);
+}
+
 /** 목록에서 그 말의 줄을 고른다. `en` 은 **전용 팩이 없다** — 아래 쪽지 */
 export function rowFor(rows, to) {
   const list = Array.isArray(rows) ? rows : [];
@@ -65,7 +89,9 @@ export const mb = (n) => `${(n / 1048576).toFixed(1)}MB`;
  */
 export function baseFromUrl(search = '', fallback = PACK_BASE) {
   const v = new URLSearchParams(search).get('base');
-  if (v && v.startsWith('/')) return v.replace(/\/+$/, '');
+  // ★ `//호스트` 는 **같은 집 길이 아니다** — 브라우저가 바깥 주소로 읽는다(`//evil.test`).
+  //   `/` 로 시작한다고 다 안집이 아니다. 시험이 이것을 잡았다(10-28).
+  if (v && v.startsWith('/') && !v.startsWith('//')) return v.replace(/\/+$/, '');
   return fallback;
 }
 
@@ -84,7 +110,7 @@ export function autoFromUrl(search = '') {
  */
 export function postFromUrl(search = '') {
   const v = new URLSearchParams(search).get('post');
-  return v && v.startsWith('/') ? v : null;
+  return v && v.startsWith('/') && !v.startsWith('//') ? v : null;   // `//호스트` 는 바깥이다
 }
 
 /**
@@ -107,9 +133,9 @@ export async function fetchIndex(base = PACK_BASE) {
   const t0 = now();
   let res;
   try {
-    res = await fetch(url, { credentials: 'omit' });
+    res = await withLimit(fetch(url, { credentials: 'omit' }), LIMIT.index, '목록을 받지 못했다');
   } catch (err) {
-    throw new Error(whyNet(err, url));
+    throw new Error(/상한에 걸렸다/.test(String(err.message)) ? err.message : whyNet(err, url));
   }
   if (!res.ok) throw new Error(`목록을 못 받았다 — HTTP ${res.status} · ${url}`);
   const rows = await res.json();
@@ -149,10 +175,18 @@ export async function getPack(row, { base = PACK_BASE, onProgress = () => {}, us
   if (res.body && res.body.getReader) {
     const reader = res.body.getReader();
     for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      parts.push(value);
-      got += value.length;
+      // ★ 한 조각을 기다리는 데도 상한을 둔다 — 그물이 멈추면 **멈춘 자리**를 적고 끝낸다
+      let step;
+      try {
+        step = await withLimit(reader.read(), LIMIT.stall,
+          `받다가 멈췄다(${mb(got)} / ${total ? mb(total) : '?'} 에서)`);
+      } catch (err) {
+        try { await reader.cancel(); } catch { /* 이미 끊겼으면 넘어간다 */ }
+        throw err;
+      }
+      if (step.done) break;
+      parts.push(step.value);
+      got += step.value.length;
       onProgress(got, total);
     }
   } else {
@@ -281,7 +315,7 @@ export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress
 
   log('푸는 중…');
   const t1 = now();
-  const pack = readPack(await unzip(got.bytes));
+  const pack = readPack(await withLimit(unzip(got.bytes), LIMIT.unzip, '푸는 데서 멈췄다'));
   out.unzipMs = ms(now() - t1);
   out.packName = pack.manifest.name || '';
   out.legs = pack.manifest.chain.map((c) => `${c.from}→${c.to}`).join(' · ');
@@ -291,7 +325,10 @@ export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress
   const t2 = now();
   const backing = new RaypackBacking({ pack, pivotLanguage: 'en', downloadTimeout: 0 });
   const tr = new LatencyOptimisedTranslator({ pivotLanguage: 'en', downloadTimeout: 0 }, backing);
-  const first = await tr.translate({ from: 'ko', to, text: sentences[0], html: false });
+  // ★ 아이폰에서 가장 멈추기 쉬운 자리다 — WASM + 모델 두 다리를 메모리에 올린다.
+  //   사파리는 탭 메모리가 빡빡해서 **조용히 죽는** 일이 있다. 그래서 여기에도 상한을 둔다.
+  const first = await withLimit(tr.translate({ from: 'ko', to, text: sentences[0], html: false }),
+    LIMIT.engine, '엔진이 뜨지 않았다(WASM·모델 싣기). 메모리가 모자랄 수 있다');
   out.firstMs = ms(now() - t2);
   const shown = [{ ko: sentences[0], out: first.target.text }];
 
@@ -299,7 +336,8 @@ export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress
   const each = [out.firstMs];
   for (const s of sentences.slice(1)) {
     const t = now();
-    const r = await tr.translate({ from: 'ko', to, text: s, html: false });
+    const r = await withLimit(tr.translate({ from: 'ko', to, text: s, html: false }),
+      LIMIT.sentence, `${each.length + 1}번째 문장에서 멈췄다`);
     each.push(ms(now() - t));
     if (shown.length < 3) shown.push({ ko: s, out: r.target.text });
   }
