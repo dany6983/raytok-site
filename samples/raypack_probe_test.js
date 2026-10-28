@@ -56,12 +56,13 @@ const ok = (cond, name) => {
   ok(here.wasm === true, `이 자리(node)는 WASM 이 있다 · SIMD ${here.simd ? '된다' : '안 된다'}`);
   ok(SIMD_PROBE.length === 31 && SIMD_PROBE[0] === 0x00 && SIMD_PROBE[1] === 0x61,
     'SIMD 검사 꾸러미가 진짜 wasm 꼴이다(\\0asm)');
-  // ★ SIMD 가 없어도 **막지 않는다** — wasm 이 꼭 쓰는지 확인하지 못했다(D-11: 짐작을 사실로 적지 않는다).
-  //   말만 해 두고 그대로 돌린다. 막히면 오류가 글로 남는다.
+  // ★ SIMD 가 없으면 **막는다** — 10-28 에 아이폰 iOS 15 가 직접 말했다:
+  //   `invalid opcode 253`(= 0xFD = SIMD 머리 바이트). 받아도 소용이 없으니 48MB 전에 멈춘다.
   const 아이폰15 = canRun({ WebAssembly: { validate: () => false }, Worker: function W() {}, caches: {} });
-  ok(아이폰15.ok === true, '★ SIMD 가 없어도 **막지 않는다**(확인 못 한 것으로 막지 않는다)');
-  ok(/SIMD/.test(아이폰15.warn) && /16\.4/.test(아이폰15.warn) && /그래도 해 본다/.test(아이폰15.warn),
-    '대신 **알려 준다** — iOS 16.4 · 그래도 해 본다');
+  ok(아이폰15.ok === false, '★ SIMD 가 없으면 **막는다**(48MB 를 버리지 않는다)');
+  ok(/SIMD/.test(아이폰15.why) && /16\.4/.test(아이폰15.why) && /253/.test(아이폰15.why),
+    '까닭을 **근거와 함께** 말한다 — iOS 16.4 · opcode 253');
+  ok(/서버 번역/.test(아이폰15.why), '못 도는 기기에 **갈 길**을 알려 준다(멈추고 끝내지 않는다)');
   const 작업자없음 = canRun({ WebAssembly: { validate: () => true }, caches: {} });
   ok(작업자없음.ok === false && /작업자/.test(작업자없음.why), '작업자가 없으면 막는다(설 자리가 없다)');
   const wasm없음 = canRun({ Worker: function W() {}, caches: {} });

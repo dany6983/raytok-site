@@ -140,10 +140,12 @@ export function whyNet(err, url) {
  * **먼저 가린다 — 이 브라우저가 엔진을 돌릴 수 있나** (10-28, 대표님 아이폰에서 배웠다).
  *
  * 아이폰 iOS 15 에서 받기(48MB)와 풀기는 다 됐는데 **「엔진 띄우고 첫 문장」에서 멈췄다.**
- * ⚠ **SIMD 가 없다고 막지는 않는다.** 사파리가 WASM SIMD 를 **iOS 16.4 부터** 하는 것은 맞지만,
- *   bergamot 의 wasm 이 그것을 **꼭 쓰는지는 확인하지 못했다**(글 안에서 근거를 못 찾았다).
- *   그것만으로 「그래서 안 된다」고 적으면 **짐작을 사실로 적는 것**이다(D-11).
- *   그러니 **알려만 주고 그대로 돌린다** — 이제 엔진 오류가 화면에 찍히니 까닭이 글로 남는다.
+ * ★ **SIMD 가 없으면 막는다 — 10-28 에 기기가 직접 말했다.** 처음에는 「확인 못 했다」며
+ *   알려만 주고 돌렸더니, 대표님 아이폰(iOS 15.0)이 받기·풀기를 다 마치고 엔진에서 이렇게 냈다:
+ *     `WebAssembly.Module doesn't parse at byte 79: invalid opcode 253, in function at index 4096`
+ *   **opcode 253 = 0xFD = WASM SIMD 머리 바이트**다. 한 줄에 둘이 같이 증명됐다 —
+ *   이 기기에 SIMD 가 없고, bergamot wasm 이 **실제로 SIMD 를 쓴다**. 사파리는 **iOS 16.4 부터**다.
+ *   그러니 이제는 **48MB 를 받기 전에 멈추는 것**이 맞다(손님 데이터를 버리지 않는다).
  *
  * 재는 법은 짐작이 아니다: **작은 SIMD 꾸러미 하나를 실제로 검사시켜** 본다
  * (`wasm-feature-detect` 가 쓰는 그 꼴 그대로).
@@ -161,14 +163,13 @@ export function canRun(g = globalThis) {
   try { simd = wasm && g.WebAssembly.validate(SIMD_PROBE); } catch { simd = false; }
   const worker = typeof g.Worker === 'function';
   const cache = typeof g.caches !== 'undefined';
-  // **막는 것은 둘뿐이다** — 이 둘이 없으면 엔진이 설 자리가 아예 없다
   const why = !wasm ? 'WASM 이 없다 — 이 브라우저로는 못 돈다'
-    : (!worker ? '작업자(Worker)가 없다 — 이 브라우저로는 못 돈다' : '');
-  // SIMD 는 **말만 해 둔다**(막지 않는다)
-  const warn = (wasm && worker && !simd)
-    ? 'WASM SIMD 가 없다(사파리는 iOS 16.4 부터). 엔진이 못 뜰 수 있다 — **그래도 해 본다**, '
-      + '막히면 오류가 글로 남는다' : '';
-  return { ok: !why, wasm, simd, worker, cache, why, warn };
+    : (!worker ? '작업자(Worker)가 없다 — 이 브라우저로는 못 돈다'
+      : (!simd ? '**WASM SIMD 가 없다 — 이 브라우저로는 못 돈다.** 번역 엔진이 SIMD 로 지어져 있어 '
+        + '모듈을 읽다가 멈춘다(`invalid opcode 253` = SIMD 머리 바이트 — 10-28 에 아이폰 iOS 15 에서 '
+        + '직접 봤다). 사파리는 **iOS 16.4 부터** 된다. 48MB 를 받아도 소용이 없어 **여기서 멈춘다**. '
+        + '이 기기에서는 지금 쓰는 길(서버 번역)로 간다.' : ''));
+  return { ok: !why, wasm, simd, worker, cache, why, warn: '' };
 }
 
 /** 목록 받기 */
