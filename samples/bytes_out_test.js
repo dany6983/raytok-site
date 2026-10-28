@@ -110,13 +110,10 @@ function ok(cond, msg) {
     const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; SM-S911N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36';
     const androidCtx = await browser.newContext({ userAgent: ANDROID_UA });
     const aPage = await androidCtx.newPage();
+    /* 장부 63(10-28): 안드로이드도 방 링크면 앱을 묻지 않고 **그 자리에서 웹 손님 화면으로** 간다 */
     await aPage.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123&room=ABC123&lang=vi`);
-    const btnWebListen = await aPage.$('#web-listen');
-    ok(!!btnWebListen, '안드로이드: /join 에 「브라우저로 듣기」 단추가 있다');
-    const isVisible = await btnWebListen.isVisible();
-    ok(isVisible === true, 'join/?room=ABC123 시 「브라우저로 듣기」 단추 노출 확인');
-    const href = await btnWebListen.getAttribute('href');
-    ok(href.includes('/web/listener/?room=ABC123') && href.includes('lang=vi'), '브라우저로 듣기 링크에 room=ABC123 및 lang=vi 포함 확인');
+    await aPage.waitForURL(/\/web\/listener\//, { timeout: 8000 });
+    ok(aPage.url().includes('room=ABC123') && aPage.url().includes('lang=vi'), '안드로이드 + 방 링크 → 웹 손님 화면 (room·lang 그대로)');
 
     // 2-A2: 안드로이드가 아니면 **그 자리에서 손님 화면으로 보낸다** (갈림 QR, 아이폰 길)
     await page.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123&room=ABC123&lang=vi`);
@@ -125,10 +122,11 @@ function ok(cond, msg) {
     ok(sentTo.includes('room=ABC123') && sentTo.includes('lang=vi'),
        `안드로이드가 아니면 손님 화면으로 보낸다 — 방·언어를 들고 (${sentTo.split('?')[1] || ''})`);
 
-    // 2-B: /join 에 room 파라미터가 없을 때 「브라우저로 듣기」 숨김
+    // 2-B: 투폰 링크(방 없음)는 머물고 「앱으로 열기」가 있다 — 투폰은 앱이 있어야 한다 (장부 63 은 강연 손님만)
+    await aPage.route('**/*', (r) => r.request().url().startsWith('intent://') ? r.abort() : r.continue());
     await aPage.goto(`${baseUrl}/join/?ip=192.168.1.10&code=ABC123`);
-    const isHidden = await aPage.$eval('#web-listen', el => el.style.display === 'none');
-    ok(isHidden === true, 'join 에 room 없을 때 「브라우저로 듣기」 숨김 확인');
+    await aPage.waitForTimeout(300);
+    ok(/\/join\//.test(aPage.url()) && await aPage.isVisible('#open'), '투폰 링크는 /join 에 머물고 「앱으로 열기」가 보인다');
     await androidCtx.close();
 
     // 2-C: web/listener 에서 broadcast: true 수신 시 번역 칸 비우고 원문 표출
