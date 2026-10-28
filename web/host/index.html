@@ -2284,6 +2284,15 @@
 
     function playStart(why) {
       if (!PLAY || !paragraphs.length) return;
+      /* ★ 장부 60(10-27): 「끝내기」 단추가 없다 — 지명된 질문이 열린 채 ▶ 를 누르면 **그 질문을 닫고** 간다.
+         안 닫으면 손님 마이크가 열린 채 원고가 읽힌다(메아리 · 10-28 마스터 검수에서 찾음). */
+      const openAskId = (liveActiveAsk && liveActiveAsk.id) || liveGrantedId;   // 지명했지만 아직 말 안 한 때도 닫는다
+      if (openAskId) {
+        wsSend({ kind: 'revoke', id: openAskId, reason: 'host_play' });
+        liveGrantedId = null;
+        if (liveActiveAsk) clearAskActive();
+        askPausedPlay = false;
+      }
       /* ★ 10-27 15:22 대표님 「이전 챕터로 돌렸는데 플레이하면 이전 끝 시점에서 다시 시작」 — 정본 §6 ④의
          「멈춘 문단으로 되돌아간다」를 **버린다**. ▶ 는 언제나 **지금 보고 있는 문단**에서 간다. `pausedAt` 은
          🎤 를 끌 때 재생을 되켤지 가르는 깃발로만 남는다. */
@@ -2473,6 +2482,7 @@
     // ── N:1 질문 대기열 및 지명 로직 (P-17 수동 지명, B-2 동시 1명 인가, P-14 역번역) ──
     let liveAskQueue = [];
     let liveActiveAsk = null;
+    let liveGrantedId = null;   // [선택] 한 질문 id — 손님이 말하기 전(ask_active 오기 전)에도 ▶ 가 닫을 수 있게
     let askTimerInterval = null;
 
     function renderAskQueue(queue) {
@@ -2538,12 +2548,17 @@
       }
       const item = liveAskQueue.find(q => q.id === id);
       if (!item) return;
+      if (liveGrantedId && liveGrantedId !== id && !(liveActiveAsk && liveActiveAsk.id === liveGrantedId)) {
+        wsSend({ kind: 'revoke', id: liveGrantedId, reason: 'host_done' });   // 말 안 하고 있던 앞사람도 닫는다
+      }
       askPausedPlay = !!play.on;
       if (play.on) playStop('ask', true); else sendPause('ask');
+      liveGrantedId = id;
       wsSend({ kind: 'grant', id });
     }
 
     function ignoreQuestion(id) {
+      if (liveGrantedId === id) liveGrantedId = null;
       wsSend({ kind: 'revoke', id, reason: 'dismissed' });
     }
 

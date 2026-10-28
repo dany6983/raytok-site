@@ -226,13 +226,14 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
 
     /* ── 5-3. 말이 끊겨 인식기가 스스로 멈추면 — 발언권이 내 것이면 다시 연다 ──
        안 열면 **두 번째 문장부터 조용히 사라진다.** 유실은 지연보다 훨씬 나쁘다(R-15). */
-    console.log('\n[5-3] 인식기가 스스로 멈추면 다시 연다 (발언권이 아직 내 것일 때)');
+    /* 장부 60 ⑥(10-27 대표님 「띵띵」): 인식기가 스스로 멈추면 **다시 열지 않는다** — 크롬은 열 때마다 효과음을 낸다.
+       한 호흡이 끝이고, 더 말할 것은 이미 떠 있는 글자 칸으로. */
+    console.log('\n[5-3] 인식기가 스스로 멈추면 다시 열지 않는다 (띵띵 한 번)');
     const startsBefore = await ko.page.evaluate(() => (window.__micLog || []).filter(x => x === 'start').length);
     await ko.page.evaluate(() => window.__lisRec.endNow());
-    await ko.page.waitForFunction(
-      (n) => (window.__micLog || []).filter(x => x === 'start').length > n, startsBefore, { timeout: 5000 });
+    await ko.page.waitForTimeout(600);
     const startsAfter = await ko.page.evaluate(() => (window.__micLog || []).filter(x => x === 'start').length);
-    ok(startsAfter > startsBefore, `다시 열었다 (start ${startsBefore} → ${startsAfter})`);
+    ok(startsAfter === startsBefore, `다시 열지 않았다 (start ${startsBefore} → ${startsAfter})`);
 
     // 회수된 뒤에는 다시 열지 않는다 — 꺼진 마이크가 되살아나면 그 폰 소리가 계속 나간다
     hostK.send(JSON.stringify({ kind: 'revoke', id: itemK.id, reason: 'host_done' }));
@@ -343,12 +344,12 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
     } catch (e) { revertRecLangFailed = true; }
     ok(revertRecLangFailed === true, '표(rec-lang.js)를 안 읽으면 붉어진다 (되돌림 실증 4)');
 
-    // ⑤ onend 에 다시 여는 줄이 없으면 start 가 한 번뿐이다 — 두 번째 문장이 사라진다
+    // ⑤ (장부 60 ⑥ 뒤 뒤집힘) onend 에 다시 여는 줄을 되살리면 start 가 늘어난다 — 띵띵이 되돌아온다
     let revertReopenFailed = false;
     try {
-      assert.ok(startsAfter <= startsBefore, `말이 끊긴 뒤 인식을 다시 열지 않았다 (start ${startsAfter})`);
+      assert.ok(startsAfter > startsBefore, `말이 끊긴 뒤 인식을 다시 열었다 (start ${startsAfter})`);
     } catch (e) { revertReopenFailed = true; }
-    ok(revertReopenFailed === true, 'onend 재열기를 빼면 붉어진다 — R-15 유실 (되돌림 실증 5)');
+    ok(revertReopenFailed === true, '재열기를 되살리면 붉어진다 — 띵띵 루프 (되돌림 실증 5, 장부 60)');
 
     // ⑥ 거절 뒤 글자 길이 막혀 있으면 질문이 하나도 안 닿는다 — 10-15 까지의 모양
     let revertDeniedFailed = false;

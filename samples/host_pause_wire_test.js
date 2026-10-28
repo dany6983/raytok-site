@@ -174,22 +174,30 @@ function sentKinds(room, k) { return (room.received || []).filter(m => m && m.ki
     await h.click('#btnPlay');
 
     /* ── 4-1. 손님 ✋ → 강사 「지명」 → 원고 소리 멈춤 · 「끝내기」 → 멈춘 문장부터 (대표님 10-27 13:10) ── */
-    console.log('\n[4-1] 지명하면 원고가 멈추고, 끝내기면 이어 간다');
+    console.log('\n[4-1] 선택하면 원고가 멈추고, ▶ 면 질문을 닫고 이어 간다 (장부 60)');
     await h.click('#btnPlay');                                   // ▶ (문단 1 읽는 중)
     await g.waitForFunction(() => window.rtRead.state() && !window.rtRead.state().paused, null, { timeout: 4000 });
     await g.click('#btn-ask'); await g.fill('#ask-input-text', 'Question?'); await g.click('#btn-ask-submit');
-    await h.waitForFunction(() => !!document.querySelector('#askQueueList button, [id^=btnGrant], button[data-t=ask_grant_btn]') ||
-      [...document.querySelectorAll('button')].some(b => /지명|Grant/.test(b.textContent) && b.offsetParent), null, { timeout: 5000 });
-    await h.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /지명|Grant/.test(x.textContent) && x.offsetParent); b.click(); });
+    await h.waitForFunction(() => [...document.querySelectorAll('button')].some(b => /^\s*(선택|Select)\s*$/.test(b.textContent) && b.offsetParent), null, { timeout: 5000 });
+    await h.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /^\s*(선택|Select)\s*$/.test(x.textContent) && x.offsetParent); b.click(); });
     await g.waitForFunction(() => window.rtRead.state() && window.rtRead.state().paused, null, { timeout: 4000 });
     t = await tts(); const nAtGrant = t.n;
-    ok(await h.evaluate(() => window.rtHostPlay.state.on) === false, '지명 → 강사 재생이 멈춘다');
+    ok(await h.evaluate(() => window.rtHostPlay.state.on) === false, '선택 → 강사 재생이 멈춘다');
     await g.waitForTimeout(1000); t = await tts();
     ok(t.n === nAtGrant, `지명 뒤 손님 speak 0회 (${nAtGrant} 그대로) — 질문 중에 원고를 읽지 않는다`);
-    await h.click('#btnAskEnd');
+    /* 방(가짜 릴레이)은 revoke 를 받으면 손님에게 ask_ended 를 보내고 그 손님의 발언권 표시가 지워진다 — 그것으로 잰다 */
+    const askOpenBefore = await g.evaluate(() => currentActiveAskId);
+    ok(!!askOpenBefore, `선택 뒤 손님 쪽에 열린 질문이 있다 (${askOpenBefore})`);
+    await h.click('#btnPlay');                                   // 끝내기 단추는 없다 — ▶ 가 질문을 닫고 이어 간다
     await g.waitForFunction((n) => window.__tts.speak.length > n, nAtGrant, { timeout: 5000 });
-    ok(await h.evaluate(() => window.rtHostPlay.state.on) === true, '끝내기 → 재생 중이었으니 다시 켜진다');
-    ok(sentKinds(room, 'resume') >= 2, `끝내기 → resume 전선 (문단 재전송 아님) ${sentKinds(room, 'resume')}건`);
+    ok(await h.evaluate(() => window.rtHostPlay.state.on) === true, '▶ → 재생이 다시 켜진다');
+    await g.waitForFunction(() => currentActiveAskId === null, null, { timeout: 4000 }).catch(() => {});
+    const askOpenAfter = await g.evaluate(() => currentActiveAskId);
+    ok(askOpenAfter === null, `▶ 가 열린 질문을 닫는다 (손님 쪽 ${askOpenBefore} → ${askOpenAfter}) — 손님 마이크가 열린 채 원고가 읽히지 않는다`);
+    ok(sentKinds(room, 'resume') >= 2, `▶ → resume 전선 (문단 재전송 아님) ${sentKinds(room, 'resume')}건`);
+    let redQ = false;
+    try { assert.ok(askOpenBefore === null, '닫힘'); } catch (_) { redQ = true; }
+    ok(redQ, '▶ 전에는 질문이 열려 있었다 — ▶ 가 닫은 것이다 (되돌림 실증)');
     await h.click('#btnPlay');
 
     /* ── 5. 되돌림 실증 — 재전송 길이면 [2] 가 붉다 ── */
