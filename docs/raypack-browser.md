@@ -120,3 +120,26 @@
 - 저장 자리와 비우기: Cache Storage `raypack-v1` — 몇 개까지 두나, 언제 지우나
 - 못 받을 때: 지금 길(릴레이 번역)로 **조용히 내려간다** — 손님을 멈추지 않는다
 - `www.raytok.kr` CORS (위 2장)
+
+## 6. 붙였다 — 손님 페이지 (10-28 · 사이트 NOW 14:35)
+
+글: `web/listener/raypack.js`(다스리개 · 받는 줄) — 엔진·뒷배·살피기는 **측정 글을 그대로 import** 한다(`../raypack-probe/probe.js` — 두 벌 없음).
+손님 페이지 이음새는 `index.src.html` 의 `rpWant()`·`rpLine()` 두 함수와 줄 받는 자리 두 곳뿐이다.
+
+| 무엇 | 어떻게 |
+|---|---|
+| 언제 받나 | 말을 바꾸는 순간 + **방에 들어갈 때**(QR 로 말이 이미 골라진 손님도 받게). 단추 없음 |
+| 첫 화면 | `raypack.js`·bergamot·fflate 는 그때 `import()` — 첫 화면 gz **36.4KB**(한도 37) |
+| 못 도는 브라우저 | SIMD 없음 → **받지 않고 말없이** 서버 번역(기록 `raypack_skip why=nosimd`) |
+| 묻는 그물 | `saveData` · `connection.type=cellular` · (type 이 없으면) `effectiveType` 2g/3g → 「와이파이에서 받기 / 지금 받기」, 기본은 기다림. `connection` 이 없으면(사파리) **모른다 → 묻지 않는다** |
+| 받는 중 | 지금 길(서버). 자막 위에 「이 폰에 번역팩 받는 중 n%」 — 방에 들어가면 그 줄을 자막 위로 옮긴다 |
+| 뜬 뒤 | 서버 글이 **아직 없는** 줄만 폰 안에서. 한 줄 상한 8초 · 실패·빈 답 → 그 줄 서버. 폰 안 글이 먼저 섰으면 늦게 온 서버 글이 덮지 않는다(그 말 칸만) |
+| 기록 | 줄마다 `guest_tr_plan plan=raypack seq=n` / `plan=server seq=n why=empty|late` · `raypack_ready file=… v=1` |
+| 저장 | Cache Storage `raypack-v1` 최근 **2개 말**. 쓴 차례는 localStorage `raytok_raypack_lru` |
+| 말 이름 | 표 `PACK_CODE`: zh-CN→zh · zh-TW→zt · nb→no · fil→tl · tet→tp. 목록에 없는 말(sw·ga·cy·ka·mk·mt…)은 받지 않는다 |
+| 받지 않는 자리 | 원문이 ko 가 아닌 방(팩은 ko→X) · 한국어 손님 · 시연(`?demo`) · 원문 방송(`?raw=1`) |
+
+**그대로 둔 것**: 서버 번역은 **계속 온다**(전선·`caps` 를 바꾸지 않았다 — R-15). 서버 일을 줄이려면
+`hello` 에 「이 손님은 폰 안 번역」을 알리는 칸이 필요하다 — 그건 전선 일이라 이번에 하지 않았다.
+**안 한 것**: SIMD 없는 bergamot 판 찾기(NOW 8 덤) · `www.raytok.kr` CORS(2장 — 거기서는 받기가 실패해 서버로 간다).
+시험: `samples/raypack_guest_test.js` (48건 · 되돌림 4건 붉음 확인).
