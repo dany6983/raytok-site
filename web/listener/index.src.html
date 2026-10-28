@@ -726,7 +726,9 @@
         clearTimeout(toolsTimer);
         toolsTimer = setTimeout(() => document.documentElement.classList.remove('show-tools'), SCREEN_TOOLS_MS);
       };
-      ['pointerdown', 'pointermove', 'keydown'].forEach(ev => document.addEventListener(ev, showTools, { passive: true }));
+      // 크롬은 화면이 바뀔 때 커서가 그대로여도 가짜 pointermove(움직임 0)를 쏜다 — 그건 조작이 아니다
+      const onTools = (e) => { if (e.type === 'pointermove' && !e.movementX && !e.movementY) return; showTools(); };
+      ['pointerdown', 'pointermove', 'keydown'].forEach(ev => document.addEventListener(ev, onTools, { passive: true }));
     }
     /* 전체화면 — 손잡이를 큰 화면 보기 밖으로 뺐다(10-22). 첫 걸음에 기록 한 줄(§12). */
     var fsLog = [];

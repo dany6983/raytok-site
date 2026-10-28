@@ -4,7 +4,7 @@
 「했음」 커밋은 `git log -S` 로 그 글자가 처음 들어간 커밋이다 — `9fc5e3f` 는 많은 글자가 처음 보이는 커밋이라 「9fc5e3f 이전부터」로 읽는다.
 
 ## 시험 (export NO_PROXY=127.0.0.1,localhost · test:* 하나씩)
-**90개 중 붉음 1** — `test:screen`(`samples/screen_view_test.js` 「도구 막대는 화면 밖」).
+**10-28 20:30 고침(main)** — 아래는 그 전 기록. **90개 중 붉음 1** — `test:screen`(`samples/screen_view_test.js` 「도구 막대는 화면 밖」).
 - **10-28 16:50 가름: 코드 쪽** — 크롬의 가짜 pointermove(움직임 0). 고친 판 가지 `fix/screen-fake-move`(E 가 합친다).
 - 원인 한 줄: **간헐**(같은 판에서 10번 중 5번 붉음). 붉을 때 `show-tools` 가 켜져 있다(`barTop 1036` = 막대 높이 44 만큼 보임) — 「조작하면 4초 보이기」(`SCREEN_TOOLS_MS`)가 페이지 열린 직후 들어온 pointer/key 이벤트로 켜지고, 시험은 300ms 뒤에 읽는다. 코드 문제인지 시험 문제인지는 안 갈랐다.
 - 한 번씩 돌린 판: 852e0be 초록 · 142e130 붉음 · 0cd905a 붉음 · 5ef3e87 초록 — 간헐이라 「어느 커밋부터」로 단정하지 않는다.

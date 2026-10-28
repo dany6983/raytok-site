@@ -105,6 +105,11 @@ function mockHost(wss) {
   assert.strictEqual(s.ttsActive, true, '소리 끔으로 시작'); assert.strictEqual(s.spoken, 0, '음성 0회(끔 + pending 은 글자로만)');
   assert.strictEqual(s.overflowX, false, '가로 넘침 없음');
   assert.deepStrictEqual(outside, [], '바깥으로 나가는 요청 0건');
+  // 커서가 그대로인 pointermove(움직임 0) — 크롬이 화면이 바뀔 때 스스로 쏜다. 조작이 아니다(10번 중 5번 붉던 까닭)
+  await p.evaluate(() => document.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: 0, bubbles: true })));
+  await p.waitForTimeout(300);
+  s = await state(p);
+  assert(s.barTop >= s.vh - 1, '움직임 0 인 pointermove 로는 도구 막대가 안 뜬다');
   await p.mouse.move(300, 300); await p.waitForTimeout(400);
   s = await state(p);
   assert(s.barTop < s.vh - 20, '조작하면 도구 막대가 보인다');
