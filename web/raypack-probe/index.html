@@ -60,11 +60,12 @@
 
 <script src="../vendor/fflate.min.js"></script>
 <script type="module">
-import { measure, line, PACK_BASE, mb, baseFromUrl, autoFromUrl, postFromUrl } from './probe.js';
+import { measure, line, PACK_BASE, mb, baseFromUrl, autoFromUrl, postFromUrl, cacheFromUrl } from './probe.js';
 
 const BASE = baseFromUrl(location.search);
 const AUTO = autoFromUrl(location.search);
 const POST = postFromUrl(location.search);
+const USE_CACHE = cacheFromUrl(location.search);
 const $ = (id) => document.getElementById(id);
 const log = $('log');
 const out = $('out');
@@ -78,7 +79,18 @@ const say = (s, cls) => {
 
 $('env').textContent = `이 화면 주소: ${location.origin} · 팩 자리: ${BASE}`
   + (BASE === PACK_BASE ? '' : ' (시험용으로 바꿔 둠)')
+  + (USE_CACHE ? '' : ' · 저장 건너뜀(nocache)')
   + ` · 브라우저: ${navigator.userAgent}`;
+
+// ★ **조용히 죽는 것을 막는다.** 아이폰에서 「엔진 띄우고 첫 문장」에서 멈췄을 때(대표님 10-28)
+//   화면에는 까닭이 한 줄도 없었다. 창이 내는 오류를 전부 기록으로 끌어온다.
+window.addEventListener('error', (e) => {
+  say(`창 오류: ${(e && (e.message || e.type)) || '모름'}${e && e.filename ? ` (${e.filename})` : ''}`, 'err');
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const r = e && e.reason;
+  say(`못 받은 거절: ${(r && (r.message || r)) || '모름'}`, 'err');
+});
 
 function table() {
   if (!results.length) return;
@@ -122,6 +134,7 @@ async function run(lang, btn) {
   try {
     const r = await measure(lang, {
       base: BASE,
+      useCache: USE_CACHE,
       log: (s) => { say(s); startTick(s.replace(/…$/, '')); },
       onProgress: (got, total) => {
         const pct = total ? Math.round((got / total) * 100) : 0;
@@ -134,9 +147,18 @@ async function run(lang, btn) {
     say(line(r));
     table();
   } catch (err) {
-    say(String((err && err.message) || err), 'err');
-    say('※ 「CORS 필요」가 보이면 대표님이 Cloudflare 대시보드 → R2 → raytok-packs → Settings → CORS 에 '
-      + `이 주소(${location.origin}) 를 GET 으로 넣어 주셔야 합니다.`);
+    const m = String((err && err.message) || err);
+    say(m, 'err');
+    if (/CORS/.test(m)) {
+      say('※ 대표님이 Cloudflare 대시보드 → R2 → raytok-packs → Settings → CORS 에 '
+        + `이 주소(${location.origin}) 를 GET 으로 넣어 주셔야 합니다.`);
+    }
+    if (/엔진이 뜨지 않았다|메모리/.test(m)) {
+      // 아이폰에서 가장 흔한 자리다 — 가볍게 다시 재는 길을 **화면에서 바로** 준다
+      say('※ 아이폰이라면 메모리가 모자랄 수 있습니다. 더 가볍게 한 번만 더 해 보세요 — '
+        + '다른 앱을 닫고, 아래 주소로 열어 **한 말만** 누르세요(저장을 건너뜁니다):');
+      say(`${location.origin}${location.pathname}?nocache=1`);
+    }
   } finally {
     clearInterval(tickTimer);
     $('tick').textContent = '';

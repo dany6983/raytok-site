@@ -21,8 +21,8 @@ const ok = (cond, name) => {
 
 (async () => {
   const m = await import(SRC);
-  const { withLimit, LIMIT, rowFor, baseFromUrl, autoFromUrl, postFromUrl,
-          PACK_BASE, CACHE_NAME, SENTENCES, parseIndexless } = m;
+  const { withLimit, LIMIT, rowFor, baseFromUrl, autoFromUrl, postFromUrl, cacheFromUrl,
+          PACK_BASE, CACHE_NAME, SENTENCES } = m;
 
   console.log('\n[1] 상한 — 기다리는 길에는 끝이 있어야 한다 (MISTAKES #15)');
   for (const k of ['index', 'stall', 'unzip', 'engine', 'sentence']) {
@@ -47,6 +47,39 @@ const ok = (cond, name) => {
   ok(postFromUrl('?post=/collect') === '/collect', 'post 는 같은 집 길만');
   ok(JSON.stringify(autoFromUrl('?auto=en,vi')) === '["en","vi"]', 'auto 는 말 목록을 읽는다');
   ok(autoFromUrl('?auto=<script>').length === 0, 'auto 는 말 아닌 것을 버린다');
+  ok(cacheFromUrl('') === true && cacheFromUrl('?nocache=1') === false,
+    '`?nocache=1` 로 **가볍게** 재는 길이 있다(아이폰 메모리)');
+
+  console.log('\n[2-1] 먼저 살핀다 — 설 자리가 없으면 멈추고, 모르는 것은 **알려만 준다**');
+  const { canRun, SIMD_PROBE } = m;
+  const here = canRun();
+  ok(here.wasm === true, `이 자리(node)는 WASM 이 있다 · SIMD ${here.simd ? '된다' : '안 된다'}`);
+  ok(SIMD_PROBE.length === 31 && SIMD_PROBE[0] === 0x00 && SIMD_PROBE[1] === 0x61,
+    'SIMD 검사 꾸러미가 진짜 wasm 꼴이다(\\0asm)');
+  // ★ SIMD 가 없어도 **막지 않는다** — wasm 이 꼭 쓰는지 확인하지 못했다(D-11: 짐작을 사실로 적지 않는다).
+  //   말만 해 두고 그대로 돌린다. 막히면 오류가 글로 남는다.
+  const 아이폰15 = canRun({ WebAssembly: { validate: () => false }, Worker: function W() {}, caches: {} });
+  ok(아이폰15.ok === true, '★ SIMD 가 없어도 **막지 않는다**(확인 못 한 것으로 막지 않는다)');
+  ok(/SIMD/.test(아이폰15.warn) && /16\.4/.test(아이폰15.warn) && /그래도 해 본다/.test(아이폰15.warn),
+    '대신 **알려 준다** — iOS 16.4 · 그래도 해 본다');
+  const 작업자없음 = canRun({ WebAssembly: { validate: () => true }, caches: {} });
+  ok(작업자없음.ok === false && /작업자/.test(작업자없음.why), '작업자가 없으면 막는다(설 자리가 없다)');
+  const wasm없음 = canRun({ Worker: function W() {}, caches: {} });
+  ok(wasm없음.ok === false && /WASM/.test(wasm없음.why), 'WASM 이 없으면 막는다');
+  const 됨 = canRun({ WebAssembly: { validate: () => true }, Worker: function W() {}, caches: {} });
+  ok(됨.ok === true && 됨.why === '' && 됨.warn === '', '다 갖추면 지나가고 군말도 없다');
+
+  console.log('\n[2-2] 엔진 오류를 화면으로 끌어온다 — 조용히 죽지 않게');
+  const src = require('fs').readFileSync(
+    path.join(__dirname, '..', 'web', 'raypack-probe', 'probe.js'), 'utf-8');
+  ok(/onerror/.test(src) && /engineErrs/.test(src), 'bergamot 의 `onerror` 를 받아 적는다');
+  ok(/got\.bytes = null/.test(src), '푼 뒤 **60MB zip 을 놓아 준다**(아이폰이 그 자리에서 죽었다)');
+  ok(/pack\.files = \{\}/.test(src), '엔진이 뜬 뒤 모델 복사본도 놓아 준다');
+  const html = require('fs').readFileSync(
+    path.join(__dirname, '..', 'web', 'raypack-probe', 'index.html'), 'utf-8');
+  ok(/unhandledrejection/.test(html) && /addEventListener\('error'/.test(html),
+    '창이 내는 오류·거절을 기록에 적는다');
+  ok(/nocache=1/.test(html), '멈추면 **가볍게 다시 재는 주소**를 화면이 알려 준다');
 
   console.log('\n[3] 팩 고르기 — `ko→en` 전용 팩은 없다(1단이 모든 팩 안에 있다)');
   const rows = [

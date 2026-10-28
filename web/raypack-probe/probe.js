@@ -108,6 +108,15 @@ export function autoFromUrl(search = '') {
  * 폰 화면의 숫자를 손으로 베끼면 틀린다 — 끝나면 **같은 집 길**로 보내 둔다(`?post=/collect`).
  * 바깥 주소는 받지 않는다. 받는 자리가 없으면 조용히 넘어간다(측정은 이미 끝났다).
  */
+/**
+ * **저장을 건너뛴다** (`?nocache=1`). 아이폰에서 60MB 를 Cache Storage 에 쓰는 동안
+ * 같은 60MB 를 메모리에 들고 있으면 거기서 죽을 수 있다 — 가볍게 재 볼 길을 남긴다.
+ * 끄면 ⑤(두 번째 열 때)는 못 잰다. 그 칸은 「안 쟀다」로 남는다.
+ */
+export function cacheFromUrl(search = '') {
+  return new URLSearchParams(search).get('nocache') !== '1';
+}
+
 export function postFromUrl(search = '') {
   const v = new URLSearchParams(search).get('post');
   return v && v.startsWith('/') && !v.startsWith('//') ? v : null;   // `//호스트` 는 바깥이다
@@ -125,6 +134,41 @@ export function whyNet(err, url) {
       + `주소: ${url} · 원래 오류: ${m}`;
   }
   return `${m} · 주소: ${url}`;
+}
+
+/**
+ * **먼저 가린다 — 이 브라우저가 엔진을 돌릴 수 있나** (10-28, 대표님 아이폰에서 배웠다).
+ *
+ * 아이폰 iOS 15 에서 받기(48MB)와 풀기는 다 됐는데 **「엔진 띄우고 첫 문장」에서 멈췄다.**
+ * ⚠ **SIMD 가 없다고 막지는 않는다.** 사파리가 WASM SIMD 를 **iOS 16.4 부터** 하는 것은 맞지만,
+ *   bergamot 의 wasm 이 그것을 **꼭 쓰는지는 확인하지 못했다**(글 안에서 근거를 못 찾았다).
+ *   그것만으로 「그래서 안 된다」고 적으면 **짐작을 사실로 적는 것**이다(D-11).
+ *   그러니 **알려만 주고 그대로 돌린다** — 이제 엔진 오류가 화면에 찍히니 까닭이 글로 남는다.
+ *
+ * 재는 법은 짐작이 아니다: **작은 SIMD 꾸러미 하나를 실제로 검사시켜** 본다
+ * (`wasm-feature-detect` 가 쓰는 그 꼴 그대로).
+ */
+export const SIMD_PROBE = new Uint8Array([
+  0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+  0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7b,
+  0x03, 0x02, 0x01, 0x00,
+  0x0a, 0x0a, 0x01, 0x08, 0x00, 0x41, 0x00, 0xfd, 0x0f, 0xfd, 0x62, 0x0b,
+]);
+
+export function canRun(g = globalThis) {
+  const wasm = typeof g.WebAssembly === 'object' && typeof g.WebAssembly.validate === 'function';
+  let simd = false;
+  try { simd = wasm && g.WebAssembly.validate(SIMD_PROBE); } catch { simd = false; }
+  const worker = typeof g.Worker === 'function';
+  const cache = typeof g.caches !== 'undefined';
+  // **막는 것은 둘뿐이다** — 이 둘이 없으면 엔진이 설 자리가 아예 없다
+  const why = !wasm ? 'WASM 이 없다 — 이 브라우저로는 못 돈다'
+    : (!worker ? '작업자(Worker)가 없다 — 이 브라우저로는 못 돈다' : '');
+  // SIMD 는 **말만 해 둔다**(막지 않는다)
+  const warn = (wasm && worker && !simd)
+    ? 'WASM SIMD 가 없다(사파리는 iOS 16.4 부터). 엔진이 못 뜰 수 있다 — **그래도 해 본다**, '
+      + '막히면 오류가 글로 남는다' : '';
+  return { ok: !why, wasm, simd, worker, cache, why, warn };
 }
 
 /** 목록 받기 */
@@ -247,15 +291,42 @@ export function readPack(files) {
  * ★ `TranslatorBacking` 의 생성자가 **곧바로** `loadModelRegistery()` 를 부른다.
  *   그래서 팩을 `this.pack` 에 담아 두면 **늦다**(아직 안 만들어졌다) — `this.options.pack` 으로 읽는다.
  */
+/**
+ * ★ **팩을 `options` 에 넣지 않는다** — 10-28 에 재서 알았다.
+ *   `TranslatorBacking` 은 작업자를 띄우며 `call('initialize', this.options)` 로 **옵션을 통째로
+ *   작업자에 복사해 보낸다.** 거기에 팩(푼 모델 60MB)을 넣어 두면 **같은 60MB 가 한 벌 더** 간다 —
+ *   아이폰에서 「엔진 띄우고 첫 문장」에 멈춘 자리가 바로 거기일 수 있다.
+ *   게다가 거기에 함수(`onerror`)를 넣으면 **복사 자체가 터진다**
+ *   (`Failed to execute 'postMessage' on 'Worker'` — 내 손으로 한 번 넣어 보고 걸렸다).
+ *
+ *   그런데 뒷배의 생성자가 **곧바로** `loadModelRegistery()` 를 부르므로 팩을 나중에 넣을 수도 없다.
+ *   그래서 **만드는 동안만** 이 자리에 놓아 두고 꺼내 쓴다. `makeBacking()` 하나로만 만든다.
+ */
+let PENDING_PACK = null;
+
+export function makeBacking(pack, { onerror } = {}) {
+  PENDING_PACK = pack;
+  try {
+    // 작업자로 가는 것은 이 셋뿐이다 — 전부 작은 값이다
+    const b = new RaypackBacking({ pivotLanguage: 'en', downloadTimeout: 0, cacheSize: 0 });
+    b.pack = pack;
+    if (typeof onerror === 'function') b.onerror = onerror;   // 함수는 **옵션 밖**에서 꽂는다
+    return b;
+  } finally {
+    PENDING_PACK = null;
+  }
+}
+
 export class RaypackBacking extends TranslatorBacking {
   async loadModelRegistery() {
-    const pack = this.options.pack;
-    if (!pack) throw new Error('팩 없이 뒷배를 만들었다');
+    const pack = this.pack || PENDING_PACK;     // 생성자가 부를 때는 아직 `this.pack` 이 없다
+    if (!pack) throw new Error('팩 없이 뒷배를 만들었다 — makeBacking() 으로 만들어라');
+    this.pack = pack;
     return pack.manifest.chain.map((c) => ({ from: c.from, to: c.to, dir: c.dir }));
   }
 
   async loadTranslationModel({ from, to }) {
-    const pack = this.options.pack;
+    const pack = this.pack;
     const leg = (await this.registry).find((m) => m.from === from && m.to === to);
     if (!leg) throw new Error(`팩에 ${from}→${to} 다리가 없다`);
     const pick = (name) => {
@@ -286,8 +357,16 @@ export function memoryMb() {
  * 한 번 다 재는 길. `log(글)` 로 진행을 알린다.
  * 돌려주는 것: 숫자 다섯 + 번역 보기.
  */
-export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress = () => {}, sentences = SENTENCES } = {}) {
+export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress = () => {},
+                                    sentences = SENTENCES, useCache = true } = {}) {
   const out = { to, at: new Date().toISOString(), base };
+  // ★ **48MB 를 받기 전에** 이 브라우저가 엔진을 돌릴 수 있는지 먼저 본다
+  const can = canRun();
+  out.can = can;
+  log(`브라우저 살피기 — WASM ${can.wasm ? '있다' : '없다'} · SIMD ${can.simd ? '된다' : '**안 된다**'} · `
+    + `작업자 ${can.worker ? '있다' : '없다'} · 저장 ${can.cache ? '된다' : '안 된다'}`);
+  if (!can.ok) throw new Error(can.why);
+  if (can.warn) log(`※ ${can.warn}`);
   log('목록 받는 중…');
   const idx = await fetchIndex(base);
   out.indexMs = idx.ms;
@@ -303,7 +382,7 @@ export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress
 
   // ① 받는 시간 (저장을 비우고 — 첫 손님 몫)
   if (typeof caches !== 'undefined') { try { await caches.delete(CACHE_NAME); } catch { /* 없으면 넘어간다 */ } }
-  const got = await getPack(row, { base, onProgress });
+  const got = await getPack(row, { base, onProgress, useCache });
   out.downloadMs = got.ms;
   out.downloadFrom = got.from;
   out.mbps = got.ms ? Math.round((row.bytes / 1048576) / (got.ms / 1000) * 10) / 10 : null;
@@ -317,19 +396,37 @@ export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress
   const t1 = now();
   const pack = readPack(await withLimit(unzip(got.bytes), LIMIT.unzip, '푸는 데서 멈췄다'));
   out.unzipMs = ms(now() - t1);
+  // ★ **60MB zip 을 놓아 준다.** 아이폰 사파리는 탭 메모리가 빡빡해서, 푼 것과 zip 을 같이
+  //   들고 엔진을 띄우면 거기서 **조용히 죽는다**(대표님 10-28 「엔진 띄우고 첫 문장에서 멈춤」).
+  //   더 쓸 일이 없으니 여기서 떼어 놓는다.
+  got.bytes = null;
   out.packName = pack.manifest.name || '';
   out.legs = pack.manifest.chain.map((c) => `${c.from}→${c.to}`).join(' · ');
 
   // ② 첫 번역까지 — 엔진 띄우기 + 모델 싣기 + 첫 문장
   log('엔진 띄우고 첫 문장…');
   const t2 = now();
-  const backing = new RaypackBacking({ pack, pivotLanguage: 'en', downloadTimeout: 0 });
+  // ★ **엔진이 내는 오류를 화면으로 끌어온다.** 전에는 멈춘 것만 보이고 **까닭이 안 보였다** —
+  //   작업자(worker)가 WASM 메모리에서 죽으면 그 자리에서 조용히 끝난다. bergamot 은
+  //   `onerror` 를 주면 그것을 불러 주므로(worker 의 'error' 를 그대로 잇는다) 그 글을 적는다.
+  const engineErrs = [];
+  const onerror = (e) => {
+    const m = (e && (e.message || e.reason || e.type)) || String(e);
+    engineErrs.push(String(m).slice(0, 200));
+    log(`엔진이 오류를 냈다: ${String(m).slice(0, 160)}`);
+  };
+  const backing = makeBacking(pack, { onerror });
+  // ★ 번역기 옵션에도 **함수를 넣지 않는다** — 같은 길로 작업자에 복사된다
   const tr = new LatencyOptimisedTranslator({ pivotLanguage: 'en', downloadTimeout: 0 }, backing);
+  tr.onerror = onerror;
   // ★ 아이폰에서 가장 멈추기 쉬운 자리다 — WASM + 모델 두 다리를 메모리에 올린다.
   //   사파리는 탭 메모리가 빡빡해서 **조용히 죽는** 일이 있다. 그래서 여기에도 상한을 둔다.
   const first = await withLimit(tr.translate({ from: 'ko', to, text: sentences[0], html: false }),
     LIMIT.engine, '엔진이 뜨지 않았다(WASM·모델 싣기). 메모리가 모자랄 수 있다');
   out.firstMs = ms(now() - t2);
+  // 모델은 이제 **작업자 안에** 있다 — 이쪽 복사본을 놓아 준다(아이폰 메모리를 아낀다).
+  // 오류가 났으면 작업자가 다시 뜨면서 또 달라고 할 수 있으니 **그때는 들고 있는다.**
+  if (!engineErrs.length) pack.files = {};
   const shown = [{ ko: sentences[0], out: first.target.text }];
 
   // ③ 한 문장 ms — 10문장. **첫 문장을 뺀 값도 함께** 적는다(데워진 뒤가 참값이다)
@@ -354,7 +451,7 @@ export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress
   // ⑤ 두 번째 열 때 — 저장에서 꺼내는 시간
   log('저장에서 다시 꺼내 보는 중…');
   try {
-    const again = await getPack(row, { base, onProgress: () => {} });
+    const again = await getPack(row, { base, onProgress: () => {}, useCache });
     out.secondMs = again.ms;
     out.secondFrom = again.from;
   } catch (err) {
@@ -363,6 +460,8 @@ export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress
   }
 
   try { tr.delete(); } catch { /* 지우기가 없으면 넘어간다 */ }
+  out.engineErrs = engineErrs;
+  out.cached = useCache;
   log('끝.');
   return out;
 }
