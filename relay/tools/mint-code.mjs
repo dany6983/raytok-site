@@ -32,6 +32,8 @@ export {
   FLAG_ALIAS,
   LINK_BASE,
   PUBLIC_KEYS,
+  PROD_KEYS,
+  trustedKeys,
   base32Encode,
   base32Decode,
   groupCode,
@@ -51,6 +53,7 @@ export {
 
 import {
   TEST_KEY_ID,
+  PUBLIC_KEYS,
   FLAG,
   groupCode,
   privateKeyFromSeed,
@@ -94,6 +97,19 @@ export function loadPrivateKey({ keyId, keyFile, test }) {
   if (!hex) throw new Error(`키 ${keyId} 의 개인키가 없다 — --key-file <경로> 또는 LIC_PRIVATE_KEY_${keyId} (env / relay/.dev.vars)`);
   return privateKeyFromSeed(hex.trim());
 }
+
+/** 스크립트(host-token·prod-license-e2e)가 쓸 발급 키. 운영은 운영 키만 받으므로 1번 개인키가
+ *  손에 있으면(KEY_FILE · LIC_PRIVATE_KEY_1 · relay/.dev.vars) 1번, 없으면 0번 — 0번 코드는
+ *  개발 릴레이(ALLOW_TEST_KEY=1)에서만 통한다. */
+export function scriptMintKey() {
+  try {
+    return { keyId: 1, privateKey: loadPrivateKey({ keyId: 1, keyFile: getProcessEnv().KEY_FILE }) };
+  } catch (_) {
+    return { keyId: TEST_KEY_ID, privateKey: privateKeyFromSeed(testSeed()) };
+  }
+}
+/** 로컬 릴레이 주소인가 — 0번 코드는 거기서만 통한다는 안내에 쓴다 */
+export const isLocalRelay = (base) => /\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(String(base));
 
 function parseArgs(argv) {
   const o = { keyId: undefined, test: false, exp: undefined, days: undefined, shelf: 90, count: 1, flags: undefined, cust: '', keyFile: undefined, verify: undefined, pub: undefined, pubkey: false, keygen: false, json: false };
@@ -157,7 +173,8 @@ export function main(argv = getProcessArgv().slice(2)) {
   }
 
   if (args.verify !== undefined) {
-    const keys = args.pub ? { 0: args.pub, 1: args.pub } : undefined;
+    /* 이 도구는 손에서 확인하는 것 — 아는 키 전부로 보고 키 번호를 찍는다(운영 릴레이는 1번만 받는다) */
+    const keys = args.pub ? { 0: args.pub, 1: args.pub } : PUBLIC_KEYS;
     const res = verifyCode(args.verify, { keys });
     if (args.json) console.log(JSON.stringify(res, null, 2));
     else if (res.ok) {

@@ -10,7 +10,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
-const { verifyCode } = require('../relay/src/mint-core.js');
+const { verifyCode, trustedKeys } = require('../relay/src/mint-core.js');
+// 가짜 릴레이 = 개발 릴레이(ALLOW_TEST_KEY=1) — 진짜와 같은 trustedKeys 를 쓴다(D-11)
+const MOCK_ENV = { ALLOW_TEST_KEY: process.env.ALLOW_TEST_KEY || '1' };
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.js': 'application/javascript', '.png': 'image/png' };
 
@@ -273,7 +275,7 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
 
         // B. 개별 코드
         if (code) {
-          const v = verifyCode(code);
+          const v = verifyCode(code, { keys: trustedKeys(MOCK_ENV) });
           if (!v.ok) return json(401, { error: v.why || 'bad_sig' });
           const codeHash = crypto.createHash('sha256').update(String(code).trim()).digest('hex');
           let rec = licStore.get(codeHash);

@@ -10,11 +10,12 @@
  *       코드를 `--days 1` 로 내면 토큰도 **24.0시간**이다.
  *     · 0x04 → 웹 강사 화면은 `POST /room {kind:'script'}` 를 열고, 그 길은 0x04|0x08 을 본다
  *       (`relay/src/index.js` requiredFlags). `--flags meet` = 0x04.
- *     · 관리 비밀값도, 운영 개인키도 **필요 없다** — 시험 키 0 의 씨앗은 공개값이고,
- *       운영 릴레이는 그 공개키를 들고 있다(`mint-core.js` PUBLIC_KEYS[0]).
+ *     · 운영은 운영 키만 받는다(10-28 20:15) — 운영 릴레이에는 **1번 개인키**가 있어야 한다:
+ *       `KEY_FILE=<운영 개인키 파일>` 또는 `relay/.dev.vars` 의 `LIC_PRIVATE_KEY_1`.
+ *       없으면 0번(시험 키)으로 내고, 그건 로컬·개발 릴레이(ALLOW_TEST_KEY=1)에서만 통한다.
  *
  * 하는 일 셋 — 다 **있는 끝점**이다:
- *   ① mint-code: 키 0 시험 코드(0x04, 1일)
+ *   ① mint-code: 키 1 코드(없으면 키 0 시험 — 로컬만)(0x04, 1일)
  *   ② POST /license/redeem  — 코드를 이 PC 에 묶는다
  *   ③ POST /license/issue   — 토큰을 받는다 → 그 글자를 강사 화면에 붙여넣는다
  *
@@ -33,7 +34,7 @@
  *   뽑아야 한다. 일찍 뽑으면 이 스크립트가 **며칠이 비는지 한 줄로 알려 주고**, 언제 다시
  *   뽑으면 되는지 날짜를 적어 준다. 이용권 자체는 그대로 사니 **다시 돌리면 그 날까지** 찬다.
  */
-import { mintCode, privateKeyFromSeed, testSeed, FLAG, TEST_KEY_ID } from '../relay/tools/mint-code.mjs';
+import { mintCode, FLAG, scriptMintKey, isLocalRelay } from '../relay/tools/mint-code.mjs';
 
 const fail0 = (m) => { console.error('\n[FAIL] ' + m); process.exit(1); };
 const BASE = (process.env.RELAY_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
@@ -52,8 +53,12 @@ const fail = (m) => { console.error('\n[FAIL] ' + m); process.exit(1); };
 (async () => {
   console.log(`=== ${UNTIL ? `데모 강사 토큰 (${UNTIL} 까지)` : '시험용 강사 토큰'} — ${BASE} · ${DAYS}일 · 0x04(meet) ===\n`);
 
+  const MK = scriptMintKey();                        // 1번 개인키가 있으면 1번, 없으면 0번(시험 키)
+  if (MK.keyId === 0 && !isLocalRelay(BASE)) {
+    fail0('운영은 운영 키만 받는다 — 1번 개인키가 없다. KEY_FILE=<운영 개인키 파일> 을 붙여 다시 돌려 주세요.');
+  }
   const minted = mintCode({
-    keyId: TEST_KEY_ID,                               // 키 0 = 시험 키(공개 씨앗)
+    keyId: MK.keyId,
     // 코드의 `exp` 는 **묵힘 한도**(언제까지 등록할 수 있나)다 — CLI 와 같은 기본값(오늘+90일).
     // ⚠ 여기에 1시간을 넣으면 **토큰 만료가 그 1시간**이 된다: /license/issue 는 만료를
     //    30일·이용권 끝·코드 exp 중 **가장 이른 것**으로 잡는다. 처음에 그렇게 써서
@@ -63,9 +68,9 @@ const fail = (m) => { console.error('\n[FAIL] ' + m); process.exit(1); };
     days: DAYS,                                       // 등록부터 N일 = 토큰 만료도 이쪽을 따른다
     flags: FLAG.meet,                                 // 0x04 — 웹 강사 화면(kind:'script')이 보는 것
     cust: 'HOSTT',
-    privateKey: privateKeyFromSeed(testSeed())
+    privateKey: MK.privateKey
   });
-  console.log('① 코드 발급: 128글자 (키 0 시험)');
+  console.log(`① 코드 발급: 128글자 (키 ${MK.keyId}${MK.keyId === 0 ? ' 시험' : ' 운영'})`);
 
   const r1 = await fetch(`${BASE}/license/redeem`, {
     method: 'POST', headers: J, body: JSON.stringify({ code: minted.code, deviceId: device })

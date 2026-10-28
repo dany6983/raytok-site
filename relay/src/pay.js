@@ -114,7 +114,9 @@ export async function handlePaymentComplete({
   impKey = null,
   impSecret = null,
   impApiBase = 'https://api.iamport.kr',
-  skipPgVerification = false
+  skipPgVerification = false,
+  /* 운영은 운영 키만 — 0번 발급은 개발 릴레이(ALLOW_TEST_KEY=1)에서만 */
+  allowTestKey = false
 }) {
   if (!paymentId || typeof paymentId !== 'string') {
     return { status: 400, body: { error: 'invalid_payment_id', message: 'paymentId가 필요합니다.' } };
@@ -135,6 +137,11 @@ export async function handlePaymentComplete({
       status: 503,
       body: { error: 'pg_secret_missing', message: 'PORTONE_API_SECRET 환경변수가 누락되었습니다.' }
     };
+  }
+
+  // 0-A. 운영은 운영 키만 — 운영 키(1번)가 없으면 0번으로 내려앉아 발급하지 않는다. 결제 확인 **전에** 선다.
+  if ((!privateKeySeed || testKey) && !allowTestKey) {
+    return { status: 503, body: { error: 'mint_key_missing', message: '발급 키가 설정되지 않았습니다. 결제는 확인하지 않았습니다.' } };
   }
 
   // 1. 멱등성 검사: 이미 처리된 paymentId는 기존 발급 데이터 그대로 반환

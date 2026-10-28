@@ -27,6 +27,13 @@ export const PUBLIC_KEYS = {
   1: '7c2f16c295a780459e2c86f8bbb3b4f4bf64059c3d62e6893408c93c9e07b575',
 };
 
+/* 운영은 운영 키만 — 운영 릴레이의 기본 신뢰 목록은 1번 하나. 0번(시험 키)은 개발 릴레이에서
+   `ALLOW_TEST_KEY=1`(relay/.dev.vars) 일 때만 받는다. 운영 wrangler.toml 에는 넣지 않는다. */
+export const PROD_KEYS = { 1: PUBLIC_KEYS[1] };
+export function trustedKeys(env) {
+  return env && String(env.ALLOW_TEST_KEY) === '1' ? PUBLIC_KEYS : PROD_KEYS;
+}
+
 /* Crockford base32 */
 const C32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const C32_MAP = (() => {
@@ -142,7 +149,7 @@ export function claimsOf(payload) {
   return { keyId: payload[0], exp, days, flags: payload[9], cust };
 }
 
-export function verifyCode(code, { now = Date.now(), keys = PUBLIC_KEYS } = {}) {
+export function verifyCode(code, { now = Date.now(), keys = PROD_KEYS } = {}) {
   const raw = String(code || '').replace(/[-\s]/g, '');
   if (!raw) return { ok: false, why: 'empty', claims: null };
   if (raw.length !== CODE_CHARS) return { ok: false, why: 'len', claims: null };

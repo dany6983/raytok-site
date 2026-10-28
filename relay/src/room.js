@@ -1,5 +1,5 @@
 import { verifyLicense, mintLicense } from './license.js';
-import { verifyCode } from './mint-core.js';
+import { verifyCode, trustedKeys } from './mint-core.js';
 import * as RTR from './room-translate.js';
 import crypto from 'node:crypto';
 
@@ -721,7 +721,7 @@ export class Room {
 
         // B. 개별 코드 분기 ({ code, deviceId })
         if (code) {
-          const v = verifyCode(code);
+          const v = verifyCode(code, { keys: trustedKeys(this.env) });   // 운영은 운영 키만
           if (!v.ok) {
             return new Response(JSON.stringify({ error: v.why || 'bad_sig', message: '코드 검증 실패' }), {
               status: 401, headers: { 'Content-Type': 'application/json' }

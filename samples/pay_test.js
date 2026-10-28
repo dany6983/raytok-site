@@ -14,7 +14,9 @@ import {
   verifyPortoneWebhook
 } from '../relay/src/pay.js';
 import relayWorker from '../relay/src/index.js';
-import { verifyCode, FLAG } from '../relay/tools/mint-code.mjs';
+import { verifyCode as verifyProd, PUBLIC_KEYS, FLAG } from '../relay/tools/mint-code.mjs';
+// 시험 코드는 0번 — 개발 릴레이처럼 아는 키 전부로 본다(운영 릴레이는 1번만: relay_prod_keys 시험)
+const verifyCode = (c, o = {}) => verifyProd(c, { keys: PUBLIC_KEYS, ...o });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -41,7 +43,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
 
   // [Test 2] 단건 결제 승인 및 0x01 쿠폰 발급 검증
   console.log('\n[Test 2] 단건 결제 승인 및 0x01 쿠폰 발급 검증');
-  const pay1 = await handlePaymentComplete({
+  const pay1 = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_test_001',
     productId: 'pass_1d',
     amount: 3300,
@@ -62,7 +64,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
 
   // [Test 3] 단체 묶음 결제 승인 (10장) 및 고유성 검증
   console.log('\n[Test 3] 단체 묶음 결제 승인 (10장) 및 고유성 검증');
-  const payGroup = await handlePaymentComplete({
+  const payGroup = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_test_group_002',
     productId: 'group_7d_10',
     amount: 99000,
@@ -82,7 +84,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
 
   // [Test 4] 멱등성 검증 (동일 paymentId 중복 요청)
   console.log('\n[Test 4] 중복 결제 요청 멱등성 검증');
-  const payDupe = await handlePaymentComplete({
+  const payDupe = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_test_001', // 동일 ID
     productId: 'pass_1d',
     amount: 3300,
@@ -94,7 +96,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
 
   // [Test 5] 결제 금액 위조 차단 검증
   console.log('\n[Test 5] 결제 금액 위조 차단 검증');
-  const payForged = await handlePaymentComplete({
+  const payForged = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_forged_003',
     productId: 'pass_1d', // 원래 3,300원
     amount: 100, // 100원으로 위조
@@ -126,7 +128,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
           const body = JSON.parse(raw);
           /* V1 결제(imp_uid 가 온 경우)는 V1 열쇠 둘이 있어야 **선다**(B 30). 여기선 확인을
              건너뛰지만 열쇠는 넘긴다 — 운영과 같은 모양이다(없으면 503 pg_secret_missing). */
-          const result = await handlePaymentComplete({
+          const result = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
             ...body,
             portoneSecret: TEST_SECRET,
             impKey: 'imp_key_for_browser_test',
@@ -495,7 +497,7 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
 
     // [Test 8] 되돌림 실증 1건 (D-09)
     console.log('\n[Test 8] 되돌림 실증 1건 (D-09)');
-    const payRevert = await handlePaymentComplete({
+    const payRevert = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
       paymentId: 'pay_revert_check',
       productId: 'pass_1d',
       amount: 3300,
@@ -515,7 +517,8 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     console.log('\n[Test 9] relay/src/index.js 라우트 실제 fetch 검증 (B-2)');
     const mockEnv = {
       PORTONE_API_SECRET: TEST_SECRET,
-      PORTONE_API_BASE: baseUrl
+      PORTONE_API_BASE: baseUrl,
+      ALLOW_TEST_KEY: '1'   // 시험 = 개발 릴레이(0번 허용)
     };
     const httpReq = new Request('http://localhost/pay/complete', {
       method: 'POST',

@@ -39,14 +39,14 @@ class MockStorage {
 }
 
 class MockRoomDO {
-  constructor() {
+  constructor(roomEnv = { ALLOW_TEST_KEY: '1' }) {   // 시험 = 개발 릴레이(0번 허용)
     this.ctx = {
       storage: new MockStorage(),
       getWebSockets: () => [],
       getTags: () => [],
       blockConcurrencyWhile: async (fn) => { if (typeof fn === 'function') await fn(); }
     };
-    this.room = new Room(this.ctx, {});
+    this.room = new Room(this.ctx, roomEnv);
   }
   async fetch(req) { return this.room.fetch(req); }
 }
@@ -121,7 +121,7 @@ const env = {
   /* ── 3. 08:50 주력 사양: 묶음 QR (버스 한 대 며칠 몇 명) ── */
   console.log('\n[Test 3] 08:50 주력 사양: 묶음 QR 발급 및 N+1번째 no_seats 차단');
   // 버스 1대 당일 투어 (정원 3명 모의) 결제 완료 처리
-  const payBatch = await handlePaymentComplete({
+  const payBatch = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_batch_bus_001',
     productId: 'bus_1d_20',
     amount: 66000,
@@ -249,6 +249,29 @@ const env = {
     revertDevLimitFailed = true;
   }
   ok(revertDevLimitFailed === true, '2번째 기기 too_many_devices 차단을 빼면 붉어진다 (되돌림 실증 2)');
+
+  /* ── 6. 운영은 운영 키만 ── */
+  console.log('\n[Test 6] 운영 기본값(ALLOW_TEST_KEY 없음) — 0번 코드는 받지 않고 0번 발급도 하지 않는다');
+  const prodDO = new MockRoomDO({});
+  const prodEnv = { ROOM: { idFromName: () => 'PROD_ID', get: () => prodDO }, LICENSE_MAX_DEVICES: '1' };
+  const key0Code = mintCode({ keyId: 0, days: 1, shelfLife: Math.floor(Date.now() / 1000) + 90 * 86400, flags: FLAG.host, cust: 'RTPRD', privateKey: key0 });
+  const pRes = await relayWorker.fetch(new Request('http://localhost/license/redeem', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: key0Code.code, deviceId: 'prod_dev_1' })
+  }), prodEnv, {});
+  ok(pRes.status === 401, `운영 기본값으로 0번 코드 → 401 (지금 ${pRes.status})`);
+  const devDO = new MockRoomDO({ ALLOW_TEST_KEY: '1' });
+  const dRes = await relayWorker.fetch(new Request('http://localhost/license/redeem', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: key0Code.code, deviceId: 'dev_dev_1' })
+  }), { ...prodEnv, ROOM: { idFromName: () => 'DEV_ID', get: () => devDO }, ALLOW_TEST_KEY: '1' }, {});
+  ok(dRes.status === 200, `ALLOW_TEST_KEY=1 → 같은 코드 통과 (지금 ${dRes.status})`);
+  const mRes = await relayWorker.fetch(new Request('http://localhost/pay/complete', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentId: 'pay_prod_nokey', productId: Object.keys(PRODUCTS)[0], amount: 1 })
+  }), { ...prodEnv, PORTONE_API_SECRET: 'x' }, {});
+  const mBody = await mRes.json().catch(() => ({}));
+  ok(mRes.status === 503 && mBody.error === 'mint_key_missing', `운영 키 없는 운영 릴레이는 0번으로 발급하지 않는다 → 503 mint_key_missing (지금 ${mRes.status} ${mBody.error})`);
 
   console.log(`\n전부 통과 (${checks}건)`);
 })().catch(err => {

@@ -56,7 +56,8 @@ ok(/가장 이른 것/.test(script), '그 함정을 스크립트 주석이 적�
 
 /* ── 4. 비밀값을 쓰지 않는다 ── */
 console.log('\n[4] 관리 비밀값·운영 개인키를 쓰지 않는다');
-ok(/testSeed\(\)/.test(script), '시험 키 0 의 **공개** 씨앗을 쓴다');
+ok(/scriptMintKey\(\)/.test(script) && /isLocalRelay\(BASE\)/.test(script),
+   '발급 키는 scriptMintKey(1번 있으면 1번, 없으면 0번 시험 씨앗) — 0번은 로컬 릴레이에서만(운영은 운영 키만)');
 ok(!/ADMIN_SECRET|MINT_PRIVATE_KEY|LICENSE_SECRET/.test(script), '비밀값 이름이 스크립트에 없다');
 const { PUBLIC_KEYS } = require(path.join(ROOT, 'relay', 'src', 'mint-core.js'));
 ok(typeof PUBLIC_KEYS[0] === 'string' && PUBLIC_KEYS[0].length === 64,
@@ -107,7 +108,8 @@ console.log('\n[7] UNTIL=YYYY-MM-DD — 데모 토큰이 그 날까지 덮나 (�
    */
   const { pathToFileURL } = require('url');
   const mod = (...parts) => pathToFileURL(path.join(ROOT, ...parts)).href;
-  const { verifyCode } = await import(mod('relay', 'src', 'mint-core.js'));
+  const { verifyCode: verifyProd, PUBLIC_KEYS: ALL } = await import(mod('relay', 'src', 'mint-core.js'));
+  const verifyCode = (c) => verifyProd(c, { keys: ALL });   // 0번 시험 코드 — 개발 릴레이처럼
   const { mintLicenseToken } = await import(mod('relay', 'tools', 'mint-license.mjs'));
 
   const SECRET = 'host_token_test_secret';

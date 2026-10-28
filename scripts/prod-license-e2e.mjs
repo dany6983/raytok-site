@@ -8,14 +8,15 @@
  *     대표님이 주소 없이 치셔서 `FAIL: fetch failed` 만 보셨다 — 지금은 **첫 줄에 크게**
  *     "로컬입니다 + 운영은 이 한 줄" 이라고 말한다.
  *
- * ★ **비밀값이 필요 없다.** 시험 키 0 의 씨앗(`testSeed()`)은 공개값이고, 토큰은 서버가
+ * ★ 운영은 운영 키만 받는다(10-28 20:15) — 운영 릴레이에는 1번 개인키(KEY_FILE)가 필요하다.
+ *   로컬·개발 릴레이(ALLOW_TEST_KEY=1)는 키 0 시험 씨앗으로 돈다. 토큰은 서버가
  *   `/license/issue` 에서 자기 비밀값으로 만들어 준다. 그래서 운영 비밀값을 이 세션이
  *   들고 있지 않아도 돈다 — 그게 이 길을 고른 까닭이다.
  *   (`scripts/e2e-room.mjs` 는 토큰을 **로컬에서** 만들기 때문에 운영 LICENSE_SECRET 이
  *    있어야 하고, 그것은 이 세션에 없고 있어서도 안 된다.)
  *
  * 하는 일 — 읽기와 발급뿐이고 **지우거나 배포하지 않는다**:
- *   ① 코드 발급(로컬, 키 0 시험 씨앗, 0x01 호스트, 1일)
+ *   ① 코드 발급(로컬, 키 1 — 없으면 키 0 시험 씨앗, 0x01 호스트, 1일)
  *   ② POST /license/redeem  — 코드를 기기에 묶는다
  *   ③ POST /license/issue   — 기기로 토큰을 받는다 (0x01 실렸나)
  *   ④ POST /room {kind:'guide'} — 방이 열리나 (200 + 코드)
@@ -33,7 +34,9 @@
  * 토큰·코드는 화면에 **가려서** 찍는다(앞 6글자만). 저장소에 남기지 않는다.
  */
 import assert from 'node:assert/strict';
-import { mintCode, privateKeyFromSeed, testSeed, FLAG, TEST_KEY_ID } from '../relay/tools/mint-code.mjs';
+import { mintCode, FLAG, scriptMintKey, isLocalRelay } from '../relay/tools/mint-code.mjs';
+/* 운영은 운영 키만(10-28 20:15) — 운영 릴레이에는 1번 개인키(KEY_FILE 또는 relay/.dev.vars 의 LIC_PRIVATE_KEY_1)로 낸다 */
+const MK = scriptMintKey();
 
 /* WebSocket 은 Node 22 의 **내장**을 먼저 쓴다 — `ws` 를 위에서 import 하면 대표님 PC 에서
    `npm ci` 가 **먼저** 필요해지고, 그러면 "한 줄" 이 아니다.
@@ -106,18 +109,19 @@ async function waitFor(pred, ms = 6000) {
   if (!globalThis.WebSocket) console.log(`(내장 WebSocket 이 없어 저장소의 ws 로 돕니다 — ${process.version})`);
   const device = 'e2e_' + Math.random().toString(36).slice(2, 10);
 
-  // ① 코드 발급 — 키 0 시험 씨앗(공개값), 0x01 호스트, 1일
+  // ① 코드 발급 — 1번 개인키가 있으면 1번, 없으면 0번(로컬·개발 릴레이만), 0x01 호스트, 1일
+  if (MK.keyId === 0 && !isLocalRelay(BASE)) console.log('⚠ 1번 개인키가 없어 0번(시험 키)으로 냅니다 — 운영은 운영 키만 받으므로 ② 가 401 이면 그것이 맞는 답입니다. KEY_FILE=<운영 개인키 파일> 을 붙여 다시 돌려 주세요.');
   // exp 와 days 는 다른 칸이다: exp = 코드를 **쓸 수 있는 기한**(절대 시각),
   // days = 등록하면 주는 **이용 일수**. 둘을 섞으면 "만료는 uint32 초" 로 터진다.
   const minted = mintCode({
-    keyId: TEST_KEY_ID,
+    keyId: MK.keyId,
     exp: Math.floor(Date.now() / 1000) + 3600,
     days: 1,
     flags: FLAG.host,
     cust: 'E2E',
-    privateKey: privateKeyFromSeed(testSeed())
+    privateKey: MK.privateKey
   });
-  step(1, '코드 발급(키 0 시험 씨앗 · 0x01 · 1일)', !!minted.code, `code=${mask(minted.code)}`);
+  step(1, `코드 발급(키 ${MK.keyId} · 0x01 · 1일)`, !!minted.code, `code=${mask(minted.code)}`);
 
   // ② 코드를 기기에 묶는다
   const rRedeem = await fetch(`${BASE}/license/redeem`, {
@@ -216,19 +220,19 @@ async function waitFor(pred, ms = 6000) {
    *
    * ⑥⑦ 은 **문이 닫히는지**를 봤다(패키지 없는 토큰 → 403). 그것만으로는 "프로가 돈다"를
    * 알 수 없다 — 문을 열어 봐야 한다. 그래서 0x10|0x20 을 든 코드를 새로 발급해 같은 길을
-   * 한 번 더 지난다. 비밀값은 여기서도 필요 없다(시험 키 0 의 씨앗은 공개값이다).
+   * 한 번 더 지난다. 발급 키는 ① 과 같다(MK).
    *
    * 200 이 오면 **그 다음이 본론**이다: `tier` 가 pro 면 살아 있고, basic 이면 `why` 가
    * 무엇을 넣어야 하는지 말해 준다. 404·403 이면 **아직 배포가 안 된 것**이다. */
   const proDevice = 'e2epro_' + Math.random().toString(36).slice(2, 10);
   const PRO_FLAG_BIT = 0x20;
   const proMinted = mintCode({
-    keyId: TEST_KEY_ID,
+    keyId: MK.keyId,
     exp: Math.floor(Date.now() / 1000) + 3600,
     days: 1,
     flags: FLAG.host | FLAG.bundle | PRO_FLAG_BIT,     // 호스트 + 인터넷 번역 + 프로
     cust: 'E2EPRO',       // 고객 칸은 ASCII **6자 이내**다 — 7자를 넣으면 발급이 터진다
-    privateKey: privateKeyFromSeed(testSeed())
+    privateKey: MK.privateKey
   });
   await fetch(`${BASE}/license/redeem`, {
     method: 'POST', headers: J, body: JSON.stringify({ code: proMinted.code, deviceId: proDevice })

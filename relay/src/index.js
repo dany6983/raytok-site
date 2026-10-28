@@ -1764,6 +1764,7 @@ export default {
           customerName: body.customerName,
           testKey,
           privateKeySeed: privSeed,
+          allowTestKey: String(env.ALLOW_TEST_KEY) === '1',   // 운영은 운영 키만
           portoneSecret,
           portoneApiBase,
           /* B 30 — V1 결제(KCP 채널이 V1 모듈)면 손님이 `impUid` 를 들고 온다. 그때는 V1 REST 로

@@ -54,7 +54,7 @@ let server;
 
   /* ── 1. PORTONE_API_SECRET 부재 시 503 pg_secret_missing 차단 ── */
   console.log('[Test 1] PORTONE_API_SECRET 비밀값 부재 시 503 pg_secret_missing 차단');
-  const resNoSecret = await handlePaymentComplete({
+  const resNoSecret = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_valid_001',
     productId: 'pass_1d',
     amount: 3300,
@@ -70,7 +70,7 @@ let server;
     amount: { total: 3300 },
     orderName: '관광 1일권 (1장)'
   });
-  const resFailed = await handlePaymentComplete({
+  const resFailed = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_failed_001',
     productId: 'pass_1d',
     amount: 3300,
@@ -88,7 +88,7 @@ let server;
     amount: { total: 100 }, // 실제 결제는 100원만 함
     orderName: '관광 1일권 (1장)'
   });
-  const resAmountHack = await handlePaymentComplete({
+  const resAmountHack = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_amount_hack_001',
     productId: 'pass_1d',
     amount: 3300, // 요청 금액은 3,300원으로 속임
@@ -106,7 +106,7 @@ let server;
     amount: { total: 9900 },
     orderName: '관광 1일권 3장 묶음' // pass_7d(관광 7일권)와 불일치
   });
-  const resWrongProd = await handlePaymentComplete({
+  const resWrongProd = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_wrong_prod_001',
     productId: 'pass_7d',
     amount: 9900,
@@ -118,7 +118,7 @@ let server;
 
   /* ── 5. 포트원 서버 장애(500) 또는 무응답 시 503 pg_unavailable ── */
   console.log('\n[Test 5] 포트원 서버 오류(5xx) 및 네트워크 불가 시 503 pg_unavailable');
-  const resPg500 = await handlePaymentComplete({
+  const resPg500 = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_500_server_error',
     productId: 'pass_1d',
     amount: 3300,
@@ -129,7 +129,7 @@ let server;
   ok(resPg500.body.error === 'pg_unavailable', '에러 코드 pg_unavailable 일치');
 
   // 네트워크 불가(포트 번호 미존재)
-  const resPgNetErr = await handlePaymentComplete({
+  const resPgNetErr = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_net_err',
     productId: 'pass_1d',
     amount: 3300,
@@ -146,7 +146,7 @@ let server;
     amount: { total: 3300 },
     orderName: '관광 1일권 (1장)'
   });
-  const resGood = await handlePaymentComplete({
+  const resGood = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay_good_001',
     productId: 'pass_1d',
     amount: 3300,
@@ -162,7 +162,8 @@ let server;
   const mockEnv = {
     PORTONE_API_SECRET: validSecret,
     PORTONE_API_BASE: mockApiBase,
-    LIC_TEST_SEED: '0'.repeat(64)
+    LIC_TEST_SEED: '0'.repeat(64),
+    ALLOW_TEST_KEY: '1'   // 시험 = 개발 릴레이(0번 허용)
   };
   mockPayments.set('pay_route_verified_001', {
     status: 'PAID',
@@ -204,7 +205,7 @@ let server;
   // ① 조회를 빼면(skipPgVerification) 미결제(FAILED) 요청이 성공하여 단언 실패 입증
   let revertSkipQueryFailed = false;
   try {
-    const fakeBypass = await handlePaymentComplete({
+    const fakeBypass = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
       paymentId: 'pay_failed_001',
       productId: 'pass_1d',
       amount: 3300,

@@ -59,6 +59,7 @@ node test/smoke.mjs
 - 모양의 **정본은 앱 저장소 `raytok-native1/docs/samples/license-code.md`** 다. 80바이트(payload 16 + Ed25519 서명 64) → Crockford base32 128자, 보여 줄 때 4자 × 32칸. 벡터 넷을 `npm run test:mint` 가 그대로 돌린다(정본 파일이 `../raytok-native1/…` 에 있거나 `LICENSE_CODE_DOC` 로 가리키면 넷 다, 없으면 벡터 ① 내장본).
 - 의존성 없음 — `node:crypto` 의 Ed25519 를 쓴다 (Node 18+).
 - **키 0 = 시험 키**(`--test`, 씨앗이 정본 글에서 나온다 — 앱은 개발자 모드에서만 받는다). **운영 키는 1부터**, 개인키는 저장소·REPORT 어디에도 적지 않는다: `wrangler secret` / `relay/.dev.vars`(`LIC_PRIVATE_KEY_1=<hex64>`, gitignore) / `--key-file`(`relay/keys/` 는 gitignore).
+- **운영은 운영 키만**(10-28): 운영 릴레이는 1번 코드만 받고, 1번 개인키(`MINT_PRIVATE_KEY`)가 없으면 결제 발급을 `503 mint_key_missing` 으로 멈춘다. 0번은 개발 릴레이에서만 — `relay/.dev.vars` 에 `ALLOW_TEST_KEY=1`. **운영 wrangler.toml·secret 에는 넣지 않는다.**
 ```bash
 node tools/mint-code.mjs --test --exp 2030-01-01 --flags host,private --cust RT0001   # = 정본 벡터 ①
 node tools/mint-code.mjs --key 1 --days 365 --flags host --cust ACME01                # 운영 (LIC_PRIVATE_KEY_1)

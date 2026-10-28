@@ -62,7 +62,7 @@ payments.set('imp_good', { imp_uid: 'imp_good', status: 'paid', amount: P.price,
    paymentId 를 새로 줘야 한다 — 같은 번호로 또 부르면 검증을 지나 **먼저 찍은 답**이 돌아온다.
    (이 시험을 쓰다 실제로 당했다: 상태 'ready' 사례가 200 으로 통과해 버렸다.) */
 let payNo = 0;
-const call = (over = {}) => handlePaymentComplete({
+const call = (over = {}) => handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
   paymentId: (lastPaymentId = over.paymentId || ('pay' + (++payNo).toString().padStart(3, '0'))),
   productId: PROD, amount: P.price,
   impUid: 'imp_good', impKey: KEY, impSecret: SECRET, impApiBase: BASE,
@@ -132,7 +132,7 @@ try {
 
   /* ⑨ 되돌림 실증 — V1 길을 빼면(=V2 로만 확인하면) 정상 결제가 **안 찍힌다**.
      V2 주소로 보내 보면 그 모습이 그대로 나온다: 손님은 돈을 내고 코드를 못 받는다. */
-  const v2Only = await handlePaymentComplete({
+  const v2Only = await handlePaymentComplete({ allowTestKey: true,   // 시험 = 개발 릴레이(0번 허용)
     paymentId: 'pay001', productId: 'pass_1d', amount: 3300,
     impUid: null,                       // V1 열쇠를 안 넘기면 = 옛 코드와 같은 길
     portoneSecret: 'v2_secret', portoneApiBase: BASE
@@ -150,7 +150,7 @@ try {
     lastPaymentId = body.paymentId;
     return relayWorker.fetch(new Request('http://localhost/pay/complete', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-    }), env, { waitUntil: () => {} });
+    }), { ALLOW_TEST_KEY: '1', ...env }, { waitUntil: () => {} });   // 시험 = 개발 릴레이(0번 허용)
   };
   const IMP_ENV = { IMP_API_KEY: KEY, IMP_API_SECRET: SECRET, IMP_API_BASE: BASE };
 

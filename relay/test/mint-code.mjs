@@ -15,12 +15,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  mintCode, verifyCode, claimsOf, loadPrivateKey, privateKeyFromSeed, testSeed, publicKeyHexOf,
+  mintCode, verifyCode as verifyProd, PROD_KEYS, trustedKeys, claimsOf, loadPrivateKey, privateKeyFromSeed, testSeed, publicKeyHexOf,
   parseFlags, parseExp, groupCode, base32Decode, base32Encode, PUBLIC_KEYS, CODE_CHARS, LINK_BASE,
   resolvePeriod, custsFor,
 } from '../tools/mint-code.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/* 여기 코드는 대부분 0번(시험 키) — 개발 릴레이처럼 아는 키 전부로 본다. 운영 기본값은 아래 「운영은 운영 키만」 */
+const verifyCode = (c, o = {}) => verifyProd(c, { keys: PUBLIC_KEYS, ...o });
+
+test('운영은 운영 키만 — 기본 신뢰 목록은 1번 하나, 0번은 ALLOW_TEST_KEY=1 일 때만', () => {
+  const NOW = Date.UTC(2027, 0, 1);
+  const r = mintCode({ keyId: 0, exp: Math.floor(NOW / 1000) + 86400, flags: 1, cust: 'T', privateKey: privateKeyFromSeed(testSeed()) });
+  assert.deepEqual(Object.keys(PROD_KEYS), ['1']);
+  assert.equal(PROD_KEYS[1], PUBLIC_KEYS[1]);
+  assert.equal(verifyProd(r.code, { now: NOW }).why, 'needs_update');                 // 운영 기본값 → 거부
+  assert.equal(verifyProd(r.code, { now: NOW, keys: trustedKeys({}) }).ok, false);
+  assert.equal(verifyProd(r.code, { now: NOW, keys: trustedKeys({ ALLOW_TEST_KEY: '1' }) }).ok, true);
+  /* 1번 자리 코드는 운영 기본값의 길로 통과한다 — 운영 개인키 대신 새 키를 1번 자리에 세워 같은 길을 본다 */
+  const pk = privateKeyFromSeed('11'.repeat(32));
+  const r1 = mintCode({ keyId: 1, exp: Math.floor(NOW / 1000) + 86400, flags: 1, cust: 'T', privateKey: pk });
+  assert.equal(verifyProd(r1.code, { now: NOW, keys: { ...PROD_KEYS, 1: publicKeyHexOf(pk) } }).ok, true);
+});
 
 /* 정본 벡터 ① — license-code.md §3 (키 0 · exp=1893456000 · flags=0x03 · cust="RT0001") */
 const VEC1 = '00000000E3DXH003A9A30C1G66PQMK63P1PDQTQ1SNYDX9P9MYBRBKBA626VVW133ARGBWE9XCVD2CAZAQVT2V5XQGWS73NYH6GYYR34D9V2YM8V9H6Y8XJ9801EGYGA';
