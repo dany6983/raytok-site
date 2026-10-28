@@ -13,6 +13,15 @@
 
 ---
 
+## 10-28 11:45 — [세션] NOW.md 1~3번 (QR 고르개 제거, 손님 앱 다운로드 단추 제거, join 페이지 안내 단순화)
+했다: 강사 화면 QR 고르개 제거 및 언제나 웹 손님 주소 발행, 손님 청취 페이지 「앱 같이 받기」 단추 제거, join 페이지 리다이렉트 단순화 완료
+어디서 보나: web/host/index.html, web/listener/index.src.html, join/index.html, samples/split_qr_test.js, samples/listener_state_test.js, samples/join_i18n_test.js
+막힘: 없음
+확인만: `npm test` 전체 초록 (붉은 수 0) 및 되돌림 실증 검증 완료
+다음: 커밋 및 푸시 완료
+
+---
+
 ## 10-28 12:15 — [E] 장부 63 ①②③ — 레이팩 브라우저 측정 (올렸다 · 크롬 숫자 있다 · 폰은 잠겨 있다)
 했다: 측정 페이지를 만들어 **올렸다**(db22277) — <https://raytok.kr/web/raypack-probe/>.
   목록 → `.rtpack` 받기(진행 막대) → 브라우저 안에서 풀기(fflate) → Worker 에서 bergamot

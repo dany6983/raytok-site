@@ -287,11 +287,7 @@ font-size: 11px; font-weight: 700; letter-spacing: .12em; background: var(--warn
 <option value="ko">한국어 (Korean)</option>
 </select>
 
-<div id="pack-row" style="display: none; margin: -4px 0 12px; align-items: center; gap: 8px; flex-wrap: wrap;">
-<a class="btn" id="btn-get-pack" href="/download/" target="_blank" rel="noopener"
-style="width: auto; padding: 8px 14px; font-size: 14px; margin: 0;" data-i18n="btn_get_pack">📲 앱 같이 받기</a>
-<span style="font-size: 12px; color: var(--text-muted);" data-i18n="pack_optional">안 받아도 그대로 들립니다.</span>
-</div>
+<div id="pack-row"></div>
 
 <label data-i18n="name_label">이름 (선택 사항)</label>
 <input type="text" id="name-input" placeholder="예: 홍길동" data-i18n="name_placeholder">
@@ -310,6 +306,7 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 </div>
 
 <div class="screen" id="chat-screen">
+
 
 <div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
 <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
@@ -341,6 +338,7 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 </div>
 </div>
 
+
 <div id="voice-picker-modal" style="display:none; position:fixed; bottom:70px; left:16px; z-index:60; width:280px; background:var(--card-bg, var(--card-bg)); border:1px solid var(--border); border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
 <div style="font-weight:bold; font-size:14px; color:var(--text);" data-i18n="voice_pick_title">목소리 선택</div>
@@ -348,6 +346,7 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 </div>
 <div id="voice-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
 </div>
+
 
 <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
 <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, var(--card-bg));" data-i18n="ask_title">✋ 질문하기</div>
@@ -358,6 +357,7 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 <button class="tool-btn" id="btn-ask-submit" style="padding:4px 12px; background:var(--primary); color:#ffffff; font-weight:600;" data-i18n="btn_ask_submit">손들기 전송</button>
 </div>
 </div>
+
 
 <div id="save-picker-modal" style="display:none; position:fixed; bottom:70px; right:16px; z-index:60; width:260px; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25); text-align:left;">
 <div>
@@ -389,6 +389,7 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 </div>
 </div>
 
+
 <div class="modal" id="end-modal">
 <div class="modal-content">
 <div class="modal-title" data-i18n="end_title">세션·안내 종료</div>
@@ -409,6 +410,7 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 </div>
 </div>
 
+
 <div style="display:none" aria-hidden="true">
 <span data-i18n="status_connecting">연결 중...</span>
 <span data-i18n="status_connected">연결됨</span>
@@ -426,6 +428,8 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 <span data-i18n="notice_no_retention">기본: 폰에 기록을 남기지 않습니다</span>
 <span data-i18n="btn_save_record">내 기록 받기 (TXT)</span>
 </div>
+
+
 
 <script src="../common/voice-fallback.js"></script>
 <script>
@@ -947,7 +951,6 @@ await loadUiStrings(initialUiLang);
 applyStrings(initialUiLang);
 updateSubtitleDir();
 checkOsVoiceSupport(selectedLang);   // B 24 — QR 로 들어온 그 자리에서 본다(연결 전)
-renderPackRow();                     // 정본 §2 ② — 들어온 그 자리에서 받기 단추
 
 if (isRawBroadcast) {
 if (langSelect) langSelect.style.display = 'none';
@@ -980,7 +983,6 @@ const newUiLang = determineLanguage();
 await loadUiStrings(newUiLang);      // 그 언어 조각이 손에 없으면 받는다 (B 19)
 applyStrings(newUiLang);
 checkOsVoiceSupport(selectedLang);   // B 24 — 바꾼 언어로 다시 본다
-renderPackRow();                     // 정본 §2 ② — 고른 언어에 따라 받기 단추
 updateSubtitleDir();
 
 if (isConnected) {
@@ -989,22 +991,6 @@ renderAllLines();
 }
 });
 
-function inRayTokApp() {
-try {
-return /RayTok/i.test(navigator.userAgent || '')
-|| new URLSearchParams(location.search).get('app') === '1';
-} catch (_) { return false; }
-}
-
-function renderPackRow() {
-const row = document.getElementById('pack-row');
-if (!row) return;
-const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-const show = !inRayTokApp() && !sameLang && !isDemo;
-row.style.display = show ? 'flex' : 'none';
-try { console.log('pack_row show=' + (show ? 1 : 0) + ' me=' + (selectedLang || '-') + ' app=' + (inRayTokApp() ? 1 : 0)); } catch (_) {}
-}
-window.rtPackRow = { render: renderPackRow, inApp: inRayTokApp };
 
 const VOICE_WAIT_MS = 3000, VOICE_POLL_MS = 200;
 window.__rtVoiceCheck = [];                  // 마지막 판정들 — 시험과 개발자 창이 읽는 자리

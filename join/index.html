@@ -9,20 +9,12 @@
   h1 { font-size: 22px; margin: 0 0 12px; }
   p { font-size: 15px; line-height: 1.5; color: #444; }
   a.btn { display: block; text-align: center; padding: 14px; border-radius: 12px; background: #0A0F1F; color: #fff; text-decoration: none; font-weight: 600; margin-top: 16px; }
-  a.btn.secondary { background: #fff; color: #0A0F1F; border: 1px solid #ccc; }
-  .hint { font-size: 13px; color: #777; margin-top: 24px; line-height: 1.5; }
 </style>
 </head>
 <body>
-<h1 data-i18n="heading">RayTok 투폰 연결</h1>
-<p id="msg" data-i18n="msg_opening">앱을 여는 중입니다…</p>
-<a class="btn" id="open" href="#" data-i18n="btn_open">앱으로 열기</a>
-<a class="btn" id="web-listen" href="#" style="display:none; background:#0284c7; margin-top:10px;" data-i18n="btn_web_listen">브라우저로 듣기</a>
-<a class="btn secondary" id="store" href="/download/" data-i18n="btn_install">앱이 없으면 설치하기</a>
-<p class="hint"><span data-i18n="hint_1">상대 폰의 RayTok 화면에 뜬 QR을 찍으면 이 페이지로 옵니다. 앱이 깔려 있으면 바로 열리고, 없으면 위 단추로 설치한 뒤 QR을 다시 찍으세요.</span><br><span data-i18n="hint_2">같은 Wi-Fi(또는 한쪽 핫스팟)에 있어야 연결됩니다. 인터넷은 필요 없습니다.</span><br><span data-i18n="hint_3">주소창에 실린 연결 정보는 그 폰의 집 안 주소와 그때만 쓰는 확인 코드입니다. 상대가 같은 Wi-Fi에 있지 않으면 아무 의미가 없고, 호스트가 화면을 닫으면 곧바로 못 쓰게 됩니다.</span></p>
+<h1 data-i18n="heading">RayTok 연결</h1>
+<p id="msg" data-i18n="msg_opening">연결 중입니다…</p>
 <script>
-// 손님 글자 — ./ui-strings.json (web/listener 과 같은 모양, 81개 언어). 순서: ?lang= → navigator.language → ko.
-// 사전을 못 받아도 페이지는 한국어 그대로 돈다 (아래 본문이 ko 원문이다).
 var RT_I18N = { dict: null, lang: 'ko' };
 function rtNorm(code) {
   var l = String(code || '').trim().toLowerCase();
@@ -47,10 +39,6 @@ function rtApply(lang) {
 }
 function rtLoadStrings(qLang) {
   var want = rtNorm(qLang) || rtNorm(navigator.language) || 'ko';
-  /* B 19 — 81개 언어 사전을 통째로 받지 않는다(116 KB · gz 46 KB). 쓸 언어 **한 조각**만
-     받는다(약 4 KB · gz 1.8 KB). 조각은 `tools/split-ui-strings.js` 가 손 표에서 만든다.
-     조각이 없으면(모르는 언어·옛 배포) 통째로 한 번 더 — 그래도 없으면 이 페이지는
-     마크업의 한국어 그대로 돈다(아래 본문이 ko 원문이다). */
   return fetch('./ui-strings/' + encodeURIComponent(want) + '.json').then(function (r) {
     return r.ok ? r.json() : null;
   }).then(function (d) {
@@ -62,110 +50,30 @@ function rtLoadStrings(qLang) {
     });
   }).catch(function () {});
 }
-</script>
-<script>
 (function () {
-  // 초대는 질의(?ip=…&code=…&name=…&lang=…&pkg=…)에 실린다 — App Links가
-  // 앱에 그대로 넘기는 형태다. 조각(#)으로 만든 옛 QR도 계속 읽는다.
   var q = {};
   var src = (location.search || '').replace(/^\?/, '') || (location.hash || '').replace(/^#/, '');
   src.split('&').forEach(function (p) {
     var i = p.indexOf('='); if (i < 0) return;
     try { q[decodeURIComponent(p.slice(0, i))] = decodeURIComponent(p.slice(i + 1)); } catch (e) {}
   });
-  var pkg = q.pkg || 'com.raytok.ear';
-  // 스토어에는 아직 없다 (D-06 — 변리사 검토 전 공개 금지). 그 주소는 404이므로
-  // 설치는 우리 페이지로 보낸다. 등록되면 이 한 줄만 스토어 주소로 되돌린다.
-  var store = 'https://raytok.kr/download/';
-  /*
-   * ★★ **갈림 QR** (NOW 10-21 2번). 이 페이지에 오는 링크는 이제 **두 가지**다:
-   *   ① 투폰·앱 가이드 — `ip` + `code` (같은 망)
-   *   ② **릴레이 방** — `room` (+ `relay`). 웹 강사 화면의 QR 이 이 꼴이다.
-   *
-   * ②에는 주소도 확인 코드도 없다. 전에는 `ok` 가 `ip`+`code` 만 보아서 ②가 오면
-   * **「연결 정보가 없는 링크입니다」** 가 뜨고 「앱으로 열기」가 숨었다 — 앱을 가진 손님이
-   * 앱으로 들어갈 길이 없었다(앱 쪽은 10-21 에 `room=` 을 읽게 고쳤다).
-   *
-   * `only=app` 이면 「브라우저로 듣기」를 숨긴다 — 대표님 데모 스위치의 「앱만」.
-   */
   var room = (q.room || '').toUpperCase();
   var hasRoom = /^[A-Z0-9]{6}$/.test(room);
   var relay = (q.relay || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
-  var only = q.only === 'app' || q.only === 'web' ? q.only : 'both';
-  var ok = (/^\d{1,3}(\.\d{1,3}){3}$/.test(q.ip || '') && /^[A-Z0-9]{6}$/i.test(q.code || '')) || hasRoom;
-  var qs = 'ip=' + encodeURIComponent(q.ip || '') + '&code=' + encodeURIComponent((q.code || '').toUpperCase())
-         + '&name=' + encodeURIComponent(q.name || '') + '&lang=' + encodeURIComponent(q.lang || '')
-         + (hasRoom ? '&room=' + encodeURIComponent(room) : '')
-         + (hasRoom && relay ? '&relay=' + encodeURIComponent(relay) : '')
-         + (q.mode === 'guide' || hasRoom ? '&mode=guide' : '');   // v2 가이드 세션 QR (D-138)
-  /*
-   * ★ **앱이 없으면 어디로 떨어지나** (NOW 10-21 2번: "안드로이드 앱 없음 → 웹(+앱 받기)").
-   *
-   * 인텐트의 `browser_fallback_url` 은 "앱이 없다"를 안드로이드가 **대신 알려 주는** 유일한
-   * 자리다. 전에는 그 자리가 **설치 페이지**였다 — 들을 방이 있는데도 손님이 "설치하세요"만
-   * 보았다. 방이 있으면 **이 페이지로 되돌아오게** 하고(`noapp=1`) 그때는 인텐트를 **다시
-   * 던지지 않는다**(되던지면 고리가 돈다) — 화면에 「브라우저로 듣기」와 「앱 받기」 둘이 선다.
-   */
-  var noapp = q.noapp === '1';
-  var selfNoApp = location.origin + location.pathname + '?room=' + encodeURIComponent(room)
-                + (relay ? '&relay=' + encodeURIComponent(relay) : '')
-                + (q.lang ? '&lang=' + encodeURIComponent(q.lang) : '')
-                + (q.raw === '1' ? '&raw=1' : '') + (q.q === '1' ? '&q=1' : '') + '&noapp=1';
-  var fallback = hasRoom ? selfNoApp : store;
-  var intent = 'intent://join?' + qs + '#Intent;scheme=raytok;package=' + pkg
-             + ';S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
-  var deep = 'raytok://join?' + qs;
-  document.getElementById('store').href = store;
-  // 글자 사전을 먼저 받고(없어도 간다) 안내 글을 그 언어로 적는다 — 머리글·단추는 data-i18n 이 맡는다.
   var done = rtLoadStrings(q.lang);
   var msgEl = document.getElementById('msg');
   var setMsg = function (key, koText) { done.then(function () { msgEl.textContent = rtT(key) || koText; }); };
-  /*
-   * 6번: `room=` 이 있으면 「브라우저로 듣기」 (앱이 없어도 듣는다).
-   *
-   * ★ **릴레이 주소를 그대로 넘긴다** — 안 넘기면 손님 화면이 **운영 릴레이**로 가서
-   * 방 코드는 맞고 방은 없는 **빈 방**을 본다(대표님 10-20 웹 실기의 그 증상).
-   * `raw`·`q` 도 같이 넘긴다 — 강사가 켠 것을 손님 화면이 알아야 한다.
-   */
-  var listenerUrl = '';
+
   if (hasRoom) {
-    listenerUrl = '/web/listener/?room=' + encodeURIComponent(room)
+    var listenerUrl = '/web/listener/?room=' + encodeURIComponent(room)
                 + (relay ? '&relay=' + encodeURIComponent(relay) : '')
                 + (q.raw === '1' ? '&raw=1' : '')
                 + (q.q === '1' ? '&q=1' : '')
                 + (q.lang ? '&lang=' + encodeURIComponent(q.lang) : '');
-    var webListenBtn = document.getElementById('web-listen');
-    if (webListenBtn && only !== 'app') {
-      webListenBtn.href = listenerUrl;
-      webListenBtn.style.display = 'block';
-    }
-  }
-
-  if (!ok) {
-    setMsg('msg_no_info', '연결 정보가 없는 링크입니다. 상대 화면의 QR을 다시 찍어 주세요.');
-    document.getElementById('open').style.display = 'none';
-    return;
-  }
-  var android = /Android/i.test(navigator.userAgent);
-  /*
-   * ★ **아이폰은 웹으로 보낸다** (NOW 2번). 아이폰 앱은 아직 없다 — 딥링크 단추를 주면
-   * 아무 일도 안 일어나고(또는 "열 수 없다") 손님은 **고장으로 본다**(§2). 들을 방이 있으면
-   * 그 자리에서 웹으로 보낸다. 방이 없으면(투폰 링크) 전처럼 사실을 말한다.
-   */
-  if (!android && hasRoom && only !== 'app') {
-    document.getElementById('open').style.display = 'none';
-    document.getElementById('store').style.display = 'none';
-    setMsg('btn_web_listen', '브라우저로 듣기');
     location.replace(listenerUrl);
     return;
   }
-  /* 「웹만」 — 어느 폰이든 웹으로 (데모 스위치) */
-  if (only === 'web' && hasRoom) { location.replace(listenerUrl); return; }
-  document.getElementById('open').href = android ? intent : deep;
-  if (android) setMsg('msg_android', '앱이 있으면 바로 열립니다. 열리지 않으면 아래 단추를 누르세요.');
-  else setMsg('msg_ios', '이 링크는 안드로이드 RayTok 앱용입니다. 아이폰용 앱은 아직 없습니다.');
-  /* 앱이 없다고 **안드로이드가 말해 준 뒤**(noapp)에는 다시 던지지 않는다 — 고리가 돈다 */
-  if (android && !noapp) { setTimeout(function () { location.href = intent; }, 300); }
+  setMsg('msg_no_info', '연결 정보가 없는 링크입니다. 상대 화면의 QR을 다시 찍어 주세요.');
 })();
 </script>
 </body>

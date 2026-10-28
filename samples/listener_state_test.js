@@ -55,11 +55,9 @@ function openHost(base, room) {
     ok(waitTxt === 'Đang chờ người nói…', `[대기] welcome 뒤 줄 0 → "${waitTxt}" (vi)`);
     ok(await page.evaluate(() => window.__wake) >= 1, '[wakeLock] 참여하면 navigator.wakeLock.request 를 부른다');
 
-    // [앱 같이 받기] 단추 확인 (실기 목록 w8)
-    const packDisplay = await page.$eval('#pack-row', e => e.style.display);
-    const packHref = await page.$eval('#btn-get-pack', e => e.getAttribute('href'));
-    ok(packDisplay === 'flex', '[받기 단추] 언어 고른 뒤(vi) 그 옆에 앱 같이 받기 단추가 보인다');
-    ok(packHref === '/download/', `[받기 단추] 누르면 /download/ 로 간다 (href="${packHref}")`);
+    // [앱 같이 받기] 단추가 없음 (장부 63: 손님은 전부 웹)
+    const hasPackBtn = await page.$('#btn-get-pack');
+    ok(hasPackBtn === null, '[받기 단추 없음] 「앱 같이 받기」 단추가 제거되었다 (장부 63)');
 
     // ── 2. 끊김: 호스트 쪽이 서버 소켓을 끊으면 재연결 중 → 띠가 끊김 문구로
     for (const l of [...room1.listeners.keys()]) { try { l.close(1012, 'restart'); } catch (_) {} }

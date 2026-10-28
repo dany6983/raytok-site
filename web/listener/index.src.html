@@ -304,13 +304,8 @@
       <select id="lang-select" translate="no">
         <option value="ko">한국어 (Korean)</option>
       </select>
-      <!-- 정본 §2 ② · §6 ⑤ — 언어 고르기 **바로 옆**에 받기 단추. 웹 브라우저에는 언어팩을
-           넣을 수 없다(사실) → 「앱 같이 받기」. 안 받아도 서버 번역으로 계속 들린다. -->
-      <div id="pack-row" style="display: none; margin: -4px 0 12px; align-items: center; gap: 8px; flex-wrap: wrap;">
-        <a class="btn" id="btn-get-pack" href="/download/" target="_blank" rel="noopener"
-           style="width: auto; padding: 8px 14px; font-size: 14px; margin: 0;" data-i18n="btn_get_pack">📲 앱 같이 받기</a>
-        <span style="font-size: 12px; color: var(--text-muted);" data-i18n="pack_optional">안 받아도 그대로 들립니다.</span>
-      </div>
+      <!-- 장부 63 — 레이팩 받기 자리 -->
+      <div id="pack-row"></div>
 
       <label data-i18n="name_label">이름 (선택 사항)</label>
       <input type="text" id="name-input" placeholder="예: 홍길동" data-i18n="name_placeholder">
@@ -1069,7 +1064,6 @@
       applyStrings(initialUiLang);
       updateSubtitleDir();
       checkOsVoiceSupport(selectedLang);   // B 24 — QR 로 들어온 그 자리에서 본다(연결 전)
-      renderPackRow();                     // 정본 §2 ② — 들어온 그 자리에서 받기 단추
 
       // 아웃바운드 원문 방송 모드 (question.md §12: 청취자 화면에 언어 고르기가 없다)
       if (isRawBroadcast) {
@@ -1103,7 +1097,6 @@
       await loadUiStrings(newUiLang);      // 그 언어 조각이 손에 없으면 받는다 (B 19)
       applyStrings(newUiLang);
       checkOsVoiceSupport(selectedLang);   // B 24 — 바꾼 언어로 다시 본다
-      renderPackRow();                     // 정본 §2 ② — 고른 언어에 따라 받기 단추
       updateSubtitleDir();
 
       if (isConnected) {
@@ -1112,31 +1105,6 @@
       }
     });
 
-    /* ── 정본 §2 ② · §6 ⑤ — 「앱 같이 받기」 ───────────────────────────────
-     * **사실**: 브라우저에는 언어팩을 넣을 수 없다. 그래서 웹에서는 받을 것이 **앱**이고,
-     * 앱을 받으면 그 언어 팩도 폰 안에 들어간다(그때부터 번역이 손님 폰에서 돈다 = 장부 51).
-     * **안 받아도 계속 들린다** — 그 말을 단추 옆에 적는다. 안 적으면 손님이 받아야 하는
-     * 줄로 읽고 거기서 멈춘다.
-     *
-     * 안 보이는 때 둘: ① 고른 말이 **강연 말과 같다**(번역할 것이 없다) ② **앱**으로 열린
-     * 화면(앱은 자기 자리에서 팩을 받는다 — 앱에 또 앱을 권하지 않는다).
-     * 읽는 곳은 이 한 함수다(§4). */
-    function inRayTokApp() {
-      try {
-        return /RayTok/i.test(navigator.userAgent || '')
-               || new URLSearchParams(location.search).get('app') === '1';
-      } catch (_) { return false; }
-    }
-
-    function renderPackRow() {
-      const row = document.getElementById('pack-row');
-      if (!row) return;
-      const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-      const show = !inRayTokApp() && !sameLang && !isDemo;
-      row.style.display = show ? 'flex' : 'none';
-      try { console.log('pack_row show=' + (show ? 1 : 0) + ' me=' + (selectedLang || '-') + ' app=' + (inRayTokApp() ? 1 : 0)); } catch (_) {}
-    }
-    window.rtPackRow = { render: renderPackRow, inApp: inRayTokApp };
 
     /* B 24 — QR 로 들어온 **그 자리에서** 이 폰에 그 언어 음성이 있는지 보고 알린다.
        세 가지를 가린다(§20 · D-70 — **모름은 없음이 아니다**):
