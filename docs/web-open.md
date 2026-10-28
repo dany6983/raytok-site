@@ -5,6 +5,7 @@
 
 ## 시험 (export NO_PROXY=127.0.0.1,localhost · test:* 하나씩)
 **90개 중 붉음 1** — `test:screen`(`samples/screen_view_test.js` 「도구 막대는 화면 밖」).
+- **10-28 16:50 가름: 코드 쪽** — 크롬의 가짜 pointermove(움직임 0). 고친 판 가지 `fix/screen-fake-move`(E 가 합친다).
 - 원인 한 줄: **간헐**(같은 판에서 10번 중 5번 붉음). 붉을 때 `show-tools` 가 켜져 있다(`barTop 1036` = 막대 높이 44 만큼 보임) — 「조작하면 4초 보이기」(`SCREEN_TOOLS_MS`)가 페이지 열린 직후 들어온 pointer/key 이벤트로 켜지고, 시험은 300ms 뒤에 읽는다. 코드 문제인지 시험 문제인지는 안 갈랐다.
 - 한 번씩 돌린 판: 852e0be 초록 · 142e130 붉음 · 0cd905a 붉음 · 5ef3e87 초록 — 간헐이라 「어느 커밋부터」로 단정하지 않는다.
 
@@ -36,7 +37,7 @@
 | 95 | 앱 배색·로고 | **부분** | 배색 토큰 host·listener 둘 다 · 로고 host 만(`logo-lockup.png`), listener 에 로고 0 |
 | 99 ⓒ | 읽기 = 고른 목소리 | 했음(9fc5e3f 이전부터) | `pickVoice` 가 `currentVoice` 먼저(1227줄) |
 | 99 ⓓ | 크롬으로 열기 | 했음 | `googlechromes://` · `test:open-chrome` 초록 (89 로 「선택 안내」 낮춤) |
-| 99-1 | 모든 단추 누르기 표 | **부분** | 손님 단추 시험 넷(lang_pick·room_tr·state·screen) — 「단추 × 결과」 한 표는 없음 |
+| 99-1 | 모든 단추 누르기 표 | **강사 했음**(docs/web-buttons.md · test:host-buttons) / 손님은 E 뒤 | 손님 단추 시험 넷(lang_pick·room_tr·state·screen) — 「단추 × 결과」 한 표는 없음 |
 | 105 | 시작 단추 늘 보임 · 폰 폭 · 시작 즉시 듣기 | 했음(1·4) / 2·3 사진 확인 안 함 | `#readyArea` 늘 보임(1025줄 주석) |
 | 111 | 확인 줄에 운영 주소 · 로컬 경고 | 했음 | `prod-license-e2e.mjs` 5~9줄 |
 | 112 | 강사 말하는 언어 82개 | 했음 | `langs.json` 읽기(705줄), srcLang 시험 여럿 |

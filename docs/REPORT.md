@@ -13,6 +13,12 @@
 
 ---
 
+## 10-28 16:50 — [웹 일꾼] 마스터 16:27 ①②
+했다: ① test:screen 간헐 = **코드 쪽** — 크롬이 화면이 바뀔 때 커서가 그대로여도 isTrusted pointermove(movementX/Y=0, 0,0)를 쏘고, 그게 도구 막대를 켰다(TV·PC 에 마우스가 얹혀 있으면 실제로도 뜬다). 움직임 0 은 무시하게 고침 + 그 경우를 정하는 단언 추가 → 10/10 초록 · 되돌리면 3/3 붉음. **web/listener 는 E 작업 중이라 main 이 아니라 가지 `fix/screen-fake-move`(eea87c5)에 뒀다** — `e/raypack-guest` 에 그대로 붙는다(apply --check 통과). ② 강사 단추 19개 누르기 시험 `samples/host_buttons_test.js`(test:host-buttons, 단언 37) + 표 `docs/web-buttons.md` — 제품 되돌림 5개 각각 붉음 확인, 시험 안 되돌림 실증 둘
+어디서 보나: docs/web-buttons.md · 가지 fix/screen-fake-move
+막힘: 없음 — ①을 main 에 넣는 것만 E(또는 마스터)가 가지를 합치면 끝. 그때까지 main 의 test:screen 은 여전히 간헐
+확인만: test:* 92개 하나씩 — 붉음 1(revert-audit: 새 시험에 되돌림 없음) → 되돌림 실증 넣고 다시 초록 = **붉은 수 0** (이 판에선 screen 도 초록이었지만 간헐이라 믿지 않는다)
+다음: E 가 fix/screen-fake-move 합치기 · 손님 페이지 단추 표(E 끝난 뒤)
 ## 10-28 16:30 — [E] 14:35 「장부 63 붙이기」 다시 받음 — **그대로 멈춤 (P-16 판정 대기)**
 했다: 새로 짠 것 없음 — 16:29 가지 `e/raypack-guest`(af65296)가 이 지시의 전부다(시험 49건 초록).
 어디서 보나: 바로 아래 16:29 보고 · `docs/raypack-browser.md` 6장(가지).
