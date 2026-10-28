@@ -100,7 +100,7 @@
 ⇒ **붙일 때 규칙**: 브라우저가 SIMD 를 하면 레이팩으로, 아니면 **지금 쓰는 길(서버 번역)로 내려간다.**
 재는 장은 이제 SIMD 가 없으면 **48MB 를 받기 전에 멈추고** 그 까닭과 갈 길을 적는다(v4).
 ⚠ **iOS 16.4 이상 아이폰은 아직 못 재 봤다** — 「뜨기만 하면 붙인다」는 판정은 그 기기가 생겨야 끝난다.
-⚠ SIMD 없는 bergamot 판이 따로 있는지는 **안 알아봤다**(있으면 옛 아이폰도 살릴 수 있다).
+⚠ SIMD 없는 bergamot 판(NOW 8 덤, 10-28 찾아봄): **공식으로 내놓은 판은 못 찾았다** — bergamot `wasm/README` 는 SIMD 켜기만 안내하고, 파이어폭스 빌드(`build-bergamot.py`)도 SIMD 없는 판을 따로 만들지 않는다. 옛 아이폰(iOS 15)은 **지금처럼 서버 번역**이 기본안. 스스로 SIMD 없이 빌드할 수 있는지·속도는 확인 안 함.
 
 ## 4. 아직 안 잰 것 — **정직하게**
 
@@ -137,9 +137,10 @@
 | 기록 | 줄마다 `guest_tr_plan plan=raypack seq=n` / `plan=server seq=n why=empty|late` · `raypack_ready file=… v=1` |
 | 저장 | Cache Storage `raypack-v1` 최근 **2개 말**. 쓴 차례는 localStorage `raytok_raypack_lru` |
 | 말 이름 | 표 `PACK_CODE`: zh-CN→zh · zh-TW→zt · nb→no · fil→tl · tet→tp. 목록에 없는 말(sw·ga·cy·ka·mk·mt…)은 받지 않는다 |
+| SIMD 없는 bergamot 판 | 공식 판 못 찾음(10-28) — iOS 15 는 서버 번역 그대로 | 필요하면 스스로 빌드해 재 보기(대표님이 고르실 일) |
 | 받지 않는 자리 | 원문이 ko 가 아닌 방(팩은 ko→X) · 한국어 손님 · 시연(`?demo`) · 원문 방송(`?raw=1`) |
 
 **그대로 둔 것**: 서버 번역은 **계속 온다**(전선·`caps` 를 바꾸지 않았다 — R-15). 서버 일을 줄이려면
 `hello` 에 「이 손님은 폰 안 번역」을 알리는 칸이 필요하다 — 그건 전선 일이라 이번에 하지 않았다.
-**안 한 것**: SIMD 없는 bergamot 판 찾기(NOW 8 덤) · `www.raytok.kr` CORS(2장 — 거기서는 받기가 실패해 서버로 간다).
+**안 한 것**: `www.raytok.kr` CORS(2장 — 거기서는 받기가 실패해 서버로 간다).
 시험: `samples/raypack_guest_test.js` (48건 · 되돌림 4건 붉음 확인).

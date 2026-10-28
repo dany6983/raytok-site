@@ -13,6 +13,13 @@
 
 ---
 
+## 10-28 19:55 — [웹 일꾼] 사이트 NOW 14:35 장부 63 붙이기 — 끝 표시 + 8 덤
+했다: 1~7 은 E 가 합친 것(54bb1f3·b82a91e)으로 끝 — NOW 에 끝 표시. 8 덤: SIMD 없는 bergamot **공식 판 못 찾음** → iOS 15 는 서버 번역 그대로(`docs/raypack-browser.md` 3.5장·4장 표 한 줄).
+어디서 보나: `docs/raypack-browser.md` · `docs/NOW.md` 14:35 줄.
+막힘: **00a588b(제품 페이지 /glass/·/product/, 내 것 아님)가 붉음 4 를 냈다** — 604f197 에선 초록 확인. ① test:i18n: 새 글자 5줄 × 5개 언어 빠짐(§18) ② test:site-lang·test:asset-ver: 쪽마다 i18n `?v=` 가 둘로 갈림(bb6eb510/b66b6d24) — 손님 폰이 옛 사전을 읽는다 ③ test:kcp-freeze: KCP 심사 동결 「하단 정보 쪽 30개」→ 32. 남의 새 커밋·KCP 심사 판단이라 손대지 않음 — 기본안: 그 세션이 번역 채우고 `?v=` 다시 만들기, kcp 동결 수는 대표님/마스터가 정함.
+확인만: test:* 92개 하나씩 — 붉은 수 4(위 넷, 전부 00a588b). 내 변경은 문서뿐.
+다음: 사이트 NOW 열린 ★ 없음(web-open.md 남은 것: 95 손님 로고 · 99-1 손님 단추 표 · test:screen 간헐) — 마스터 지시 기다림.
+
 ## 10-28 18:07 — [E] 사이트 NOW 17:47 P-16 판정 — 레이팩 합치기 끝 (main)
 했다: `e/raypack-guest`(af65296)를 main 에 합치고(54bb1f3) 레이팩을 **한국 강연 방 손님만** 켜게 좁혔다(b82a91e) — 강사 welcome 에 `kr`(region.js isKR, 없으면 0) · 손님은 `kr:1` 일 때만 받기·폰 안 번역, 아니면 기록 `raypack_off`. W-T ⑤ = 해외 방 `kr:0` 단언 + 바깥 0건(kr:1 방만 R2 허용). 되돌림 둘 다 붉음(손님 문 빼기 7 FAIL · 강사 늘 kr:1 W-T 1 FAIL) → 복구 · test:* 92개 하나씩 붉은 수 0.
 어디서 보나: `samples/raypack_guest_test.js` [8](한국 방 → 바깥은 R2 주소만)·[9](해외·Desk·welcome 전 → 0건) · `samples/w_t_test.js` ⑤ · `web/host/index.html` welcome `kr`.
