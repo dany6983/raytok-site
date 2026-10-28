@@ -112,14 +112,14 @@ def top(cur):
     lang = "" if cur == "desk" else '<div class="langbar" data-noi18n><div class="wrap" role="group" aria-label="Language"><button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button><button type="button" data-lang="ja" lang="ja">日本語</button><button type="button" data-lang="vi" lang="vi">Tiếng Việt</button><button type="button" data-lang="th" lang="th">ไทย</button><button type="button" data-lang="id" lang="id">Bahasa Indonesia</button></div></div>\n'
     return lang + f'''<header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="RayTok 홈"><img src="/assets/raytok-logo-white.png" alt="RayTok" width="124" height="26"></a>
-<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/museum/",'도슨트',"museum")}{a("/student/","유학생","student")}{a("/ows/",'OWS<span class="d-desk"> 통역 이어폰</span>',"ows")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk").replace("<a ",'<a class="ko-only" ')}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}{buy}</nav>
+<nav class="nav" aria-label="주요 메뉴">{a("/field/","현장교육","field")}{a("/tour/","관광가이드","tour")}{a("/museum/",'도슨트',"museum")}{a("/student/","유학생","student")}{a("/product/",'제품<span class="d-desk"> 이어폰·선글라스</span>',"product")}{a("/desk/",'Desk<span class="d-desk"> 화상회의</span>',"desk").replace("<a ",'<a class="ko-only" ')}{a("/#tech","기술","tech").replace("<a ",'<a class="d-desk" ')}{a("/guide/","사용설명서","guide")}{buy}</nav>
 <a class="get" href="/download/">앱 설치</a>
 </div></header>
 '''
 
 # 사업자 정보는 통신판매업 고지 항목이라 **줄이지 않는다**(지금 11쪽 그대로).
 BIZ = f'주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:{MAIL}">{MAIL}</a>'
-FOOT_ROW = '<a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/museum/">도슨트</a><a href="/student/">유학생</a><a href="/ows/">OWS 통역 이어폰</a><a class="ko-only" href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a>'
+FOOT_ROW = '<a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/museum/">도슨트</a><a href="/student/">유학생</a><a href="/ows/">OWS 통역 이어폰</a><a href="/glass/">블루투스 선글라스</a><a class="ko-only" href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a>'
 def _foot(extra=""):
     return f'''<footer><div class="wrap">
 <div class="row">{FOOT_ROW}{extra}<a href="/privacy/">개인정보 처리방침</a><a href="/web/terms/">이용약관</a></div>
@@ -255,8 +255,8 @@ home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣�
 
 <section><div class="wrap">
 <p class="eyebrow">어디에 쓰나요</p>
-<h2>다섯 가지 쓰임</h2>
-<p class="sub">말이 통해야 하는 다섯 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
+<h2>쓰임과 제품</h2>
+<p class="sub">말이 통해야 하는 자리에 맞췄습니다. 필요한 쪽을 눌러 보세요.</p>
 <div class="cards4">
 <a class="card" href="/field/"><img loading="lazy" src="{img("ship")}" alt="조선소에서 안전 지시를 듣는 외국인 근로자들">
 <div class="in"><span class="st">사업장 · 교육기관 · 2026년 11월 출시 예정</span><h3>현장교육</h3><p>강사는 한국어로, 외국인 근로자는 각자의 말로. 교육이 끝나면 참석·청취 기록이 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
@@ -268,6 +268,8 @@ home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣�
 <div class="in"><span class="st">유학생 개인용 · 앱 + 이어폰 · 2026년 11월 출시 예정</span><h3>유학생 패키지</h3><p>교수는 평소처럼 말하고, 나는 내 폰과 이어폰으로 내 말로 듣습니다. 끝나면 강의 노트가 내 폰에 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
+<a class="card" href="/glass/"><img loading="lazy" src="{img("glass-front")}" alt="RayTok 블루투스 선글라스 RT-18G 정면">
+<div class="in"><span class="st">판매 중 · 99,000원</span><h3>블루투스 선글라스</h3><p>귀에 넣지 않는 공기전도. 음악과 통화, 그리고 통역까지 한 자리에서.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card ko-only" href="/desk/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
 <div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Desk 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
 </div>
@@ -483,7 +485,7 @@ write("/tour/", tour)
 # ───────────── OWS 통역 이어폰 ─────────────
 OWS_M = mailto("[RayTok OWS] 출시 알림 신청", "이름:\n연락처:\n")
 ows = head("RayTok OWS 통역 이어폰 — 건네도 괜찮은 통역 이어폰",
-           "귀를 막지 않는 오픈형 이어폰과 RayTok 앱. 한쪽을 건네고 마주 보며 대화합니다. 대부분의 언어는 인터넷 없이. 출시 준비 중.", "/ows/", img("ocafe"), en=True) + top("ows") + f'''
+           "귀를 막지 않는 오픈형 이어폰과 RayTok 앱. 한쪽을 건네고 마주 보며 대화합니다. 대부분의 언어는 인터넷 없이. 출시 준비 중.", "/ows/", img("ocafe"), en=True) + top("product") + f'''
 <div class="hero"><img src="{img("ocafe")}" alt="카페에서 이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="wrap">
 <span class="tag">OWS 통역 이어폰 · 출시 준비 중</span>
@@ -638,3 +640,131 @@ meet = head("RayTok Desk — 상대 회사가 아무것도 사지 않아도 되�
 write("/desk/", meet)
 # 옛 주소 /meet/ 는 /desk/ 로 넘긴다
 write("/meet/", '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>RayTok Desk</title><link rel="canonical" href="https://raytok.kr/desk/"><meta http-equiv="refresh" content="0; url=/desk/"><meta name="robots" content="noindex"></head><body><a href="/desk/">RayTok Desk 로 이동</a></body></html>\n')
+
+# ─────────────────────────────────────────────────────────────
+# 제품 — 블루투스 선글라스 RT-18G (2026-10-28 입고, 판매 중)
+# 금지: 돌비 / 골전도 / 방수 / 노이즈캔슬링 / AI안경 / 스마트글라스 / 「인터넷 없이」 / 특허 받았다
+# 모델명은 반드시 RT-18G (전파인증번호와 일치시킬 것)
+# ─────────────────────────────────────────────────────────────
+from urllib.parse import quote as _q
+GLASS_M = f"mailto:{MAIL}?subject={_q('[RayTok 선글라스 RT-18G] 구매 문의')}&body={_q('성함:')}%0A{_q('연락처:')}%0A{_q('수량:')}%0A"
+
+glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 오픈이어 선글라스",
+             "귀에 넣지 않는 공기전도 방식. 음악과 통화, 그리고 RayTok 통역까지. UV400 · 37g · 블루투스 5.4 · 99,000원.",
+             "/glass/", img("glass-front")) + top("product") + f'''
+<div class="hero">
+<div class="wrap" style="padding-top:clamp(78px,10vw,118px);padding-bottom:clamp(18px,2.5vw,28px)">
+<span class="tag">블루투스 선글라스 RT-18G · 99,000원</span>
+<h1>귀를 막지<br>않습니다.</h1>
+<p class="lead">귀에 넣지 않고 귓바퀴 앞으로 소리를 보냅니다. 음악을 들으면서도 뒤에서 오는 차 소리가 들립니다.</p>
+<div class="btns"><a class="btn p" href="{GLASS_M}">구매 문의</a><a class="btn g" href="#spec">제품 사양 보기</a></div>
+</div></div>
+<div style="background:var(--ink);padding:0 0 clamp(30px,5vw,60px)"><div class="wrap">
+<img src="{img("glass-hero")}" alt="RayTok 블루투스 선글라스 RT-18G 측면 — 다리 안쪽에 스피커가 있습니다" style="width:100%;height:auto;display:block" width="1600" height="615">
+</div></div>
+
+<section><div class="wrap">
+<p class="eyebrow">왜 귀를 막지 않는가</p>
+<h2>달리면서 음악을 듣는데<br>뒤차 소리가 안 들린다면</h2>
+<p class="sub">귀에 끼우는 이어폰은 바깥 소리를 막습니다. RT-18G는 귀에 넣지 않고 귓바퀴 앞에서 소리를 전달합니다.</p>
+<div class="g3">
+<div class="step"><div class="n">1</div><h3>바깥 소리가 들립니다</h3><p>자전거를 타며 뒤차 소리를, 등산 중에 일행의 말을 그대로 듣습니다.</p></div>
+<div class="step"><div class="n">2</div><h3>귀가 아프지 않습니다</h3><p>귓속에 아무것도 넣지 않습니다. 오래 써도 눌리거나 답답하지 않습니다.</p></div>
+<div class="step"><div class="n">3</div><h3>안경을 하나만 씁니다</h3><p>선글라스와 이어폰을 따로 챙기지 않습니다. 37g, 하나로 끝납니다.</p></div>
+</div>
+<div class="g2" style="margin-top:22px">
+<div><img loading="lazy" src="{img("glass-side")}" alt="RayTok 블루투스 선글라스 RT-18G 측면 — 다리 안쪽 스피커와 조작 버튼" style="width:100%;border-radius:14px"></div>
+<div><img loading="lazy" src="{img("glass-front")}" alt="RayTok 블루투스 선글라스 RT-18G 정면 — UV400 미러 렌즈" style="width:100%;border-radius:14px"></div>
+</div>
+</div></section>
+
+<section class="alt"><div class="wrap">
+<p class="eyebrow">RayTok 앱과 함께</p>
+<h2>한 명이 말하면<br>여러 명이 각자의 말로</h2>
+<p class="sub">RayTok 앱을 연결하면, 선글라스를 쓴 사람이 말할 때 듣는 사람들이 각자 자기 언어로 받습니다. 가이드가 한국어로 말하면 손님은 영어로, 중국어로, 베트남어로 — 동시에.</p>
+<div class="g3">
+<div class="step"><h3>여러 명 동시에</h3><p>대부분의 통역 기기는 두 사람끼리입니다. RayTok은 듣는 사람 수에 제한을 두지 않습니다.</p></div>
+<div class="step"><h3>월 구독료 0원</h3><p>번역이 폰 안에서 돌아갑니다. 오래 쓴다고 저희가 더 내는 돈이 없어서, 시간 제한을 걸 이유도 없습니다.</p></div>
+<div class="step"><h3>손님은 앱이 없어도</h3><p>듣는 쪽은 QR을 찍어 브라우저로 들을 수 있습니다. 설치도 가입도 없습니다.</p></div>
+</div>
+<p class="note">번역은 RayTok 앱에서 동작합니다. 음성 안내는 듣는 기기에 설치된 언어에 한해 제공되며, 그 밖의 언어는 글자로 표시됩니다. 기계 번역에는 오역이 있을 수 있습니다.</p>
+</div></section>
+
+<section id="spec"><div class="wrap">
+<p class="eyebrow">제품 사양</p>
+<h2>RT-18G</h2>
+<table style="margin-top:18px">
+<tr><th>모델명</th><td>RT-18G</td></tr>
+<tr><th>소리 방식</th><td>공기전도 개방형 — 귀에 넣지 않습니다</td></tr>
+<tr><th>블루투스</th><td>5.4 · 첫 연결 후 자동 페어링</td></tr>
+<tr><th>조작</th><td>다리 바깥쪽 버튼 한 개 — 재생·통화·음성비서 호출</td></tr>
+<tr><th>무게</th><td>37g</td></tr>
+<tr><th>사용 시간</th><td>음악 약 4.5~5.5시간 · 통화 약 2~3시간</td></tr>
+<tr><th>충전</th><td>USB Type-C · 약 1.5시간</td></tr>
+<tr><th>렌즈</th><td>PC 렌즈 · UV400 (자외선 99.9% 이상 차단) · 미러 코팅</td></tr>
+<tr><th>프레임</th><td>PC + ABS · 코받침과 다리 끝 미끄럼 방지</td></tr>
+<tr><th>크기</th><td>160 × 50mm · 다리 길이 173mm</td></tr>
+<tr><th>구성품</th><td>본체 · USB Type-C 케이블 · 파우치 · 설명서</td></tr>
+<tr><th>가격</th><td>99,000원</td></tr>
+<tr><th>보증</th><td>구매일로부터 1년 (소비자 과실 제외)</td></tr>
+</table>
+<table style="margin-top:14px">
+<tr><th>적합성평가(전파)</th><td>R-R-PNLE-RT-18G</td></tr>
+<tr><th>안전확인신고(배터리)</th><td>XU102612-24011K</td></tr>
+<tr><th>제조국</th><td>중국</td></tr>
+<tr><th>수입·판매</th><td>주식회사 피엔엘에코</td></tr>
+<tr><th>A/S 책임자</th><td>주식회사 피엔엘에코 · 1800-6825</td></tr>
+</table>
+</div></section>
+
+<section class="alt"><div class="wrap">
+<p class="eyebrow">어디에 쓰나요</p>
+<h2>사계절, 밖에서</h2>
+<div class="g4">
+<div class="step"><h3>자전거 · 라이딩</h3><p>헬멧과 함께 씁니다. 장갑을 낀 채 버튼 하나로 곡을 넘깁니다.</p></div>
+<div class="step"><h3>등산 · 러닝</h3><p>일행의 말과 주변 소리를 들으면서 음악을 듣습니다.</p></div>
+<div class="step"><h3>스키 · 보드</h3><p>눈에 반사되는 햇빛을 막고, 리프트에서 통화를 받습니다.</p></div>
+<div class="step"><h3>낚시 · 캠핑</h3><p>수면 반사광을 줄이고, 손을 쓰는 중에 전화를 받습니다.</p></div>
+</div>
+</div></section>
+
+<section class="dark cta"><div class="wrap">
+<h2>구매를 원하시면 알려 주세요</h2>
+<p class="sub" style="margin:0 auto">판매처는 준비 중입니다. 메일로 성함과 연락처, 수량을 남겨 주시면 안내해 드립니다.</p>
+<div class="btns"><a class="btn p" href="{GLASS_M}">구매 문의</a><a class="btn g" href="/download/">RayTok 앱 설치</a></div>
+<p class="mail">메일: <a href="mailto:{MAIL}">{MAIL}</a> · 전화 1800-6825</p>
+</div></section>
+''' + FOOT
+write("/glass/", glass)
+
+# ── 제품 인덱스 ──────────────────────────────────────────────
+product = head("RayTok 제품 — 통역 이어폰과 블루투스 선글라스",
+               "귀를 막지 않는 RayTok 하드웨어. 나눠 끼는 OWS 통역 이어폰과 블루투스 선글라스 RT-18G.",
+               "/product/", img("glass-front")) + top("product") + f'''
+<div class="hero">
+<div class="wrap" style="padding-top:clamp(78px,10vw,118px);padding-bottom:clamp(18px,2.5vw,28px)">
+<span class="tag">RayTok 제품</span>
+<h1>귀를 막지 않는<br>하드웨어.</h1>
+<p class="lead">RayTok 앱은 가지고 계신 이어폰으로도 씁니다. 더 편하게 쓰시도록 귀를 막지 않는 기기를 만듭니다.</p>
+</div></div>
+<div style="background:var(--ink);padding:0 0 clamp(30px,5vw,60px)"><div class="wrap">
+<img src="{img("glass-hero")}" alt="RayTok 블루투스 선글라스 RT-18G" style="width:100%;height:auto;display:block" width="1600" height="615">
+</div></div>
+
+<section><div class="wrap">
+<div class="g2">
+<a class="card" href="/glass/"><img loading="lazy" src="{img("glass-front")}" alt="RayTok 블루투스 선글라스 RT-18G 정면">
+<div class="in"><span class="st">판매 중 · 99,000원</span><h3>블루투스 선글라스 RT-18G</h3><p>공기전도 개방형. 음악과 통화, 그리고 통역까지. UV400 · 37g · 블루투스 5.4.</p><span class="more">자세히 보기 →</span></div></a>
+<a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
+<div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀에 걸어 쓰는 오픈형. 한쪽을 상대에게 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
+</div>
+<p class="note">사진은 실제 제품이며, 화면에 따라 색이 다르게 보일 수 있습니다.</p>
+</div></section>
+
+<section class="dark cta"><div class="wrap">
+<h2>기기가 없어도 앱은 지금 씁니다</h2>
+<p class="sub" style="margin:0 auto">가지고 계신 블루투스 이어폰으로 RayTok 앱을 먼저 써 보세요.</p>
+<div class="btns"><a class="btn p" href="/download/">앱 설치하기</a><a class="btn g" href="/guide/">사용설명서</a></div>
+</div></section>
+''' + FOOT
+write("/product/", product)

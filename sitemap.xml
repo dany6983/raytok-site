@@ -63,6 +63,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://raytok.kr/product/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://raytok.kr/glass/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://raytok.kr/ows/</loc>
     <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/ows/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/ows/en/"/>
