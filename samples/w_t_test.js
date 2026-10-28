@@ -53,7 +53,11 @@ console.log('=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16)
     watch(hostPage);
     hostPage.on('dialog', async d => await d.accept());
 
-    await hostPage.goto(`${baseUrl}/web/host/?relay=${encodeURIComponent(baseUrl)}`);
+    /* RULE: P-16 — 이 시험의 방은 **해외 방**이다(⑤ 가 해외·Desk 방의 바깥 요청 0건을 센다).
+       `region` 을 안 주면 판정이 그 상자의 브라우저 말(navigator.language)로 떨어져서,
+       한국말 상자에서는 kr:1 이 돼 ⑤ 가 붉었다 — 상자마다 답이 달라지면 시험이 아니다.
+       region.js 가 시험·시연용으로 받는 `?region=` 으로 못 박는다. */
+    await hostPage.goto(`${baseUrl}/web/host/?region=US&relay=${encodeURIComponent(baseUrl)}`);
     await hostPage.fill('#tokenInput', 'valid_test_token');
     await hostPage.click('#btnVerifyToken');
     await hostPage.waitForSelector('#step-prepare', { state: 'visible' });

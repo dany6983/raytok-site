@@ -78,7 +78,10 @@ const ttsStub = () => {
   const dialogs = [];
   let dialogAnswer = 'accept';
   host.on('dialog', async (d) => { dialogs.push(d.message()); if (dialogAnswer === 'accept') await d.accept(); else await d.dismiss(); });
-  await host.goto(`${base}/web/host/?relay=${base}`);
+  /* RULE: P-16 — 이 방은 **해외 방**으로 못 박는다. `region` 을 안 주면 판정이 그 상자의
+     브라우저 말로 떨어져, 한국말 상자에서는 kr:1 이 돼 손님 페이지가 레이팩 팩 주소(R2)를
+     받으러 나간다 — 「바깥 요청 0건」이 기계마다 다른 답을 냈다(10-28). */
+  await host.goto(`${base}/web/host/?region=US&relay=${base}`);
   await host.fill('#tokenInput', 'valid_test_token');
   await host.click('#btnVerifyToken');
   await host.waitForSelector('#step-prepare', { state: 'visible' });
@@ -405,7 +408,7 @@ const ttsStub = () => {
   {
     const en = await hostCtx.newPage();
     watch(en);
-    await en.goto(`${base}/web/host/?relay=${base}&lang=en`);
+    await en.goto(`${base}/web/host/?region=US&relay=${base}&lang=en`);
     const texts = await en.evaluate(() => ({
       end: document.getElementById('btnEnd').textContent, close: document.getElementById('btnCloseRoom').textContent,
       csv: document.getElementById('btnCsv').textContent, head: buildRosterCsv([]),
@@ -448,7 +451,7 @@ const ttsStub = () => {
     const pg = await hostCtx.newPage();
     watch(pg);
     pg.on('dialog', d => d.accept());
-    await pg.goto(`${base}/web/host/?relay=${base}`);
+    await pg.goto(`${base}/web/host/?region=US&relay=${base}`);
     await pg.waitForFunction(() => window.rtHostReady && ['script', 'done', 'raw'].includes(window.rtHostReady.mode()), null, { timeout: 8000 });
     await pg.click('#btnStartLecture');
     await pg.waitForFunction(() => document.getElementById('liveStatus').textContent === '연결됨', null, { timeout: 5000 });
@@ -486,7 +489,7 @@ const ttsStub = () => {
   }
   ok(revertFailed === true, '방 닫기 후 명단이 메모리에 남아있으면 단언 실패 입증 (되돌림 실증 완료)');
 
-  ok(outside.length === 0, `바깥 요청 0건 (${outside.length})`);
+  ok(outside.length === 0, `바깥 요청 0건 (${outside.length}${outside.length ? ' — ' + [...new Set(outside)].slice(0, 3).join(' ') : ''})`);
 
   await browser.close();
   relay.close();

@@ -152,6 +152,7 @@ vertical-align: middle;
 .badge-me { background-color: #047857; color: #d1fae5; }
 .badge-script { background-color: var(--border); color: var(--text); }
 .msg-line.msg-skip .msg-bubble { opacity: 0.6; font-size: 13px; color: var(--text-muted); border-style: dashed; }
+.notice-band { font-size: 12px; padding: 6px 12px; border-radius: 6px; margin: 6px 16px; text-align: center; }
 #break-band { display: none; margin: 0 16px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: #b45309; font-weight: 700; text-align: center; }
 #break-band.on { display: block; }
 #room-state { display: none; margin: auto 16px; padding: 18px 14px; border-radius: 10px; border: 1px dashed var(--border); color: var(--text-muted); text-align: center; font-size: 15px; line-height: 1.5; }
@@ -308,15 +309,15 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 
 <div class="screen" id="chat-screen">
 
-<div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+<div id="ios-chrome" class="notice-band" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text);">
 <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
 <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
 </div>
-<div id="tr-notice" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#bae6fd; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+<div id="tr-notice" class="notice-band" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#bae6fd;">
 <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
 <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
 </div>
-<div id="voice-notice" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
+<div id="voice-notice" class="notice-band" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a;"></div>
 <div id="break-band" data-i18n="break_band">쉬는 시간</div>
 <div id="room-state" role="status" aria-live="polite"></div>
 <div id="chat-list"></div>

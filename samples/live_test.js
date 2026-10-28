@@ -38,7 +38,10 @@ const { rooms, hostReceived } = relay;
   const hostCtx = await browser.newContext({ viewport: { width: 1100, height: 800 } });
   const host = await hostCtx.newPage();
   watch(host);
-  await host.goto(`${base}/web/host/?relay=${base}`);
+  /* RULE: P-16 — 이 방은 **해외 방**으로 못 박는다(위 end_test 와 같은 까닭).
+     region 이 없으면 판정이 상자의 브라우저 말로 떨어져 한국말 상자에서만 레이팩이 켜지고,
+     「바깥 요청 0건」이 기계마다 다른 답을 냈다(10-28). */
+  await host.goto(`${base}/web/host/?region=US&relay=${base}`);
   await host.fill('#tokenInput', 'valid_test_token');
   await host.click('#btnVerifyToken');
   await host.waitForSelector('#step-prepare', { state: 'visible' });

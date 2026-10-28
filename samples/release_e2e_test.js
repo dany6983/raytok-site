@@ -56,7 +56,10 @@ console.log('=== 줄 23 출시 전 끝까지 시험 (웹 강사 경로 포함) =
     // 대화상자 자동 승인
     hostPage.on('dialog', async d => await d.accept());
 
-    await hostPage.goto(`${baseUrl}/web/host/?relay=${encodeURIComponent(baseUrl)}`);
+    /* RULE: P-16 — 이 방은 **해외 방**으로 못 박는다. region 이 없으면 판정이 그 상자의
+       브라우저 말로 떨어져 한국말 상자에서만 손님 페이지가 레이팩 팩 주소(R2)를 받으러 나가고,
+       「바깥 요청 0건」이 기계마다 다른 답을 냈다(10-28). */
+    await hostPage.goto(`${baseUrl}/web/host/?region=US&relay=${encodeURIComponent(baseUrl)}`);
     await hostPage.fill('#tokenInput', 'valid_test_token');
     await hostPage.click('#btnVerifyToken');
     await hostPage.waitForSelector('#step-prepare', { state: 'visible' });

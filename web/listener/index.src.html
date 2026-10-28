@@ -158,6 +158,10 @@
     /* L4-2 원고 문단(script)·건너뜀·쉬는 시간 */
     .badge-script { background-color: var(--border); color: var(--text); }
     .msg-line.msg-skip .msg-bubble { opacity: 0.6; font-size: 13px; color: var(--text-muted); border-style: dashed; }
+    /* 안내 띠 셋(#ios-chrome·#tr-notice·#voice-notice)이 같은 치수를 **각자 인라인으로** 들고 있었다 —
+       첫 화면 한도(gz 37KB)를 넘겨서 한 곳으로 모은다. 색과 display 는 띠마다 달라 인라인에 둔다
+       (시험이 el.style.display 를 읽는 자리가 있다 — 거기로 옮기면 그 시험이 깨진다). */
+    .notice-band { font-size: 12px; padding: 6px 12px; border-radius: 6px; margin: 6px 16px; text-align: center; }
     #break-band { display: none; margin: 0 16px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: #b45309; font-weight: 700; text-align: center; }
     #break-band.on { display: block; }
     /* ④ 방이 비었을 때(줄 0) 보이는 문구 — 대기·끊김·끝남 셋. 줄이 하나라도 오면 숨긴다 */
@@ -335,15 +339,15 @@
          크롬이 있으면 손님이 한 번 눌러 옮겨 갈 수 있고, 없으면 아무 일도 일어나지 않는다
          — 그때는 사파리 번역 → 「서버 번역으로」(아래 띠) 가 그대로 받친다.
          자리: #chat-screen > #ios-chrome (#tr-notice **바로 앞** 형제) -->
-    <div id="ios-chrome" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text); font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+    <div id="ios-chrome" class="notice-band" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text);">
       <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
       <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
     </div>
-    <div id="tr-notice" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#bae6fd; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;">
+    <div id="tr-notice" class="notice-band" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#bae6fd;">
       <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
       <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
     </div>
-    <div id="voice-notice" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; font-size:12px; padding:6px 12px; border-radius:6px; margin:6px 16px; text-align:center;"></div>
+    <div id="voice-notice" class="notice-band" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a;"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
     <div id="room-state" role="status" aria-live="polite"></div>
     <div id="chat-list"></div>

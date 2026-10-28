@@ -110,7 +110,10 @@ function mockHost(wss) {
   await p.waitForTimeout(300);
   s = await state(p);
   assert(s.barTop >= s.vh - 1, '움직임 0 인 pointermove 로는 도구 막대가 안 뜬다');
-  await p.mouse.move(300, 300); await p.waitForTimeout(400);
+  /* 두 번 움직인다 — playwright 의 **첫** mouse.move 는 앞 자리가 없어 movementX·Y 가 0 으로 간다(재 봤다).
+     제품은 움직임 0 인 pointermove 를 가짜로 보고 버리므로(위 112번 줄 · a270943), 한 번만 움직이면
+     사람이 움직여도 막대가 안 뜬 것처럼 보인다. 첫 번째로 자리를 잡고, 두 번째가 진짜 조작이다. */
+  await p.mouse.move(100, 100); await p.mouse.move(300, 300); await p.waitForTimeout(400);
   s = await state(p);
   assert(s.barTop < s.vh - 20, '조작하면 도구 막대가 보인다');
   console.log('  [PASS] 최근 4줄 · 두 칸 · 큰 글씨 · 머리줄/꼬리표 숨김 · 도구 막대 숨김→보임 · 음성 0 · 외부 요청 0');

@@ -72,7 +72,11 @@ const SHAPE = [
   ['addEventListener', /addEventListener\(/g]
 ];
 
-const src = fs.readFileSync(SRC, 'utf-8');
+/* ★ 읽자마자 줄바꿈을 LF 로 맞춘다 (2026-10-28). 윈도 체크아웃의 소스는 CRLF 인데
+ * 아래 `\n{3,}` 빈 줄 접기는 `\r\n\r\n\r\n` 을 못 본다 — 그래서 **윈도에서 만든 판에만
+ * 빈 줄이 더 남아** `--check` 가 늘 붉었다(기계마다 다른 답 — 10-20 에 --check 를 고친 것과 같은 자리).
+ * 만드는 쪽도 LF 로 맞추면 어느 기계에서 돌려도 같은 판이 나온다. */
+const src = fs.readFileSync(SRC, 'utf-8').replace(/\r\n/g, '\n');
 const { text, dropped } = strip(src);
 const built = HEAD + text;
 
