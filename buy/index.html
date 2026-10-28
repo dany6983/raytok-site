@@ -163,11 +163,7 @@
             <td class="desc">말하는 사람(가이드·강사) 앱에 등록하는 월정액 코드.</td>
             <td class="price ask"><a id="prod-ask-host" href="mailto:raytok.dany@gmail.com?subject=%5BRayTok%5D%20%ED%98%B8%EC%8A%A4%ED%8A%B8%20%EC%BD%94%EB%93%9C%20%EB%AC%B8%EC%9D%98">문의</a></td>
           </tr>
-          <tr id="prod-row-pkg">
-            <td>인터넷 번역 패키지</td>
-            <td class="desc">서버 번역 25개 언어를 쓰는 별도 상품.</td>
-            <td class="price ask"><a id="prod-ask-pkg" href="mailto:raytok.dany@gmail.com?subject=%5BRayTok%5D%20%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B2%88%EC%97%AD%20%ED%8C%A8%ED%82%A4%EC%A7%80%20%EB%AC%B8%EC%9D%98">문의</a></td>
-          </tr>
+          <!-- 0x10 서버 번역 패키지 줄은 판매 목록에서 내렸다 (NOW 10-28 21:50 ③ · 장부 59 앱 번역은 폰 안만). 이미 산 쿠폰은 릴레이가 그대로 받는다 — relay 0x10 길은 손대지 않음 -->
           <tr id="prod-row-org">
             <td>교육기관·단체</td>
             <td class="desc">세금계산서 발행.</td>
@@ -519,19 +515,17 @@
         title: 'Our products', th: ['Product', 'What it is', 'Price'], list: 'Buy now', ask: 'Contact us',
         guest: ['Guest pass', 'For tour and museum listening. A code registered on one guest phone.', '1-day 3,300 KRW<br>7-day 9,900 KRW<br><span class="bundle">Bundles: 20 × 1-day 66,000 KRW · 10 × 7-day 99,000 KRW · 20 × 7-day 198,000 KRW</span>'],
         host: ['Guide / instructor host code', 'A monthly code registered in the speaker\'s (guide or instructor) app.'],
-        pkg: ['Internet translation package', 'A separate product using server translation for 25 languages.'],
         org: ['Schools and organizations', 'Tax invoice issued.']
       } : {
         title: '우리 제품', th: ['상품', '무엇인가', '가격'], list: '바로 구매', ask: '문의',
         guest: ['손님 이용권', '관광·박물관 청취용. 손님 폰 한 대에 등록하는 코드.', '1일권 3,300원<br>7일권 9,900원<br><span class="bundle">묶음: 1일권 20장 66,000원 · 7일권 10장 99,000원 · 7일권 20장 198,000원</span>'],
         host: ['가이드·강사 호스트 코드', '말하는 사람(가이드·강사) 앱에 등록하는 월정액 코드.'],
-        pkg: ['인터넷 번역 패키지', '서버 번역 25개 언어를 쓰는 별도 상품.'],
         org: ['교육기관·단체', '세금계산서 발행.']
       };
       document.getElementById('products-title').textContent = T.title;
       document.getElementById('buy-list-title').textContent = T.list;
       ['name', 'what', 'price'].forEach((k, i) => { document.getElementById('products-th-' + k).textContent = T.th[i]; });
-      const rows = { guest: 'prod-row-guest', host: 'prod-row-host', pkg: 'prod-row-pkg', org: 'prod-row-org' };
+      const rows = { guest: 'prod-row-guest', host: 'prod-row-host', org: 'prod-row-org' };
       Object.keys(rows).forEach(k => {
         const tds = document.getElementById(rows[k]).querySelectorAll('td');
         tds[0].textContent = T[k][0];

@@ -319,8 +319,10 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     const dataPrices = [...buyHtml.matchAll(/data-price="(\d+)"/g)].map(m => Number(m[1]).toLocaleString('en-US'));
     ok(dataPrices.every(n => ALLOWED.has(n)), '13:20 ⑤: data-price 값도 허용 목록 안');
     const rowCount = await page.locator('#products tr[id^="prod-row-"]').count();
-    ok(rowCount === 4, '13:20 ③: 우리 제품 표 네 줄(손님·호스트·번역 패키지·단체)');
-    for (const id of ['prod-row-host', 'prod-row-pkg', 'prod-row-org']) {
+    ok(rowCount === 3, '13:20 ③ → 10-28 21:50 ③: 우리 제품 표 세 줄(손님·호스트·단체) — 인터넷 번역 패키지(0x10)는 판매 목록에서 내림(장부 59)');
+    ok(await page.locator('#prod-row-pkg').count() === 0 && !/인터넷 번역 패키지|Internet translation package/.test(buyHtml),
+       '10-28 21:50 ③: /buy/ 에 「인터넷 번역 패키지」 글자·줄 없음 (ko·en 둘 다)');
+    for (const id of ['prod-row-host', 'prod-row-org']) {
       const t = await page.textContent('#' + id);
       ok(t.includes('문의') && !/\d{1,3}(?:,\d{3})+/.test(t), `13:20 ③: ${id} 는 가격 미정 → "문의", 숫자 없음`);
     }
