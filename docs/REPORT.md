@@ -13,6 +13,13 @@
 
 ---
 
+## 10-28 20:55 — [웹 일꾼] NOW 20:15 이용권 — 운영은 운영 키만 (e6b45e5)
+했다: 운영 릴레이 기본 신뢰 목록을 1번 하나로(`mint-core.js` PROD_KEYS·trustedKeys) · 0번은 `ALLOW_TEST_KEY=1`(relay/.dev.vars)일 때만 · 결제 발급은 운영 키가 없으면 0번으로 내려앉지 않고 `503 mint_key_missing`(결제 확인 전). 읽는 곳 전부: room.js redeem · pay.js/index.js · mock_relay(같은 trustedKeys) · mint-code CLI · 스크립트 둘. 시험 넷(운영 0번→401 · ALLOW→200 · 1번 자리 통과 · 운영 키 없음→503), 되돌림 셋 다 붉음.
+어디서 보나: `samples/license_redeem_test.js` [Test 6] · `relay/test/mint-code.mjs` 「운영은 운영 키만」 · `relay/README.md` 62줄.
+막힘: **릴레이 배포 필요 — 대표님**(`npx wrangler deploy`). 배포 전 확인: 운영 secret 에 `MINT_PRIVATE_KEY` 가 있어야 결제 발급이 선다(없으면 503). `ALLOW_TEST_KEY` 는 운영에 넣지 않는다.
+확인만: test:* 92개 하나씩 — 붉은 수 0. ⚠ 배포 뒤 `host-token.mjs`(11월 데모 강사 토큰)·`prod-license-e2e.mjs` 를 운영에 돌릴 때는 `KEY_FILE=<운영 개인키 파일>` 을 붙여야 한다(없으면 host-token 은 멈추며 안내, e2e 는 ② 401 이 맞는 답이라고 찍는다). 이미 받은 토큰은 만료까지 그대로.
+다음: NOW 남은 ★ 대조·끝 표시 → 95 손님 로고 → 99-1 손님 단추 표.
+
 ## 10-28 20:30 — [웹 일꾼] 「다 오픈」 ② test:screen 간헐 — fix/screen-fake-move 합침
 했다: 큰 화면 도구 막대가 크롬의 가짜 pointermove(움직임 0)에 켜지던 것 — E 가 짠 판(eea87c5)을 main 에 옮기고 `build-listener` 같이. test:screen 8번 연속 초록(전엔 10번 중 5번 붉음) · 코드만 되돌리면 3/3 붉음(D-09).
 어디서 보나: 손님 큰 화면 보기 — 켜자마자 도구 막대가 안 뜨고, 손가락·마우스를 움직이면 뜬다.
