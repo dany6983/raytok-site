@@ -155,7 +155,12 @@ console.log('=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16)
     console.log('\n[W-T 검증 5] 청취 페이지 번역 미요청 및 외부 요청 0건 (P-16 ①)');
     const translateCallsAfter = relay.counters.translate;
     ok(translateCallsAfter === translateCallsBefore, 'W-T ⑤ 원고 넘길 때 청취 페이지가 새로 번역을 청하지 않음 (P-16 ①)');
-    ok(outsideRequests.length === 0, `W-T ⑤ 바깥 네트워크 요청 0건 확인 (실제: ${outsideRequests.length})`);
+    /* 10-28 17:47 판정: 해외·Desk 방은 바깥 요청 0건. 한국 강연 방(welcome kr:1)만 레이팩 팩 주소(R2)를 허용 */
+    const roomKr = await pageA.evaluate(() => (window.welcomeInfo || welcomeInfo || {}).kr);
+    const PACK_HOST = 'pub-e2d5652d16454d42ad1823093e2c8809.r2.dev';
+    const notAllowed = outsideRequests.filter(u => !(roomKr === 1 && new URL(u).hostname === PACK_HOST));
+    ok(roomKr === 0, `W-T ⑤ 이 방은 해외 방(강사 isKR 아님) → welcome kr:0 (실제: ${roomKr})`);
+    ok(notAllowed.length === 0, `W-T ⑤ 바깥 네트워크 요청 0건 확인 (실제: ${notAllowed.length}${notAllowed.length ? ' ' + notAllowed.slice(0, 3).join(' ') : ''})`);
 
     // ── 7. W-T 조건 6: 리포트 3×3 세 형식 다운로드 + 참석 CSV + 방 닫기 뒤 줄 삭제 ──
     console.log('\n[W-T 검증 6] 리포트 3×3 다운로드, 참석 CSV, 방 닫기 후 줄 삭제');

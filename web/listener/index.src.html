@@ -1111,9 +1111,12 @@
      * 에 있고 **그때 부른다**(첫 화면 37KB 에 싣지 않는다). 받는 동안·못 돌면 지금 길(서버 번역).
      * 줄마다 기록 `guest_tr_plan plan=raypack|server seq=n` (§12). */
     let rp = null;
+    /* RULE: P-16 — 레이팩은 **한국 강연 방**(강사 화면 welcome `kr:1`)에서만. 해외·Desk 방은 받지 않는다(바깥 요청 0건).
+       welcome 전에는 늘 끔 — 언어를 먼저 골라도 받지 않는다. */
+    let rpRoomOk = false;
     function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
     function rpWant() {
-      if (isDemo || isRawBroadcast) return;
+      if (isDemo || isRawBroadcast || !rpRoomOk) return;
       (rp ? Promise.resolve(rp) : import('./raypack.js?v=1').then(m => (rp = m.createRaypack({
         row: document.getElementById('pack-row'), t: k => t(k), src: () => srcLang, log: rpLog }))))
         .then(r => r.want(selectedLang)).catch(e => rpLog('raypack_fail load ' + e));
@@ -1786,8 +1789,10 @@
       if ('welcome' in msg) {
         isConnected = true;
         srcLang = msg.src_lang || 'ko';
+        rpRoomOk = msg.kr === 1;
+        if (!rpRoomOk) rpLog('raypack_off room=' + (msg.kr === 0 ? 'abroad' : 'other'));
         rpWant();
-        welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, at: Date.now() };
+        welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, kr: rpRoomOk ? 1 : 0, at: Date.now() };
         /* 원고 강연(`script:1`)이면 원고 줄을 **읽는다** — 강사가 말하지 않는 방이라 소리를 끄면 아무것도
            안 들린다(대표님 실기 10-27 ①). 손님이 단추를 건드린 적 있으면 그 뜻대로. */
         if (welcomeInfo.script && !ttsTouched) { ttsTouched = true; ttsAutoOff = false; if (!isTtsEnabled) setTtsEnabled(true); }
@@ -2100,7 +2105,7 @@
         addLine(line);
         liveTtsDefault();   // 원고 줄 때문에 꺼 둔 소리는 들은 줄에서 도로 켠다(L4-3)
         const isSameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-        if (!isSameLang && !line.tr[selectedLang] && rp && rp.ready() && normalizeLangCode(srcLang) === 'ko') {
+        if (!isSameLang && !line.tr[selectedLang] && rpRoomOk && rp && rp.ready() && normalizeLangCode(srcLang) === 'ko') {
           rpLine(line, msg, isBroadcast);
         } else if (isBroadcast && !isSameLang) {
           /* ★ 방송 줄(원문)인데 손님 말이 다르다 — 설계는 **손님 폰이 번역**한다(장부 51).

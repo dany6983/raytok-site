@@ -1735,7 +1735,10 @@
       /* `script:1` = 원고로 진행하는 강연 — 강사가 그 자리에서 말하지 않으니 손님 폰이 **읽어야** 들린다
          (L4-3 「원고 줄 기본 끔」은 강사가 말하는 방의 규칙이다 · 대표님 실기 10-27 13:08 ①). */
       wsSend({ welcome: 1, plan: 'web', guide: 1, src_lang: SRC_LANG, raw: live.raw ? 1 : 0, q: live.questionEnabled ? 1 : 0,
-               script: paragraphs.length ? 1 : 0 });
+               script: paragraphs.length ? 1 : 0,
+               /* RULE: P-16 — `kr:1` = 한국 강연 방. 손님 폰 레이팩은 이 깃발이 있을 때만 켠다(대표님 10-28 17:47).
+                  판정은 region.js 한 곳 · 없으면 끔(🎤 와 달리 막힌 쪽으로 넘어진다). Desk·앱 방은 이 깃발을 보내지 않는다. */
+               kr: (window.rtRegion && window.rtRegion.isKR({ token: live.token })) ? 1 : 0 });
     }
 
     /* 넘길 때 보내는 문단 — 와이어 정본 script 모양. **번역문은 싣지 않는다**(결정장부 43).

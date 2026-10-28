@@ -214,7 +214,7 @@ async function pagePart() {
     await page.route('**/web/listener/raypack.js*', (r) => r.fulfill({ contentType: 'text/javascript', body: FAKE }));
     await page.goto(`${base}/web/listener/?lang=vi`);
     await page.waitForSelector('#lang-select');
-    await page.evaluate(() => handleMessage({ welcome: 1, src_lang: 'ko' }));
+    await page.evaluate(() => handleMessage({ welcome: 1, src_lang: 'ko', kr: 1 }));   // 한국 강연 방
     await page.waitForFunction(() => window.__rpFake && window.__rpFake.wants.length >= 1);
     ok((await page.evaluate(() => window.__rpFake.wants[0])) === 'vi', '들어가면 고른 말로 받기를 시작한다');
     const txt = (seq) => page.evaluate((s) => {
@@ -255,10 +255,13 @@ async function pagePart() {
         value: { type: 'cellular', effectiveType: '4g', saveData: false, addEventListener() {}, removeEventListener() {} } });
     });
     let r2 = 0;
+    const out2 = [];   // RULE: P-16 — 한국 강연 방은 팩 주소(R2)만 바깥으로 간다
+    p2.on('request', (rq) => { const h = new URL(rq.url()).hostname; if (h !== '127.0.0.1' && h !== 'localhost') out2.push(h); });
     await p2.route('**/*.r2.dev/**', (r) => { r2 += 1; r.fulfill({ status: 404, body: '' }); });
     await p2.goto(`${base}/web/listener/?lang=vi`);
     await p2.waitForSelector('#lang-select');
-    await p2.selectOption('#lang-select', 'ja');
+    await p2.evaluate(() => handleMessage({ welcome: 1, src_lang: 'ko', kr: 1 }));   // 한국 강연 방
+    await p2.evaluate(() => { const e = document.getElementById('lang-select'); e.value = 'ja'; e.dispatchEvent(new Event('change', { bubbles: true })); });   // 들어간 뒤라 고르개가 숨어 있다 — 바꿈 이벤트로
     await p2.waitForSelector('#pack-row button[data-rp="pack_now"]', { timeout: 15000 });
     const btns = await p2.$$eval('#pack-row button', (b) => b.map((x) => x.dataset.rp + '=' + x.textContent));
     ok(btns.length === 2 && /pack_wifi=/.test(btns[0]) && /pack_now=/.test(btns[1]), `두 단추 (${btns.join(' · ')})`);
@@ -268,7 +271,33 @@ async function pagePart() {
     await p2.waitForFunction(() => trPlanLog.some((l) => /raypack_(fail|state failed)/.test(l)), null, { timeout: 15000 });
     ok(r2 >= 1, `「지금 받기」 → 받으러 갔다 (${r2}번 · 여기선 404 로 막았다)`);
     ok((await p2.$$eval('#pack-row button', (b) => b.length)) === 0, '못 받으면 줄을 비운다 — 손님은 서버 번역으로 계속');
+    ok(out2.length >= 1 && out2.every((h) => h === 'pub-e2d5652d16454d42ad1823093e2c8809.r2.dev'),
+      `한국 강연 방: 바깥 요청은 R2 팩 주소만 (${[...new Set(out2)].join(',') || '0건'})`);
     await p2.close();
+
+    // RULE: P-16
+    console.log('\n[9] 페이지 — 해외 방(kr:0)·Desk 방(깃발 없음)은 받지 않는다 · 바깥 요청 0건 (10-28 17:47 판정)');
+    for (const [name, welcome] of [['해외 강연 방', { welcome: 1, src_lang: 'ko', kr: 0, script: 1 }],
+                                   ['Desk 방', { welcome: 1, src_lang: 'ko', plan: 'desk' }],
+                                   ['welcome 전', null]]) {
+      const p3 = await browser.newPage();
+      const outside = [];
+      p3.on('request', (rq) => { const h = new URL(rq.url()).hostname; if (h !== '127.0.0.1' && h !== 'localhost') outside.push(rq.url()); });
+      await p3.route('**/*.r2.dev/**', (r) => r.fulfill({ status: 404, body: '' }));
+      await p3.goto(`${base}/web/listener/?lang=vi`);
+      await p3.waitForSelector('#lang-select');
+      if (welcome) await p3.evaluate((w) => handleMessage(w), welcome);
+      await p3.evaluate(() => { const e = document.getElementById('lang-select'); e.value = 'ja'; e.dispatchEvent(new Event('change', { bubbles: true })); });   // 들어간 뒤라 고르개가 숨어 있다 — 바꿈 이벤트로
+      await p3.evaluate(() => handleMessage({ seq: 1, text: '안전모를 쓰세요.', tr: {} }));
+      await tick(1500);
+      const st = await p3.evaluate(() => ({ rows: document.querySelectorAll('#pack-row > *').length,
+        rp: trPlanLog.filter((l) => /raypack_(state|fail)|plan=raypack/.test(l)).length,
+        off: trPlanLog.some((l) => /raypack_off/.test(l)) }));
+      ok(outside.length === 0, `${name}: 바깥 요청 0건 (${outside.length}${outside.length ? ' ' + outside[0] : ''})`);
+      ok(st.rp === 0 && st.rows === 0, `${name}: 팩 받기·엔진 기록 0 · 팩 줄 비어 있음 (기록 ${st.rp} · 줄 ${st.rows})`);
+      if (welcome) ok(st.off, `${name}: 기록 \`raypack_off\` 한 줄`);
+      await p3.close();
+    }
   } finally {
     await browser.close();
     srv.close();

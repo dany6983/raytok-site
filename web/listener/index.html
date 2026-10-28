@@ -985,9 +985,10 @@ rpWant();
 });
 
 let rp = null;
+let rpRoomOk = false;
 function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
 function rpWant() {
-if (isDemo || isRawBroadcast) return;
+if (isDemo || isRawBroadcast || !rpRoomOk) return;
 (rp ? Promise.resolve(rp) : import('./raypack.js?v=1').then(m => (rp = m.createRaypack({
 row: document.getElementById('pack-row'), t: k => t(k), src: () => srcLang, log: rpLog }))))
 .then(r => r.want(selectedLang)).catch(e => rpLog('raypack_fail load ' + e));
@@ -1515,8 +1516,10 @@ if ('__ping' in msg) return;
 if ('welcome' in msg) {
 isConnected = true;
 srcLang = msg.src_lang || 'ko';
+rpRoomOk = msg.kr === 1;
+if (!rpRoomOk) rpLog('raypack_off room=' + (msg.kr === 0 ? 'abroad' : 'other'));
 rpWant();
-welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, at: Date.now() };
+welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, kr: rpRoomOk ? 1 : 0, at: Date.now() };
 if (welcomeInfo.script && !ttsTouched) { ttsTouched = true; ttsAutoOff = false; if (!isTtsEnabled) setTtsEnabled(true); }
 setStatus('status_connected', 'status-dot online');
 joinScreen.style.display = 'none';
@@ -1787,7 +1790,7 @@ localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
 addLine(line);
 liveTtsDefault();   // 원고 줄 때문에 꺼 둔 소리는 들은 줄에서 도로 켠다(L4-3)
 const isSameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
-if (!isSameLang && !line.tr[selectedLang] && rp && rp.ready() && normalizeLangCode(srcLang) === 'ko') {
+if (!isSameLang && !line.tr[selectedLang] && rpRoomOk && rp && rp.ready() && normalizeLangCode(srcLang) === 'ko') {
 rpLine(line, msg, isBroadcast);
 } else if (isBroadcast && !isSameLang) {
 speakWhenTranslated(line, msg);
