@@ -12,6 +12,22 @@
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
 ---
+
+## 10-28 12:15 — [E] 장부 63 ①②③ — 레이팩 브라우저 측정 (올렸다 · 크롬 숫자 있다 · 폰은 잠겨 있다)
+했다: 측정 페이지를 만들어 **올렸다**(db22277) — <https://raytok.kr/web/raypack-probe/>.
+  목록 → `.rtpack` 받기(진행 막대) → 브라우저 안에서 풀기(fflate) → Worker 에서 bergamot
+  WASM 으로 **ko→en→X 두 다리** → 숫자 다섯. bergamot v0.4.9(MPL-2.0)·5.2MB 를 **사이트에
+  같이 올렸다**(CDN 0건). ③ **R2 CORS 는 이미 열려 있었다** — `https://raytok.kr` 만 허용이고
+  **`www.raytok.kr` 는 막혀 있다**(확인해서 적었다).
+어디서 보나: <https://raytok.kr/web/raypack-probe/> (단추 둘) · 숫자와 읽는 법은
+  `docs/raypack-browser.md` · 글은 `web/raypack-probe/` · 라이브러리는 `web/vendor/bergamot/`
+막힘: 없음 (멈춤 조건 해당 없음). **폰 크롬 숫자는 못 쟀다 — 폰이 잠겨 있다.**
+  잠금을 지나가지 않았고 번호를 묻지도 저장하지도 않았다. 켜 둔 `stayon` 은 **되돌렸다**(D-32).
+확인만: ① **대표님이 폰 잠금 한 번** 풀어 주시면 E 가 USB 로 폰 크롬을 잰다
+  ② **아이폰 사파리**: 위 주소를 열고 단추 하나(「영어」 또는 「베트남어」) — 뜨기만 하면 판정 통과
+  ③ `www.raytok.kr` 로 들어오는 손님을 생각하면 CORS 한 줄 또는 넘기기(대표님 대시보드)
+다음: 폰·아이폰 숫자가 오면 표를 채운다. 붙이기(손님 페이지 통합)는 마스터가 사이트 NOW 에 적을 때.
+  그 사이 10:55 프리미엄 ③ 쓸기(7B·15말)가 이 PC 에서 돌고 있다.
 ## 10-27 18:30 — [세션] 계획표 18:05 (질문 흐름 단순화: 선택·무시 단추만, answer 보내는 곳 0, WakeLock 지속 유지 및 마이크 재시작 루프 제거)
 했다: 강사 화면 질문 흐름 단순화([선택]·[무시]만, 답변 서브창 및 answer 전송 제거, 선택 시 앞사람 자동 revoke), 손님 화면 WakeLock 항상 유지 및 마이크 재시작 루프(띵띵) 제거 완료
 어디서 보나: web/host/index.html, web/listener/index.src.html, samples/listener_state_test.js, relay/test/question-queue.mjs
