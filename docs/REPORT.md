@@ -20,6 +20,13 @@
 
 ---
 
+## 10-28 21:20 — [웹 일꾼] 「다 오픈」 ④ NOW 남은 ★ 끝 표시 · 95 손님 로고
+했다: web-open.md 대조로 이미 들어간 ★ 17줄에 끝 표시(근거 커밋 그 줄에) · 손님 머리 마이크 그림 → 앱 로고 기호(`/assets/raytok-symbol-44.png`, 앱 logo-symbol 을 44px·4색 0.4KB 로 — favicon 2KB 로는 첫 화면 38.4KB 로 37KB 를 넘었다). 새 시험 `test:listener-logo`(되돌림 붉음 확인).
+어디서 보나: 손님 화면 왼쪽 위 — `docs/reclog/2026-10-28-web/listener-logo-390.png`.
+막힘: 없음. 첫 화면 gz 36.8KB(전 36.5).
+확인만: test:* 93개 하나씩 — 붉은 수 0.
+다음: 99-1 손님 단추 표(크로미움+웹킷 390px) → 105 준비 화면 사진 2·3 → 마스터 누르기 웹킷 표.
+
 ## 10-28 20:55 — [웹 일꾼] NOW 20:15 이용권 — 운영은 운영 키만 (e6b45e5)
 했다: 운영 릴레이 기본 신뢰 목록을 1번 하나로(`mint-core.js` PROD_KEYS·trustedKeys) · 0번은 `ALLOW_TEST_KEY=1`(relay/.dev.vars)일 때만 · 결제 발급은 운영 키가 없으면 0번으로 내려앉지 않고 `503 mint_key_missing`(결제 확인 전). 읽는 곳 전부: room.js redeem · pay.js/index.js · mock_relay(같은 trustedKeys) · mint-code CLI · 스크립트 둘. 시험 넷(운영 0번→401 · ALLOW→200 · 1번 자리 통과 · 운영 키 없음→503), 되돌림 셋 다 붉음.
 어디서 보나: `samples/license_redeem_test.js` [Test 6] · `relay/test/mint-code.mjs` 「운영은 운영 키만」 · `relay/README.md` 62줄.
