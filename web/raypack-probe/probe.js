@@ -1,0 +1,338 @@
+/**
+ * 레이팩 **브라우저 측정** — 손님 브라우저에서 ko→X 를 돌려 보고 숫자를 낸다.
+ * 장부 63 · 마스터 NOW 10-28 11:35 ①.
+ *
+ * 흐름: 목록(R2) → `.rtpack` 받기(진행 막대) → 브라우저 안에서 풀기(fflate) →
+ *       Worker 에서 bergamot WASM 으로 ko→en→X 두 다리 → 숫자 다섯.
+ *
+ * 재는 것 다섯 (마스터가 적은 그대로):
+ *   ① 받는 시간      ② 첫 번역까지 시간(엔진 띄우기 + 모델 싣기 포함)
+ *   ③ 한 문장 ms(10문장 평균) ④ 메모리(`performance.memory` 되는 곳만)
+ *   ⑤ 저장(Cache Storage) 뒤 **두 번째 열 때** 받는 시간
+ *
+ * ★ **방법은 비밀이 아니다** — bergamot 은 공개 기술이고 팩은 공개 모델로 만든다.
+ *   그래서 이 글은 공개 저장소에 둔다(마스터 ①).
+ * ★ **CDN 에 기대지 않는다** — bergamot WASM 은 `web/vendor/bergamot/` 에 같이 올린다.
+ * ★ **안 되는 것을 화면에 적는다**(D-70): CORS·없는 팩·해시 어긋남을 숨기지 않는다.
+ */
+import { TranslatorBacking, LatencyOptimisedTranslator } from '../vendor/bergamot/translator.js';
+
+/** 팩이 사는 곳 — 엔진이 올린 R2 공개 주소. **한 곳에만** 적는다 */
+export const PACK_BASE = 'https://pub-e2d5652d16454d42ad1823093e2c8809.r2.dev';
+export const CACHE_NAME = 'raypack-v1';
+
+/** 잴 문장 10개 — 현장 말투(안전교육). 짧은 인사말로 재면 숫자가 거짓이 된다 */
+export const SENTENCES = [
+  '오늘 교육은 용접 작업 전 안전 점검에 대한 내용입니다.',
+  '보호구는 용접면과 가죽 장갑을 반드시 착용합니다.',
+  '밀폐 공간에서는 산소 농도를 측정기로 먼저 확인하세요.',
+  '용접기 접지선이 풀려 있으면 감전 위험이 있습니다.',
+  '불꽃이 튀는 반경 오 미터 안에는 인화성 물질을 두지 않습니다.',
+  '소화기는 작업 지점에서 삼 미터 안에 둡니다.',
+  '고소 작업을 할 때는 안전대를 먼저 걸고 시작합니다.',
+  '이상이 발견되면 작업을 멈추고 반장에게 보고합니다.',
+  '보고했다는 이유로 불이익을 받는 일은 없습니다.',
+  '다음 주 교육은 지게차와 보행자 동선 분리입니다.',
+];
+
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+const ms = (t) => Math.round(t);
+
+/** 목록에서 그 말의 줄을 고른다. `en` 은 **전용 팩이 없다** — 아래 쪽지 */
+export function rowFor(rows, to) {
+  const list = Array.isArray(rows) ? rows : [];
+  const ok = (r) => r && r.file && r.bytes > 0 && typeof r.sha256 === 'string' && r.sha256.length === 64;
+  const hit = list.find((r) => ok(r) && r.pair && r.pair.src === 'ko' && r.pair.dst === to);
+  if (hit) return { row: hit, carrier: false };
+  // ★ `ko→en` 팩은 **없다. 일부러다** — 1단 `mt/ko-en/` 이 **모든 팩 안에** 들어 있다
+  //   (엔진 `HANDOFF-raypack.md` 5-2). 그래서 가장 작은 팩을 **운반 팩**으로 쓰고,
+  //   받는 시간 칸은 **그 팩 크기**임을 화면에 적는다. 숨기면 표를 잘못 읽는다.
+  if (to === 'en') {
+    const small = list.filter(ok).sort((a, b) => a.bytes - b.bytes)[0];
+    if (small) return { row: small, carrier: true };
+  }
+  return { row: null, carrier: false };
+}
+
+/** 사람이 읽을 크기 */
+export const mb = (n) => `${(n / 1048576).toFixed(1)}MB`;
+
+/**
+ * 팩 자리를 주소줄로 바꿔 보는 **시험 구멍**: `?base=/r2` 처럼 **같은 집 길**만 받는다.
+ * 까닭: 올리기 전에 이 쪽에서 끝까지 돌려 봐야 하는데, R2 CORS 가 `https://raytok.kr` 하나만
+ * 허용한다(10-28 에 재서 알았다). 그래서 시험할 때는 **우리 서버가 대신 받아** 같은 집에서 준다.
+ * 바깥 주소는 받지 않는다 — 남이 이 장을 엉뚱한 곳으로 돌리지 못하게.
+ */
+export function baseFromUrl(search = '', fallback = PACK_BASE) {
+  const v = new URLSearchParams(search).get('base');
+  if (v && v.startsWith('/')) return v.replace(/\/+$/, '');
+  return fallback;
+}
+
+/**
+ * 폰에서 재려면 **손가락 없이** 돌아야 한다(USB 로 주소만 띄운다) — `?auto=en,vi`.
+ * 아는 말만 받는다(두 글자). 안 주면 빈 배열이고, 그때는 사람이 단추를 누른다.
+ */
+export function autoFromUrl(search = '') {
+  const v = new URLSearchParams(search).get('auto') || '';
+  return v.split(',').map((s) => s.trim()).filter((s) => /^[a-z]{2,3}$/.test(s));
+}
+
+/**
+ * 폰 화면의 숫자를 손으로 베끼면 틀린다 — 끝나면 **같은 집 길**로 보내 둔다(`?post=/collect`).
+ * 바깥 주소는 받지 않는다. 받는 자리가 없으면 조용히 넘어간다(측정은 이미 끝났다).
+ */
+export function postFromUrl(search = '') {
+  const v = new URLSearchParams(search).get('post');
+  return v && v.startsWith('/') ? v : null;
+}
+
+/**
+ * 그물 오류를 **사람 말로** 바꾼다. CORS 는 브라우저가 까닭을 숨기므로(보안) 짐작이 아니라
+ * **그럴 때 무엇을 봐야 하는지**를 적는다.
+ */
+export function whyNet(err, url) {
+  const m = String((err && err.message) || err || '');
+  if (/Failed to fetch|NetworkError|load failed/i.test(m)) {
+    return `받지 못했다 — **CORS 필요**일 수 있다. 이 페이지 주소(${location.origin}) 가 `
+      + `R2 버킷 CORS 에 GET 으로 허용되어 있어야 한다 (대시보드 → R2 → raytok-packs → Settings → CORS). `
+      + `주소: ${url} · 원래 오류: ${m}`;
+  }
+  return `${m} · 주소: ${url}`;
+}
+
+/** 목록 받기 */
+export async function fetchIndex(base = PACK_BASE) {
+  const url = `${base.replace(/\/+$/, '')}/index.json`;
+  const t0 = now();
+  let res;
+  try {
+    res = await fetch(url, { credentials: 'omit' });
+  } catch (err) {
+    throw new Error(whyNet(err, url));
+  }
+  if (!res.ok) throw new Error(`목록을 못 받았다 — HTTP ${res.status} · ${url}`);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) throw new Error('목록이 배열이 아니다 — 지어내지 않고 멈춘다');
+  return { rows, ms: ms(now() - t0), url };
+}
+
+/**
+ * 팩 받기 — **진행 막대**를 위해 조각으로 읽는다.
+ * 저장(Cache Storage)이 되는 곳에서는 **두 번째부터 거기서** 꺼낸다(⑤ 를 재는 자리).
+ */
+export async function getPack(row, { base = PACK_BASE, onProgress = () => {}, useCache = true } = {}) {
+  const url = `${base.replace(/\/+$/, '')}/${row.file}`;
+  const t0 = now();
+  let cache = null;
+  if (useCache && typeof caches !== 'undefined') {
+    try { cache = await caches.open(CACHE_NAME); } catch { cache = null; }
+  }
+  if (cache) {
+    const hit = await cache.match(url).catch(() => null);
+    if (hit) {
+      const buf = new Uint8Array(await hit.arrayBuffer());
+      return { bytes: buf, ms: ms(now() - t0), from: '저장', url };
+    }
+  }
+  let res;
+  try {
+    res = await fetch(url, { credentials: 'omit' });
+  } catch (err) {
+    throw new Error(whyNet(err, url));
+  }
+  if (!res.ok) throw new Error(`팩을 못 받았다 — HTTP ${res.status} · ${url}`);
+
+  const total = Number(res.headers.get('content-length')) || row.bytes || 0;
+  const parts = [];
+  let got = 0;
+  if (res.body && res.body.getReader) {
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      got += value.length;
+      onProgress(got, total);
+    }
+  } else {
+    const one = new Uint8Array(await res.arrayBuffer());
+    parts.push(one);
+    got = one.length;
+    onProgress(got, total);
+  }
+  const bytes = new Uint8Array(got);
+  let at = 0;
+  for (const p of parts) { bytes.set(p, at); at += p.length; }
+  const took = ms(now() - t0);
+
+  // ★ **크기가 다르면 쓰지 않는다** — 끊긴 팩으로 번역하면 까닭 모를 오류가 된다
+  if (row.bytes && bytes.length !== row.bytes) {
+    throw new Error(`받은 크기가 다르다 — ${bytes.length} ≠ 목록의 ${row.bytes}`);
+  }
+  if (cache) {
+    try {
+      await cache.put(url, new Response(bytes, { headers: { 'Content-Type': 'application/zip' } }));
+    } catch { /* 저장이 안 되는 브라우저도 있다 — 측정은 계속한다 */ }
+  }
+  return { bytes, ms: took, from: '그물', url };
+}
+
+/** sha256 을 브라우저가 셈한다(`crypto.subtle` 은 https 에서만 된다 — 안 되면 **안 쟀다**고 적는다) */
+export async function sha256Hex(bytes) {
+  if (!(globalThis.crypto && crypto.subtle && crypto.subtle.digest)) return null;
+  const d = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** zip 풀기 — `fflate` 는 `window.fflate` 에 있다(페이지가 먼저 싣는다) */
+export function unzip(bytes) {
+  return new Promise((accept, reject) => {
+    const f = globalThis.fflate;
+    if (!f || !f.unzip) return reject(new Error('fflate 가 없다 — 페이지가 라이브러리를 못 실었다'));
+    f.unzip(bytes, (err, files) => (err ? reject(err) : accept(files)));
+  });
+}
+
+const ab = (u8) => (u8.byteOffset === 0 && u8.byteLength === u8.buffer.byteLength
+  ? u8.buffer : u8.slice().buffer);
+
+/** 푼 팩 → `{manifest, files}`. `manifest.json` 이 없으면 멈춘다(지어내지 않는다) */
+export function readPack(files) {
+  const names = Object.keys(files);
+  const mName = names.find((n) => n.replace(/^.*\//, '') === 'manifest.json');
+  if (!mName) throw new Error(`팩 안에 manifest.json 이 없다 — 들어 있는 것: ${names.slice(0, 6).join(' ')}`);
+  const manifest = JSON.parse(new TextDecoder().decode(files[mName]));
+  if (!manifest.chain || !manifest.chain.length) throw new Error('manifest 에 chain 이 없다');
+  return { manifest, files, names };
+}
+
+/**
+ * **팩에서 모델을 꺼내 주는 뒷배** — bergamot 이 그물에서 받는 대신 우리 팩을 쓰게 한다.
+ *
+ * ★ `TranslatorBacking` 의 생성자가 **곧바로** `loadModelRegistery()` 를 부른다.
+ *   그래서 팩을 `this.pack` 에 담아 두면 **늦다**(아직 안 만들어졌다) — `this.options.pack` 으로 읽는다.
+ */
+export class RaypackBacking extends TranslatorBacking {
+  async loadModelRegistery() {
+    const pack = this.options.pack;
+    if (!pack) throw new Error('팩 없이 뒷배를 만들었다');
+    return pack.manifest.chain.map((c) => ({ from: c.from, to: c.to, dir: c.dir }));
+  }
+
+  async loadTranslationModel({ from, to }) {
+    const pack = this.options.pack;
+    const leg = (await this.registry).find((m) => m.from === from && m.to === to);
+    if (!leg) throw new Error(`팩에 ${from}→${to} 다리가 없다`);
+    const pick = (name) => {
+      const want = `${leg.dir}${name}`;
+      const key = Object.keys(pack.files).find((k) => k === want || k.endsWith(`/${want}`) || k.endsWith(`${leg.dir}${name}`));
+      return key ? pack.files[key] : null;
+    };
+    const model = pick('model.bin');
+    const lex = pick('lex.bin');
+    const vocab = pick('vocab.bin');
+    const srcvocab = pick('srcvocab.bin');
+    const trgvocab = pick('trgvocab.bin');
+    if (!model || !lex) throw new Error(`${from}→${to} 에 model.bin 또는 lex.bin 이 없다`);
+    // ★ 어휘는 **한 벌이거나 두 벌**이다 — `en→ja`·`en→ko` 둘만 두 벌(엔진 HANDOFF 1장)
+    const vocabs = vocab ? [ab(vocab)] : (srcvocab && trgvocab ? [ab(srcvocab), ab(trgvocab)] : null);
+    if (!vocabs) throw new Error(`${from}→${to} 에 vocab 이 없다`);
+    return { model: ab(model), shortlist: ab(lex), vocabs, qualityModel: null, config: {} };
+  }
+}
+
+/** 메모리 — 되는 브라우저만. 안 되면 **null**(0 이 아니다) */
+export function memoryMb() {
+  const m = (typeof performance !== 'undefined' && performance.memory) || null;
+  return m && m.usedJSHeapSize ? Math.round(m.usedJSHeapSize / 1048576) : null;
+}
+
+/**
+ * 한 번 다 재는 길. `log(글)` 로 진행을 알린다.
+ * 돌려주는 것: 숫자 다섯 + 번역 보기.
+ */
+export async function measure(to, { base = PACK_BASE, log = () => {}, onProgress = () => {}, sentences = SENTENCES } = {}) {
+  const out = { to, at: new Date().toISOString(), base };
+  log('목록 받는 중…');
+  const idx = await fetchIndex(base);
+  out.indexMs = idx.ms;
+
+  const { row, carrier } = rowFor(idx.rows, to);
+  if (!row) throw new Error(`목록에 ko→${to} 가 없다 (줄 ${idx.rows.length}개)`);
+  out.file = row.file;
+  out.packBytes = row.bytes;
+  out.carrier = carrier;
+  log(carrier
+    ? `ko→en 전용 팩은 없다 — 1단이 모든 팩 안에 있다. 운반 팩 ${row.file} (${mb(row.bytes)}) 로 잰다.`
+    : `팩 ${row.file} (${mb(row.bytes)}) 받는 중…`);
+
+  // ① 받는 시간 (저장을 비우고 — 첫 손님 몫)
+  if (typeof caches !== 'undefined') { try { await caches.delete(CACHE_NAME); } catch { /* 없으면 넘어간다 */ } }
+  const got = await getPack(row, { base, onProgress });
+  out.downloadMs = got.ms;
+  out.downloadFrom = got.from;
+  out.mbps = got.ms ? Math.round((row.bytes / 1048576) / (got.ms / 1000) * 10) / 10 : null;
+
+  // 해시 — 팩이 성한지. 안 되는 브라우저면 「안 쟀다」
+  const hex = await sha256Hex(got.bytes);
+  out.sha256 = hex ? (hex === row.sha256 ? '맞음' : '다름') : '안 쟀다';
+  if (out.sha256 === '다름') throw new Error('팩 해시가 다르다 — 쓰지 않는다');
+
+  log('푸는 중…');
+  const t1 = now();
+  const pack = readPack(await unzip(got.bytes));
+  out.unzipMs = ms(now() - t1);
+  out.packName = pack.manifest.name || '';
+  out.legs = pack.manifest.chain.map((c) => `${c.from}→${c.to}`).join(' · ');
+
+  // ② 첫 번역까지 — 엔진 띄우기 + 모델 싣기 + 첫 문장
+  log('엔진 띄우고 첫 문장…');
+  const t2 = now();
+  const backing = new RaypackBacking({ pack, pivotLanguage: 'en', downloadTimeout: 0 });
+  const tr = new LatencyOptimisedTranslator({ pivotLanguage: 'en', downloadTimeout: 0 }, backing);
+  const first = await tr.translate({ from: 'ko', to, text: sentences[0], html: false });
+  out.firstMs = ms(now() - t2);
+  const shown = [{ ko: sentences[0], out: first.target.text }];
+
+  // ③ 한 문장 ms — 10문장. **첫 문장을 뺀 값도 함께** 적는다(데워진 뒤가 참값이다)
+  const each = [out.firstMs];
+  for (const s of sentences.slice(1)) {
+    const t = now();
+    const r = await tr.translate({ from: 'ko', to, text: s, html: false });
+    each.push(ms(now() - t));
+    if (shown.length < 3) shown.push({ ko: s, out: r.target.text });
+  }
+  out.n = each.length;
+  out.perMs = Math.round(each.reduce((a, b) => a + b, 0) / each.length);
+  out.perMsWarm = each.length > 1
+    ? Math.round(each.slice(1).reduce((a, b) => a + b, 0) / (each.length - 1)) : null;
+  out.each = each;
+  out.sample = shown;
+
+  // ④ 메모리
+  out.memMb = memoryMb();
+
+  // ⑤ 두 번째 열 때 — 저장에서 꺼내는 시간
+  log('저장에서 다시 꺼내 보는 중…');
+  try {
+    const again = await getPack(row, { base, onProgress: () => {} });
+    out.secondMs = again.ms;
+    out.secondFrom = again.from;
+  } catch (err) {
+    out.secondMs = null;
+    out.secondFrom = `못 함 — ${String(err.message || err).slice(0, 80)}`;
+  }
+
+  try { tr.delete(); } catch { /* 지우기가 없으면 넘어간다 */ }
+  log('끝.');
+  return out;
+}
+
+/** 보고에 그대로 붙일 한 줄 */
+export function line(r) {
+  return `${r.to} | ${r.file}${r.carrier ? '(운반)' : ''} | ${mb(r.packBytes)} | `
+    + `${r.downloadMs}ms(${r.mbps}MB/s) | ${r.unzipMs}ms | ${r.firstMs}ms | `
+    + `${r.perMs}ms(데운 뒤 ${r.perMsWarm}ms) | ${r.memMb === null ? '안 쟀다' : `${r.memMb}MB`} | `
+    + `${r.secondMs === null ? r.secondFrom : `${r.secondMs}ms(${r.secondFrom})`} | 해시 ${r.sha256}`;
+}

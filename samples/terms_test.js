@@ -299,6 +299,7 @@ const FOOTER_EXEMPT = {
   'web/listener/selftest.html': '개발용 자체 점검, 공개 링크 0개',
   'web/dev/translate-check/index.html': '개발용 재는 자리 — 이 기기에 브라우저 번역기가 있나만 보고 끝난다. 파는 것도 손님이 올 자리도 아니다. 공개 링크 0개',
   'web/tools/qr-sheet/index.html': '단체에 나눠 줄 코드를 A4 에 찍는 인쇄 도구 — 손님이 사는 화면이 아니고, 바닥 줄이 인쇄물에 같이 찍힌다. 공개 링크 0개',
+  'web/raypack-probe/index.html': '개발용 재는 자리(장부 63 · 10-28) — 손님 브라우저가 번역팩을 받아 자기 안에서 번역할 수 있나만 재고 숫자를 찍는다. 파는 것도 손님이 올 자리도 아니다. 사이트 안 공개 링크 0개(주소를 아는 사람만 연다). `web/dev/translate-check/` 와 같은 갈래',
 };
 
 function walkHtml(dir, acc) {

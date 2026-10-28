@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레이팩 브라우저 측정</title>
+<!--
+  장부 63 · 마스터 NOW 10-28 11:35 ① — 손님 브라우저에서 레이팩이 도는지, 얼마나 걸리는지 잰다.
+  방법은 비밀이 아니다(bergamot 은 공개 기술, 팩은 공개 모델) — 그래서 공개 저장소에 둔다.
+  이 장은 **재기만 한다.** 손님 페이지에 붙이는 일은 측정 뒤 따로.
+-->
+<style>
+  :root { color-scheme: light dark; --line:#d8dce3; --ink:#111; --bg:#fff; --dim:#667; --ok:#0a7; --bad:#c22; }
+  @media (prefers-color-scheme: dark) {
+    :root { --line:#333a45; --ink:#e8eaed; --bg:#14161a; --dim:#98a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; max-width:760px; margin-inline:auto; background:var(--bg); color:var(--ink);
+         font:15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  p.sub { color:var(--dim); margin:0 0 16px; font-size:13px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+  button { font:inherit; padding:11px 16px; border:1px solid var(--line); border-radius:10px;
+           background:var(--bg); color:var(--ink); cursor:pointer; min-height:44px; }
+  button.go { background:#1565c0; color:#fff; border-color:#1565c0; font-weight:600; }
+  button[disabled] { opacity:.5; cursor:default; }
+  progress { width:100%; height:12px; }
+  #bar { display:none; margin:10px 0; }
+  pre { white-space:pre-wrap; word-break:break-word; background:rgba(127,127,127,.09);
+        border:1px solid var(--line); border-radius:10px; padding:10px; font-size:12.5px; margin:10px 0; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin:10px 0; }
+  th, td { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:rgba(127,127,127,.12); white-space:nowrap; }
+  .err { color:var(--bad); font-weight:600; }
+  .ok { color:var(--ok); }
+  .note { font-size:12.5px; color:var(--dim); }
+  code { background:rgba(127,127,127,.14); padding:1px 4px; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<h1>레이팩 브라우저 측정</h1>
+<p class="sub">손님 브라우저가 번역팩을 받아 <b>자기 안에서</b> 한국어를 번역할 수 있는지, 얼마나 걸리는지 잽니다.
+서버로 글이 가지 않습니다 — 받은 뒤에는 인터넷 없이도 번역됩니다.</p>
+
+<div class="row">
+  <button class="go" data-lang="en">영어 (ko → en)</button>
+  <button class="go" data-lang="vi">베트남어 (ko → vi)</button>
+  <button id="copy" disabled>결과 복사</button>
+</div>
+<p class="note">단추를 누르면 팩(약 60MB)을 받습니다. <b>와이파이에서</b> 하시고, 끝날 때까지 이 화면을 켜 두세요.</p>
+
+<div id="bar"><progress id="prog" value="0" max="100"></progress><div class="note" id="progtxt"></div></div>
+<pre id="log">준비됐습니다. 위에서 말을 고르세요.</pre>
+<div id="out"></div>
+
+<p class="note" id="env"></p>
+
+<script src="../vendor/fflate.min.js"></script>
+<script type="module">
+import { measure, line, PACK_BASE, mb, baseFromUrl, autoFromUrl, postFromUrl } from './probe.js';
+
+const BASE = baseFromUrl(location.search);
+const AUTO = autoFromUrl(location.search);
+const POST = postFromUrl(location.search);
+const $ = (id) => document.getElementById(id);
+const log = $('log');
+const out = $('out');
+const results = [];
+
+const say = (s, cls) => {
+  const t = new Date().toTimeString().slice(0, 8);
+  log.innerHTML += `\n[${t}] ${cls ? `<span class="${cls}">${s}</span>` : s}`;
+  log.scrollTop = log.scrollHeight;
+};
+
+$('env').textContent = `이 화면 주소: ${location.origin} · 팩 자리: ${BASE}`
+  + (BASE === PACK_BASE ? '' : ' (시험용으로 바꿔 둠)')
+  + ` · 브라우저: ${navigator.userAgent}`;
+
+function table() {
+  if (!results.length) return;
+  const head = ['말', '팩', '크기', '받는 시간', '푸는 시간', '첫 번역까지',
+                '한 문장', '메모리', '두 번째 열 때', '해시'];
+  const rows = results.map((r) => [
+    r.to + (r.carrier ? ' (운반 팩)' : ''),
+    r.file,
+    mb(r.packBytes),
+    `${r.downloadMs}ms<br><span class="note">${r.mbps}MB/s</span>`,
+    `${r.unzipMs}ms`,
+    `${r.firstMs}ms`,
+    `${r.perMs}ms<br><span class="note">데운 뒤 ${r.perMsWarm}ms</span>`,
+    r.memMb === null ? '<span class="note">안 쟀다</span>' : `${r.memMb}MB`,
+    r.secondMs === null ? `<span class="note">${r.secondFrom}</span>` : `${r.secondMs}ms<br><span class="note">${r.secondFrom}</span>`,
+    r.sha256 === '맞음' ? '<span class="ok">맞음</span>' : r.sha256,
+  ]);
+  const samples = results.map((r) => `<p class="note"><b>${r.to}</b> 보기: `
+    + r.sample.map((s) => `「${s.ko}」 → 「${s.out}」`).join(' · ') + '</p>').join('');
+  out.innerHTML = `<table><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr>`
+    + rows.map((c) => `<tr>${c.map((x) => `<td>${x}</td>`).join('')}</tr>`).join('')
+    + '</table>' + samples;
+  $('copy').disabled = false;
+}
+
+async function run(lang, btn) {
+  document.querySelectorAll('button.go').forEach((b) => { b.disabled = true; });
+  $('bar').style.display = 'block';
+  log.textContent = `${lang} 측정을 시작합니다.`;
+  try {
+    const r = await measure(lang, {
+      base: BASE,
+      log: (s) => say(s),
+      onProgress: (got, total) => {
+        const pct = total ? Math.round((got / total) * 100) : 0;
+        $('prog').value = pct;
+        $('progtxt').textContent = `${pct}% — ${mb(got)} / ${total ? mb(total) : '?'}`;
+      },
+    });
+    results.push(r);
+    say('다 쟀습니다.', 'ok');
+    say(line(r));
+    table();
+  } catch (err) {
+    say(String((err && err.message) || err), 'err');
+    say('※ 「CORS 필요」가 보이면 대표님이 Cloudflare 대시보드 → R2 → raytok-packs → Settings → CORS 에 '
+      + `이 주소(${location.origin}) 를 GET 으로 넣어 주셔야 합니다.`);
+  } finally {
+    document.querySelectorAll('button.go').forEach((b) => { b.disabled = false; });
+    $('bar').style.display = 'none';
+  }
+}
+
+document.querySelectorAll('button.go').forEach((b) => {
+  b.addEventListener('click', () => run(b.dataset.lang, b));
+});
+
+// 폰에서는 손가락 없이 돌린다 — USB 로 주소만 띄우고 `?auto=en,vi` 를 붙인다
+if (AUTO.length) {
+  (async () => {
+    for (const lang of AUTO) await run(lang);
+    if (POST) {
+      try {
+        await fetch(POST, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ua: navigator.userAgent, results }) });
+        say('결과를 보냈습니다.', 'ok');
+      } catch (err) {
+        say(`결과를 못 보냈다 — ${String(err.message || err)}`, 'err');
+      }
+    }
+  })();
+}
+
+$('copy').addEventListener('click', async () => {
+  const text = results.map(line).join('\n') + `\n브라우저: ${navigator.userAgent}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copy').textContent = '복사했습니다';
+  } catch {
+    log.textContent = text;          // 복사가 막힌 브라우저에서는 글로 보여 준다
+  }
+});
+</script>
+</body>
+</html>
