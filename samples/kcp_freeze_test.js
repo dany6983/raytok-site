@@ -117,8 +117,9 @@ ok(bad.length === 0, `심사 중 바뀌면 안 되는 것이 그대로다 (${bad
 // (10-28 00a588b /glass/·/product/ 더하기로 30→32 가 되어 붉었던 것 — 머리말과 단언이 어긋났었다)
 ok(now.footerPages.length >= snap.footerPages.length,
    `하단 정보를 든 페이지 ${snap.footerPages.length}개 그대로 이상 (지금 ${now.footerPages.length} — 더한 것만)`);
-ok(now.products.filter(p => !p.hidden).length === snap.products.filter(p => !p.hidden).length,
-   `살 수 있는 상품 ${snap.products.filter(p => !p.hidden).length}개 그대로 — 품절 처리가 없다`);
+// 머리말대로 상품도 **더하는 것**은 막지 않는다(10-29 07:55 ① 강사 코드 2종 더함). 있던 상품의 빠짐·값·품절은 diff 가 잡는다.
+ok(now.products.filter(p => !p.hidden).length >= snap.products.filter(p => !p.hidden).length,
+   `살 수 있는 상품 ${snap.products.filter(p => !p.hidden).length}개 그대로 이상 (지금 ${now.products.filter(p => !p.hidden).length} — 더한 것만, 품절 처리 없음)`);
 
 /* 되돌림 실증 (D-09) — 굳힌 값 셋을 하나씩 흔들어 보고, 견주는 쪽이 **실제로 잡는지** 본다.
    값은 저장소에서 읽은 것(now)과 굳힌 것(snap)뿐이다 — 여기서 만든 상수를 견주지 않는다. */

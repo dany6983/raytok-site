@@ -80,6 +80,23 @@ export const PRODUCTS = {
     days: 7,
     quantity: 20,
     flags: FLAG.host // 0x01
+  },
+  /* 강사 코드 — 정가표 v7 (마스터 NOW 10-29 07:55 ①). 웹 강연 강사 화면(/web/host/)은
+     `POST /room {kind:'script'}` 를 열고, 그 길은 0x04|0x08 을 본다(index.js requiredFlags).
+     관광권 0x01 로는 그 방이 안 열린다 — 그래서 FLAG.meet(0x04). 30일 = 월정액(등록한 날부터). */
+  'host_site_1m': {
+    name: '현장교육 현장 1곳 월정액 (강사 코드 2개)',
+    price: 210000,
+    days: 30,
+    quantity: 2,
+    flags: FLAG.meet // 0x04 — 웹 강연 강사
+  },
+  'host_edu_1m': {
+    name: '교육기관 강사 코드 1개 월정액',
+    price: 210000,
+    days: 30,
+    quantity: 1,
+    flags: FLAG.meet // 0x04 — 웹 강연 강사
   }
 };
 

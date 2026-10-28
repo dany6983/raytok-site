@@ -312,7 +312,9 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     }
 
     // ③·⑤ 우리 제품 표 네 줄 · 지어낸 숫자 없음 (3,300·9,900·66,000·99,000·198,000 외 금지)
-    const ALLOWED = new Set(['3,300', '9,900', '66,000', '99,000', '198,000']);
+    /* 허용 숫자는 **상품 표(PRODUCTS)에서** 읽는다 — 손 목록이면 정가표가 바뀔 때마다 둘을 고친다(§4).
+       10-29 07:55 ① 강사 코드 210,000 이 들며 손 목록을 표로 바꿨다. 표에 없는 숫자는 여전히 붉다. */
+    const ALLOWED = new Set(Object.values(PRODUCTS).map(p => p.price.toLocaleString('en-US')));
     const priceLike = buyHtml.match(/\d{1,3}(?:,\d{3})+/g) || [];
     const strange = priceLike.filter(n => !ALLOWED.has(n));
     ok(priceLike.length > 0 && strange.length === 0, `13:20 ⑤: 페이지의 쉼표 숫자 ${priceLike.length}개 전부 허용 목록 안 (낯선 것: ${strange.join(',') || '없음'})`);
@@ -322,9 +324,13 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     ok(rowCount === 3, '13:20 ③ → 10-28 21:50 ③: 우리 제품 표 세 줄(손님·호스트·단체) — 인터넷 번역 패키지(0x10)는 판매 목록에서 내림(장부 59)');
     ok(await page.locator('#prod-row-pkg').count() === 0 && !/인터넷 번역 패키지|Internet translation package/.test(buyHtml),
        '10-28 21:50 ③: /buy/ 에 「인터넷 번역 패키지」 글자·줄 없음 (ko·en 둘 다)');
-    for (const id of ['prod-row-host', 'prod-row-org']) {
-      const t = await page.textContent('#' + id);
-      ok(t.includes('문의') && !/\d{1,3}(?:,\d{3})+/.test(t), `13:20 ③: ${id} 는 가격 미정 → "문의", 숫자 없음`);
+    {
+      const t = await page.textContent('#prod-row-org');
+      ok(t.includes('문의') && !/\d{1,3}(?:,\d{3})+/.test(t), '13:20 ③: prod-row-org 는 가격 미정 → "문의", 숫자 없음');
+      /* 10-29 07:55 ①: 강사 코드는 정가표 v7 로 값이 정해져 /buy/ 에서 판다 — 「문의」 대신 표의 값 */
+      const h = await page.textContent('#prod-row-host');
+      const hp = ['host_site_1m', 'host_edu_1m'].map(id => PRODUCTS[id].price.toLocaleString('en-US'));
+      ok(hp.every(n => h.includes(n)) && !h.includes('문의'), `10-29 07:55 ①: prod-row-host 에 강사 코드 값 ${hp.join('·')} (표에서 읽음)`);
     }
     const guestRow = await page.textContent('#prod-row-guest');
     ok(guestRow.includes('3,300') && guestRow.includes('9,900'), '13:20 ③: 손님 이용권 줄에 1일권 3,300 · 7일권 9,900');
@@ -384,10 +390,11 @@ console.log('\n=== 줄 18 쿠폰 온라인 결제 P1 단위 및 E2E 검증 시�
     ok(title.includes('RayTok 이용권 구매'), '구매 페이지 헤더 확인');
 
     const cardCount = await page.locator('.product-card').count();
-    ok(cardCount === 5, '전체 5개 상품 카드 보존 확인 (시험용)');
+    ok(cardCount === 7, '전체 7개 상품 카드 보존 확인 (손님 2 + 단체 3 숨김 + 강사 코드 2 — 10-29 07:55 ①)');
 
     const visibleCards = await page.locator('.product-card:visible').count();
-    ok(visibleCards === 2, '운영 화면에 단건 2종만 노출 확인 (단체권 3종 숨김 - B-1)');
+    ok(visibleCards === 4, '운영 화면에 손님 단건 2종 + 강사 코드 2종 노출 (단체권 3종 숨김 - B-1)');
+    ok(await page.locator('.product-card[data-id^="pass_"]:visible').count() === 2, '손님 단건 2종 그대로 보임');
 
     const visibleGroupCards = await page.locator('.product-card[data-id^="group_"]:visible').count();
     ok(visibleGroupCards === 0, '화면에 단체 상품 카드가 0개 확인 (MASTER 03:36 대표님 결정: 단건 둘만 판다)');

@@ -159,9 +159,9 @@
             <td class="price">1일권 3,300원<br>7일권 9,900원<br><span class="bundle">묶음: 1일권 20장 66,000원 · 7일권 10장 99,000원 · 7일권 20장 198,000원</span></td>
           </tr>
           <tr id="prod-row-host">
-            <td>가이드·강사 호스트 코드</td>
-            <td class="desc">말하는 사람(가이드·강사) 앱에 등록하는 월정액 코드.</td>
-            <td class="price ask"><a id="prod-ask-host" href="mailto:raytok.dany@gmail.com?subject=%5BRayTok%5D%20%ED%98%B8%EC%8A%A4%ED%8A%B8%20%EC%BD%94%EB%93%9C%20%EB%AC%B8%EC%9D%98">문의</a></td>
+            <td>강사 코드 (웹 강연)</td>
+            <td class="desc">말하는 사람(강사)이 웹 강연 화면에 넣는 월정액 코드. 코드 하나 = 강사 한 명.</td>
+            <td class="price">현장교육 현장 1곳 월 210,000원 (강사 코드 2개)<br>교육기관 강사 코드 1개 월 210,000원</td>
           </tr>
           <!-- 0x10 서버 번역 패키지 줄은 판매 목록에서 내렸다 (NOW 10-28 21:50 ③ · 장부 59 앱 번역은 폰 안만). 이미 산 쿠폰은 릴레이가 그대로 받는다 — relay 0x10 길은 손대지 않음 -->
           <tr id="prod-row-org">
@@ -188,6 +188,23 @@
             <p>7일 동안 사용 가능 · 다일 투어 손님용</p>
           </div>
           <div class="prod-price">9,900원</div>
+        </div>
+
+        <!-- 강사 코드 2종 — 정가표 v7 (NOW 10-29 07:55 ①). 값은 relay/src/pay.js PRODUCTS 와 같아야 한다(test:buy-host-code) -->
+        <div class="product-card" data-id="host_site_1m" data-price="210000">
+          <div class="prod-info">
+            <h3>현장교육 현장 1곳 (강사 코드 2개)</h3>
+            <p>월정액 · 등록한 날부터 30일 · 웹 강연 강사용</p>
+          </div>
+          <div class="prod-price">210,000원</div>
+        </div>
+
+        <div class="product-card" data-id="host_edu_1m" data-price="210000">
+          <div class="prod-info">
+            <h3>교육기관 강사 코드 1개</h3>
+            <p>월정액 · 등록한 날부터 30일 · 웹 강연 강사용</p>
+          </div>
+          <div class="prod-price">210,000원</div>
         </div>
 
         <!-- 단체권 3종: 대표님 묶음 구성·할인율 확정 전까지 운영 화면 숨김 (MASTER 03:35 B-1) -->
@@ -438,13 +455,30 @@
         return;
       }
 
-      document.getElementById('result-desc').textContent = `${data.productName} (${data.quantity}장) 결제가 완료되었습니다.`;
+      document.getElementById('result-desc').textContent = `${data.productName} (${data.quantity}개) 결제가 완료되었습니다.`;
 
       const listEl = document.getElementById('code-list');
       listEl.innerHTML = '';
 
       let allLinks = [];
       data.codes.forEach((item, idx) => {
+        /* 강사 코드(0x04)는 손님 앱 QR 이 아니라 웹 강연 강사 화면에 넣는 코드다 */
+        if (Number(item.flags) & 0x04) {
+          allLinks.push(item.grouped);
+          const hc = document.createElement('div');
+          hc.className = 'code-card host-code-card';
+          hc.style.display = 'block';
+          hc.innerHTML = `
+            <div style="font-size:11px; color:#94a3b8; margin-bottom:2px;">강사 코드 #${idx + 1} (${item.days}일 · 웹 강연)</div>
+            <div class="code-text" style="font-size: 15px; letter-spacing: 0.05em; word-break: break-all;">${item.grouped}</div>
+            <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+              <button class="code-btn" onclick="navigator.clipboard.writeText('${item.grouped}'); alert('강사 코드가 복사되었습니다.')">코드 복사</button>
+              <a class="code-btn" href="/web/host/" target="_blank" style="text-decoration:none; display:inline-block; line-height:20px;">웹 강연 열기</a>
+              <span style="font-size:12px; color:var(--ink-mid);">웹 강연 화면 「이용권」 칸에 이 코드를 붙여넣으세요. 넣은 날부터 ${item.days}일, 코드 하나 = 브라우저 하나.</span>
+            </div>`;
+          listEl.appendChild(hc);
+          return;
+        }
         allLinks.push(item.link);
         const card = document.createElement('div');
         card.className = 'code-card';
@@ -510,16 +544,27 @@
         p7.querySelector('p').textContent = isEn ? 'Valid for 7 days · For multi-day tour guests' : '7일 동안 사용 가능 · 다일 투어 손님용';
       }
 
+      const hs = document.querySelector('.product-card[data-id="host_site_1m"]');
+      if (hs) {
+        hs.querySelector('h3').textContent = isEn ? 'On-site training, 1 site (2 instructor codes)' : '현장교육 현장 1곳 (강사 코드 2개)';
+        hs.querySelector('p').textContent = isEn ? 'Monthly · 30 days from registration · For web lecture instructors' : '월정액 · 등록한 날부터 30일 · 웹 강연 강사용';
+      }
+      const he = document.querySelector('.product-card[data-id="host_edu_1m"]');
+      if (he) {
+        he.querySelector('h3').textContent = isEn ? 'School / institute, 1 instructor code' : '교육기관 강사 코드 1개';
+        he.querySelector('p').textContent = isEn ? 'Monthly · 30 days from registration · For web lecture instructors' : '월정액 · 등록한 날부터 30일 · 웹 강연 강사용';
+      }
+
       // 우리 제품 표 (ko·en)
       const T = isEn ? {
         title: 'Our products', th: ['Product', 'What it is', 'Price'], list: 'Buy now', ask: 'Contact us',
         guest: ['Guest pass', 'For tour and museum listening. A code registered on one guest phone.', '1-day 3,300 KRW<br>7-day 9,900 KRW<br><span class="bundle">Bundles: 20 × 1-day 66,000 KRW · 10 × 7-day 99,000 KRW · 20 × 7-day 198,000 KRW</span>'],
-        host: ['Guide / instructor host code', 'A monthly code registered in the speaker\'s (guide or instructor) app.'],
+        host: ['Instructor code (web lecture)', 'A monthly code the speaker (instructor) enters on the web lecture screen. One code = one instructor.', 'On-site training, 1 site: 210,000 KRW / month (2 instructor codes)<br>School / institute, 1 instructor code: 210,000 KRW / month'],
         org: ['Schools and organizations', 'Tax invoice issued.']
       } : {
         title: '우리 제품', th: ['상품', '무엇인가', '가격'], list: '바로 구매', ask: '문의',
         guest: ['손님 이용권', '관광·박물관 청취용. 손님 폰 한 대에 등록하는 코드.', '1일권 3,300원<br>7일권 9,900원<br><span class="bundle">묶음: 1일권 20장 66,000원 · 7일권 10장 99,000원 · 7일권 20장 198,000원</span>'],
-        host: ['가이드·강사 호스트 코드', '말하는 사람(가이드·강사) 앱에 등록하는 월정액 코드.'],
+        host: ['강사 코드 (웹 강연)', '말하는 사람(강사)이 웹 강연 화면에 넣는 월정액 코드. 코드 하나 = 강사 한 명.', '현장교육 현장 1곳 월 210,000원 (강사 코드 2개)<br>교육기관 강사 코드 1개 월 210,000원'],
         org: ['교육기관·단체', '세금계산서 발행.']
       };
       document.getElementById('products-title').textContent = T.title;
@@ -530,7 +575,7 @@
         const tds = document.getElementById(rows[k]).querySelectorAll('td');
         tds[0].textContent = T[k][0];
         tds[1].textContent = T[k][1];
-        if (k === 'guest') tds[2].innerHTML = T[k][2];
+        if (k === 'guest' || k === 'host') tds[2].innerHTML = T[k][2];
         else tds[2].querySelector('a').textContent = T.ask;
       });
 
