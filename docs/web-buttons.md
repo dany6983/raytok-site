@@ -32,3 +32,28 @@
 
 모든 단추를 통틀어 `kind:'answer'` 를 보낸 것은 0(장부 60).
 아직 안 본 것: ◀ ▶(이용권 코드 2개 이상) 의 넘김 · 지명 뒤 손님이 말한 다음의 btnAskSpeak 읽기 소리 · 손님 페이지 단추(따로 시험 넷: lang_pick·room_tr·state·screen).
+
+# 손님 페이지 단추 × 결과 (web/listener) — NOW 99-1 · 10-28
+
+시험: `samples/listener_buttons_test.js` (`npm run test:listener-buttons`) — 폰 390px · 크로미움 · 가짜 강사(ws)가 **받은 것**으로 센다.
+마지막 단언: 처음 HTML 의 id 있는 단추 **19개 전부**가 표에 있다(늘리면 붉음). 되돌림: 글자 크기 단추 연결을 빼면 그 줄 붉음(10-28 확인).
+웹킷: 이 상자에서 내려받기가 막혀 못 돌렸다 — 대표님 실기(아이폰 사파리)가 대신한다.
+
+| 단추 | 보낸 메시지 | 화면 |
+|---|---|---|
+| btn-join (참여) | hello | 듣기 화면 |
+| btn-toggle-tts (소리) | — | 🔊 ↔ 🔇 |
+| btn-toggle-src (원문 보기) | — | aria-pressed 토글 (서버 번역 길에서만 보임) |
+| btn-open-voice-picker · btn-close-voice-picker | — | 목소리 창 열림/닫힘 |
+| btn-bg-audio (화면 꺼도 듣기) | — | 켬/끔 |
+| btn-font-s · m · l | — | 글자 13 < 15 < 20px |
+| btn-ask (✋ 질문, q:1 방) · btn-ask-cancel | — | 질문 창 열림/닫힘 |
+| btn-ask-submit (손들기 전송) | kind:ask (원문·언어만, P-14) | 창 닫힘 · 「✋ 대기」 |
+| btn-save · btn-save-close | — | 저장 창 열림/닫힘 |
+| btn-save-execute (저장) | — | 파일 받기 1 |
+| btn-fullscreen (⛶) | — | 전체 화면 요청(기록 `fullscreen go=1`) |
+| btn-save-end (끝 창 · 내 기록 받기) | — | 파일 받기 1 |
+| btn-tr-server (서버 번역으로) | — | 따로: test:listener-browser-tr (브라우저 번역 길에서만) |
+| btn-open-chrome (크롬으로 열기) | — | 따로: test:open-chrome (아이폰에서만) |
+
+레이팩 「와이파이에서 받기 / 지금 받기」 는 언어를 고른 뒤 만들어지는 단추 — test:raypack-guest 가 맡는다(E).

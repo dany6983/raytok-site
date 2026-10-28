@@ -34,10 +34,10 @@
 | 89 | 아이폰 사파리 합격 기록 | 했음 | `docs/LISTENER_QA.md` 175줄 |
 | 90 | 「복잡하게 하지 마」 | 해당 없음(원칙) | — |
 | 91 (10-22 18:05) | 누르기 시험 FAIL 다섯 | 확인 못 함 | 마스터 시험·운영 릴레이 필요 — 이번엔 안 돌림 |
-| 95 | 앱 배색·로고 | **부분** | 배색 토큰 host·listener 둘 다 · 로고 host 만(`logo-lockup.png`), listener 에 로고 0 |
+| 95 | 앱 배색·로고 | **했음**(손님 로고 10-28 c1584e0) | 배색 토큰 host·listener 둘 다 · 로고 host 만(`logo-lockup.png`), listener 에 로고 0 |
 | 99 ⓒ | 읽기 = 고른 목소리 | 했음(9fc5e3f 이전부터) | `pickVoice` 가 `currentVoice` 먼저(1227줄) |
 | 99 ⓓ | 크롬으로 열기 | 했음 | `googlechromes://` · `test:open-chrome` 초록 (89 로 「선택 안내」 낮춤) |
-| 99-1 | 모든 단추 누르기 표 | **강사 했음**(docs/web-buttons.md · test:host-buttons) / 손님은 E 뒤 | 손님 단추 시험 넷(lang_pick·room_tr·state·screen) — 「단추 × 결과」 한 표는 없음 |
+| 99-1 | 모든 단추 누르기 표 | **했음** 강사(test:host-buttons)·손님(test:listener-buttons, 10-28) — 웹킷은 못 돌림 | 손님 단추 시험 넷(lang_pick·room_tr·state·screen) — 「단추 × 결과」 한 표는 없음 |
 | 105 | 시작 단추 늘 보임 · 폰 폭 · 시작 즉시 듣기 | 했음(1·4) / 2·3 사진 확인 안 함 | `#readyArea` 늘 보임(1025줄 주석) |
 | 111 | 확인 줄에 운영 주소 · 로컬 경고 | 했음 | `prod-license-e2e.mjs` 5~9줄 |
 | 112 | 강사 말하는 언어 82개 | 했음 | `langs.json` 읽기(705줄), srcLang 시험 여럿 |
