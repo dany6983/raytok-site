@@ -113,8 +113,10 @@ ok(snap.footer.includes(BIZ) && snap.footer.includes('전화'), '굳힌 하단 �
 
 const bad = diff(snap, now);
 ok(bad.length === 0, `심사 중 바뀌면 안 되는 것이 그대로다 (${bad.join(' · ') || '어긋남 없음'})`);
-ok(now.footerPages.length === snap.footerPages.length,
-   `하단 정보를 든 페이지 ${snap.footerPages.length}개 그대로 (지금 ${now.footerPages.length})`);
+// 위 머리말: 새 페이지를 **더하는** 것은 막지 않는다 — 있던 페이지가 빠지는 것만 붉다(빠진 이름은 diff 가 댄다).
+// (10-28 00a588b /glass/·/product/ 더하기로 30→32 가 되어 붉었던 것 — 머리말과 단언이 어긋났었다)
+ok(now.footerPages.length >= snap.footerPages.length,
+   `하단 정보를 든 페이지 ${snap.footerPages.length}개 그대로 이상 (지금 ${now.footerPages.length} — 더한 것만)`);
 ok(now.products.filter(p => !p.hidden).length === snap.products.filter(p => !p.hidden).length,
    `살 수 있는 상품 ${snap.products.filter(p => !p.hidden).length}개 그대로 — 품절 처리가 없다`);
 

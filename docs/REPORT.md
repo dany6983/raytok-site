@@ -13,6 +13,13 @@
 
 ---
 
+## 10-28 20:15 — [웹 일꾼] 마스터 19:45 「다 오픈」 ① 붉음 4(00a588b) 고침
+했다: 제품 페이지 커밋이 낸 붉음 넷을 고쳤다 — 새 글자 5줄 × 6개 언어 번역 채움(§18) · `build_home.py` 다시 돌리고 손 쪽 7개 `i18n.js?v=` 를 새 판(36331cab)으로 · `kcp_freeze_test` 의 「페이지 수 그대로」를 머리말 규칙(더하기는 막지 않음)대로 `>=` 로(있던 쪽에서 하단 정보 빼면 여전히 붉음 확인 — D-09).
+어디서 보나: `assets/i18n/*.json` 끝 5줄 · 사이트 아무 쪽 `?lang=en` 머리 메뉴 「Uses and products」.
+막힘: 없음. KCP 동결 값(`docs/kcp-review-freeze.json`)은 그대로 — 하단 정보·URL·상품은 안 바뀜.
+확인만: test:* 92개 하나씩 — 붉은 수 0.
+다음: test:screen 간헐(fix/screen-fake-move 합치기) → NOW 남은 ★ 끝 표시 → 95 손님 로고 → 99-1 손님 단추 표.
+
 ## 10-28 19:55 — [웹 일꾼] 사이트 NOW 14:35 장부 63 붙이기 — 끝 표시 + 8 덤
 했다: 1~7 은 E 가 합친 것(54bb1f3·b82a91e)으로 끝 — NOW 에 끝 표시. 8 덤: SIMD 없는 bergamot **공식 판 못 찾음** → iOS 15 는 서버 번역 그대로(`docs/raypack-browser.md` 3.5장·4장 표 한 줄).
 어디서 보나: `docs/raypack-browser.md` · `docs/NOW.md` 14:35 줄.
