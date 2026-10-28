@@ -63,7 +63,13 @@ const LIMIT_GZ = { '/web/listener/': 37 * 1024, '/join/': 12 * 1024 };
         const u = new URL(res.url());
         if (u.origin !== base) return;                       // 바깥은 안 센다 (첫 화면엔 없다)
         try {
-          const body = await res.body();
+          /* ★ **줄바꿈은 세지 않는다** (10-28). 윈도 체크아웃은 `core.autocrlf` 로 파일이 CRLF 다 —
+             같은 커밋이 리눅스에서 36.8KB, 윈도에서 37.1KB 로 나와 이 한도가 **상자마다 다른 답**을
+             냈다(build-listener --check 가 10-20 에 고친 것과 같은 자리). 손님에게 실제로 가는 것은
+             저장소에 든 LF 판이니 그 꼴로 잰다. 그림 같은 덩어리는 글자가 아니라 그대로 센다. */
+          const raw = await res.body();
+          const isText = /\.(html|css|js|json|svg|txt)$/.test(u.pathname) || u.pathname.endsWith('/');
+          const body = isText ? Buffer.from(raw.toString('utf-8').replace(/\r\n/g, '\n'), 'utf-8') : raw;
           got.push({ p: u.pathname, raw: body.length, gz: zlib.gzipSync(body, { level: 9 }).length });
         } catch (e) {}
       });
