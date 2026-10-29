@@ -653,11 +653,11 @@ from urllib.parse import quote as _q
 GLASS_M = f"mailto:{MAIL}?subject={_q('[RayTok 선글라스 RT-18G] 주문')}&body={_q('성함:')}%0A{_q('연락처:')}%0A{_q('수량:')}%0A{_q('받으실 주소:')}%0A{_q('요청 사항:')}%0A"
 
 glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 오픈이어 선글라스",
-             "귀에 넣지 않는 공기전도 방식. 음악과 통화, 그리고 RayTok 통역까지. UV400 · 37g · 블루투스 5.0 · 99,000원.",
+             "귀에 넣지 않는 공기전도 방식. 음악과 통화, 그리고 RayTok 통역까지. UV400 · 편광 포함 렌즈 3장 · 37g · 99,000원.",
              "/glass/", img("glass-front")) + top("product") + f'''
 <div class="hero">
 <div class="wrap" style="padding-top:clamp(78px,10vw,118px);padding-bottom:clamp(18px,2.5vw,28px)">
-<span class="tag">블루투스 선글라스 RT-18G · 교체 렌즈 3장 · 99,000원</span>
+<span class="tag">블루투스 선글라스 RT-18G · 편광 포함 렌즈 3장 · 99,000원</span>
 <h1>귀를 막지<br>않습니다.</h1>
 <p class="lead">귀에 넣지 않고 귓바퀴 앞으로 소리를 보냅니다. 음악을 들으면서도 뒤에서 오는 차 소리가 들립니다.</p>
 <div class="btns"><a class="btn p" href="tel:18006825">전화로 주문 1800-6825</a><a class="btn g" href="{GLASS_M}">메일로 문의</a><a class="btn g" href="#spec">제품 사양</a></div>
@@ -673,7 +673,7 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <div class="g3">
 <div class="step"><div class="n">1</div><h3>바깥 소리가 들립니다</h3><p>자전거를 타며 뒤차 소리를, 등산 중에 일행의 말을 그대로 듣습니다.</p></div>
 <div class="step"><div class="n">2</div><h3>귀가 아프지 않습니다</h3><p>귓속에 아무것도 넣지 않습니다. 오래 써도 눌리거나 답답하지 않습니다.</p></div>
-<div class="step"><div class="n">3</div><h3>렌즈가 3장 들어 있습니다</h3><p>맑은 날, 흐린 날, 어두울 때. 날씨에 맞춰 갈아 끼웁니다. 선글라스와 이어폰을 따로 챙길 일도 없습니다.</p></div>
+<div class="step"><div class="n">3</div><h3>편광 렌즈가 들어 있습니다</h3><p>렌즈 3장 — 미러, 스모크, 그리고 <b>편광</b>. 편광은 물과 도로에서 튀는 반사광을 잘라 냅니다. 낚시와 운전에서 차이가 납니다.</p></div>
 </div>
 <div class="g2" style="margin-top:22px">
 <div><img loading="lazy" src="{img("glass-side")}" alt="RayTok 블루투스 선글라스 RT-18G 측면 — 다리 안쪽 스피커와 조작 버튼" style="width:100%;border-radius:14px"></div>
@@ -704,10 +704,10 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <tr><th>무게</th><td>37g</td></tr>
 <tr><th>사용 시간</th><td>약 5시간</td></tr>
 <tr><th>충전</th><td>USB Type-C · DC 5V 1A · 약 1.5시간</td></tr>
-<tr><th>렌즈</th><td>PC 렌즈 · UV400 (자외선 99.9% 이상 차단) · <b>3장 들어 있어 날씨에 따라 갈아 끼웁니다</b></td></tr>
+<tr><th>렌즈</th><td>PC 렌즈 · UV400 (자외선 99.9% 이상 차단)<br><b>3장 들어 있습니다 — 미러 · 스모크 · 편광</b></td></tr>
 <tr><th>프레임</th><td>프레임 PC · 템플 PC · 코받침과 다리 끝 미끄럼 방지</td></tr>
 <tr><th>크기</th><td>166 × 81 × 69mm</td></tr>
-<tr><th>구성품</th><td>본체 · <b>교체 렌즈 3장</b> · USB Type-C 케이블 · 파우치 · 설명서</td></tr>
+<tr><th>구성품</th><td>본체 · <b>렌즈 3장(미러 · 스모크 · 편광)</b> · USB Type-C 케이블 · 파우치 · 설명서</td></tr>
 <tr><th>가격</th><td>99,000원</td></tr>
 <tr><th>보증</th><td>구매일로부터 1년 (소비자 과실 제외)</td></tr>
 </table>
@@ -758,7 +758,7 @@ product = head("RayTok 제품 — 통역 이어폰과 블루투스 선글라스"
 <section><div class="wrap">
 <div class="g2">
 <a class="card" href="/glass/"><img loading="lazy" src="{img("glass-front")}" alt="RayTok 블루투스 선글라스 RT-18G 정면">
-<div class="in"><span class="st">판매 중 · 99,000원</span><h3>블루투스 선글라스 RT-18G</h3><p>공기전도 개방형. 음악과 통화, 그리고 통역까지. UV400 · 37g · 블루투스 5.0.</p><span class="more">자세히 보기 →</span></div></a>
+<div class="in"><span class="st">판매 중 · 99,000원</span><h3>블루투스 선글라스 RT-18G</h3><p>공기전도 개방형. 음악과 통화, 그리고 통역까지. 편광 포함 렌즈 3장 · UV400 · 37g.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀에 걸어 쓰는 오픈형. 한쪽을 상대에게 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
 </div>
