@@ -650,7 +650,7 @@ write("/meet/", '<!doctype html><html lang="ko"><head><meta charset="utf-8"><tit
 # 모델명은 반드시 RT-18G (전파인증번호와 일치시킬 것)
 # ─────────────────────────────────────────────────────────────
 from urllib.parse import quote as _q
-GLASS_M = f"mailto:{MAIL}?subject={_q('[RayTok 선글라스 RT-18G] 구매 문의')}&body={_q('성함:')}%0A{_q('연락처:')}%0A{_q('수량:')}%0A"
+GLASS_M = f"mailto:{MAIL}?subject={_q('[RayTok 선글라스 RT-18G] 주문')}&body={_q('성함:')}%0A{_q('연락처:')}%0A{_q('수량:')}%0A{_q('받으실 주소:')}%0A{_q('요청 사항:')}%0A"
 
 glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 오픈이어 선글라스",
              "귀에 넣지 않는 공기전도 방식. 음악과 통화, 그리고 RayTok 통역까지. UV400 · 37g · 블루투스 5.0 · 99,000원.",
@@ -660,7 +660,7 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <span class="tag">블루투스 선글라스 RT-18G · 99,000원</span>
 <h1>귀를 막지<br>않습니다.</h1>
 <p class="lead">귀에 넣지 않고 귓바퀴 앞으로 소리를 보냅니다. 음악을 들으면서도 뒤에서 오는 차 소리가 들립니다.</p>
-<div class="btns"><a class="btn p" href="{GLASS_M}">구매 문의</a><a class="btn g" href="#spec">제품 사양 보기</a></div>
+<div class="btns"><a class="btn p" href="tel:18006825">전화로 주문 1800-6825</a><a class="btn g" href="{GLASS_M}">메일로 문의</a><a class="btn g" href="#spec">제품 사양</a></div>
 </div></div>
 <div style="background:var(--ink);padding:0 0 clamp(30px,5vw,60px)"><div class="wrap">
 <img src="{img("glass-hero")}" alt="RayTok 블루투스 선글라스 RT-18G 측면 — 다리 안쪽에 스피커가 있습니다" style="width:100%;height:auto;display:block" width="1600" height="615">
@@ -733,10 +733,10 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 </div></section>
 
 <section class="dark cta"><div class="wrap">
-<h2>구매를 원하시면 알려 주세요</h2>
-<p class="sub" style="margin:0 auto">판매처는 준비 중입니다. 메일로 성함과 연락처, 수량을 남겨 주시면 안내해 드립니다.</p>
-<div class="btns"><a class="btn p" href="{GLASS_M}">구매 문의</a><a class="btn g" href="/download/">RayTok 앱 설치</a></div>
-<p class="mail">메일: <a href="mailto:{MAIL}">{MAIL}</a> · 전화 1800-6825</p>
+<h2>지금 주문하실 수 있습니다</h2>
+<p class="sub" style="margin:0 auto">전화로 바로 주문하시거나, 메일로 성함·연락처·수량·받으실 주소를 남겨 주시면 안내해 드립니다. 오픈마켓 판매처는 준비 중입니다.</p>
+<div class="btns"><a class="btn p" href="tel:18006825">전화로 주문 1800-6825</a><a class="btn g" href="{GLASS_M}">메일로 주문</a><a class="btn g" href="/download/">RayTok 앱 설치</a></div>
+<p class="mail">평일 09:00~18:00 · 메일: <a href="mailto:{MAIL}">{MAIL}</a></p>
 </div></section>
 ''' + FOOT
 write("/glass/", glass)
