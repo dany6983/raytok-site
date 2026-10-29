@@ -11,6 +11,13 @@
 ```
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
+## 10-29 12:40 — [웹 일꾼] NOW 10-29 12:35 시연 흐름 웹킷
+했다: 이 상자는 웹킷 내려받기 403(cdn.playwright.dev 정책 차단) → fetch-media 처럼 **러너가 대신** 돈다: `.github/workflows/webkit-flow.yml`(web/·시험 바뀌면 + 손으로, RT_REQUIRE_WEBKIT=1 — 웹킷 없으면 붉음). **웹킷 붉음 0 — 고칠 것 없음**, 손님 페이지 안 건드림 (600ef76)
+어디서 보나: 표 `docs/reclog/2026-10-29-web/test-codes.txt` 끝 · 러너 https://github.com/dany6983/raytok-site/actions/runs/40813076150
+막힘: 없음 (릴레이 안 바꿈 → 배포 필요 없음)
+확인만: test:demo-flow — 크로미움 23/23 종료 0 · **웹킷 23/23** 종료 0(러너 합 46건). 덤 listener-webkit-flow 두 엔진 8/8 종료 0. 이 상자 test:* 98개 하나씩 붉은 수 0. 마스터 검수 대기
+다음: 끝 없는 ★ 없음 — 마스터 새 줄 기다림
+
 ## 10-28 23:06 — [웹 B] NOW 10-29 07:55 ①②③
 했다: 6dbb40b — 강사 코드 2종(현장 1곳 210,000원·코드 2 / 교육기관 210,000원·코드 1, 30일, 플래그 0x04)을 /buy/ 에서 판다. 웹 강사 방(`/room kind:'script'`)은 0x04|0x08 을 봐서 **관광권 0x01 이면 안 열렸다** → 0x04 로 맞춤. /web/host/ 「이용권」 칸이 산 128자 코드를 그대로 받는다(redeem→issue→verify, 새 끝점 없음). 데모 ④ 한 번에 시험 `samples/demo_flow_test.js`(강사 시작→QR→손님 둘→⏸/다시→✋ [선택]/[무시]→끝).
 어디서 보나: /buy/ 카드 둘 · /web/host/ 첫 칸에 코드 붙여넣기 · 종료코드 표 `docs/reclog/2026-10-29-web/test-codes.txt`

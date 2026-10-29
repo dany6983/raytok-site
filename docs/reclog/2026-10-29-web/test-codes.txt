@@ -98,3 +98,11 @@ test:site-wording 0
 test:listener-webkit-flow 0
 test:buy-host-code 0
 test:demo-flow 0
+
+# NOW 10-29 12:35 — 시연 흐름 두 엔진 (12:40 KST, 커밋 600ef76)
+# 이름                      크로미움(이 상자)   크로미움(러너)   웹킷(러너, RT_REQUIRE_WEBKIT=1)   종료코드
+test:demo-flow              23/23 · 0          23/23            23/23                              0 (러너 46건)
+test:listener-webkit-flow   8/8+되돌림 · 0     8/8              8/8 (+되돌림 둘)                    0 (러너 18건)
+# 이 상자 웹킷 내려받기 403(cdn.playwright.dev 허용 안 됨) → GitHub 러너 .github/workflows/webkit-flow.yml 이 대신 받아 돈다
+# 러너: https://github.com/dany6983/raytok-site/actions/runs/40813076150 (success)
+# 이 상자 전체 test:* 98개 하나씩 — 붉은 수 0
