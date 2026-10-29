@@ -1,0 +1,41 @@
+# 아이폰 엔진(웹킷)으로 손님·데모 흐름 시험 (NOW 10-29 12:35).
+# 작업 세션 컨테이너는 웹킷 내려받기(cdn.playwright.dev)가 403 일 때가 있어, 러너가 대신 받아 돈다(fetch-media 와 같은 까닭).
+# RT_REQUIRE_WEBKIT=1 — 웹킷이 없으면 「못 돌림」이 아니라 붉다.
+name: webkit-flow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'samples/demo_flow_test.js'
+      - 'samples/listener_webkit_flow_test.js'
+      - 'samples/mock_relay.js'
+      - '.github/workflows/webkit-flow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flow:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: 브라우저 (크로미움·웹킷)
+        run: npx playwright install --with-deps chromium webkit
+      - name: test:demo-flow (두 엔진)
+        env:
+          RT_REQUIRE_WEBKIT: '1'
+          NO_PROXY: 127.0.0.1,localhost
+        run: node samples/demo_flow_test.js
+      - name: test:listener-webkit-flow (두 엔진)
+        if: always()
+        env:
+          RT_REQUIRE_WEBKIT: '1'
+          NO_PROXY: 127.0.0.1,localhost
+        run: node samples/listener_webkit_flow_test.js
