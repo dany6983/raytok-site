@@ -271,7 +271,7 @@ home = head("RayTok — 한 사람이 말하면, 모두가 각자의 말로 듣�
 <div class="in"><span class="st">유학생 개인용 · 앱 + 이어폰 · 2026년 11월 출시 예정</span><h3>유학생 패키지</h3><p>교수는 평소처럼 말하고, 나는 내 폰과 이어폰으로 내 말로 듣습니다. 끝나면 강의 노트가 내 폰에 남습니다.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀를 막지 않는 오픈형. 한쪽을 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
-<a class="card" href="/glass/"><img loading="lazy" src="{img("glass-front")}" alt="RayTok 블루투스 선글라스 RT-18G 정면">
+<a class="card" href="/glass/"><img loading="lazy" src="{img("rt18g-main")}" alt="RayTok 블루투스 선글라스 RT-18G">
 <div class="in"><span class="st">판매 중 · 99,000원</span><h3>블루투스 선글라스</h3><p>귀에 넣지 않는 공기전도. 음악과 통화, 그리고 통역까지 한 자리에서.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card ko-only" href="/desk/">{mimg("mroom","해외 거래처와 화상회의를 하며 각자 이어폰으로 듣는 직원들")}
 <div class="in"><span class="st">기업 · 해외 거래처 회의 · 2026년 11월 출시 예정</span><h3>Desk 화상회의</h3><p>내 PC 하나로. 상대 회사는 아무것도 사지 않고 링크만 엽니다. 인터넷이 필요합니다.</p><span class="more">자세히 보기 →</span></div></a>
@@ -662,8 +662,8 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <p class="lead">귀에 넣지 않고 귓바퀴 앞으로 소리를 보냅니다. 음악을 들으면서도 뒤에서 오는 차 소리가 들립니다.</p>
 <div class="btns"><a class="btn p" href="tel:18006825">전화로 주문 1800-6825</a><a class="btn g" href="{GLASS_M}">메일로 문의</a><a class="btn g" href="#spec">제품 사양</a></div>
 </div></div>
-<div style="background:var(--ink);padding:0 0 clamp(30px,5vw,60px)"><div class="wrap">
-<img src="{img("glass-hero")}" alt="RayTok 블루투스 선글라스 RT-18G 측면 — 다리 안쪽에 스피커가 있습니다" style="width:100%;height:auto;display:block" width="1600" height="615">
+<div style="background:#fff;padding:clamp(26px,4vw,52px) 0"><div class="wrap">
+<img src="{img("rt18g-main")}" alt="RayTok 블루투스 선글라스 RT-18G 측면 — 다리에 RayTok 각인" style="width:100%;height:auto;display:block;border-radius:14px" width="1400" height="1003">
 </div></div>
 
 <section><div class="wrap">
@@ -676,12 +676,22 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <div class="step"><div class="n">3</div><h3>편광 렌즈가 들어 있습니다</h3><p>렌즈 3장 — 미러, 스모크, 그리고 <b>편광</b>. 편광은 물과 도로에서 튀는 반사광을 잘라 냅니다. 낚시와 운전에서 차이가 납니다.</p></div>
 </div>
 <div class="g2" style="margin-top:22px">
-<div><img loading="lazy" src="{img("glass-side")}" alt="RayTok 블루투스 선글라스 RT-18G 측면 — 다리 안쪽 스피커와 조작 버튼" style="width:100%;border-radius:14px"></div>
-<div><img loading="lazy" src="{img("glass-front")}" alt="RayTok 블루투스 선글라스 RT-18G 정면 — UV400 미러 렌즈" style="width:100%;border-radius:14px"></div>
+<div><img loading="lazy" src="{img("rt18g-button")}" alt="다리에 있는 조작 버튼과 USB Type-C 충전 단자" style="width:100%;border-radius:14px"><p class="vcap">다리 바깥쪽 버튼 하나와 Type-C 단자</p></div>
+<div><img loading="lazy" src="{img("rt18g-engrave")}" alt="다리에 새겨진 RayTok 각인" style="width:100%;border-radius:14px"><p class="vcap">다리에 RayTok 각인</p></div>
 </div>
 </div></section>
 
 <section class="alt"><div class="wrap">
+<p class="eyebrow">렌즈 3장</p>
+<h2>편광 렌즈가<br>들어 있습니다</h2>
+<p class="sub">끼워 둔 미러 렌즈에 더해, 스모크와 <b>편광</b> 두 장이 더 들어 있습니다. 편광은 물과 도로에서 튀는 반사광을 잘라 냅니다. 낚시와 운전에서 차이가 납니다.</p>
+<div class="g2" style="margin-top:22px">
+<div><img loading="lazy" src="{img("rt18g-lens")}" alt="여분 렌즈 2장 — 스모크와 편광(POLARIZED LENSES 표기)" style="width:100%;border-radius:14px;background:#fff"></div>
+<div><img loading="lazy" src="{img("rt18g-bodylens")}" alt="본체와 여분 렌즈 2장" style="width:100%;border-radius:14px;background:#fff"></div>
+</div>
+</div></section>
+
+<section><div class="wrap">
 <p class="eyebrow">RayTok 앱과 함께</p>
 <h2>한 명이 말하면<br>여러 명이 각자의 말로</h2>
 <p class="sub">RayTok 앱을 연결하면, 선글라스를 쓴 사람이 말할 때 듣는 사람들이 각자 자기 언어로 받습니다. 가이드가 한국어로 말하면 손님은 영어로, 중국어로, 베트남어로 — 동시에.</p>
@@ -707,10 +717,11 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <tr><th>렌즈</th><td>PC 렌즈 · UV400 (자외선 99.9% 이상 차단)<br><b>3장 들어 있습니다 — 미러 · 스모크 · 편광</b></td></tr>
 <tr><th>프레임</th><td>프레임 PC · 템플 PC · 코받침과 다리 끝 미끄럼 방지</td></tr>
 <tr><th>크기</th><td>166 × 81 × 69mm</td></tr>
-<tr><th>구성품</th><td>본체 · <b>렌즈 3장(미러 · 스모크 · 편광)</b> · USB Type-C 케이블 · 파우치 · 설명서</td></tr>
+<tr><th>구성품</th><td>본체 · <b>렌즈 3장(미러 · 스모크 · 편광)</b> · USB Type-C 케이블 · 교체용 코받침 2개 · 한글 설명서</td></tr>
 <tr><th>가격</th><td>99,000원</td></tr>
 <tr><th>보증</th><td>구매일로부터 1년 (소비자 과실 제외)</td></tr>
 </table>
+<img loading="lazy" src="{img("rt18g-kit")}" alt="RT-18G 구성품 — 본체, 박스, 여분 렌즈 2장, USB Type-C 케이블, 교체용 코받침, 한글 설명서" style="width:100%;height:auto;display:block;border-radius:14px;margin-top:26px">
 <table style="margin-top:14px">
 <tr><th>적합성평가(전파)</th><td>R-R-PNLE-RT-18G</td></tr>
 <tr><th>안전확인신고(배터리)</th><td>YU102612-24011K</td></tr>
@@ -757,7 +768,7 @@ product = head("RayTok 제품 — 통역 이어폰과 블루투스 선글라스"
 
 <section><div class="wrap">
 <div class="g2">
-<a class="card" href="/glass/"><img loading="lazy" src="{img("glass-front")}" alt="RayTok 블루투스 선글라스 RT-18G 정면">
+<a class="card" href="/glass/"><img loading="lazy" src="{img("rt18g-main")}" alt="RayTok 블루투스 선글라스 RT-18G">
 <div class="in"><span class="st">판매 중 · 99,000원</span><h3>블루투스 선글라스 RT-18G</h3><p>공기전도 개방형. 음악과 통화, 그리고 통역까지. 편광 포함 렌즈 3장 · UV400 · 37g.</p><span class="more">자세히 보기 →</span></div></a>
 <a class="card" href="/ows/"><img loading="lazy" src="{img("ocafe")}" alt="이어폰을 한쪽씩 나눠 끼고 대화하는 두 사람">
 <div class="in"><span class="st">출시 준비 중</span><h3>OWS 통역 이어폰</h3><p>귀에 걸어 쓰는 오픈형. 한쪽을 상대에게 건네고 마주 보며 대화합니다.</p><span class="more">자세히 보기 →</span></div></a>
