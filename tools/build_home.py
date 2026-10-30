@@ -670,6 +670,10 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <p class="eyebrow">왜 귀를 막지 않는가</p>
 <h2>달리면서 음악을 듣는데<br>뒤차 소리가 안 들린다면</h2>
 <p class="sub">귀에 끼우는 이어폰은 바깥 소리를 막습니다. RT-18G는 귀에 넣지 않고 귓바퀴 앞에서 소리를 전달합니다.</p>
+<div class="g2" style="margin-top:24px">
+<div><img loading="lazy" src="{img("rt18g-ear")}" alt="착용했을 때 귀가 열려 있는 모습 — 다리가 귀 위를 지나고 스피커는 귀 앞에 있습니다" style="width:100%;border-radius:14px"><p class="vcap">귓속에 아무것도 들어가지 않습니다</p></div>
+<div><img loading="lazy" src="{img("rt18g-worn")}" alt="RT-18G를 착용한 옆모습" style="width:100%;border-radius:14px"><p class="vcap">쓰면 이렇습니다</p></div>
+</div>
 <div class="g3">
 <div class="step"><div class="n">1</div><h3>바깥 소리가 들립니다</h3><p>자전거를 타며 뒤차 소리를, 등산 중에 일행의 말을 그대로 듣습니다.</p></div>
 <div class="step"><div class="n">2</div><h3>귀가 아프지 않습니다</h3><p>귓속에 아무것도 넣지 않습니다. 오래 써도 눌리거나 답답하지 않습니다.</p></div>
@@ -689,6 +693,9 @@ glass = head("RayTok 블루투스 선글라스 RT-18G — 귀를 막지 않는 �
 <div><img loading="lazy" src="{img("rt18g-lens")}" alt="여분 렌즈 2장 — 스모크와 편광(POLARIZED LENSES 표기)" style="width:100%;border-radius:14px;background:#fff"></div>
 <div><img loading="lazy" src="{img("rt18g-bodylens")}" alt="본체와 여분 렌즈 2장" style="width:100%;border-radius:14px;background:#fff"></div>
 </div>
+<h3 style="margin-top:34px">갈아 끼우는 데 1분이면 됩니다</h3>
+<div class="vid" style="margin-top:14px"><video autoplay muted loop playsinline preload="metadata" poster="/img/lens-swap-poster.webp" src="/img/lens-swap.mp4" aria-label="렌즈를 빼고 다른 렌즈를 끼우는 과정"></video></div>
+<p class="vcap">양손으로 가볍게 밀어 빼고, 홈에 맞춰 눌러 끼웁니다. 공구가 필요 없습니다.</p>
 </div></section>
 
 <section><div class="wrap">
