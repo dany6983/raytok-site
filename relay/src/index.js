@@ -6,6 +6,7 @@ import {
   PRO_FLAG, PRO_FALLBACK, buildProPrompt, inventedNumbers,
   callLlmOnce, estimateUsd, todayKey
 } from './pro-translate.js';
+import { handleLead, handleLeadList, handleLeadDone } from './lead.js';
 
 // engine·context·glossary 는 프로가 쓰는 칸이다 (P-16 허용 목록에 더한다)
 const ALLOWED_TRANSLATE_KEYS = new Set(['q', 'source', 'target', 'format', 'role', 'engine', 'context', 'glossary']);
@@ -1842,6 +1843,17 @@ export default {
     }
 
     // 1-4. 대기줄 9번: 문의 폼 처리: POST /contact (이름·메일·나라·용건)
+    // 리드(상담 신청) — 2026-10-31. 설계: lead.js 머리글
+    if (url.pathname === '/lead' && request.method === 'POST') {
+      return handleLead(request, env, CORS_HEADERS);
+    }
+    if (url.pathname === '/lead/list' && request.method === 'GET') {
+      return handleLeadList(request, env, CORS_HEADERS);
+    }
+    if (url.pathname === '/lead/done' && request.method === 'POST') {
+      return handleLeadDone(request, env, CORS_HEADERS);
+    }
+
     if (url.pathname === '/contact' && request.method === 'POST') {
       try {
         const body = await request.json();
@@ -1861,8 +1873,26 @@ export default {
             headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
           });
         }
-        // 개인정보 최소 원칙 (이름, 메일, 국가, 용건만 보존/처리)
-        return new Response(JSON.stringify({ ok: true, receivedAt: Date.now() }), {
+        // 2026-10-31 수정: 전에는 형식만 검사하고 그냥 {ok:true} 를 돌려주며 **버렸다.**
+        // 저장할 곳이 없으면 받았다고 하지 않는다 (조용히 삼키지 않는다).
+        if (!env.LEADS) {
+          return new Response(JSON.stringify({
+            error: 'storage_unconfigured',
+            message: 'Cannot accept the inquiry right now. Please call +82-1800-6825.',
+            phone: '1800-6825'
+          }), { status: 503, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
+        }
+        const cid = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+        await env.LEADS.put(`lead:${cid}`, JSON.stringify({
+          id: cid, at: new Date().toISOString(), via: 'contact',
+          company: name.slice(0, 80), contact: name.slice(0, 30),
+          phone: '(미기재 — contact 폼)', product: 'overseas/general',
+          memo: `[${country.slice(0, 40)}] ${message.slice(0, 500)}`,
+          replyTo: email.slice(0, 120)
+        }), { metadata: { company: name.slice(0, 80), product: 'contact', at: new Date().toISOString() } });
+        await env.LEADS.put(`todo:${cid}`, '1', { expirationTtl: 60 * 60 * 24 * 90 });
+
+        return new Response(JSON.stringify({ ok: true, id: cid, receivedAt: Date.now() }), {
           status: 200,
           headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
         });

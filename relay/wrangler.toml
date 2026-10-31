@@ -19,3 +19,14 @@ bindings = [
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
+
+# 리드(상담 신청) 저장소 — 2026-10-31 추가
+# 쓰기 전에 KV 네임스페이스를 한 번 만들어야 한다:
+#   npx wrangler kv namespace create LEADS
+# 위 명령이 출력하는 id 를 아래 id = "" 에 붙인다.
+# 조회용 토큰은 코드·설정 파일에 적지 않는다. 비밀로 넣는다:
+#   npx wrangler secret put LEAD_ADMIN_TOKEN
+# KV 가 없으면 /lead 와 /contact 는 503 을 돌려준다. 조용히 삼키지 않는다.
+[[kv_namespaces]]
+binding = "LEADS"
+id = ""
