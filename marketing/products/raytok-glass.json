@@ -1,0 +1,76 @@
+{
+  "id": "raytok-glass",
+  "name": "RayTok AI 통역 선글라스 RT-18G",
+  "owner": "pnleco",
+  "status": "selling",
+
+  "publish": {
+    "tool": "metricool",
+    "brandId": 7375007,
+    "channels": ["instagram", "facebook"],
+    "channelsPlanned": ["tiktok", "youtube"],
+    "perMonthCap": 20,
+    "note": "Metricool 무료: 브랜드 1개, 네트워크당 1계정, 월 20건. 채널마다 1건으로 센다."
+  },
+
+  "facts": {
+    "model": "RT-18G",
+    "price": 99000,
+    "certs": {
+      "적합등록": "R-R-PNLE-RT-18G",
+      "인증기관": "국립전파연구원",
+      "인증상호": "CGTEK TECHNOLOGY CO., LIMITED"
+    },
+    "manufacturer": "CGTEK TECHNOLOGY CO., LIMITED (중국)",
+    "manufacturedOn": "2026-10-20",
+    "specs": {
+      "bluetooth": "5.0",
+      "size": "166×81×69mm (제조사 제공값, 축 불명확 — 도면 금지)",
+      "weight": "약 37g",
+      "lens": "PC·UV400·3장 (미러 장착 + 스모크 + 편광)",
+      "languages": 85
+    },
+    "included": ["본체", "렌즈 3장", "Type-C 케이블", "교체용 귀 뒷걸이 2개(탈착식)", "한글 설명서"],
+    "notIncluded": ["파우치"],
+    "patents": "출원 중 10건 (10-2026-0166695 외 9건)",
+    "trademark": "RayPac 40-2026-0229441"
+  },
+
+  "listingTitle": "RayTok AI 통역 선글라스 RT-18G 85개 언어 구독료 없음 블루투스 오픈형 편광렌즈 3장",
+  "listingTitleCoupang": "AI 통역 선글라스 RT-18G 85개 언어 구독료 없음 블루투스 오픈형 편광렌즈 3장",
+
+  "audience": [
+    { "who": "해외 출장·여행 가는 직장인", "pain": "폰 꺼내서 번역하는 게 번거롭다", "trigger": "성수기" },
+    { "who": "선글라스 쓰는 사람", "pain": "이어폰을 따로 끼면 귀가 아프다", "trigger": "상시" }
+  ],
+
+  "hooks": [
+    { "id": "G1", "axis": "구독료", "first3s": "월 구독료 받는 제품들이 있습니다. 왜 그런지 압니다", "keyword": "구독료" },
+    { "id": "G2", "axis": "렌즈", "first3s": "렌즈 3장이 들어있습니다. 바꿔 끼는 데 5초", "keyword": "렌즈" },
+    { "id": "G3", "axis": "오픈형", "first3s": "귀를 막지 않습니다. 차 소리가 들립니다", "keyword": "오픈형" },
+    { "id": "G4", "axis": "언어수", "first3s": "85개 언어. 직접 만들었습니다", "keyword": "언어" },
+    { "id": "G5", "axis": "무게", "first3s": "37g. 손에 올려놓으면 이 정도", "keyword": "무게" }
+  ],
+
+  "forbidden": { "inherit": "common", "words": ["프리미엄"] },
+  "forbiddenNote": "프리미엄(유학생용 15개 언어)은 결정장부 62-②로 출시 문구·가격 모두 금지. 85개는 RayPac 팩 수이고 프리미엄과 무관.",
+
+  "lead": {
+    "form": "https://raytok.kr/glass/",
+    "phone": "1800-6825",
+    "sheet": null
+  },
+
+  "assets": {
+    "dir": "/home/claude/raytok-site/img/d2",
+    "brandColors": ["#0f2350", "#c8a04a"],
+    "detail860": ["RT18G_1_p1.jpg", "RT18G_2_p2.jpg", "RT18G_3_p3.jpg", "RT18G_4_p4.jpg"],
+    "detail780": ["RT18G_cp_01.jpg","RT18G_cp_02.jpg","RT18G_cp_03.jpg","RT18G_cp_04.jpg","RT18G_cp_05.jpg","RT18G_cp_06.jpg","RT18G_cp_07.jpg","RT18G_cp_08.jpg"]
+  },
+
+  "channels3": {
+    "cafe24": "raytok.kr 연동",
+    "naver": "마켓상품코드 13841351979",
+    "coupang": "검수 중"
+  }
+}

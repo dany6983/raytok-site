@@ -1,0 +1,50 @@
+{
+  "$comment": "제품 정의 스키마 v1. 제품을 추가한다 = 이 모양으로 JSON 하나를 더 만든다. 엔진 코드는 건드리지 않는다.",
+  "id": "짧은 식별자. 파일명과 같게. 예: raytok-glass",
+  "name": "사람이 읽는 이름",
+  "owner": "사업자. pnleco | touchtok",
+  "status": "selling | prelaunch | discontinued",
+
+  "publish": {
+    "tool": "metricool | uploadpost",
+    "brandId": "metricool일 때 브랜드 id (숫자)",
+    "profiles": ["uploadpost일 때 프로필 이름들"],
+    "channels": ["instagram", "tiktok", "facebook", "youtube"],
+    "perMonthCap": 20,
+    "$comment": "perMonthCap은 도구의 무료 한도. 채널 수를 곱해서 소비된다."
+  },
+
+  "facts": {
+    "$comment": "검증된 사실만. 여기 없는 숫자는 소재에 쓰지 않는다.",
+    "model": null,
+    "price": null,
+    "certs": [],
+    "specs": {}
+  },
+
+  "audience": [
+    { "who": "누구", "pain": "무엇이 아픈가", "trigger": "왜 지금인가" }
+  ],
+
+  "hooks": [
+    { "id": "A1", "axis": "축 이름", "first3s": "첫 3초에 보여줄 것", "keyword": "댓글 키워드" }
+  ],
+
+  "forbidden": {
+    "$comment": "광고 규정. 여기 걸리면 엔진이 발행을 막는다.",
+    "words": [],
+    "inherit": "common"
+  },
+
+  "lead": {
+    "form": "상담 신청 경로 URL",
+    "phone": "공개 대표번호",
+    "sheet": "리드 장부 스프레드시트 id"
+  },
+
+  "assets": {
+    "dir": "소재 폴더 경로",
+    "brandColors": ["#0f2350", "#c8a04a"],
+    "logo": null
+  }
+}
