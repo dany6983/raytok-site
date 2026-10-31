@@ -8,7 +8,7 @@
 // 계획만 뱉는다. 실제 발행은 Metricool / Upload-Post MCP 도구가 한다.
 // 쓴 후킹은 quota 로그에 남아 다음 달에 중복되지 않는다.
 
-import { loadProduct, check, auditNumbers } from './lib/check.mjs';
+import { loadProduct, check, auditNumbers, auditRequired } from './lib/check.mjs';
 import * as Q from './lib/quota.mjs';
 import { writeFileSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 
@@ -138,9 +138,11 @@ else if (cmd === 'check') {
   const text = rest.join(' ');
   const g = check(text, p);
   const n = auditNumbers(text, p);
+  const miss = auditRequired(text, p);
   console.log(g.ok ? '✓ 금지어 없음' : '✗ 금지어 있음');
   g.hits.forEach(h => console.log(`  「${h.word}」 … ${h.where}${h.suggest ? `\n     → ${h.suggest}` : ''}`));
   if (n.length) console.log(`  출처 확인 필요: ${n.join(', ')}`);
+  miss.forEach(m => console.log(`  빠진 필수 표기: ${m}`));
 }
 
 else {

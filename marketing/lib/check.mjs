@@ -24,7 +24,8 @@ export function check(text, product) {
       hits.push({
         word: w,
         where: text.slice(Math.max(0, i - 15), i + w.length + 15),
-        suggest: common.allowed_instead[w] || null
+        // 제품별 교체표가 공통보다 우선한다 (터치톡은 식약처 기준으로 따로 있다)
+        suggest: (product.allowedInstead || {})[w] || common.allowed_instead[w] || null
       });
     }
   }
@@ -49,6 +50,13 @@ export function auditNumbers(text, product) {
     return !known.has(n) && !known.has(bare) && bare.length > 1;
   });
   return unknown;
+}
+
+/** 반드시 들어가야 하는 문구가 빠졌는지 (터치톡 의료기기 아님 고지 등) */
+export function auditRequired(text, product) {
+  const need = product.mustInclude || [];
+  // 전문(全文)이 아니라 머리 20자로 판정한다. 길이가 긴 고지문은 줄바꿈이 섞이기 때문.
+  return need.filter(n => !text.includes(n.slice(0, 20)));
 }
 
 export { common };
