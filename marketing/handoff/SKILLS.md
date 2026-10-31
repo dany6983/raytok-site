@@ -109,3 +109,14 @@ textarea 를 교체한 뒤 편집기 저장을 누르면 원복된다.
 마켓플러스 경고: 마켓 상세 이미지가 안 보일 수 있다.
 **양쪽 상세가 전부 외부 CDN 이미지라 영향 범위를 확인해야 한다.** (claude-22 확인 중)
 신청은 VAS 결제 페이지로 넘어가므로 대표님 몫.
+
+## 2026-10-31 · smartever · 끝맞춤 선택자가 「선택항목전송」 플래그를 깬다
+증상: `document.querySelectorAll('input[name$="[prd_name]"]')` 로 상품명을 넣었더니 체크박스 하나의 value 까지 상품명으로 바뀜.
+원인: 상세설정 각 행 왼쪽 체크박스 `template_data[...][modify_partial][<필드>]` 가 같은 꼬리를 가짐. value 는 `N|product` 형식(선택항목전송 순번). prd_name·selling_price 는 짐작상 1·2.
+해법: **전체 이름**으로 선택한다 — `input[name="template_data[shopn|ncp_1njmfm_01][prd_name]"]`. 깨뜨렸으면 「전체전송」으로 보내면 플래그와 무관하게 간다.
+
+## 2026-10-31 · smartever · 상품명·태그 필드 위치
+상품명: `is_default_prd_name` 끄면(별도) `template_data[...][prd_name]` 입력 가능. 태그: 「부가정보 수정하기」 누른 뒤 `[market_data][seo_seller_tags]` 쉼표구분, 최대 10개 전송.
+
+## 2026-10-31 · smartever · Upload-Post 무료 플랜은 TikTok 연결 불가
+manage-users 화면 경고: "Connecting to TikTok is not available for users on the Free plan". 무료 = 월 10 업로드. Basic $16/월부터 TikTok.
