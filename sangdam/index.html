@@ -37,6 +37,13 @@
 .sd .alt{margin:30px 0 0;padding:18px;background:#f5f7fa;border-radius:11px;font-size:14px;line-height:1.75;color:#3d4758}
 .sd .alt b{color:#0f2350}
 .sd .alt a{color:#0f2350;font-weight:700}
+.sd .ways{display:grid;gap:9px;margin:13px 0 0}
+.sd .way{display:flex;flex-direction:column;gap:2px;padding:13px 15px;border-radius:9px;background:#fff;border:1.5px solid #d6dbe4;text-decoration:none;color:#0f2350;font-weight:700;font-size:15px}
+.sd .way span{font-weight:400;font-size:12.5px;color:#7a8699}
+.sd .way:hover{border-color:#0f2350}
+.sd .way.dm{border-color:#e3d0dd}
+.sd .way.kko{border-color:#f0e2a8}
+.sd .hours{margin:13px 0 0;font-size:12.5px;color:#7a8699}
 .sd .pri{font-size:12px;color:#8b95a6;line-height:1.65;margin-top:22px}
 </style>
 </head>
@@ -49,7 +56,7 @@
 
 <main class="sd">
 <h1>상담 신청</h1>
-<p class="lead">현장 상황을 알려 주시면 어떻게 쓰면 되는지 정리해서 연락드립니다. 영업일 1일 안에 전화드립니다.</p>
+<p class="lead">현장 상황을 알려 주시면 어떻게 쓰면 되는지 정리해서 연락드립니다. 영업일 1일 안에 연락드립니다.</p>
 
 <div class="msg" id="msg" role="status" aria-live="polite"></div>
 
@@ -108,8 +115,13 @@
 </form>
 
 <div class="alt">
-  <b>급하시면 전화가 빠릅니다.</b><br>
-  <a href="tel:18006825">1800-6825</a> · 평일 09:00~18:00
+  <b>이 쪽이 더 편하시면 이렇게 주셔도 됩니다.</b>
+  <div class="ways">
+    <a class="way mail" href="mailto:raytok.dany@gmail.com?subject=%5BRayTok%20%EC%83%81%EB%8B%B4%20%EC%8B%A0%EC%B2%AD%5D&body=%EC%97%85%EC%B2%B4%C2%B7%EA%B8%B0%EA%B4%80%EB%AA%85%3A%0A%EB%8B%B4%EB%8B%B9%EC%9E%90%20%EC%A7%81%ED%95%A8%C2%B7%EC%84%B1%3A%0A%EC%97%85%EC%B2%B4%20%EB%8C%80%ED%91%9C%EB%B2%88%ED%98%B8%3A%0A%EB%AC%B4%EC%97%87%EC%97%90%20%EC%93%B0%EC%8B%A4%20%EA%B1%B4%EA%B0%80%EC%9A%94%3A%0A%EC%99%B8%EA%B5%AD%EC%9D%B8%20%EC%9D%B8%EC%9B%90%3A%0A%ED%95%84%EC%9A%94%ED%95%9C%20%EC%96%B8%EC%96%B4%3A%0A%ED%95%98%EC%8B%A4%20%EB%A7%90%EC%94%80%3A%0A">메일로 보내기<span>raytok.dany@gmail.com</span></a>
+    <a class="way dm" href="https://ig.me/m/_raytok_" target="_blank" rel="noopener">인스타그램 DM<span>@_raytok_</span></a>
+    <a class="way kko" id="kko" href="#" style="display:none">카카오톡 채널<span>바로 문의</span></a>
+  </div>
+  <p class="hours">평일 09:00~18:00 · 영업일 1일 안에 답드립니다.</p>
 </div>
 
 <p class="pri">받는 것은 업체명·담당자 직함·업체 대표번호·현장 상황뿐입니다. 개인 휴대폰 번호와 개인 이메일은 받지 않습니다. 상담 목적으로만 쓰고 90일 뒤 지웁니다. 자세한 내용은 <a href="/privacy/">개인정보 처리방침</a>을 보세요.</p>
@@ -125,6 +137,9 @@
 <script>
 (function(){
   var RELAY='https://raytok-relay.raytok.workers.dev';
+  // 카카오톡 채널을 열면 여기에 채널 ID 한 줄만 넣으면 버튼이 켜진다. 예: '_abcdxb'
+  var KAKAO_CH='';
+  if(KAKAO_CH){var kk=document.getElementById('kko');kk.href='https://pf.kakao.com/'+KAKAO_CH+'/chat';kk.style.display='';}
   var f=document.getElementById('f'),m=document.getElementById('msg'),go=document.getElementById('go');
   // 릴스 고정 댓글 링크가 ?k=네팔 처럼 키워드를 달고 온다. 어느 소재가 사람을 보냈는지 센다.
   try{
@@ -152,15 +167,15 @@
       .then(function(r){
         if(r.s===200&&r.j.ok){
           f.style.display='none';
-          show('ok','<b>접수했습니다.</b><br>영업일 1일 안에 '+d.phone+' 으로 연락드립니다.<br>급하시면 <a href="tel:18006825">1800-6825</a> 로 전화 주세요.');
+          show('ok','<b>접수했습니다.</b><br>영업일 1일 안에 '+d.phone+' 으로 연락드립니다.<br>더 하실 말씀이 있으시면 메일이나 인스타그램 DM 으로 보내 주세요.');
         }else{
           go.disabled=false;go.textContent='상담 신청하기';
-          show('err',(r.j.message||'잠시 뒤 다시 시도해 주세요.')+'<br><a href="tel:18006825">1800-6825</a>');
+          show('err',(r.j.message||'잠시 뒤 다시 시도해 주세요.')+'<br>아래 메일·DM 으로 보내 주시면 똑같이 처리됩니다.');
         }
       })
       .catch(function(){
         go.disabled=false;go.textContent='상담 신청하기';
-        show('err','연결이 안 됩니다. <a href="tel:18006825">1800-6825</a> 로 전화 주시면 바로 도와드립니다.');
+        show('err','연결이 안 됩니다. 아래 <b>메일</b>이나 <b>인스타그램 DM</b> 으로 보내 주시면 똑같이 처리됩니다.');
       });
   });
 })();

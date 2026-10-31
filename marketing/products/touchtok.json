@@ -9,23 +9,41 @@
     "인스타·틱톡 계정명",
     "사업자등록번호 (피엔엘에코 376-88-02280 과 다름)"
   ],
-
   "publish": {
     "tool": "uploadpost",
     "profiles": [],
-    "channels": ["instagram", "tiktok"],
+    "channels": [
+      "instagram",
+      "tiktok"
+    ],
     "perMonthCap": 10,
     "profileCap": 2,
     "note": "Upload-Post 무료: 프로필 2개, 월 10건. 채널 2개 × 주 1회 = 월 8건. 예비 2건."
   },
-
-  "facts": { "model": null, "price": null, "certs": {}, "specs": {} },
+  "facts": {
+    "model": null,
+    "price": null,
+    "certs": {},
+    "specs": {}
+  },
   "audience": [],
   "hooks": [],
-  "forbidden": { "inherit": "common", "words": [] },
+  "forbidden": {
+    "inherit": "common",
+    "words": []
+  },
   "forbiddenNote": "뷰티 기기는 의료기기·화장품 광고 규정이 따로 붙는다. 품목 확정 후 금지어를 다시 짜야 한다.",
-  "lead": { "form": null, "phone": null, "sheet": null },
-  "assets": { "dir": null, "brandColors": [] },
-
+  "lead": {
+    "form": null,
+    "email": null,
+    "dm": null,
+    "kakao": null,
+    "sheet": null,
+    "_note": "전화는 대외 유도 창구로 쓰지 않는다 (2026-10-31 대표님 지시). 메일·인스타 DM·카카오톡 채널만. 사업자 의무 표기(푸터)의 전화번호는 그대로 둔다."
+  },
+  "assets": {
+    "dir": null,
+    "brandColors": []
+  },
   "warning": "메타 광고계정이 「자동화 사용」 사유로 제한된 전력이 있다. 자동 DM·팔로우봇 절대 금지."
 }

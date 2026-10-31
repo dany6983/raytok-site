@@ -1878,8 +1878,9 @@ export default {
         if (!env.LEADS) {
           return new Response(JSON.stringify({
             error: 'storage_unconfigured',
-            message: 'Cannot accept the inquiry right now. Please call +82-1800-6825.',
-            phone: '1800-6825'
+            message: 'Cannot accept the inquiry right now. Please email us or send a DM on Instagram.',
+            email: 'raytok.dany@gmail.com',
+            dm: 'https://ig.me/m/_raytok_'
           }), { status: 503, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
         }
         const cid = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;

@@ -78,7 +78,9 @@ if (cmd === 'plan') {
     const willUse = (plan.length + 1) * cost;
     if (willUse > available) { blocked = 'quota'; break; }
     const h = pool.shift();
-    const caption = `${h.first3s}\n\n댓글에 「${h.keyword}」 남기시면 자료 보내드립니다.\n${p.lead.form || ''} · ${p.lead.phone || ''}`;
+    // 전화는 대외 유도 창구로 쓰지 않는다 (2026-10-31 지시). 메일·DM·카톡만.
+    const ways = [p.lead.form, p.lead.kakao ? '카카오톡 채널' : null, p.lead.dm ? 'DM' : null].filter(Boolean).join(' · ');
+    const caption = `${h.first3s}\n\n댓글에 「${h.keyword}」 남기시면 자료 보내드립니다.\n${ways}`;
     const g = check(caption, p);
     plan.push({
       when, hookId: h.id, axis: h.axis, channels,

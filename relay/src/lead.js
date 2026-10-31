@@ -5,6 +5,7 @@
 //
 // 지키는 것
 //  - 개인 휴대폰·개인 이메일은 받지 않는다. 업체·기관 공개 대표번호만.
+//  - 대체 창구는 전화가 아니라 메일·인스타 DM·카카오톡 채널이다 (2026-10-31 대표님 지시).
 //  - 저장소(KV)가 없으면 503 을 돌려준다. 조용히 삼키지 않는다. ← 지금 문제의 재발 방지
 //  - 조회는 관리자 토큰(LEAD_ADMIN_TOKEN, wrangler secret)으로만.
 
@@ -64,8 +65,9 @@ export async function handleLead(request, env, cors) {
     // 저장할 곳이 없으면 받았다고 하지 않는다. 신청자가 다시 전화할 수 있게 번호를 돌려준다.
     return J({
       error: 'storage_unconfigured',
-      message: '지금 신청을 접수할 수 없습니다. 1800-6825 로 전화 주시면 바로 도와드립니다.',
-      phone: '1800-6825'
+      message: '지금 신청을 접수할 수 없습니다. 메일이나 인스타그램 DM 으로 보내 주시면 똑같이 처리됩니다.',
+      email: 'raytok.dany@gmail.com',
+      dm: 'https://ig.me/m/_raytok_'
     }, 503);
   }
 
