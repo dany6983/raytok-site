@@ -120,3 +120,15 @@ textarea 를 교체한 뒤 편집기 저장을 누르면 원복된다.
 
 ## 2026-10-31 · smartever · Upload-Post 무료 플랜은 TikTok 연결 불가
 manage-users 화면 경고: "Connecting to TikTok is not available for users on the Free plan". 무료 = 월 10 업로드. Basic $16/월부터 TikTok.
+
+## 2026-10-31 · claude-22 · 법정 고지문을 금지어 게이트에 넣으면 모순이 난다
+증상: `touchtok` 11월 계획 4편이 전부 `gate=BLOCK` — 금지어 「치료」.
+원인: 필수 표기문 「…질병의 예방 및 **치료**를 위한 의료기기가 아니며…」 **자체**에 금지어가 있다. 고지문은 법에서 정한 정본이라 단어를 바꿀 수 없다.
+해법: 게이트는 **마케팅 문구(body)만** 검사하고, `mustInclude` 로 붙인 고지문은 면제한다. 순서 = ① body 작성 → ② body 에 금지어 게이트 → ③ 고지문 append → ④ 전문에 `auditRequired`.
+교훈: **「검사 대상」과 「검사 규칙」을 같은 텍스트에 섞지 마라.** 붙이는 문구와 검사하는 문구를 분리해야 한다.
+
+## 2026-10-31 · claude-22 · 검사 함수를 만들어도 호출하지 않으면 없는 것이다
+`lib/check.mjs` 에 `auditRequired` 가 있었지만 `route.mjs` 의 `plan` 이 **불러 쓰지 않았다**. `check`(금지어)·`auditNumbers`(출처없는숫자)만 돌았다.
+→ 필수 표기가 빠진 캡션 4편이 `gate=pass` 로 통과해 계획에 들어갔다. 수동 `check` 명령으로 돌렸을 때만 잡혔다.
+해법: 계획 각 편에 `required`/`missingRequired` 필드를 남겨 **파일만 보고도** 합격 여부가 보이게 한다. 콘솔에도 `✗ 필수 표기 빠짐` 을 찍는다.
+점검법: `node -e "const j=require('./out/plan-<pid>-<YYYY-MM>.json'); console.log(j.plan.filter(p=>p.gate!=='pass'||p.required!=='pass').length)"` → 0 이어야 한다.

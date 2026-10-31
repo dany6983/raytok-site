@@ -12,8 +12,8 @@
   "quota": {
     "cap": 20,
     "left": 20,
-    "reservedByOthers": 0,
-    "available": 20,
+    "reservedByOthers": 8,
+    "available": 12,
     "willUse": 8
   },
   "perWeek": 1,
@@ -33,9 +33,12 @@
       "counts": 2,
       "first3s": "구글 번역에 네팔어 입력 → 안 됨 → RayTok 됨",
       "keyword": "네팔",
-      "caption": "구글 번역에 네팔어 입력 → 안 됨 → RayTok 됨\n\n댓글에 「네팔」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · DM",
+      "caption": "구글 번역에 네팔어 입력 → 안 됨 → RayTok 됨\n\n댓글에 「네팔」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "required": "pass",
+      "missingRequired": [],
+      "humanCheck": [],
       "unknownNumbers": []
     },
     {
@@ -49,9 +52,12 @@
       "counts": 2,
       "first3s": "2027년 1월 8일. D-○○",
       "keyword": "교육",
-      "caption": "2027년 1월 8일. D-○○\n\n댓글에 「교육」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · DM",
+      "caption": "2027년 1월 8일. D-○○\n\n댓글에 「교육」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "required": "pass",
+      "missingRequired": [],
+      "humanCheck": [],
       "unknownNumbers": []
     },
     {
@@ -65,9 +71,12 @@
       "counts": 2,
       "first3s": "통역사 부르면 언어마다 한 명입니다",
       "keyword": "통역비",
-      "caption": "통역사 부르면 언어마다 한 명입니다\n\n댓글에 「통역비」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · DM",
+      "caption": "통역사 부르면 언어마다 한 명입니다\n\n댓글에 「통역비」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "required": "pass",
+      "missingRequired": [],
+      "humanCheck": [],
       "unknownNumbers": []
     },
     {
@@ -81,9 +90,12 @@
       "counts": 2,
       "first3s": "한국어로 교육하면 서명은 받습니다. 교육은 안 됩니다",
       "keyword": "서명",
-      "caption": "한국어로 교육하면 서명은 받습니다. 교육은 안 됩니다\n\n댓글에 「서명」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · DM",
+      "caption": "한국어로 교육하면 서명은 받습니다. 교육은 안 됩니다\n\n댓글에 「서명」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "required": "pass",
+      "missingRequired": [],
+      "humanCheck": [],
       "unknownNumbers": []
     }
   ]

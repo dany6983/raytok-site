@@ -80,8 +80,16 @@ if (cmd === 'plan') {
     const h = pool.shift();
     // 전화는 대외 유도 창구로 쓰지 않는다 (2026-10-31 지시). 메일·DM·카톡만.
     const ways = [p.lead.form, p.lead.kakao ? '카카오톡 채널' : null, p.lead.dm ? 'DM' : null].filter(Boolean).join(' · ');
-    const caption = `${h.first3s}\n\n댓글에 「${h.keyword}」 남기시면 자료 보내드립니다.\n${ways}`;
-    const g = check(caption, p);
+    const body = `${h.first3s}\n\n댓글에 「${h.keyword}」 남기시면 자료 보내드립니다.\n${ways}`;
+    // 필수 표기(mustInclude)는 캡션에 자동으로 붙인다. 사람이 빼먹으면 법적 위험이라
+    // 계획 단계에서 본문에 심어 둔다. 이미 들어 있으면 중복해서 붙이지 않는다.
+    const notices = (p.mustInclude || []).filter(n => !body.includes(n.slice(0, 20)));
+    const caption = notices.length ? `${body}\n\n${notices.join('\n')}` : body;
+    // 금지어 게이트는 **마케팅 문구(body)** 만 본다.
+    // 필수 고지문은 법에서 정한 정본이라 「치료」 같은 금지어가 들어 있어도 고칠 수 없다.
+    // 고지문까지 게이트에 넣으면 「규정을 지킨 문구가 규정 위반으로 잡히는」 모순이 난다.
+    const g = check(body, p);
+    const missingRequired = auditRequired(caption, p);
     plan.push({
       when, hookId: h.id, axis: h.axis, channels,
       counts: cost,
@@ -89,7 +97,10 @@ if (cmd === 'plan') {
       caption,
       gate: g.ok ? 'pass' : 'BLOCK',
       gateHits: g.hits,
-      unknownNumbers: auditNumbers(caption, p)
+      required: missingRequired.length ? 'BLOCK' : 'pass',
+      missingRequired,
+      humanCheck: p.mustIncludeRules || [],
+      unknownNumbers: auditNumbers(body, p)
     });
   }
 
@@ -112,9 +123,10 @@ if (cmd === 'plan') {
   if (blocked === 'hooks_exhausted') console.log(`  ⚠ 안 쓴 소재가 떨어졌습니다. 후킹을 더 넣어야 합니다.`);
   console.log('');
   for (const x of plan) {
-    const mark = x.gate === 'pass' ? '✓' : '✗';
+    const mark = (x.gate === 'pass' && x.required === 'pass') ? '✓' : '✗';
     console.log(`  ${mark} ${x.when}  [${x.hookId} ${x.axis}]  ${x.first3s.slice(0, 34)}`);
     if (x.gate !== 'pass') x.gateHits.forEach(h => console.log(`      금지어 「${h.word}」${h.suggest ? ` → ${h.suggest}` : ''}`));
+    if (x.required !== 'pass') x.missingRequired.forEach(n => console.log(`      ✗ 필수 표기 빠짐: ${n.slice(0, 40)}…`));
     if (x.unknownNumbers.length) console.log(`      출처 확인 필요한 숫자: ${x.unknownNumbers.join(', ')}`);
   }
   console.log(`\n  → ${outPath}\n`);
