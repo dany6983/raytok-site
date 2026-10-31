@@ -1,0 +1,90 @@
+{
+  "product": "touchtok",
+  "name": "터치톡 뷰티디바이스 (구독 패키지)",
+  "owner": "pdkent+pnleco",
+  "month": "2026-11",
+  "tool": "uploadpost",
+  "channels": [
+    "instagram",
+    "facebook"
+  ],
+  "costPerPost": 2,
+  "quota": {
+    "cap": 10,
+    "left": 10,
+    "reservedByOthers": 0,
+    "available": 10,
+    "willUse": 8
+  },
+  "perWeek": 1,
+  "day": "4",
+  "posts": 4,
+  "blocked": null,
+  "hooksLeftAfter": 6,
+  "plan": [
+    {
+      "when": "2026-11-05 10:00",
+      "hookId": "T1",
+      "axis": "마스크 위",
+      "channels": [
+        "instagram",
+        "facebook"
+      ],
+      "counts": 2,
+      "first3s": "마스크팩 붙이고, 그 위에 터치톡. 10분이면 끝.",
+      "keyword": "마스크",
+      "caption": "마스크팩 붙이고, 그 위에 터치톡. 10분이면 끝.\n\n댓글에 「마스크」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널",
+      "gate": "pass",
+      "gateHits": [],
+      "unknownNumbers": []
+    },
+    {
+      "when": "2026-11-12 10:00",
+      "hookId": "T2",
+      "axis": "겔 기능성",
+      "channels": [
+        "instagram",
+        "facebook"
+      ],
+      "counts": 2,
+      "first3s": "이 수딩 겔, 미백·주름개선 2중 기능성 화장품입니다.",
+      "keyword": "겔",
+      "caption": "이 수딩 겔, 미백·주름개선 2중 기능성 화장품입니다.\n\n댓글에 「겔」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널",
+      "gate": "pass",
+      "gateHits": [],
+      "unknownNumbers": []
+    },
+    {
+      "when": "2026-11-19 10:00",
+      "hookId": "T3",
+      "axis": "5모드",
+      "channels": [
+        "instagram",
+        "facebook"
+      ],
+      "counts": 2,
+      "first3s": "버튼 하나로 모드 5개. 클렌징부터 쿨링까지.",
+      "keyword": "모드",
+      "caption": "버튼 하나로 모드 5개. 클렌징부터 쿨링까지.\n\n댓글에 「모드」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널",
+      "gate": "pass",
+      "gateHits": [],
+      "unknownNumbers": []
+    },
+    {
+      "when": "2026-11-26 10:00",
+      "hookId": "T4",
+      "axis": "구독 구성",
+      "channels": [
+        "instagram",
+        "facebook"
+      ],
+      "counts": 2,
+      "first3s": "디바이스 + 마스크 96장 + 겔 12개, 한 번에 받습니다.",
+      "keyword": "구성",
+      "caption": "디바이스 + 마스크 96장 + 겔 12개, 한 번에 받습니다.\n\n댓글에 「구성」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널",
+      "gate": "pass",
+      "gateHits": [],
+      "unknownNumbers": []
+    }
+  ]
+}
