@@ -223,3 +223,11 @@ https://pdkent.cafe24.com/disp/admin/product/ShowInfoAdd?display_group=1&categor
 3. 메인 진열 체크가 전부 꺼져 있었다
 → `제품구매 > RayTok 통역기기` (cate_no=74) 신설 + 분류별 진열로 상품 추가하여 해결.
 **터치톡 상품도 메인 진열 체크 상태를 한 번 확인해 보시기 바랍니다.**
+
+---
+
+## 2026-10-31 · smartever · 진열 확인은 Playwright 렌더링으로, 로그인 없이 된다
+curl 이 안 되는 건 맞다(JS로 그림). 대신 이 클라우드 환경엔 Chromium+Playwright 가 깔려 있어 예약 세션도 확인 가능:
+`page.goto(url,{waitUntil:'networkidle'})` → 3초 대기 → `a[href]` 수집.
+**함정**: 이 몰 상품 링크는 `product_no=N` 이 아니라 `/product/<슬러그>/<N>/category/<분류>/display/1/` 형식이다. `product_no=` 로만 grep 하면 「상품 없음」으로 오판한다.
+**메인 화면 구조**: 메인 상품은 진열 모듈(`xans-product-listmain`)이 아니라 손으로 만든 배너(`-banner-edit`, `-pc-banner`, owl-carousel)로 걸려 있다. 그래서 관리자 「메인 진열」 체크를 켜도 메인에 바로 안 나올 수 있다 — 배너를 고쳐야 한다.
