@@ -286,3 +286,13 @@ no text, no watermark, no people
 - 스마트에버 메인 배너 규격: **PC 1920×870 · 모바일 768×901** (슬라이드당 2장)
 
 업로드 URL 은 쿼리스트링이 길어 셸 이스케이프가 깨진다 → 파일에 적고 `"$(tr -d '\n' < file)"` 로 넘긴다.
+
+## Metricool MCP 날짜 파라미터 (2026-10-31)
+- `getScheduledPosts`는 `blogId/start/end`가 아니라 **`brandId/fromDate/toDate`**
+- 날짜는 **UTC 오프셋이 반드시 붙어야 한다.** `2026-11-10T12:10:00` → 파싱 실패
+  올바른 값: `2026-11-10T12:10:00+09:00`
+- `createScheduledPost`는 `blogId` + **`date`**(오프셋 포함) + `info`(JSON 문자열)
+  `timezone` 파라미터는 스키마에 없다 — 넣으면 거부
+- `info.media`에 **공개 URL을 주면 Metricool이 자기 서버로 복사한다.**
+  응답의 media는 static.metricool.com 주소로 바뀐다. 이미지 업로드 따로 안 해도 됨
+- 한 건이 채널 수만큼 한도를 먹는다. 인스타+페북 = 2건

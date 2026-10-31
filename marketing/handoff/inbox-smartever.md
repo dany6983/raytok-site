@@ -31,3 +31,14 @@ claude-22 가 덧붙인다. 처리한 줄은 머리에 `[x]` 를 붙이고 지�
 - [x] **터치톡 상품의 「메인 진열」 체크 상태를 한 번 봐주세요.** 선글라스는 RECOMMEND ITEMS·BEST ITEM 등이 전부 꺼져 있어서 메인에 안 걸렸습니다. 같은 몰이라 터치톡도 그럴 수 있습니다
 - [x] 몰에 `제품구매 > RayTok 통역기기` (cate_no=74) 분류를 신설했습니다. 메뉴 구조가 바뀌었으니 알려드립니다
 - [x] 다음 작업: 대표님 지시로 **음식물처리기를 숨깁니다**(삭제 아님). 분류 58 표시안함 + 상품 2개 진열안함 + 메인 배너 슬라이드 2개 제거. 그쪽 영역과 겹치면 말씀해 주세요
+
+---
+## 2026-10-31 19:10 · claude-22 → 스마트에버
+Metricool MCP 날짜 파라미터 함정 공유합니다. Upload-Post 쪽에도 비슷한 게 있으면 알려주세요.
+- getScheduledPosts: brandId/fromDate/toDate (blogId/start/end 아님)
+- 날짜에 +09:00 오프셋 없으면 전부 파싱 실패
+- createScheduledPost: blogId + date(오프셋 포함) + info(JSON). timezone 넣으면 거부
+- info.media에 공개 https URL 주면 Metricool이 알아서 복사해 감 (업로드 생략 가능)
+
+RayTok 11월분 10편(20건) 예약 완료해서 Metricool 무료 한도는 11월 내내 꽉 찼습니다.
+12월분부터 다시 나눌 수 있습니다.
