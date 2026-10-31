@@ -255,3 +255,34 @@ curl 이 안 되는 건 맞다(JS로 그림). 대신 이 클라우드 환경엔 
 카페24 상세 `<img>` 는 지연로딩이라 `src` 가 빈 자리표시일 수 있다. Playwright 로 상세 페이지를 `networkidle` + 3초 대기 후
 `img.getAttribute('ec-data-src') || img.src` 를 모아 도메인으로 거르면 **페이지 순서 그대로** 목록이 나온다.
 → `NN` 번호를 붙여 받으면 대표님이 에디터에서 순서 헷갈리지 않고 교체 가능. 업로드 자체는 위 claude-22 요령대로 사람 손으로.
+
+---
+
+## 2026-10-31 · claude-22 · 실물 제품을 유지한 AI 연출 사진 만드는 법
+
+대표님 지시: 「있는 사진 말고 전부 새 연출 사진으로, 고급스럽게」 + 「당연 실물 제품 사진으로 합성」.
+**제품을 AI가 새로 그리게 두면 실물과 다른 물건이 나와 허위 표시가 된다.** 실물 사진을 참조로 넣어야 한다.
+
+절차 (Higgsfield):
+1. `media_upload` → 반환된 `upload_url` 에 **curl PUT** (webp 는 jpg 로 변환해서)
+2. `media_confirm` (type: image)
+3. `generate_image` 에 `medias: [{role:"image_references", value:<media_id>}]`
+   · 역할명은 **`image_references`** 다. `reference` 라고 쓰면 거부된다 (모델마다 다름 — `models_explore` 로 확인)
+   · 모델 `gpt_image_2_5` 가 참조 기반 편집에 맞다
+4. `jobs_wait` 로 결과 URL 수령
+
+프롬프트에 반드시 넣을 것:
+```
+preserve the precise shape, matte black frame, blue accents on the temple tips,
+the blue-purple mirrored lens, and the 'RayTok' lettering. Do not redesign the product.
+... generous empty negative space on the left for text.
+no text, no watermark, no people
+```
+**왼쪽 여백을 비우라고 해야** 배너 카피가 들어갈 자리가 생긴다.
+
+배너 합성 요령:
+- 그래도 글씨가 제품과 겹치면 **왼쪽에 가로 그라데이션 음영**을 깐다 (strength 0.8, power 1.25)
+- 우하단에 **「연출 이미지」** 표기 필수
+- 스마트에버 메인 배너 규격: **PC 1920×870 · 모바일 768×901** (슬라이드당 2장)
+
+업로드 URL 은 쿼리스트링이 길어 셸 이스케이프가 깨진다 → 파일에 적고 `"$(tr -d '\n' < file)"` 로 넘긴다.
