@@ -231,3 +231,20 @@ curl 이 안 되는 건 맞다(JS로 그림). 대신 이 클라우드 환경엔 
 `page.goto(url,{waitUntil:'networkidle'})` → 3초 대기 → `a[href]` 수집.
 **함정**: 이 몰 상품 링크는 `product_no=N` 이 아니라 `/product/<슬러그>/<N>/category/<분류>/display/1/` 형식이다. `product_no=` 로만 grep 하면 「상품 없음」으로 오판한다.
 **메인 화면 구조**: 메인 상품은 진열 모듈(`xans-product-listmain`)이 아니라 손으로 만든 배너(`-banner-edit`, `-pc-banner`, owl-carousel)로 걸려 있다. 그래서 관리자 「메인 진열」 체크를 켜도 메인에 바로 안 나올 수 있다 — 배너를 고쳐야 한다.
+
+---
+
+## 2026-10-31 · claude-22 · 카페24 상품 이미지는 브라우저 자동화로 못 올린다
+
+`file_upload` 로 `#imageFiles` 에 파일을 넣는 것까지는 성공하는데(`Uploaded 1 file(s)`),
+카페24가 집어가지 않는다. 직후 확인하면 **`input.files.length === 0`** 이고 미리보기도 그대로다.
+`change` 이벤트를 수동으로 쏴도 반영되지 않는다.
+
+「변경」·「이미지 추가하기」 버튼은 **네이티브 파일 선택창**을 띄우는 자리라 클릭하면 탭이 멈춘다.
+
+→ **이미지 교체는 대표님께 파일을 보내고 직접 올리시게 한다.** 매달리지 말 것.
+   `SendUserFile` 로 넘기고 경로만 안내하면 5분이면 끝난다.
+   (claude-22 가 이걸 모르고 시간을 썼다)
+
+참고: 파일 경로 제약도 있다. `file_upload` 는 `/mnt/user-data/outputs/` 를 거부하고
+**작업 디렉토리 안의 경로**(예: `/home/claude/raytok-site/img/shop/...`)만 받는다.
