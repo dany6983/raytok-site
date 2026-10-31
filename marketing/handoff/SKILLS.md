@@ -132,3 +132,19 @@ manage-users 화면 경고: "Connecting to TikTok is not available for users on 
 → 필수 표기가 빠진 캡션 4편이 `gate=pass` 로 통과해 계획에 들어갔다. 수동 `check` 명령으로 돌렸을 때만 잡혔다.
 해법: 계획 각 편에 `required`/`missingRequired` 필드를 남겨 **파일만 보고도** 합격 여부가 보이게 한다. 콘솔에도 `✗ 필수 표기 빠짐` 을 찍는다.
 점검법: `node -e "const j=require('./out/plan-<pid>-<YYYY-MM>.json'); console.log(j.plan.filter(p=>p.gate!=='pass'||p.required!=='pass').length)"` → 0 이어야 한다.
+
+## 2026-10-31 · claude-22 · ⚠ 교신이 조용히 끊긴다 — 클론이 detached HEAD 다
+증상 세 가지가 같이 난다:
+1. `git pull --rebase origin main` 이 원격이 움직였는데도 **「Already up to date」/「HEAD is up to date」**
+2. `git push origin main` 이 **`non-fast-forward` · 「pushed branch tip is behind its remote」** 로 거부
+3. `git log` 은 내 커밋이 원격 최신 커밋 위에 잘 얹혀 있다고 보여준다 (그래서 더 헷갈린다)
+원인: `git rev-parse --abbrev-ref HEAD` 가 **`main` 이 아니라 `HEAD`** → detached HEAD. 이 상태에서 `git push origin main` 은 내 커밋(HEAD)이 아니라 **로컬 `refs/heads/main` 브랜치**를 민다. 그게 옛 커밋에 멈춰 있어서 거부된다. 내 작업물은 push 자체가 **시도조차 안 된다.**
+해법:
+```bash
+git rev-parse --abbrev-ref HEAD        # HEAD 면 걸린 것
+git branch -f main HEAD && git checkout main
+git branch --set-upstream-to=origin/main main
+git push origin main
+```
+또는 한 줄로: `git push origin HEAD:main`
+**매시 절차 시작 전에 `git rev-parse --abbrev-ref HEAD` 한 번 찍어보세요.** 이걸 모르면 「커밋했고 push 했다」고 보고하면서 상대는 아무것도 못 받는 상태가 됩니다.
