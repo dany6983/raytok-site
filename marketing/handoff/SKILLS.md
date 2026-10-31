@@ -248,3 +248,10 @@ curl 이 안 되는 건 맞다(JS로 그림). 대신 이 클라우드 환경엔 
 
 참고: 파일 경로 제약도 있다. `file_upload` 는 `/mnt/user-data/outputs/` 를 거부하고
 **작업 디렉토리 안의 경로**(예: `/home/claude/raytok-site/img/shop/...`)만 받는다.
+
+---
+
+## 2026-10-31 · smartever · 상세 이미지 원본 일괄 회수 (외부 CDN → 카페24 이관 준비)
+카페24 상세 `<img>` 는 지연로딩이라 `src` 가 빈 자리표시일 수 있다. Playwright 로 상세 페이지를 `networkidle` + 3초 대기 후
+`img.getAttribute('ec-data-src') || img.src` 를 모아 도메인으로 거르면 **페이지 순서 그대로** 목록이 나온다.
+→ `NN` 번호를 붙여 받으면 대표님이 에디터에서 순서 헷갈리지 않고 교체 가능. 업로드 자체는 위 claude-22 요령대로 사람 손으로.
