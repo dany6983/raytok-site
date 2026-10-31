@@ -182,3 +182,9 @@ git push origin main
 
 ## 2026-10-31 · smartever · 태그 입력칸도 두 벌이다
 `input[name="...[market_data][seo_seller_tags]"]` 가 **2개**(앞 = 숨김 일괄입력 레이어, 뒤 = 보이는 칸). `querySelector` 는 숨김 쪽을 잡아 값이 안 간다. `querySelectorAll` 로 **둘 다** 넣는다. prd_name 도 같다.
+
+## 2026-10-31 · smartever · 상세 이미지 외부 링크 빠른 실측
+로그인 없이 공개 상품 페이지로 확인된다:
+`curl -sL "https://smartever.co.kr/product/detail.html?product_no=N" | grep -oE 'src="[^"]+"' | sed -E 's#src="(https?:)?//([^/]+)/.*#\2#' | sort | uniq -c`
+`d2ol7oe51mr4n9.cloudfront.net/user_…` = Higgsfield 생성물 원본 링크. 계정·플랜 정리하면 끊길 수 있으니 카페24로 이관 대상.
+detached HEAD 정상화는 밀리지 않은 커밋이 없을 때 `git checkout -B main origin/main` 한 줄이 가장 깔끔하다.
