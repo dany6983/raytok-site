@@ -97,9 +97,11 @@ if (cmd === 'plan') {
       caption,
       gate: g.ok ? 'pass' : 'BLOCK',
       gateHits: g.hits,
+      gateNotices: g.notices || [],
       required: missingRequired.length ? 'BLOCK' : 'pass',
       missingRequired,
       humanCheck: p.mustIncludeRules || [],
+      image: (p.images || {})[h.id] || null,
       unknownNumbers: auditNumbers(body, p)
     });
   }
@@ -126,7 +128,9 @@ if (cmd === 'plan') {
     const mark = (x.gate === 'pass' && x.required === 'pass') ? '✓' : '✗';
     console.log(`  ${mark} ${x.when}  [${x.hookId} ${x.axis}]  ${x.first3s.slice(0, 34)}`);
     if (x.gate !== 'pass') x.gateHits.forEach(h => console.log(`      금지어 「${h.word}」${h.suggest ? ` → ${h.suggest}` : ''}`));
+    x.gateNotices.forEach(h => console.log(`      통지(막지 않음) 「${h.word}」 — 10-26 해제분`));
     if (x.required !== 'pass') x.missingRequired.forEach(n => console.log(`      ✗ 필수 표기 빠짐: ${n.slice(0, 40)}…`));
+    if (!x.image) console.log(`      ⚠ 이미지 없음 — products/${pid}.json 의 images.${x.hookId} 를 채워야 발행 가능`);
     if (x.unknownNumbers.length) console.log(`      출처 확인 필요한 숫자: ${x.unknownNumbers.join(', ')}`);
   }
   console.log(`\n  → ${outPath}\n`);
@@ -153,6 +157,7 @@ else if (cmd === 'check') {
   const miss = auditRequired(text, p);
   console.log(g.ok ? '✓ 금지어 없음' : '✗ 금지어 있음');
   g.hits.forEach(h => console.log(`  「${h.word}」 … ${h.where}${h.suggest ? `\n     → ${h.suggest}` : ''}`));
+  (g.notices || []).forEach(h => console.log(`  통지(막지 않음) 「${h.word}」 … ${h.where}`));
   if (n.length) console.log(`  출처 확인 필요: ${n.join(', ')}`);
   miss.forEach(m => console.log(`  빠진 필수 표기: ${m}`));
 }

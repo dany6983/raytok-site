@@ -36,9 +36,11 @@
       "caption": "구글 번역에 네팔어 입력 → 안 됨 → RayTok 됨\n\n댓글에 「네팔」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -55,9 +57,11 @@
       "caption": "2027년 1월 8일. D-○○\n\n댓글에 「교육」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -74,9 +78,11 @@
       "caption": "통역사 부르면 언어마다 한 명입니다\n\n댓글에 「통역비」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -93,9 +99,11 @@
       "caption": "한국어로 교육하면 서명은 받습니다. 교육은 안 됩니다\n\n댓글에 「서명」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/sangdam/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": null,
       "unknownNumbers": []
     }
   ]

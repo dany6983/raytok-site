@@ -36,9 +36,11 @@
       "caption": "월 구독료 받는 제품들이 있습니다. 왜 그런지 압니다\n\n댓글에 「구독료」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/glass/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -55,9 +57,11 @@
       "caption": "렌즈 3장이 들어있습니다. 바꿔 끼는 데 5초\n\n댓글에 「렌즈」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/glass/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": "img/sns/sns_g_lens.jpg",
       "unknownNumbers": []
     },
     {
@@ -74,9 +78,11 @@
       "caption": "귀를 막지 않습니다. 차 소리가 들립니다\n\n댓글에 「오픈형」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/glass/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -93,9 +99,11 @@
       "caption": "85개 언어. 직접 만들었습니다\n\n댓글에 「언어」 남기시면 자료 보내드립니다.\nhttps://raytok.kr/glass/ · 카카오톡 채널 · DM",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
+      "image": null,
       "unknownNumbers": []
     }
   ]

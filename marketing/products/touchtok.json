@@ -272,5 +272,8 @@
     "AI 이미지·영상에는 「연출 이미지」 또는 「AI 연출」 표기",
     "기능성 문구는 보고된 범위(미백·주름개선)만 · 「개인차 있음」 병기"
   ],
-  "_mustIncludeNote": "mustInclude는 auditRequired가 '머리 20자 문자열 포함'으로 검사하므로 실제 문구만 둔다. 규칙형 2개는 mustIncludeRules로 옮김(사람 검수)."
+  "_mustIncludeNote": "mustInclude는 auditRequired가 '머리 20자 문자열 포함'으로 검사하므로 실제 문구만 둔다. 규칙형 2개는 mustIncludeRules로 옮김(사람 검수).",
+  "images": {
+    "$comment": "hookId → 게시용 이미지 경로. 없으면 계획에 「이미지 없음」으로 찍힌다. 추측으로 채우지 않는다."
+  }
 }

@@ -10,14 +10,26 @@ export function loadProduct(id) {
   return JSON.parse(readFileSync(join(ROOT, `products/${id}.json`), 'utf8'));
 }
 
-/** 금지어 검사. { ok, hits: [{word, where, suggest}] } */
+/** 금지어 검사. { ok, hits: [{word, where, suggest}], notices: [...] }
+ *  words  = 법 자체라 막는다 (ok=false).
+ *  notice = 2026-10-26 대표님 해제분. 막지 않고 통지만 한다 (ok 에 영향 없음).
+ *           출처: claude/RayTok-광고규정_해제_1026.md */
 export function check(text, product) {
   const words = [
     ...(product.forbidden?.inherit === 'common' ? common.words : []),
     ...(product.forbidden?.words || [])
   ];
+  const noticeWords = [
+    ...(product.forbidden?.inherit === 'common' ? (common.notice || []) : []),
+    ...(product.forbidden?.notice || [])
+  ];
   const hits = [];
   const lower = text.toLowerCase();
+  const find = (w) => {
+    const i = lower.indexOf(w.toLowerCase());
+    return i < 0 ? null : { word: w, where: text.slice(Math.max(0, i - 15), i + w.length + 15) };
+  };
+  const notices = noticeWords.map(find).filter(Boolean);
   for (const w of words) {
     const i = lower.indexOf(w.toLowerCase());
     if (i >= 0) {
@@ -29,7 +41,7 @@ export function check(text, product) {
       });
     }
   }
-  return { ok: hits.length === 0, hits };
+  return { ok: hits.length === 0, hits, notices };
 }
 
 /** 숫자가 제품 facts에 있는 값인지 거친 확인. 없는 숫자는 경고만. */

@@ -36,12 +36,14 @@
       "caption": "마스크팩 붙이고, 그 위에 터치톡. 10분이면 끝.\n\n댓글에 「마스크」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널\n\n[안내] 본 제품은 질병의 예방 및 치료를 위한 의료기기가 아니며, 일상적인 피부 미용 관리를 지원하는 일반 피부 미용기기(공산품)입니다.",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [
         "AI 이미지·영상에는 「연출 이미지」 또는 「AI 연출」 표기",
         "기능성 문구는 보고된 범위(미백·주름개선)만 · 「개인차 있음」 병기"
       ],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -58,12 +60,14 @@
       "caption": "이 수딩 겔, 미백·주름개선 2중 기능성 화장품입니다.\n\n댓글에 「겔」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널\n\n[안내] 본 제품은 질병의 예방 및 치료를 위한 의료기기가 아니며, 일상적인 피부 미용 관리를 지원하는 일반 피부 미용기기(공산품)입니다.",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [
         "AI 이미지·영상에는 「연출 이미지」 또는 「AI 연출」 표기",
         "기능성 문구는 보고된 범위(미백·주름개선)만 · 「개인차 있음」 병기"
       ],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -80,12 +84,14 @@
       "caption": "버튼 하나로 모드 5개. 클렌징부터 쿨링까지.\n\n댓글에 「모드」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널\n\n[안내] 본 제품은 질병의 예방 및 치료를 위한 의료기기가 아니며, 일상적인 피부 미용 관리를 지원하는 일반 피부 미용기기(공산품)입니다.",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [
         "AI 이미지·영상에는 「연출 이미지」 또는 「AI 연출」 표기",
         "기능성 문구는 보고된 범위(미백·주름개선)만 · 「개인차 있음」 병기"
       ],
+      "image": null,
       "unknownNumbers": []
     },
     {
@@ -102,12 +108,14 @@
       "caption": "디바이스 + 마스크 96장 + 겔 12개, 한 번에 받습니다.\n\n댓글에 「구성」 남기시면 자료 보내드립니다.\nhttps://smartever.co.kr/product/detail.html?product_no=33 · 카카오톡 채널\n\n[안내] 본 제품은 질병의 예방 및 치료를 위한 의료기기가 아니며, 일상적인 피부 미용 관리를 지원하는 일반 피부 미용기기(공산품)입니다.",
       "gate": "pass",
       "gateHits": [],
+      "gateNotices": [],
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [
         "AI 이미지·영상에는 「연출 이미지」 또는 「AI 연출」 표기",
         "기능성 문구는 보고된 범위(미백·주름개선)만 · 「개인차 있음」 병기"
       ],
+      "image": null,
       "unknownNumbers": []
     }
   ]

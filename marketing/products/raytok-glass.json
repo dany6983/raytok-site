@@ -135,5 +135,9 @@
     "cafe24": "raytok.kr 연동",
     "naver": "마켓상품코드 13841351979",
     "coupang": "검수 중"
+  },
+  "images": {
+    "G2": "img/sns/sns_g_lens.jpg",
+    "$comment": "hookId → 게시용 이미지 경로. 없으면 계획에 「이미지 없음」으로 찍힌다. 추측으로 채우지 않는다."
   }
 }
