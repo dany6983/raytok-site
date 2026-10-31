@@ -188,3 +188,38 @@ git push origin main
 `curl -sL "https://smartever.co.kr/product/detail.html?product_no=N" | grep -oE 'src="[^"]+"' | sed -E 's#src="(https?:)?//([^/]+)/.*#\2#' | sort | uniq -c`
 `d2ol7oe51mr4n9.cloudfront.net/user_…` = Higgsfield 생성물 원본 링크. 계정·플랜 정리하면 끊길 수 있으니 카페24로 이관 대상.
 detached HEAD 정상화는 밀리지 않은 커밋이 없을 때 `git checkout -B main origin/main` 한 줄이 가장 깔끔하다.
+
+---
+
+## 2026-10-31 · claude-22 · ⚠ 상품등록 화면에서 분류를 지정하면 저장이 안 먹는다
+
+**증상**: 상품수정 화면 「표시설정 > 상품분류 선택」에서 분류를 고르고 `+적용` → `상품수정` 을 눌러도,
+다시 열면 **「선택된 상품분류 내역이 없습니다」로 되돌아간다.** 두 번 시도해서 두 번 다 날아갔다.
+`addCategoryNum[]` 에 값이 들어간 것까지 확인했는데도 저장 뒤 사라진다.
+
+**정석 경로는 따로 있다**: `상품 진열 > 분류별 진열`
+```
+https://pdkent.cafe24.com/disp/admin/shop1/product/ShowInfoCategory?category_no=<분류번호>
+```
+→ 우측 `상품추가 >` → 상품 체크 → `선택`
+
+**상품추가는 팝업이다.** 차단되면 열리지 않고, 좌표 클릭하면 **탭이 통째로 멈춘다**(네이티브 확인창).
+→ 팝업 URL 로 바로 이동하면 된다:
+```
+https://pdkent.cafe24.com/disp/admin/product/ShowInfoAdd?display_group=1&category_no=<분류번호>
+```
+그 페이지에서 `window.alert=()=>{}; window.confirm=()=>true; window.onbeforeunload=null;` 을 먼저 걸고
+체크박스 → `선택` 버튼을 JS 로 누르면 멈추지 않는다.
+
+**새 분류는 「표시안함」으로 생성된다.** 만들자마자 `표시상태`·`메인분류 표시상태` 를 둘 다 「표시함」으로
+바꾸고 저장해야 한다. 안 그러면 분류를 만들어도 메뉴에 안 나온다.
+
+**확인은 curl 로 하지 마라.** 이 쇼핑몰은 상품 목록을 JS 로 그린다. curl 로 받은 HTML 에는 상품이
+없어서 「아직 안 됐다」로 오판한다. 브라우저로 열어서 봐야 한다. (claude-22 가 이걸로 30분 허비했다)
+
+### 오늘 겪은 실제 사례 — 선글라스가 쇼핑몰 어디에도 없던 이유
+1. 선글라스가 들어갈 분류가 아예 없었다 (제품구매 아래 터치톡·제습기·헤어기기·음식물처리기·공기청정기뿐)
+2. 상품에 분류가 하나도 안 걸려 있었다
+3. 메인 진열 체크가 전부 꺼져 있었다
+→ `제품구매 > RayTok 통역기기` (cate_no=74) 신설 + 분류별 진열로 상품 추가하여 해결.
+**터치톡 상품도 메인 진열 체크 상태를 한 번 확인해 보시기 바랍니다.**
