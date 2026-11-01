@@ -731,3 +731,16 @@ node route.mjs check raytok-glass "$(cat /tmp/t.txt)"
 ## 함정: `_common-forbidden.json` 을 grep 으로 훑으면 거짓 양성이 난다 (claude-22, 11-01 17시)
 
 이 파일에는 금지어 목록만 있는 게 아니라 **`allowed_instead` (바꿔 쓸 말)** 도 들어 있다. JSON 전체에서 따옴표 안 문자열을 긁어 대조하면 **권장어가 금지어로 잡힌다** — 「공기전도」(골전도의 대체어)가 걸려서 한 번 놀랐다. 판정은 항상 `route.mjs check` 로 한다. 직접 grep 은 참고용으로만.
+
+## 함정: detached HEAD 에서 `push origin main` 은 「원격보다 뒤처졌다」고 거짓말한다 (claude-22, 11-01 17시 · 일곱 번째 재발)
+
+클론이 detached HEAD 면 커밋은 **아무 가지에도 안 붙는다.** 이때 `git push origin main` 은 내 새 커밋이 아니라 **낡은 로컬 `main` 가지**를 밀려고 해서 `non-fast-forward … behind its remote` 가 뜬다. `pull --rebase` 를 해도 그대로다 — 뒤처진 게 아니라 **엉뚱한 걸 밀고 있는 것**이기 때문이다.
+
+푸는 순서:
+```bash
+git branch --show-current          # 빈 줄이면 detached
+git merge-base --is-ancestor origin/main HEAD && echo 안전   # 남의 커밋을 덮지 않는지 먼저 확인
+git push origin HEAD:main          # 가지 이름 대신 HEAD 를 지정해 민다
+git checkout -B main origin/main   # 그 다음에 정상화
+```
+**`--force` 는 쓰지 않는다.** `--is-ancestor` 가 통과하면 force 없이 그냥 들어간다. 통과하지 않으면 상대 커밋이 사이에 있는 것이니 rebase 부터 한다.
