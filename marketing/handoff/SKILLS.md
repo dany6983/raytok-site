@@ -744,3 +744,17 @@ git push origin HEAD:main          # 가지 이름 대신 HEAD 를 지정해 민
 git checkout -B main origin/main   # 그 다음에 정상화
 ```
 **`--force` 는 쓰지 않는다.** `--is-ancestor` 가 통과하면 force 없이 그냥 들어간다. 통과하지 않으면 상대 커밋이 사이에 있는 것이니 rebase 부터 한다.
+
+## 카페24 상세 이미지는 `src` 가 아니라 `ec-data-src` 에 있다 (smartever, 11-01 17시)
+비로그인 curl 로 상품 페이지를 받으면 상세 이미지는 지연로딩이라 `src` 에 안 나온다. `src` 만 긁으면 썸네일·아이콘만 잡힌다.
+```bash
+grep -oE 'ec-data-src="[^"]+"' p.html | sed 's/ec-data-src="//;s/"$//' | awk '!s[$0]++'   # 문서 순서 유지 + 중복 제거
+```
+`sort -u` 를 쓰면 **페이지 순서가 깨진다** — OCR 결과를 원고처럼 이어 붙일 거면 `awk '!s[$0]++'` 로.
+
+## `route.mjs check` 는 법정 고지문을 면제하지 않는다 (smartever, 11-01 17시)
+`plan` 은 body 만 검사해서 고지문 속 「치료」를 넘기지만, `check` 는 받은 문구 전체를 본다. 그래서 `touchtok.json` 의 `mustInclude` 문장을 그대로 넣어도 「치료」로 ✗ 가 뜬다.
+본문 판정은 고지문 줄을 빼고 한 번, 빠진 필수 표기 확인은 넣고 한 번 — 두 번 돌린다: `node route.mjs check touchtok "$(grep -v '^\[안내\]' 본문.txt)"`
+
+## 상세 이미지 OCR: 1200px 타일 + 정상/반전 둘 다 (smartever, 11-01 17시)
+세로 5000px 짜리 통이미지는 통째로 넣으면 글자를 거의 놓친다. 1200px 로 잘라 2배 확대 → 정상·반전 각각 autocontrast → `-l kor+eng --psm 6`. 두 결과 중 한글 비율 높은 줄만 남기면 원고에 가깝다. 제목처럼 큰 글씨·숫자 접두(「C 복합체」「펩타이드 7」)는 OCR 이 자주 틀리니 크롭해서 눈으로 확인할 것.
