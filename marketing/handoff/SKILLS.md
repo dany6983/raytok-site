@@ -673,3 +673,47 @@ smartever 가 다섯 번 밟은 그 함정의 **뒷면**이다. detached HEAD �
 git checkout -B main && git push origin main     # 커밋한 HEAD 로 브랜치를 옮긴다
 ```
 pull 을 반복하거나 `--force` 를 쓰면 안 된다. **먼저 `git branch -vv` 로 `* (HEAD detached` 인지 본다.**
+
+### 글꼴이 없어서 렌더를 못 할 때 — 받아올 수 있다 (11-01 16시 · claude-22)
+13시에 「`/root/.fonts/` 가 없으니 재렌더는 만든 쪽에 넘긴다」고 적었는데 **틀렸다.**
+Pretendard 는 npm 패키지로 있다. 외부 사이트 다운로드가 아니라 패키지 레지스트리다:
+```bash
+npm pack pretendard && tar xzf pretendard-*.tgz
+mkdir -p /root/.fonts
+cp package/dist/public/static/Pretendard-{Regular,Medium,SemiBold,Bold}.otf /root/.fonts/
+```
+**받은 뒤 바로 믿지 말고 증명한다.** 손대기 전 판(`git show <커밋>:<파일>`)을 그대로 렌더해서
+지금 올라가 있는 이미지와 **높이가 1px도 안 틀리는지** 본다. 틀리면 글꼴이 다른 것이다.
+선글라스 v3 에서 이 방법으로 8,219px 일치 + 픽셀 평균 오차 0.85(JPEG 자국뿐)를 확인하고 진행했다.
+
+### 자르는 자리는 사람이 찍지 말고 찾게 한다
+네 등분 지점을 그냥 쓰면 **그림을 물고 잘린다.** 실제로 렌즈 3컷 아래 4px 을 물었다.
+등분 지점 ±320px 안에서 두 조건을 다 만족하는 가로줄만 고른다:
+1. 그 줄과 위아래 1줄에 **글자 점이 0개** (행 중앙값에서 20 넘게 벗어난 픽셀 수 = 0)
+2. `<img>` 구간(±4px) 에 걸치지 않음 — 그림 위치는 렌더할 때 `getBoundingClientRect` 로 받아 둔다
+
+`tools/render-detail-d3.mjs` 가 렌더·자르기·용량 맞추기(장당 150KB 선)까지 한 줄로 한다.
+**글꼴이 없으면 렌더하지 않고 멈추고 받는 법을 찍는다** — 조용히 다른 글꼴로 나가는 게 제일 위험하다.
+
+### 실사 영상을 GIF 로 쇼핑몰에 올리지 않는다 — 숫자
+`lensswap.gif` 680×383·54프레임 = **3.5MB.** ffmpeg 로 깎아 봤다:
+
+| 설정 | 크기 |
+|---|---|
+| 12fps · 600px · 96색 | 3.9MB (더 커졌다) |
+| 8fps · 520px · 64색 | 2.0MB |
+| 6fps · 480px · 48색 | **1.2MB** (여기서 화질이 눈에 띄게 깨진다) |
+
+실사는 프레임마다 화면이 다 바뀌어 GIF 의 프레임간 압축이 먹지 않는다.
+**정지 3컷 + 번호 캡션**(「1. 뗍니다 / 2. 끼웁니다 / 3. 5초면 끝납니다」)이 가볍고 설명도 더 된다.
+움직임이 꼭 필요하면 GIF 가 아니라 영상으로 올린다.
+
+### 상세 HTML 글자를 게이트에 넣을 때
+`route.mjs check <제품> "<문구>"` 는 **문구를 인자로 받는다.** `--file=...` 같은 건 없다 —
+그렇게 주면 그 문자열 자체를 검사하고 **「✓ 금지어 없음」이 멀쩡히 나온다.** 통과한 줄 알고 넘어가기 쉽다.
+```bash
+python3 -c "import re,html,sys; s=open(sys.argv[1],encoding='utf-8').read(); \
+s=re.sub(r'<(script|style)[^>]*>.*?</\1>','',s,flags=re.S); s=re.sub(r'<[^>]+>',' ',s); \
+print(html.unescape(re.sub(r'\s+',' ',s)).strip())" img/d3/page.html > /tmp/t.txt
+node route.mjs check raytok-glass "$(cat /tmp/t.txt)"
+```
