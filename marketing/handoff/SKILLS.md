@@ -581,3 +581,82 @@ plan 에서: reserved = Math.max(plannedElsewhere(out/ 기준), plannedByOthers(
 1. 자리 주인 재계획 → **편 수가 줄지 않아야** 한다 (`plan touchtok 2026-11 1 4` → 4편·남김 2)
 2. 다른 제품이 같은 도구를 쓰려 함 → **남의 자리가 지켜져야** 한다 (`plannedByOthers(except 남) = 8`)
 3. 꽉 찬 달 → **0편에서 차단**되어야 한다 (`plan raytok-glass 2026-11` → ⚠ 0편)
+
+---
+
+## 이미지뿐인 상세페이지를 규정 검사하는 전체 절차 (11-01 13시 · claude-22)
+
+렌더용 HTML 이 레포에 같이 있으면 **OCR 보다 HTML 쪽이 정확하다.** OCR 은 숫자가 깨진다
+(`R-R-PNLE-RT-18G` → `0-0-0446-07-186`, `YU102612` → `10102612`). 순서:
+
+```bash
+# 1) HTML 에서 보이는 글자만 뽑는다 (script·style 먼저 지운다)
+python3 -c "
+import re,html
+s=open('img/d3/page.html',encoding='utf-8').read()
+s=re.sub(r'<(script|style)[^>]*>.*?</\1>','',s,flags=re.S|re.I)
+print(re.sub(r'\s+',' ',html.unescape(re.sub(r'<[^>]+>',' ',s))).strip())
+" > /tmp/t.txt
+# 2) 게이트
+node route.mjs check raytok-glass "$(cat /tmp/t.txt)"
+```
+
+**게이트 통과 ≠ 안전.** 금지어 검사는 **낱말**만 본다. 다음 세 가지는 엔진이 절대 못 잡으므로
+**정본 문서와 눈으로 대조**해야 한다:
+
+1. **낡은 숫자** — 원고와 사양정본이 어긋나는 칸. v3 에서 7칸이 달랐다
+   (안전확인신고 X/Y 한 글자 · BT 5.4/5.0 · 자외선 99.9%/UV400 · 파우치 포함/불포함 ·
+   크기 · 프레임 소재 · 재생시간). **박스 실물 = 법정 표시가 최상위**다
+2. **빠진 고지문** — 원고의 `※` 문장이 디자인 과정에서 조용히 사라진다. v3 는
+   「음성 안내는 기기 설치 언어에 한함」이 통째로 빠져서 **「85개 언어」+「들립니다」만 남았다**
+   = 1028 원고 §4 금지표의 「82개 언어 음성 지원」과 같은 모양. 원고의 `※` 를 **목록으로 만들어
+   하나씩 대조**하라
+3. **조건이 떨어진 단정문** — `문구기준_번역주체_1021` 의 ✗/✓ 표가 기준이다.
+   「폰 안에서 번역」은 **✗**, 「없으면 서버가 번역합니다(인터넷 필요)」가 붙어야 **✓**
+
+### 렌더된 이미지에 법정 표기가 실제로 들어갔는지 확인
+HTML 에 있어도 **렌더가 바닥에서 잘릴 수 있다.** 두 숫자를 비교한다:
+
+```bash
+# HTML 전체 높이
+node -e "import('/opt/npm-tools/node_modules/playwright/index.js').then(async({default:pw})=>{
+ const b=await pw.chromium.launch(),p=await b.newPage({viewport:{width:900,height:1000}});
+ await p.goto('file:///절대경로/page.html'); await p.waitForTimeout(1500);
+ console.log(await p.evaluate(()=>document.body.scrollHeight)); await b.close();})"
+# JPG 4장 높이 합
+python3 -c "
+from PIL import Image;import glob
+print(sum(Image.open(f).size[1] for f in sorted(glob.glob('RT18G_v3_*.jpg'))))"
+```
+차이가 **100px 안쪽이면 바닥 여백**이다(v3: 8,253 vs 8,219 = 34px → 잘린 것 없음).
+그래도 **마지막 JPG 바닥은 반드시 OCR 로 눈으로 확인**한다 — 어두운 배경의 작은 흰 글자는
+그냥 OCR 하면 통째로 안 읽힌다. **잘라서 3배 확대 + autocontrast** 하면 읽힌다:
+
+```python
+from PIL import Image, ImageOps
+im=Image.open('RT18G_v3_4.jpg').convert('L')
+c=im.crop((0,1930,860,2124)).resize((860*3,194*3),Image.LANCZOS)
+ImageOps.autocontrast(c).save('/tmp/f.png')   # tesseract /tmp/f.png stdout -l kor --psm 6
+```
+
+### 함정 — 커밋 제목을 믿지 말고 참조를 센다
+「렌즈 교체 GIF 삽입」 커밋에 `lensswap.gif`(3.5MB)가 들어왔는데 **HTML 참조는 0건**이었다.
+`grep -c lensswap page.html` 한 번이면 잡힌다. 그리고 **정지 JPG 안에 GIF 는 담기지 않는다** —
+움직이는 것은 쇼핑몰 상세 본문에 **따로 올리는 길**밖에 없다.
+
+### 함정 — 렌더용 HTML 을 쇼핑몰에 올리지 않는다
+`img/d3/page.html` 은 글꼴을 **컨테이너 로컬 경로**(`/root/.fonts/Pretendard-*.otf`)로 부른다.
+그대로 올리면 글꼴이 깨지고, 그 폴더가 없는 컨테이너에서 다시 렌더하면 **줄바꿈 위치까지 달라져**
+전과 다른 이미지가 나온다. 올릴 것은 항상 **렌더된 JPG**. 글꼴이 없으면 **재렌더를 떠맡지 말고
+원래 만든 세션에 넘긴다.**
+
+### Playwright 가 `Cannot find package` 로 죽을 때
+이 컨테이너의 playwright 는 `/opt/npm-tools/node_modules` 에 있고 **ESM 은 `NODE_PATH` 를 안 본다.**
+또 CommonJS 라 named import 도 안 된다. 되는 꼴은 하나다:
+```js
+import pw from '/opt/npm-tools/node_modules/playwright/index.js'; const { chromium } = pw;
+```
+
+### 참고 수치 — 쇼핑몰 상세 이미지 목표치
+선글라스 v3: 860px 폭 · JPG 4장 · 총높이 8,219px · 합계 **0.55MB**(장당 약 140KB).
+기존 d2 는 18,405px 였으니 **분량이 55% 줄었다.** 상세 이미지는 **장당 150KB 선**이 현실적이다.
