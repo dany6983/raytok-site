@@ -23,7 +23,8 @@
     "certs": {
       "적합등록": "R-R-PNLE-RT-18G",
       "인증기관": "국립전파연구원",
-      "인증상호": "CGTEK TECHNOLOGY CO., LIMITED"
+      "인증상호": "CGTEK TECHNOLOGY CO., LIMITED",
+      "안전확인신고(배터리)": "YU102612-24011K"
     },
     "manufacturer": "CGTEK TECHNOLOGY CO., LIMITED (중국)",
     "manufacturedOn": "2026-10-20",
@@ -32,7 +33,14 @@
       "size": "166×81×69mm (제조사 제공값, 축 불명확 — 도면 금지)",
       "weight": "약 37g",
       "lens": "PC·UV400·3장 (미러 장착 + 스모크 + 편광)",
-      "languages": 85
+      "languages": 85,
+      "playtime": "약 5시간",
+      "chargetime": "약 1.5시간",
+      "input": "DC 5V 1A (USB Type-C)",
+      "battery": "DC 3.8V",
+      "sound": "공기전도 개방형",
+      "material": "프레임 PC · 템플 PC",
+      "madeIn": "중국"
     },
     "included": [
       "본체",
@@ -47,6 +55,7 @@
     "patents": "출원 중 10건 (10-2026-0166695 외 9건)",
     "trademark": "RayPac 40-2026-0229441"
   },
+  "factsSource": "사양정본: claude/RayTok-선글라스_사양정본_RT18G_1029.md (박스 실물 = 법정 표시). 제조사 자료와 어긋나면 박스를 따른다.",
   "listingTitle": "RayTok AI 통역 선글라스 RT-18G 85개 언어 구독료 없음 블루투스 오픈형 편광렌즈 3장",
   "listingTitleCoupang": "AI 통역 선글라스 RT-18G 85개 언어 구독료 없음 블루투스 오픈형 편광렌즈 3장",
   "audience": [

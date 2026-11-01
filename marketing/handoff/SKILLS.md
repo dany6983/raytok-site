@@ -489,3 +489,67 @@ list.html?cate_no=74 → a[href] 중 /product/[^/]+/<상품번호>/category/ 매
 import pw from '/opt/npm-tools/node_modules/playwright/index.js'; const { chromium } = pw;
 ```
 (`npm root -g` 가 아니라 `/opt/npm-tools/node_modules` 다. `node -e "console.log(require.resolve('playwright'))"` 로 확인한다)
+
+---
+## ⛔ 정정 — 바로 위 「쿼리형 상세 URL 은 껍데기」는 **틀렸습니다** (claude-22, 2026-11-01 11시)
+
+11시에 같은 걸 **클래스 선택자**로 다시 재서 뒤집었습니다. 쿼리형 URL 도 버튼이 **있습니다.**
+
+```
+상품 33 쿼리형: ADD TO CART 2 · BUY NOW 6 · 네이버페이 5  ← 다 있다
+상품 35 쿼리형: ADD TO CART 2 · BUY NOW 6 · 네이버페이 5  ← 슬러그형과 같다
+```
+
+**진짜 원인은 URL 이 아니라 「한글로 찾은 것」입니다.** 이 몰의 구매 버튼은 **영문**입니다 —
+`ADD TO CART` · `BUY NOW` · `네이버페이 구매하기`. 「장바구니」·「바로구매」로 grep 하면
+버튼이 **멀쩡히 있는데도 0 으로 잡히고** 「못 산다/숨겨졌다」는 오판이 납니다.
+
+### 판매 가능 여부 판정은 이렇게 한다 — 보이는 버튼 수를 센다
+`querySelector_all` 로 세면 숨은 것까지 세어 또 오판한다. **getBoundingClientRect + computedStyle** 로 거른다:
+```python
+btns = p.eval_on_selector_all("[class*=actionCart],[class*=btnSubmit],[class*=npay_btn]",
+  """es=>es.filter(e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);
+     return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';})
+     .map(e=>(e.innerText||'').trim())""")
+```
+11시 실측 — 같은 방법, 같은 뷰포트(1440×900), 스크롤 600px 후:
+| 상품 | 보이는 구매버튼 | 판정 |
+|---|---|---|
+| 35 선글라스 | **7개** (ADD TO CART·BUY NOW·네이버페이) | 살 수 있다 |
+| 20 음식물처리기 | **0개** (`soldout displaynone`, 네이버페이 요소 자체 0) | **못 산다** |
+
+`soldout` 요소가 `displaynone` 이어도 **구매 버튼이 하나도 안 보이면 품절 상태**다. 품절 배지가
+보이느냐로 판정하지 말고 **살 수 있는 버튼이 보이느냐**로 판정한다.
+
+---
+## 이미지뿐인 상세페이지는 OCR 로 금지어를 검사한다 (claude-22, 2026-11-01)
+
+선글라스 상세(`#prdDetail`)는 **텍스트 0자 · 이미지 4장**이다. 그래서 `check` 를 돌릴 글자가 없고,
+지금까지 **아무도 글자 검사를 한 적이 없었다.** tesseract 가 한국어로 깔려 있다:
+
+```bash
+tesseract --list-langs          # kor 있음
+curl -s -o p1.jpg <이미지 URL>
+tesseract p1.jpg - -l kor+eng   # 표준출력으로 본문
+```
+받은 글자를 `node route.mjs check <제품> "<본문>"` 에 그대로 넣으면 금지어·숫자 감사가 돈다.
+**주의:** OCR 은 숫자를 깨뜨린다(37g→`378`, 85개→`8571`, 5.0→`5060`). `출처 확인 필요` 목록은
+**대부분 OCR 쓰레기**이므로 하나씩 눈으로 걸러야 한다. 금지어(글자)는 비교적 정확하게 잡힌다.
+
+### 함정 — 부정문이 금지어로 잡힌다
+선글라스 상세 OCR 에서 `방수` 1건이 걸렸는데 문맥은
+「**방수 등급을 받은 제품이 아니므로** 비를 맞거나 물에 담그지 마세요」 = **규정을 지킨 부정문**이다.
+게이트는 글자만 본다. **`check` 가 찍어 주는 `… where` 문맥을 읽고 판정**한다. 부정문을 고치면 안 된다.
+
+---
+## 함정 — 계획 파일의 `caption` 전체를 `check` 에 넣으면 터치톡은 반드시 걸린다 (claude-22, 2026-11-01)
+
+`out/plan-touchtok-*.json` 의 4편을 `caption` 으로 검사하면 **전부 「치료」 위반**으로 나온다.
+그런데 계획 파일 자신은 `gate: "pass"` 다. **모순이 아니다.**
+
+`route.mjs` 는 `caption = body + mustInclude(법정 고지문)` 으로 만들고, 게이트는 **`body` 만** 본다
+(route.mjs 88~91행 주석). 고지문 「질병의 예방 및 **치료**를 위한 의료기기가 아니며…」가
+금지어 `치료` 를 품고 있어서다. 고지문은 법 정본이라 고칠 수 없다.
+
+→ 계획을 재검사할 때는 **`caption` 이 아니라 `first3s` + 본문**으로 검사하거나, 계획 파일에 이미 있는
+`gate` 값을 믿는다. `caption` 으로 재검사해서 「위반 4건」이라고 보고하면 **거짓 경보**다.
