@@ -8,7 +8,7 @@
 // 계획만 뱉는다. 실제 발행은 Metricool / Upload-Post MCP 도구가 한다.
 // 쓴 후킹은 quota 로그에 남아 다음 달에 중복되지 않는다.
 
-import { loadProduct, check, auditNumbers, auditRequired } from './lib/check.mjs';
+import { loadProduct, check, auditNumbers, auditRequired, stripRequired } from './lib/check.mjs';
 import * as Q from './lib/quota.mjs';
 import { writeFileSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 
@@ -166,14 +166,21 @@ else if (cmd === 'check') {
   const [pid, ...rest] = args;
   const p = loadProduct(pid);
   const text = rest.join(' ');
-  const g = check(text, p);
-  const n = auditNumbers(text, p);
-  const miss = auditRequired(text, p);
+  // plan 과 같은 판정으로 맞춘다: 금지어는 **고지문을 뗀 본문**만 본다.
+  // 법정 고지문(mustInclude)은 정본이라 「치료」가 들어 있어도 고칠 수 없다.
+  // 예전엔 받은 문구 전체를 검사해 고지문을 넣으면 ✗, 빼면 「빠진 필수 표기」가 떠서
+  // 두 번 돌려야 했다 (2026-11-01 smartever 보고). 한 번에 둘 다 본다.
+  const { body, stripped } = stripRequired(text, p);
+  const g = check(body, p);
+  const n = auditNumbers(body, p);
+  const miss = auditRequired(text, p);          // 필수 표기는 **받은 전문**으로 본다
   console.log(g.ok ? '✓ 금지어 없음' : '✗ 금지어 있음');
   g.hits.forEach(h => console.log(`  「${h.word}」 … ${h.where}${h.suggest ? `\n     → ${h.suggest}` : ''}`));
   (g.notices || []).forEach(h => console.log(`  통지(막지 않음) 「${h.word}」 … ${h.where}`));
   if (n.length) console.log(`  출처 확인 필요: ${n.join(', ')}`);
-  miss.forEach(m => console.log(`  빠진 필수 표기: ${m}`));
+  stripped.forEach(m => console.log(`  법정 고지문 1건 떼고 검사했습니다: ${m.slice(0, 30)}…`));
+  if (miss.length) miss.forEach(m => console.log(`  빠진 필수 표기: ${m}`));
+  else if ((p.mustInclude || []).length) console.log('  ✓ 필수 표기 들어 있음');
 }
 
 else {

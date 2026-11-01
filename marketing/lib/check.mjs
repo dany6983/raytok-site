@@ -44,6 +44,26 @@ export function check(text, product) {
   return { ok: hits.length === 0, hits, notices };
 }
 
+/** 고지문 문장을 공백에 느슨한 정규식으로 바꾼다.
+ *  고지문은 캡션·상세에 들어갈 때 줄바꿈이 섞이므로 공백은 \s+ 로 맞춘다. */
+function looseRe(sentence) {
+  return new RegExp(sentence.trim().split(/\s+/)
+    .map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'));
+}
+
+/** 법정 고지문(mustInclude)을 본문에서 떼어낸다.
+ *  plan 은 body 만 게이트에 넣어 고지문 속 「치료」를 넘긴다. check 도 같아야 한다.
+ *  반환 { body, stripped: [고지문 전문...] } */
+export function stripRequired(text, product) {
+  let body = text;
+  const stripped = [];
+  for (const n of (product.mustInclude || [])) {
+    const re = looseRe(n);
+    if (re.test(body)) { body = body.replace(re, ' '); stripped.push(n); }
+  }
+  return { body: body.replace(/[ \t]{2,}/g, ' ').trim(), stripped };
+}
+
 /** 숫자가 제품 facts에 있는 값인지 거친 확인. 없는 숫자는 경고만. */
 export function auditNumbers(text, product) {
   const known = new Set();
@@ -67,8 +87,10 @@ export function auditNumbers(text, product) {
 /** 반드시 들어가야 하는 문구가 빠졌는지 (터치톡 의료기기 아님 고지 등) */
 export function auditRequired(text, product) {
   const need = product.mustInclude || [];
-  // 전문(全文)이 아니라 머리 20자로 판정한다. 길이가 긴 고지문은 줄바꿈이 섞이기 때문.
-  return need.filter(n => !text.includes(n.slice(0, 20)));
+  // 공백에 느슨한 전문(全文) 대조. 예전엔 머리 20자를 그대로 includes 로 봤는데,
+  // 머리 20자 **안에** 줄바꿈이 떨어지면 들어 있는 고지문도 「빠짐」으로 떴다.
+  // stripRequired 와 같은 판정이라 둘이 엇갈리지 않는다 (2026-11-01).
+  return need.filter(n => !looseRe(n).test(text));
 }
 
 export { common };
