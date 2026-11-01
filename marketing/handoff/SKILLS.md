@@ -396,3 +396,12 @@ MENU_NAVIGATION_GNB.openMarketManage();
 
 **javascript_tool 파라미터는 `text`다** (`code` 아님). `action:"javascript_exec"` 필수.
 쿼리스트링이 섞인 문자열을 반환하면 `[BLOCKED: Cookie/query string data]`로 잘린다 → `.replace(/[?&][^'"\s]*/g,'[q]')`로 지우고 반환.
+
+## route.mjs plan 재실행 때 요일 인자를 빼면 날짜가 조용히 바뀐다 (2026-11-01 · smartever)
+`node route.mjs plan <pid> <YYYY-MM> [주당횟수] [요일]` — 요일을 빼면 기본 화요일(주 2회면 화·금)로 다시 깔린다.
+터치톡 11월은 목요일(4)로 만들어져 있었는데 `plan touchtok 2026-11 1` 로 돌리니 11/5→11/3 등 4편 날짜가 전부 밀렸다.
+**재생성 전에 기존 out 파일의 `perWeek`·`day` 를 읽어 그대로 넘기고, 끝나면 이전 파일과 필드 단위 diff 로 바뀐 칸만 확인한다.**
+
+## 상품 숨김과 배너·슬라이드 삭제는 별개 작업이다 (2026-11-01 · smartever)
+상품을 진열안함/분류 표시안함으로 바꿔도 메인 슬라이드쇼·bannerManage·「자세히보기」에 손으로 박은 링크는 그대로 살아 있다.
+음식물처리기(분류 58·상품 20) 링크가 10-31 18시 0 → 19시 19개 → 11-01 09시 19개. 숨긴 뒤에는 **메인 렌더링(Playwright) 링크 수로 확인**한다.
