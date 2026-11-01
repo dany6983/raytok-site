@@ -11,6 +11,13 @@
 ```
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
+## 11-01 14:07 — [웹 일꾼] NOW 11-01 13:47 동시 접속 부하 시험
+했다: ① `relay/wrangler.toml` `[env.loadtest]`(이름 raytok-relay-loadtest · 자기 DO · ALLOW_TEST_KEY=1 · ROOM_TR=0 · KV 없음) ② `scripts/loadtest-room.mjs`(시험 키 0번→redeem→issue→`/room`→강사 1+손님 N, 1.5초마다 한 줄 → p50·p95·최대·빠짐·실패·끊김·서버 오류·시험기 lag → `--out` 으로 .md+.json, 운영 주소는 거절) ③ 로컬 결과 `docs/loadtest-2026-11-01-local.md`(50·100·200 p95 15·20·125ms 빠짐 0 — **로컬값, 운영 한계 아님**). **알아둘 것: 코드에 방 손님 상한 200(room.js)** — 500·1000 단계는 그 위라 연결 실패로 나온다(설계값). 200 넘게 받을지는 대표님 결정. 기본안: 강사는 원문만 보냄(P-14 — NOW 의 「번역(tr) 실어」 대신 같은 무게 덧붙임 `--pad`)
+어디서 보나: `scripts/loadtest-room.mjs` · 시험 `samples/loadtest_room_test.mjs`(test:loadtest-room) · 결과 `docs/loadtest-2026-11-01-local.md`
+막힘: **시험용 릴레이 배포 필요(대표님 손, 운영 안 건드림)**: `cd relay` → `npx wrangler secret put LICENSE_SECRET --env loadtest` · `npx wrangler secret put LICENSE_SALT --env loadtest`(둘 다 아무 난수, 운영 값 금지) → `npx wrangler deploy --env loadtest`. 노트북 한 줄: `node scripts/loadtest-room.mjs --relay https://raytok-relay-loadtest.<계정>.workers.dev --steps 50,100,200,500,1000 --out docs/loadtest-2026-11-0X`. 다 쓰면 `npx wrangler delete --env loadtest`. 요금 어림: 10분(5단계×2분)·연결 약 1,850·메시지 수백 → Workers 유료 $5/월 포함량(요청 1천만·DO 40만 GB-s)의 1% 미만, 사실상 0원
+확인만: test:* 100개 하나씩 — 붉음 4(i18n·generator·contact·site-wording) 는 **11:46 보고 때도 붉음**(안 건드림, 원인: 홈 「N건」 9 vs 10·8 · 생성기 출력 다름 · /contact KV). 새 시험 22건 3회 초록 · D-09 되돌림 넷(빠짐 안 셈·실패 안 셈·p95 판정 빼기·runStep 실패 표시 빼기) 다 붉음
+다음: 끝 없는 ★ 없음 — 마스터 검수 대기
+
 ## 11-01 11:46 — [웹 일꾼] NOW 11-01 11:40 릴레이 서버 번역 칸
 했다: `relay/src/server-mt.js` + /translate 연결(cf51a01). `SERVER_MT_MODE` off(기본)·reverse(X→ko)·premium(`SERVER_MT_FLAG` 비트, 비면 아무에게도 안 열림)·all. 켜지면 `SERVER_MT_URL` 로 `{q,source,target}` + 머리 `X-Raytok-Key`(=`SERVER_MT_KEY`) — 3초 넘음·5xx·빈 답·줄 수 다름·원문에 없는 숫자·하루 상한(`SERVER_MT_DAILY_CAP` 기본 2000호출)·주소/열쇠 없음 → 구글로 + `X-RayTok-MT-Why`·`mt_why`(smt_*). off 면 답 모양 전과 똑같음. 묶음 32 넘으면 나눠 물음(한도 3초는 전체 하나). 서버 결과는 캐시 칸 따로('smt').
 어디서 보나: `relay/src/server-mt.js` · 시험 `relay/test/server-mt.mjs`(test:server-mt)

@@ -1,0 +1,74 @@
+{
+  "relay": "http://127.0.0.1:8798",
+  "startedAt": "2026-11-01T05:05:52.311Z",
+  "opts": {
+    "relay": "http://127.0.0.1:8798",
+    "steps": [
+      50,
+      100,
+      200
+    ],
+    "dur": 20,
+    "interval": 1500,
+    "pad": null,
+    "out": "docs/loadtest-2026-11-01-local"
+  },
+  "limit": {
+    "limit": 200,
+    "brokeAt": null,
+    "why": null
+  },
+  "steps": [
+    {
+      "n": 50,
+      "opened": 50,
+      "connectFail": 0,
+      "closedEarly": 0,
+      "linesSent": 14,
+      "delivered": 700,
+      "missing": 0,
+      "dup": 0,
+      "serverErrors": 0,
+      "p50": 10,
+      "p95": 15,
+      "max": 17,
+      "lagMaxMs": 3,
+      "room": "GHCQ5H",
+      "failReasons": []
+    },
+    {
+      "n": 100,
+      "opened": 100,
+      "connectFail": 0,
+      "closedEarly": 0,
+      "linesSent": 14,
+      "delivered": 1400,
+      "missing": 0,
+      "dup": 0,
+      "serverErrors": 0,
+      "p50": 14,
+      "p95": 20,
+      "max": 22,
+      "lagMaxMs": 4,
+      "room": "RK8PAD",
+      "failReasons": []
+    },
+    {
+      "n": 200,
+      "opened": 200,
+      "connectFail": 0,
+      "closedEarly": 0,
+      "linesSent": 14,
+      "delivered": 2800,
+      "missing": 0,
+      "dup": 0,
+      "serverErrors": 0,
+      "p50": 18,
+      "p95": 125,
+      "max": 128,
+      "lagMaxMs": 6,
+      "room": "Y1JVM2",
+      "failReasons": []
+    }
+  ]
+}

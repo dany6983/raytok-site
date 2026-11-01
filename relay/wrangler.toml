@@ -30,3 +30,26 @@ new_sqlite_classes = ["Room"]
 [[kv_namespaces]]
 binding = "LEADS"
 id = "f0d6d702348942cab778cbbec1c33b15"
+
+# ── 부하 시험용 릴레이 (NOW 11-01 13:47 · GS인증 「동시 청취자 수」) ──────────────────
+# 운영(raytok-relay)과 **이름·Durable Object 저장이 따로**다. 운영 비밀값은 쓰지 않는다.
+# 배포(대표님 손):  npx wrangler deploy --env loadtest
+# 비밀값 둘(아무 난수 — 운영 값을 넣지 않는다):
+#   npx wrangler secret put LICENSE_SECRET --env loadtest
+#   npx wrangler secret put LICENSE_SALT   --env loadtest
+# 시험 키 0번 코드만 받는다(ALLOW_TEST_KEY=1). 방 번역은 끈다(ROOM_TR=0 — 구글 요금이 안 나가게,
+# 재는 것은 방의 퍼뜨리기다). LEADS(KV)는 붙이지 않는다 — /lead·/contact 는 여기서 503 이 맞다.
+# 다 쓰면 지운다:  npx wrangler delete --env loadtest
+[env.loadtest]
+name = "raytok-relay-loadtest"
+
+[env.loadtest.vars]
+LICENSE_MAX_DEVICES = "1"
+RELAY_BASE_URL = ""
+ROOM_TR = "0"
+ALLOW_TEST_KEY = "1"
+
+[env.loadtest.durable_objects]
+bindings = [
+  { name = "ROOM", class_name = "Room" }
+]
