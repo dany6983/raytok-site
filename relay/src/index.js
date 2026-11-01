@@ -6,6 +6,7 @@ import {
   PRO_FLAG, PRO_FALLBACK, buildProPrompt, inventedNumbers,
   callLlmOnce, estimateUsd, todayKey
 } from './pro-translate.js';
+import { serverMtWanted, callServerMt, smtDayKey, serverMtDailyCap, SMT_FALLBACK } from './server-mt.js';
 import { handleLead, handleLeadList, handleLeadDone } from './lead.js';
 
 // engine·context·glossary 는 프로가 쓰는 칸이다 (P-16 허용 목록에 더한다)
@@ -1155,6 +1156,13 @@ export default {
         return jsonError('forbidden', 'mock engine requires admin privileges', 403);
       }
 
+      /* site NOW 11-01 — 서버 번역(MADLAD-3B) 칸. 기본 off 이면 smtWanted=false 이고 아래 길은 그대로다.
+         관리자가 X-Translate-Engine 으로 엔진을 고른 요청은 건드리지 않는다. */
+      const smtWanted = !requestedEngine && serverMtWanted({ env, sourceLang, targetLang, flags: licFlags });
+      const lookupEngine = smtWanted ? 'smt' : engine;   // 서버 번역 결과는 구글 캐시와 섞지 않는다
+      let smtUsed = false;
+      let smtWhy = null;
+
       const results = new Array(q.length);
       const uncachedIndices = [];
       const uncachedTexts = [];
@@ -1167,7 +1175,7 @@ export default {
           continue;
         }
 
-        const cacheUrl = await computeCacheKey(url.host, engine, sourceLang, targetLang, text);
+        const cacheUrl = await computeCacheKey(url.host, lookupEngine, sourceLang, targetLang, text);
         let cachedVal = null;
 
         if (cache) {
@@ -1213,7 +1221,37 @@ export default {
         upstreamChars = uncachedTexts.reduce((sum, s) => sum + s.length, 0);
 
         let engineRes;
-        try {
+        if (smtWanted) {
+          // ① 하루 호출 수 상한 — 넘으면 부르지도 않는다
+          let callsToday = 0;
+          const dayKey = smtDayKey();
+          try {
+            const limiter = env.ROOM.get(env.ROOM.idFromName('GLOBAL_RATE_LIMITER'));
+            const r = await limiter.fetch(new Request(`http://internal/usage/summary?key=${encodeURIComponent(dayKey)}`));
+            if (r.ok) { const d = await r.json(); callsToday = Number((d && d.smt_calls) || 0); }
+          } catch (_) {}
+          if (callsToday >= serverMtDailyCap(env)) {
+            smtWhy = SMT_FALLBACK.CAP;
+          } else {
+            try {
+              const limiter = env.ROOM.get(env.ROOM.idFromName('GLOBAL_RATE_LIMITER'));
+              await limiter.fetch(new Request('http://internal/usage/record', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sub, smt_day: dayKey })
+              }));
+            } catch (_) {}
+            try {
+              engineRes = await callServerMt({ texts: uncachedTexts, sourceLang, targetLang, env });
+              smtUsed = true;
+              await recordEngineCall(env, 'smt', true);
+            } catch (smtErr) {
+              // ② 느림·5xx·빈 답·지어낸 숫자 → 지금 길(구글)로. 까닭은 머리·몸에 남긴다
+              smtWhy = (smtErr && smtErr.why) || SMT_FALLBACK.ERROR;
+              await recordEngineCall(env, 'smt', false);
+            }
+          }
+        }
+        if (!engineRes) try {
           engineRes = await callEngine(engine, uncachedTexts, sourceLang, targetLang, env);
           if (ctx && ctx.waitUntil) {
             ctx.waitUntil(recordEngineCall(env, engine, true));
@@ -1248,7 +1286,7 @@ export default {
           results[originalIdx] = transText;
 
           const cacheEntry = { t: transText, src: itemSrc };
-          const cacheUrl = await computeCacheKey(url.host, engine, sourceLang, targetLang, uncachedTexts[k]);
+          const cacheUrl = await computeCacheKey(url.host, smtUsed ? 'smt' : engine, sourceLang, targetLang, uncachedTexts[k]);
           const cacheValStr = JSON.stringify(cacheEntry);
 
           if (cache) {
@@ -1373,6 +1411,12 @@ export default {
 
       responseHeaders['X-RayTok-Tier'] = proApplied ? 'pro' : 'basic';
       if (proFallbackWhy) responseHeaders['X-RayTok-Tier-Why'] = proFallbackWhy;
+      // 서버 번역 칸이 켜진 요청만 표시한다 (off 면 답 모양이 전과 똑같다)
+      const smtShown = smtWanted && uncachedTexts.length > 0;
+      if (smtShown) {
+        responseHeaders['X-RayTok-MT'] = smtUsed ? 'server' : 'google';
+        if (smtWhy) responseHeaders['X-RayTok-MT-Why'] = smtWhy;
+      }
 
       return new Response(JSON.stringify({
         t: results,
@@ -1381,6 +1425,8 @@ export default {
         lines: q.length,
         tier: proApplied ? 'pro' : 'basic',
         ...(proFallbackWhy ? { why: proFallbackWhy } : {}),
+        ...(smtShown ? { mt: smtUsed ? 'server' : 'google' } : {}),
+        ...(smtShown && smtWhy ? { mt_why: smtWhy } : {}),
         ...(wantPro ? { pro_tokens_in: proTokIn, pro_tokens_out: proTokOut } : {})
       }), {
         status: 200,
