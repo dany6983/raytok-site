@@ -137,13 +137,20 @@ if (cmd === 'plan') {
 }
 
 else if (cmd === 'quota') {
-  const [month] = args;
+  // 달을 안 주면 이번 달. 전엔 undefined 로 빈 장부를 읽어 「0/20」을 찍었다 (위험)
+  const month = args[0] || new Date().toISOString().slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    console.log(`\n  달 형식이 틀렸습니다: 「${month}」 → YYYY-MM 로 주세요\n`);
+    process.exit(1);
+  }
   const q = Q.read(month);
-  console.log(`\n■ ${month} 사용량`);
+  console.log(`\n■ ${month} 사용량${args[0] ? '' : ' (이번 달)'}`);
   for (const [tool, cap] of Object.entries(Q.CAPS)) {
     const used = q.used[tool] || 0;
-    const bar = '█'.repeat(Math.round(used / cap * 20)).padEnd(20, '·');
-    console.log(`  ${tool.padEnd(11)} ${bar} ${used}/${cap.perMonth}`);
+    const filled = Math.min(20, Math.round(used / cap.perMonth * 20));
+    const bar = '█'.repeat(filled).padEnd(20, '·');
+    const flag = used >= cap.perMonth ? ' ← 꽉 찼습니다' : '';
+    console.log(`  ${tool.padEnd(11)} ${bar} ${used}/${cap.perMonth}  [${q.sources?.[tool] || '모름'}]${flag}`);
   }
   console.log(`  발행 기록 ${(q.log || []).length}건\n`);
 }

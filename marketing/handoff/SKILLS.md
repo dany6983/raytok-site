@@ -452,3 +452,40 @@ with sync_playwright() as pw:
 스크롤을 안 내리면 아래쪽 배너가 DOM 에 안 들어온다.
 
 **함정 3 — 「메인에서 링크가 사라졌다」와 「상품이 숨겨졌다」는 다른 얘기다.** 둘 다 재야 한다. 상품 상세 URL 에 직접 접속해 **status 와 판매가 노출**을 확인한다. 메인 링크가 0이어도 상세가 200이면 검색·외부링크로 그대로 팔린다. 반대로 상품을 숨겨도 배너에 박힌 링크는 따로 살아 있다.
+
+## 무료 한도 장부가 두 군데 있다 — 엔진이 「비었다」고 거짓 보고했다 (claude-22, 2026-11-01 10시)
+
+`node route.mjs quota` 가 **11월 Metricool 을 0/20 으로 찍고 있었다. 실제로는 20/20 꽉 찬 달이다.** 원인 둘:
+
+1. **장부 파일이 두 종류인데 한쪽만 읽었다.** 실제 예약을 건 세션은 `quota/<tool>-<month>.json`(`metricool-2026-11.json`, `{tool, month, used, posts[]}`)에 적는데, `lib/quota.mjs` 는 `quota/<month>.json`(`{month, used:{}, log:[]}`)만 읽었다. 그 파일은 없으니 전부 0.
+2. **달 인자를 빼면 `undefined.json` 을 읽어 0/20 을 찍었다.** 「■ undefined 사용량」이 나오면 그 숫자는 전부 거짓이다.
+
+**왜 위험한가:** `plan` 이 `Q.left()` 로 자리를 계산한다. 꽉 찬 달을 「12건 남음」으로 보고 8편을 더 깔았다. 발행자가 그대로 믿고 돌리면 Metricool 에서 거부되거나 기존 예약을 밀어낸다.
+
+고친 것(`lib/quota.mjs` + `route.mjs quota`):
+- 두 장부를 다 읽고 도구별로 **큰 쪽**을 쓴다. 적게 세는 쪽으로 틀리면 한도를 넘기니까
+- 달을 안 주면 이번 달. `YYYY-MM` 아니면 거부하고 종료
+- 출력에 **어느 장부에서 읽었는지**와 `← 꽉 찼습니다` 를 같이 찍는다
+
+```
+metricool   ████████████████████ 20/20  [metricool-2026-11.json] ← 꽉 찼습니다
+uploadpost  ···················· 0/10  [장부 없음]
+```
+
+**`[장부 없음]` 은 「안 썼다」가 아니라 「모른다」는 뜻이다.** 예약을 걸었으면 `quota/<tool>-<month>.json` 을 반드시 만들어야 다음 세션이 속지 않는다.
+
+## 쿼리형 상세 URL 은 껍데기가 나온다 — 「숨겨졌다」 오판의 원인 (claude-22, 2026-11-01)
+
+슬러그 함정의 짝이다. `product/detail.html?product_no=20` 은 **status 200 인데 장바구니·바로구매 버튼이 DOM 에 없다.** 이걸로 재면 「숨겨졌다/못 산다」는 잘못된 결론이 난다. 같은 상품을 **슬러그 URL** 로 들어가면 버튼이 둘 다 있다.
+
+버튼까지 보려면 분류 목록에서 슬러그를 줍고 그 URL 로 들어간다:
+```
+list.html?cate_no=74 → a[href] 중 /product/[^/]+/<상품번호>/category/ 매칭 → 그 URL 로 goto
+```
+판매 여부 판정은 **status 가 아니라 버튼**으로 한다. 판매가는 이미지일 수 있어 텍스트로 안 잡히면 「모름」으로 적는다.
+
+**node ESM 보완(위 함정 2):** scratchpad 에서도 **절대경로 + default import** 로는 된다. playwright 는 CJS 라 named import 가 깨진다:
+```js
+import pw from '/opt/npm-tools/node_modules/playwright/index.js'; const { chromium } = pw;
+```
+(`npm root -g` 가 아니라 `/opt/npm-tools/node_modules` 다. `node -e "console.log(require.resolve('playwright'))"` 로 확인한다)
