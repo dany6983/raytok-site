@@ -808,3 +808,39 @@ node route.mjs check touchtok "$(cat assets/seo/touchtok_올인원패스_본문.
 
 ---
 **2026-11-01 19시 · smartever** — 클론이 detached HEAD 로 열리는 일이 세 번째. `git pull --rebase` 직후 `git status | head -1` 로 `On branch main` 인지 먼저 보고, 아니면 `git checkout main && git reset --hard origin/main` (로컬 변경 없을 때만). 원격이 force-push 되면(`(forced update)` 표시) 재발하는 것으로 보임.
+## Metricool 에 실제로 걸린 예약 문구를 게이트에 넣을 수 있다 (2026-11-01 claude-22)
+`out/` 계획만 보고 「발행 예정이 깨끗하다」고 하면 안 된다. **계획과 실제 예약은 다른 물건이었다** —
+날짜도 문구도 달랐고, 실제 예약 쪽에만 금지어가 있었다.
+
+```
+mcp__metricool-social__getScheduledPosts(brandId=<장부의 brandId>,
+  fromDate=2026-11-01T00:00:00+09:00, toDate=2026-11-30T23:59:59+09:00, timezone=Asia/Seoul)
+```
+- `text` 가 **캡션 전문**이다. 그대로 `node route.mjs check <제품> "<text>"` 에 넣는다
+- `providers[].status: PENDING` + `autoPublish: true` = **사람이 안 보고 그 시간에 나간다.** 이게 제일 급한 줄이다
+- `mediaAltText` 도 같이 본다. 본문엔 없는 단정문이 대체텍스트에 들어가 있을 수 있다
+- 브랜드 계정이 두 브랜드를 같이 쓰면 **제품을 날짜로 갈라야** 한다. 캡션의 해시태그·모델명으로 가린다
+
+## 이미지 매핑은 OCR 로 한 번 확인하라 — 파일명을 믿지 마라 (2026-11-01 claude-22)
+`products/*.json` 의 `images.<hookId>` 가 **파일명만 맞고 내용은 다른 훅**일 수 있다.
+`sns_a_b1_lang.jpg` 는 이름은 b1 인데 카드 내용이 B4(「직접 만든 85개 언어」+ RayPac 상표번호 40-2026-0229441)였다.
+→ 캡션은 B1(「구글 번역 안 됨」), 카드는 B4. **한 장에 다른 말 두 개가 나갈 뻔했다.**
+
+- 확인: 3배 확대 + `ImageOps.autocontrast` 후 `tesseract -l kor --psm 6`. 상표·특허 **번호**가 제일 좋은 지문이다
+  (`facts.trademark` 와 맞춰 보면 어느 제품·어느 훅 카드인지 바로 갈린다)
+- 고칠 때 **파일명은 건드리지 말고 매핑만 옮긴다.** 이미 올라간 게시물이 그 URL 을 쓸 수 있다
+
+## 한도가 꽉 찬 달에 계획 한 편만 고치는 법 (2026-11-01 claude-22)
+`plan` 을 다시 돌리면 **0편**이 나온다(`available = left - reserved` 가 음수). 그래서:
+1. `marketing/` 을 사본으로 복사 → 사본의 장부에서 `used=0, posts=[]`, 다른 제품 `out/` 삭제
+2. 사본에서 `plan` 실행 → **엔진이 만든 진짜 항목**을 얻는다
+3. 고칠 편 **하나만** 라이브 `out/` 에 끼워 넣고, **나머지 편이 사본과 바이트 동일한지 먼저 증명**한다
+   (`sb['plan'][1:] == lv['plan'][1:]` 가 False 면 손대지 않고 멈춘다)
+4. `quota` 블록은 생성 당시 값이라 지금 장부와 다르다 — `$note` 로 적어 둔다
+
+## 금지어는 「같은 뜻 다른 말」로 그냥 새어 나간다 (2026-11-01 claude-22)
+게이트는 부분문자열 대조라 **바꿔 쓴 말을 못 잡는다.** 실제로 밟은 자리:
+- 「인터넷 없이」는 통지로 뜨는데 **「비행기 모드로 켜도 번역됩니다」는 아무것도 안 뜬다** — 같은 주장이다
+- 「구글 번역에 네팔어 입력 → 안 됨」도 통과했다 (경쟁사 실명 비교인데)
+→ 훅·카피를 새로 쓸 때 **금지어 목록의 각 항목마다 「이걸 다른 말로 하면?」을 한 번 적어 보고**
+   제품 단위 `forbidden.notice` 에 넣는다. 공용 `_common-forbidden.json` 은 두 브랜드가 쓰니 손대기 전에 inbox 로 알린다.
