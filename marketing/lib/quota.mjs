@@ -34,21 +34,61 @@ function usedFromToolLedger(month, tool) {
   return { n: 0, src: `${tool}-${month}.json` };
 }
 
+/** 장부의 planned = 「아직 예약은 안 걸었지만 남이 잡아둔 자리」 (2026-11-01 smartever 가 추가).
+ *  used 만 보면 그 자리를 빈 자리로 보고 **겹쳐 예약**한다. 그래서 자리로 세서 빼 둔다.
+ *  이미 posts 로 올라간 건은 두 번 세지 않는다 (hook 또는 날짜+제품으로 맞춰 본다). */
+function reservedFromToolLedger(month, tool) {
+  const j = readJson(toolPath(month, tool));
+  if (!j || !Array.isArray(j.planned)) return { n: 0, items: 0 };
+  const posts = Array.isArray(j.posts) ? j.posts : [];
+  const done = (pl) => posts.some(po =>
+    (pl.hook && (po.hook === pl.hook || po.hookId === pl.hook)) ||
+    (pl.d && pl.p && (po.d === pl.d || po.when || '').includes?.(pl.d) && (po.p || po.productId) === pl.p));
+  let n = 0, items = 0;
+  for (const pl of j.planned) {
+    if (done(pl)) continue;
+    n += Number(pl.channels) > 0 ? Number(pl.channels) : 1;
+    items++;
+  }
+  return { n, items };
+}
+
 export function read(month) {
   const agg = readJson(path(month)) || { month, used: {}, log: [] };
-  const used = {}, sources = {};
+  const used = {}, reserved = {}, sources = {};
   for (const tool of Object.keys(CAPS)) {
     const a = agg.used?.[tool] || 0;
     const t = usedFromToolLedger(month, tool);
     used[tool] = Math.max(a, t.n);
     sources[tool] = used[tool] === t.n && t.src ? t.src : (a ? `${month}.json` : '장부 없음');
+    reserved[tool] = reservedFromToolLedger(month, tool).n;
   }
-  return { month, used, log: agg.log || [], sources };
+  return { month, used, reserved, log: agg.log || [], sources };
 }
 
+/** 쓸 수 있는 자리 = 한도 - 실제로 쓴 것.
+ *  planned(잡아둔 자리)는 **여기서 빼지 않는다.** 전역으로 빼면 자기 자리를 자기가 막아
+ *  그 제품을 다시 plan 할 때 계획이 잘려 나간다. 「남이 잡아둔 자리」는
+ *  plannedByOthers() 로 **제품을 제외하고** 센다. */
 export function left(month, tool) {
   const cap = CAPS[tool]?.perMonth ?? 0;
   return cap - (read(month).used[tool] || 0);
+}
+
+/** 장부 planned 중 **다른 제품** 몫의 건수. plan 이 남의 자리를 밀어내지 않게 쓴다.
+ *  out/ 계획 파일로 세는 plannedElsewhere() 와 같은 자리를 가리키므로
+ *  route.mjs 는 둘을 **더하지 않고 큰 쪽**을 쓴다. */
+export function plannedByOthers(month, tool, exceptPid) {
+  const j = readJson(toolPath(month, tool));
+  if (!j || !Array.isArray(j.planned)) return 0;
+  const posts = Array.isArray(j.posts) ? j.posts : [];
+  let n = 0;
+  for (const pl of j.planned) {
+    if (exceptPid && pl.p === exceptPid) continue;
+    if (posts.some(po => pl.hook && (po.hook === pl.hook || po.hookId === pl.hook))) continue;
+    n += Number(pl.channels) > 0 ? Number(pl.channels) : 1;
+  }
+  return n;
 }
 
 /** 발행 1건(채널 n개)이 들어갈 자리가 있나 */

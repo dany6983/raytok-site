@@ -553,3 +553,31 @@ tesseract p1.jpg - -l kor+eng   # 표준출력으로 본문
 
 → 계획을 재검사할 때는 **`caption` 이 아니라 `first3s` + 본문**으로 검사하거나, 계획 파일에 이미 있는
 `gate` 값을 믿는다. `caption` 으로 재검사해서 「위반 4건」이라고 보고하면 **거짓 경보**다.
+
+---
+## 한도 장부의 `planned` — 「잡아둔 자리」는 셈에 넣되 **주인에게서는 빼지 않는다** (claude-22, 2026-11-01 11:40)
+
+`quota/<tool>-<month>.json` 에 `used` 와 별도로 `planned`(예약은 아직 안 걸었지만 잡아둔 자리)가
+들어오기 시작했다. 엔진이 `used` 만 읽으면 **잡아둔 자리를 빈 자리로 보고 겹쳐 예약**한다.
+(11-01 터치톡: `used 0 · planned 8` → 엔진은 `0/10` = 열 자리 비었다고 보고. 실제 여유는 2건)
+
+**고칠 때 밟는 함정이 있다. 내가 밟았다.** `planned` 를 `left()` 에서 **전역으로** 빼면
+**주인이 자기 자리를 자기가 막는다**: 터치톡을 다시 `plan` 하면 4편이 **1편으로 잘리고**
+`out/plan-touchtok-*.json` 이 그대로 덮어써진다(T2~T4 소실).
+
+올바른 모양:
+```
+left(month, tool)                      = 한도 - used            ← planned 를 빼지 않는다
+plannedByOthers(month, tool, exceptPid) = planned 중 pl.p !== exceptPid 인 것만
+plan 에서: reserved = Math.max(plannedElsewhere(out/ 기준), plannedByOthers(장부 기준))
+```
+`plannedElsewhere`(out/ 계획 파일로 셈)와 장부 `planned` 는 **같은 자리**를 가리킨다.
+**더하면 두 번 센다 → 큰 쪽을 쓴다.**
+
+보고에서는 숨기지 않고 둘을 나눠 찍는다: `uploadpost ▒▒▒… 8/10 (쓴 것 0 + 잡아둔 자리 8)`,
+`▒` = planned. 「8/10」만 보면 쓴 것으로 오해하므로 괄호 설명을 반드시 같이 찍는다.
+
+**엔진 고친 뒤 꼭 돌리는 시험 3개** (scratchpad 사본에서. `out/` 을 건드리면 안 된다):
+1. 자리 주인 재계획 → **편 수가 줄지 않아야** 한다 (`plan touchtok 2026-11 1 4` → 4편·남김 2)
+2. 다른 제품이 같은 도구를 쓰려 함 → **남의 자리가 지켜져야** 한다 (`plannedByOthers(except 남) = 8`)
+3. 꽉 찬 달 → **0편에서 차단**되어야 한다 (`plan raytok-glass 2026-11` → ⚠ 0편)

@@ -63,7 +63,8 @@ if (cmd === 'plan') {
   const channels = p.publish.channels;
   const cost = channels.length;                 // 한 편이 소비하는 건수
 
-  const reserved = plannedElsewhere(month, tool, pid);
+  // out/ 계획 파일과 장부 planned 는 **같은 자리**를 가리킨다. 더하면 두 번 센다 → 큰 쪽을 쓴다
+  const reserved = Math.max(plannedElsewhere(month, tool, pid), Q.plannedByOthers(month, tool, pid));
   const available = Q.left(month, tool) - reserved;
   const already = usedHooks(month, pid);
   const pool = (p.hooks || [])
@@ -147,11 +148,17 @@ else if (cmd === 'quota') {
   console.log(`\n■ ${month} 사용량${args[0] ? '' : ' (이번 달)'}`);
   for (const [tool, cap] of Object.entries(Q.CAPS)) {
     const used = q.used[tool] || 0;
-    const filled = Math.min(20, Math.round(used / cap.perMonth * 20));
-    const bar = '█'.repeat(filled).padEnd(20, '·');
-    const flag = used >= cap.perMonth ? ' ← 꽉 찼습니다' : '';
-    console.log(`  ${tool.padEnd(11)} ${bar} ${used}/${cap.perMonth}  [${q.sources?.[tool] || '모름'}]${flag}`);
+    const rsv = q.reserved?.[tool] || 0;           // planned = 남이 잡아둔 자리
+    const taken = used + rsv;                       // plan 이 실제로 쓸 수 없는 칸
+    const u = Math.min(20, Math.round(used / cap.perMonth * 20));
+    const r = Math.min(20 - u, Math.round(rsv / cap.perMonth * 20));
+    const bar = ('█'.repeat(u) + '▒'.repeat(r)).padEnd(20, '·');
+    const flag = taken >= cap.perMonth ? ' ← 꽉 찼습니다' : '';
+    const rsvTxt = rsv ? ` (쓴 것 ${used} + 잡아둔 자리 ${rsv})` : '';
+    console.log(`  ${tool.padEnd(11)} ${bar} ${taken}/${cap.perMonth}  [${q.sources?.[tool] || '모름'}]${rsvTxt}${flag}`);
   }
+  if (Object.values(q.reserved || {}).some(n => n > 0))
+    console.log('  ▒ = 장부의 planned. 예약은 아직 안 걸렸지만 **남이 잡아둔 자리**라 plan 이 쓰지 않습니다');
   console.log(`  발행 기록 ${(q.log || []).length}건\n`);
 }
 
