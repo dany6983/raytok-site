@@ -1,6 +1,6 @@
 # NOW — 웹 세션(B) 계획표 (마스터가 쓴다 · 세션은 이것만 본다)
 
-~~끝 10-29 12:40 600ef76 (웹킷은 GitHub 러너 webkit-flow — 23/23)~~ ★★★★★★ **11-01 11:40 마스터 — 릴레이 /translate 에 「서버 번역(MADLAD-3B)」 엔진 칸 (대표님: 서버는 다 만들어 두고 쓰는 방법은 나중)**
+~~끝 10-29 12:40 600ef76 (웹킷은 GitHub 러너 webkit-flow — 23/23)~~ ~~끝 11-01 11:46 cf51a01 (릴레이 배포 필요 · 기본 off)~~ ★★★★★★ **11-01 11:40 마스터 — 릴레이 /translate 에 「서버 번역(MADLAD-3B)」 엔진 칸 (대표님: 서버는 다 만들어 두고 쓰는 방법은 나중)**
 엔진 쪽 `premium/serve.py POST /translate`(엔진 NOW 11-01 11:40) 를 릴레이가 부를 수 있게 한다. **누구에게 여는지는 아직 안 정함 → 기본 꺼짐**(대표님 결정 전까지).
 ① `relay/src/server-mt.js`: 환경 `SERVER_MT_URL`·`SERVER_MT_KEY`(wrangler secret, 값은 어디에도 안 씀)·`SERVER_MT_MODE` = `off`(기본) | `reverse`(X→ko 만) | `premium`(0x20 등 정할 플래그) | `all`. 켜졌을 때 `/translate` 가 그 서버로 묻고 **3초 넘음·5xx·빈 답·원문에 없는 숫자 → 지금 길(구글)로 떨어짐** + 기록(pro-translate.js 와 같은 꼴). 하루 상한(호출 수) 칸도.
 ② 시험: 가짜 서버로 off·reverse·all × 정상·느림·5xx·빈 답 — 떨어지는 길과 기록. 되돌려 붉음. **배포하지 않는다**(보고에 「릴레이 배포 필요」).

@@ -11,6 +11,13 @@
 ```
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
+## 11-01 11:46 — [웹 일꾼] NOW 11-01 11:40 릴레이 서버 번역 칸
+했다: `relay/src/server-mt.js` + /translate 연결(cf51a01). `SERVER_MT_MODE` off(기본)·reverse(X→ko)·premium(`SERVER_MT_FLAG` 비트, 비면 아무에게도 안 열림)·all. 켜지면 `SERVER_MT_URL` 로 `{q,source,target}` + 머리 `X-Raytok-Key`(=`SERVER_MT_KEY`) — 3초 넘음·5xx·빈 답·줄 수 다름·원문에 없는 숫자·하루 상한(`SERVER_MT_DAILY_CAP` 기본 2000호출)·주소/열쇠 없음 → 구글로 + `X-RayTok-MT-Why`·`mt_why`(smt_*). off 면 답 모양 전과 똑같음. 묶음 32 넘으면 나눠 물음(한도 3초는 전체 하나). 서버 결과는 캐시 칸 따로('smt').
+어디서 보나: `relay/src/server-mt.js` · 시험 `relay/test/server-mt.mjs`(test:server-mt)
+막힘: **릴레이 배포 필요(대표님 손)** — 배포해도 기본 off 라 바뀌는 것 없음. 대표님이 정할 것: ① `SERVER_MT_MODE` 값 하나(off/reverse/premium/all) ② premium 이면 `SERVER_MT_FLAG`(예 0x20) ③ 엔진 서버 주소가 생기면 `wrangler secret put SERVER_MT_URL`·`SERVER_MT_KEY`(=엔진 PREMIUM_KEY). 엔진 /translate 는 아직 엔진 NOW ① 진행 중 — 꼴은 그 지시대로 맞춤
+확인만: test:* 99개 하나씩 — 붉음 4(i18n·generator·contact·site-wording) 는 **이번 바꿈 전에도 붉음**(stash 로 확인, 안 건드림). 새 시험 42건 3회 초록 · 손 되돌림 넷(구글 가드·off→켬·숫자 검사·상한) 다 붉음. 옛 `engine:'self'`(SELF_TRANSLATE_URL, 관리자 머리 전용)는 그대로 둠 — 치울지 마스터 판단
+다음: 끝 없는 ★ — 10-29 12:35 웹킷 줄은 이미 끝(600ef76), 마스터 새 줄 기다림
+
 ## 10-29 12:40 — [웹 일꾼] NOW 10-29 12:35 시연 흐름 웹킷
 했다: 이 상자는 웹킷 내려받기 403(cdn.playwright.dev 정책 차단) → fetch-media 처럼 **러너가 대신** 돈다: `.github/workflows/webkit-flow.yml`(web/·시험 바뀌면 + 손으로, RT_REQUIRE_WEBKIT=1 — 웹킷 없으면 붉음). **웹킷 붉음 0 — 고칠 것 없음**, 손님 페이지 안 건드림 (600ef76)
 어디서 보나: 표 `docs/reclog/2026-10-29-web/test-codes.txt` 끝 · 러너 https://github.com/dany6983/raytok-site/actions/runs/40813076150
