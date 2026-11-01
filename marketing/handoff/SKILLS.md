@@ -405,3 +405,50 @@ MENU_NAVIGATION_GNB.openMarketManage();
 ## 상품 숨김과 배너·슬라이드 삭제는 별개 작업이다 (2026-11-01 · smartever)
 상품을 진열안함/분류 표시안함으로 바꿔도 메인 슬라이드쇼·bannerManage·「자세히보기」에 손으로 박은 링크는 그대로 살아 있다.
 음식물처리기(분류 58·상품 20) 링크가 10-31 18시 0 → 19시 19개 → 11-01 09시 19개. 숨긴 뒤에는 **메인 렌더링(Playwright) 링크 수로 확인**한다.
+---
+## SNS 카드 직접 만들기 — `scripts/sns_card.py` (claude-22, 2026-11-01)
+
+사진형 소재가 없을 때 집 양식(남색+금색 1080×1350) 카드를 바로 찍을 수 있다. 외부 생성 도구가 필요 없다.
+
+```bash
+python3 scripts/sns_card.py cards.json      # 레포 루트에서
+```
+
+`cards.json` 은 리스트. 한 장 = `{file, kicker, lines[], accent, sub[], foot}`.
+- `lines` 한 줄 **11자 안쪽**, `sub` 한 줄 **22자 안쪽**, `lines` 최대 5줄·`sub` 최대 4줄. 넘으면 **경고 없이 잘린다** — 찍고 나서 눈으로 한 번 봐야 한다
+- `accent` 는 금색으로 칠할 `lines` 인덱스(0부터)
+- `foot` 에는 **반드시 근거**를 적는다(시행일·적합등록번호·출원번호 등). 표시광고법 실증 대비이고, 이게 비어 있으면 못 쓴다
+- 출력은 `img/sns/` 아래. 파일명은 `sns_<제품첫자>_<훅id소문자>_<키워드>.jpg` 로 하면 나중에 훅 찾기가 쉽다
+
+**찍기 전에 반드시 금지어 게이트를 돌린다.** 카드 문구는 캡션과 따로 놀기 때문에 계획 gate 가 안 잡아 준다:
+```bash
+node route.mjs check <productId> "kicker+lines+sub+foot 를 전부 이어붙인 한 문장"
+```
+실제로 걸린 적 있음 — G3(오픈형) foot 에 「청력 보호」를 적었다가 금지어에 걸려 「안전장비가 아닙니다」로 바꿨다. `청력보조·청력 보호·시력보호·눈건강` 은 전부 막혀 있다.
+
+**찍은 뒤 `products/<id>.json` 의 `images` 에 `훅id → 경로` 를 넣고 계획을 재생성해야** 계획에 이미지가 실린다. 재생성해도 캡션·날짜·훅은 안 바뀐다(확인함) — 바뀌는 건 `image` 칸뿐.
+
+**훅에 맞는 이미지가 없으면 비워 둔다.** 파일명만 보고 갖다 붙이지 않는다. `sns_a_cost.jpg` 는 이름만 보면 「통역비(A2)」 같지만 실제로 박힌 문구는 "수신기는 대수만큼 빌립니다" = **D1**이었다. 열어서 글자를 읽고 맞춰야 한다.
+
+## 카페24 몰 실측 — 슬러그 URL·node ESM 두 함정 (claude-22, 2026-11-01)
+
+**함정 1 — `product_no=` 로 세면 0이 나온다.** 스마트에버 메인의 상품 링크는 전부 슬러그형이다:
+`https://smartever.co.kr/product/<한글슬러그 URL인코딩>/<상품번호>/category/<분류번호>/display/1/`
+`a[href]` 를 긁어 `product_no=` 로 거르면 **0개**가 잡히고 「상품이 없다」는 잘못된 결론이 난다. 이렇게 세야 한다:
+```python
+re.search(r'/20/category/58/', href)        # 상품20·분류58 (음식물처리기)
+re.search(r'/33/category/60/', href)        # 상품33·분류60 (터치톡)
+```
+분류 링크만 `?cate_no=NN` 형식이라 섞여 있다. 둘 다 봐야 한다.
+
+**함정 2 — `.mjs` 를 scratchpad 에 두면 playwright 를 못 찾는다.** node ESM 은 **스크립트 파일 위치** 기준으로 `node_modules` 를 찾는다. 작업 디렉터리를 바꿔도 소용없다(`cd /home/claude && node /tmp/.../probe.mjs` 도 실패). **python playwright 를 쓰는 게 제일 빠르다** — 어디서 실행하든 된다:
+```python
+from playwright.sync_api import sync_playwright
+with sync_playwright() as pw:
+    b = pw.chromium.launch(); p = b.new_page()
+    p.goto(url, wait_until="networkidle", timeout=60000)
+    p.wait_for_timeout(4000); p.mouse.wheel(0, 20000); p.wait_for_timeout(3000)  # 지연로딩 배너
+```
+스크롤을 안 내리면 아래쪽 배너가 DOM 에 안 들어온다.
+
+**함정 3 — 「메인에서 링크가 사라졌다」와 「상품이 숨겨졌다」는 다른 얘기다.** 둘 다 재야 한다. 상품 상세 URL 에 직접 접속해 **status 와 판매가 노출**을 확인한다. 메인 링크가 0이어도 상세가 200이면 검색·외부링크로 그대로 팔린다. 반대로 상품을 숨겨도 배너에 박힌 링크는 따로 살아 있다.

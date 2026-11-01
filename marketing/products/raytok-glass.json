@@ -138,6 +138,10 @@
   },
   "images": {
     "G2": "img/sns/sns_g_lens.jpg",
-    "$comment": "hookId → 게시용 이미지 경로. 없으면 계획에 「이미지 없음」으로 찍힌다. 추측으로 채우지 않는다."
+    "$comment": "hookId → 게시용 이미지 경로. 없으면 계획에 「이미지 없음」으로 찍힌다. 추측으로 채우지 않는다.",
+    "G1": "img/sns/sns_g_g1_nofee.jpg",
+    "G3": "img/sns/sns_g_g3_open.jpg",
+    "G4": "img/sns/sns_g_g4_85.jpg",
+    "G5": "img/sns/sns_g_37g.jpg"
   }
 }

@@ -40,7 +40,7 @@
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
-      "image": null,
+      "image": "img/sns/sns_g_g1_nofee.jpg",
       "unknownNumbers": []
     },
     {
@@ -82,7 +82,7 @@
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
-      "image": null,
+      "image": "img/sns/sns_g_g3_open.jpg",
       "unknownNumbers": []
     },
     {
@@ -103,7 +103,7 @@
       "required": "pass",
       "missingRequired": [],
       "humanCheck": [],
-      "image": null,
+      "image": "img/sns/sns_g_g4_85.jpg",
       "unknownNumbers": []
     }
   ]
