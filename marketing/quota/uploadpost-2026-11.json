@@ -1,0 +1,14 @@
+{
+ "tool": "uploadpost",
+ "month": "2026-11",
+ "limit": 10,
+ "used": 0,
+ "posts": [],
+ "planned": [
+  {"d": "11-05", "p": "touchtok", "hook": "T1", "channels": 2},
+  {"d": "11-12", "p": "touchtok", "hook": "T2", "channels": 2},
+  {"d": "11-19", "p": "touchtok", "hook": "T3", "channels": 2},
+  {"d": "11-26", "p": "touchtok", "hook": "T4", "channels": 2}
+ ],
+ "note": "2026-11-01 smartever: 실제 예약 0건(터치톡 인스타 미연결로 Upload-Post 예약 불가). used=0 은 '확인된 0'. planned 8건은 터치톡 몫으로 잡아둔 자리 — 예비 2건 외엔 쓰지 말 것. 예약을 실제로 걸면 posts 에 넣고 used 를 올린다"
+}
