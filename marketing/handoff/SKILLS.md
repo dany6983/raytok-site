@@ -660,3 +660,16 @@ import pw from '/opt/npm-tools/node_modules/playwright/index.js'; const { chromi
 ### 참고 수치 — 쇼핑몰 상세 이미지 목표치
 선글라스 v3: 860px 폭 · JPG 4장 · 총높이 8,219px · 합계 **0.55MB**(장당 약 140KB).
 기존 d2 는 18,405px 였으니 **분량이 55% 줄었다.** 상세 이미지는 **장당 150KB 선**이 현실적이다.
+
+### detached HEAD — push 가 거절될 때 「pull 하라」는 말을 믿지 말 것 (11-01 13시 · claude-22)
+smartever 가 다섯 번 밟은 그 함정의 **뒷면**이다. detached HEAD 에서 커밋하면:
+- `git pull --rebase origin main` → **「HEAD is up to date」** (맞는 말이다. HEAD 는 최신이다)
+- `git push origin main` → **거절.** `origin main` 은 **detached HEAD 가 아니라 로컬 `main` 브랜치 ref**
+  를 밀기 때문이고, 그 `main` 은 묵은 상태(`ahead 57, behind 50`)였다
+
+`git rev-list --left-right --count HEAD...origin/main` 이 `1 0`(앞섰고 뒤처진 것 없음)인데도
+거절되면 **이 경우가 확실하다.** 고침은 한 줄:
+```bash
+git checkout -B main && git push origin main     # 커밋한 HEAD 로 브랜치를 옮긴다
+```
+pull 을 반복하거나 `--force` 를 쓰면 안 된다. **먼저 `git branch -vv` 로 `* (HEAD detached` 인지 본다.**
