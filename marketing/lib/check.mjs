@@ -76,9 +76,16 @@ export function auditNumbers(text, product) {
   };
   walk(product.facts);
   walk(product.lead);
-  const found = text.match(/\d[\d,]*\.?\d*/g) || [];
+  // 숫자처럼 보이지만 출처를 물을 것이 아닌 것을 먼저 가린다 (2026-11-01 smartever 오탐 신고).
+  //  ① 날짜꼴 2026.06 · 2026.06.08  — 출처가 문장 안에 있다
+  //  ② 줄 머리 목록 번호 「1. 세안 후…」 — 사용법 단계다
+  const masked = text
+    .replace(/\b(?:19|20)\d{2}\.\d{1,2}(?:\.\d{1,2})?\b/g, ' ')
+    .replace(/^[ \t]*\d{1,2}\.(?=\s)/gm, ' ');
+  const found = masked.match(/\d[\d,]*\.?\d*/g) || [];
   const unknown = [...new Set(found)].filter(n => {
-    const bare = n.replace(/,/g, '');
+    // 꼬리 마침표는 떼고 센다. 「1.」 이 두 글자로 세어져 한 자리 숫자가 걸려 나왔다
+    const bare = n.replace(/,/g, '').replace(/\.$/, '');
     return !known.has(n) && !known.has(bare) && bare.length > 1;
   });
   return unknown;
