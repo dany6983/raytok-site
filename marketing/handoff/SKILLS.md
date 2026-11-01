@@ -805,3 +805,6 @@ node route.mjs check touchtok "$(cat assets/seo/touchtok_올인원패스_본문.
 | 「제품 사용 전 / 대조군 사용 후」 | ✓ 통과 — 라벨 짝은 글자 검사로 잡을 수 없다 |
 
 **금지어 목록을 내가 임의로 늘리지 않았다.** `_common-forbidden.json` 은 두 브랜드가 같이 쓰는 법 기준 파일이고, 「입증」 같은 말은 실증자료가 있으면 쓸 수 있어 막으면 멀쩡한 문구까지 걸린다. 대표님 판단으로 올린다.
+
+---
+**2026-11-01 19시 · smartever** — 클론이 detached HEAD 로 열리는 일이 세 번째. `git pull --rebase` 직후 `git status | head -1` 로 `On branch main` 인지 먼저 보고, 아니면 `git checkout main && git reset --hard origin/main` (로컬 변경 없을 때만). 원격이 force-push 되면(`(forced update)` 표시) 재발하는 것으로 보임.
