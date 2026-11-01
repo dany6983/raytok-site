@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face{font-family:P;src:url("/root/.fonts/Pretendard-Regular.otf");font-weight:400}
+@font-face{font-family:P;src:url("/root/.fonts/Pretendard-Medium.otf");font-weight:500}
+@font-face{font-family:P;src:url("/root/.fonts/Pretendard-SemiBold.otf");font-weight:600}
+@font-face{font-family:P;src:url("/root/.fonts/Pretendard-Bold.otf");font-weight:700}
+@font-face{font-family:P;src:url("/root/.fonts/Pretendard-Light.otf");font-weight:300}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FBFAF8; --ink:#13171E; --navy:#0A0F1F; --mut:#7C838F;
+  --line:#E6E3DE; --soft:#F2EFEA;
+}
+body{width:860px;background:var(--bg);font-family:P;color:var(--ink);
+  -webkit-font-smoothing:antialiased;letter-spacing:-.02em}
+img{display:block;width:100%;height:auto}
+section{padding:0 64px}
+.pad{padding-top:132px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--mut);
+  text-transform:uppercase;margin-bottom:22px}
+h2{font-size:40px;line-height:1.32;font-weight:700;letter-spacing:-.035em}
+h3{font-size:22px;line-height:1.45;font-weight:600;letter-spacing:-.03em}
+p.l{font-size:17px;line-height:1.85;color:#4A515C;font-weight:400;margin-top:20px}
+p.s{font-size:14px;line-height:1.75;color:var(--mut);margin-top:14px}
+.fig{margin-top:44px}
+.cap{font-size:12.5px;color:#9AA0AA;margin-top:12px;letter-spacing:-.01em}
+hr.sep{border:0;border-top:1px solid var(--line);margin:0 64px}
+
+/* hero */
+.hero{padding:76px 64px 0}
+.logo{font-size:15px;font-weight:700;letter-spacing:.2em;color:var(--navy)}
+.hero h1{font-size:52px;line-height:1.26;font-weight:700;letter-spacing:-.04em;margin-top:40px}
+.hero .sub{font-size:17.5px;line-height:1.8;color:#4A515C;margin-top:24px}
+.model{font-size:13px;font-weight:600;letter-spacing:.1em;color:var(--mut);margin-top:36px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);margin-top:76px}
+.stat{padding:34px 0 32px;text-align:center;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat .n{font-size:34px;font-weight:700;letter-spacing:-.04em;color:var(--navy)}
+.stat .n em{font-style:normal;font-size:18px;font-weight:600;margin-left:2px}
+.stat .t{font-size:12.5px;color:var(--mut);margin-top:9px;letter-spacing:-.01em}
+
+/* two col */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:46px}
+.two h3{margin-bottom:12px}
+.two p{font-size:15px;line-height:1.8;color:#5A616B}
+
+/* steps */
+.steps{margin-top:52px}
+.step{display:grid;grid-template-columns:52px 1fr;gap:22px;padding:30px 0;
+  border-top:1px solid var(--line)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .no{font-size:14px;font-weight:700;color:var(--navy);padding-top:4px;letter-spacing:.04em}
+.step h4{font-size:19px;font-weight:600;letter-spacing:-.03em}
+.step p{font-size:14.5px;line-height:1.78;color:#5A616B;margin-top:9px}
+
+/* scenes */
+.scenes{display:grid;grid-template-columns:1fr 1fr;gap:28px 24px;margin-top:48px}
+.scene .t{font-size:16px;font-weight:600;margin-top:16px;letter-spacing:-.03em}
+.scene .d{font-size:13.5px;line-height:1.7;color:var(--mut);margin-top:7px}
+
+/* spec */
+table{width:100%;border-collapse:collapse;margin-top:44px;font-size:14.5px}
+th,td{text-align:left;padding:17px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{width:170px;font-weight:600;color:var(--navy);font-size:14px}
+td{color:#4A515C;line-height:1.7}
+td b{font-weight:600;color:var(--ink)}
+
+/* quote block */
+.quote{background:var(--soft);padding:54px 56px;margin-top:56px;border-radius:2px}
+.quote .q{font-size:26px;line-height:1.55;font-weight:600;letter-spacing:-.035em}
+.quote p{font-size:15px;line-height:1.82;color:#5A616B;margin-top:18px}
+
+/* badge row */
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:34px}
+.badge{font-size:12.5px;font-weight:500;color:var(--navy);border:1px solid var(--line);
+  padding:9px 15px;border-radius:999px;background:#fff}
+
+/* footer */
+.foot{margin-top:120px;background:var(--navy);color:#fff;padding:60px 64px}
+.foot .fl{font-size:15px;font-weight:700;letter-spacing:.2em}
+.foot p{font-size:13px;line-height:1.85;color:rgba(255,255,255,.62);margin-top:20px}
+.foot .ast{font-size:12px;color:rgba(255,255,255,.42);margin-top:22px;line-height:1.75}
+</style>
+</head>
+<body>
+
+<!-- 1. HERO -->
+<div class="hero">
+  <div class="logo">RAYTOK</div>
+  <h1>선글라스만 쓰고 있으면<br>말이 통합니다.</h1>
+  <p class="sub">귀를 막지 않는 공기전도 방식. 음악과 통화, 그리고 통역까지<br>하나로 쓰는 블루투스 선글라스.</p>
+  <div class="model">RT-18G</div>
+  <div class="fig"><img src="hero.jpg" alt=""></div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="n">85<em>개</em></div><div class="t">지원 언어</div></div>
+  <div class="stat"><div class="n">0<em>원</em></div><div class="t">월 구독료</div></div>
+  <div class="stat"><div class="n">3<em>장</em></div><div class="t">교체 렌즈</div></div>
+  <div class="stat"><div class="n">37<em>g</em></div><div class="t">무게</div></div>
+</div>
+
+<!-- 2. 문제 -->
+<section class="pad">
+  <div class="eyebrow">Why open-ear</div>
+  <h2>귀를 막으면<br>사라지는 것들이 있습니다.</h2>
+  <p class="l">이어폰을 끼면 음악은 들리는데 뒤에서 오는 소리가 들리지 않습니다.<br>
+  자전거에서도, 슬로프에서도, 길을 건널 때도 그렇습니다.<br>
+  오래 끼고 있으면 귓속이 먹먹해지는 것도 같은 이유입니다.</p>
+  <div class="fig"><img src="worn.jpg" alt=""></div>
+  <div class="cap">귓속을 비워 둡니다. 다리가 귀 앞을 지나갑니다.</div>
+</section>
+
+<!-- 3. 구조 -->
+<section class="pad">
+  <div class="eyebrow">Structure</div>
+  <h2>귀에 넣지 않습니다.</h2>
+  <p class="l">귓바퀴 앞에서 소리를 보내는 <b>공기전도 개방형</b>입니다.<br>
+  귓구멍이 눌리지 않아 오래 써도 편하고, 음악을 들으면서 옆 사람 말이 들립니다.</p>
+  <div class="two">
+    <div><h3>귓구멍을 막지 않습니다</h3><p>압박감이 없습니다. 하루 종일 쓰고 있어도 귀가 아프지 않습니다.</p></div>
+    <div><h3>주변 소리가 들립니다</h3><p>차 소리, 사람 소리, 안내 방송. 들려야 하는 것이 그대로 들립니다.</p></div>
+  </div>
+</section>
+
+<!-- 4. 통역 -->
+<section class="pad">
+  <div class="eyebrow">Translation</div>
+  <h2>앞에 앉은 사람의 말이<br>내 말로 들립니다.</h2>
+  <p class="l">RayTok 앱과 연결하면 상대의 말이 내 언어로 들립니다.<br>
+  선글라스를 벗지 않고, 휴대폰을 꺼내 들지 않고 대화합니다.</p>
+  <div class="fig"><img src="talk.jpg" alt=""></div>
+  <div class="cap">연출 이미지입니다.</div>
+  <div class="two">
+    <div><h3>85개 언어</h3><p>쓰는 사람이 적어 번역 앱에서 자주 비어 있는 언어까지 직접 만들었습니다.</p></div>
+    <div><h3>휴대폰 안에서 번역</h3><p>언어팩을 한 번 내려받으면 그 뒤로는 휴대폰 안에서 처리합니다.</p></div>
+  </div>
+</section>
+
+<!-- 5. 구독료 -->
+<section class="pad">
+  <div class="quote">
+    <div class="q">월 구독료가 없습니다.<br>받을 이유가 없기 때문입니다.</div>
+    <p>번역을 서버에서 돌리면 쓸 때마다 비용이 나갑니다. 그래서 월 구독료를 받는 제품들이 있습니다.
+    RayTok은 휴대폰 안에서 번역하기 때문에 나가는 돈이 없습니다.<br>
+    월 구독료 0원, 언어 추가 구매 0원, 사용 시간 과금 0원.</p>
+  </div>
+</section>
+
+<!-- 6. 렌즈 -->
+<section class="pad">
+  <div class="eyebrow">Lens</div>
+  <h2>렌즈 세 장이<br>상자에 들어 있습니다.</h2>
+  <p class="l">미러 · 스모크 · 편광. 세 장 모두 UV400으로 자외선을 99.9% 이상 차단합니다.<br>
+  공구 없이 손으로 뗐다 끼웁니다. 5초면 됩니다.</p>
+  <div class="fig"><img src="lens3.jpg" alt=""></div>
+  <div class="two">
+    <div><h3>미러</h3><p>햇빛이 강한 날. 아침 라이딩과 한낮의 야외.</p></div>
+    <div><h3>스모크 · 편광</h3><p>흐린 날과 야간 주행에는 스모크. 운전과 낚시에는 반사광을 자르는 편광.</p></div>
+  </div>
+</section>
+
+<!-- 7. 활용 -->
+<section class="pad">
+  <div class="eyebrow">In use</div>
+  <h2>이럴 때 씁니다.</h2>
+  <div class="scenes">
+    <div class="scene"><img src="ride.jpg" alt="">
+      <div class="t">라이딩 · 러닝</div>
+      <div class="d">뒤차 소리를 들으면서 음악을 듣습니다. 땀이 나도 귓속이 답답하지 않습니다.</div></div>
+    <div class="scene"><img src="talk.jpg" alt="">
+      <div class="t">외국인과 대화</div>
+      <div class="d">관광 안내, 현장 지시, 거래처 미팅. 통역기를 따로 들지 않습니다.</div></div>
+    <div class="scene"><img src="button.jpg" alt="">
+      <div class="t">통화 · 음악</div>
+      <div class="d">다리 바깥 버튼 하나로 재생과 통화를 누릅니다. 장갑을 껴도 눌립니다.</div></div>
+    <div class="scene"><img src="hero.jpg" alt="">
+      <div class="t">운전 · 낚시</div>
+      <div class="d">편광 렌즈로 바꾸면 노면과 수면에서 튀는 반사광이 잘립니다.</div></div>
+  </div>
+</section>
+
+<!-- 8. 쓰는 법 -->
+<section class="pad">
+  <div class="eyebrow">How to use</div>
+  <h2>세 번이면 끝납니다.</h2>
+  <div class="steps">
+    <div class="step"><div class="no">01</div><div>
+      <h4>다리를 펴면 켜집니다</h4>
+      <p>처음 한 번만 휴대폰 블루투스에서 RT-18G를 고릅니다. 그 뒤로는 다리를 펴면 자동으로 연결됩니다.</p></div></div>
+    <div class="step"><div class="no">02</div><div>
+      <h4>버튼으로 재생과 통화</h4>
+      <p>다리 바깥 버튼을 한 번 누르면 재생과 정지, 두 번 누르면 다음 곡, 길게 누르면 음성비서가 열립니다.</p></div></div>
+    <div class="step"><div class="no">03</div><div>
+      <h4>통역은 앱에서</h4>
+      <p>RayTok 앱을 열고 언어를 고르면 상대의 말이 선글라스로 들립니다. 처음 한 번 언어팩을 내려받으면 그 뒤로는 인터넷 없이도 됩니다.</p></div></div>
+  </div>
+</section>
+
+<!-- 9. 사양 -->
+<section class="pad">
+  <div class="eyebrow">Specification</div>
+  <h2>RT-18G</h2>
+  <table>
+    <tr><th>소리 방식</th><td><b>공기전도 개방형</b> — 귀에 넣지 않습니다</td></tr>
+    <tr><th>블루투스</th><td>V5.0 · 첫 연결 후 자동 페어링</td></tr>
+    <tr><th>조작</th><td>다리 바깥쪽 버튼 한 개 — 재생 · 통화 · 음성비서 호출</td></tr>
+    <tr><th>무게</th><td>37g</td></tr>
+    <tr><th>사용 시간</th><td>약 5시간 (충전 약 1.5시간)</td></tr>
+    <tr><th>입력</th><td>DC 5V, 1A · USB Type-C</td></tr>
+    <tr><th>렌즈</th><td>PC 렌즈 · UV400 (자외선 99.9% 이상 차단)<br><b>3장 — 미러 · 스모크 · 편광</b></td></tr>
+    <tr><th>소재</th><td>프레임 PC · 템플 PC</td></tr>
+    <tr><th>크기</th><td>166 × 81 × 69 mm</td></tr>
+    <tr><th>구성품</th><td>본체 · 렌즈 3장 · USB Type-C 케이블 · 교체용 귀 뒷걸이 2개 · 한글 설명서</td></tr>
+  </table>
+  <div class="fig"><img src="kit.jpg" alt=""></div>
+</section>
+
+<!-- 10. 인증 -->
+<section class="pad">
+  <div class="eyebrow">Certification</div>
+  <h2>확인하고 파는 제품입니다.</h2>
+  <p class="l">전파 적합성 평가와 배터리 안전확인 신고를 마쳤습니다.<br>
+  통역 기술은 특허 출원 중입니다.</p>
+  <div class="badges">
+    <div class="badge">적합성평가 R-R-PNLE-RT-18G</div>
+    <div class="badge">안전확인신고 YU102612-24011K</div>
+    <div class="badge">특허 출원 중 10-2026-0166695 외 9건</div>
+    <div class="badge">UV400</div>
+  </div>
+  <table>
+    <tr><th>제조사</th><td>CGTEK TECHNOLOGY CO., LIMITED</td></tr>
+    <tr><th>제조국</th><td>중국</td></tr>
+    <tr><th>수입 · 판매</th><td>주식회사 피엔엘에코</td></tr>
+    <tr><th>A/S 책임</th><td>주식회사 피엔엘에코 · 1800-6825</td></tr>
+    <tr><th>품질보증</th><td>구입일로부터 1년 · 소비자분쟁해결기준에 따릅니다</td></tr>
+  </table>
+</section>
+
+<div class="foot">
+  <div class="fl">RAYTOK</div>
+  <p>주식회사 피엔엘에코 · 대표 박용음<br>
+  경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호<br>
+  사업자등록번호 376-88-02280 · 통신판매업 2025-화성동탄-2002<br>
+  1800-6825 · raytok.kr</p>
+  <p class="ast">제품 사진 중 일부는 연출 이미지이며, 화면에 따라 색이 다르게 보일 수 있습니다.<br>
+  RayTok은 통역 도구입니다. 통역사를 대신하지 않으며, 기계 번역에는 오역이 있을 수 있습니다.</p>
+</div>
+
+</body>
+</html>
