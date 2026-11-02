@@ -18,7 +18,10 @@
     "sharesCapWith": [
       "raytok-glass"
     ],
-    "note": "선글라스와 같은 Metricool 브랜드를 쓴다. 월 20건을 둘이 나눠 쓴다."
+    "note": "선글라스와 같은 Metricool 브랜드를 쓴다. 월 20건을 둘이 나눠 쓴다.",
+    "day": 2,
+    "perWeek": 1,
+    "dayNote": "발행 요일 화(2)·주 1회. plan 에 요일 인자를 안 주면 여기를 쓴다. 선글라스(금)와 요일을 갈라 같은 Metricool 한도를 안 밀어낸다. 2026-11-02 claude-22 추가"
   },
   "facts": {
     "model": null,

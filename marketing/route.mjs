@@ -28,6 +28,8 @@ function plannedElsewhere(month, tool, exceptPid) {
   return n;
 }
 
+const WDAY = ['일', '월', '화', '수', '목', '금', '토'];
+
 const [cmd, ...args] = process.argv.slice(2);
 
 function usedHooks(month, productId) {
@@ -57,9 +59,16 @@ function slots(month, perWeek, day) {
 }
 
 if (cmd === 'plan') {
-  const [pid, month, pw, day] = args;
-  const perWeek = Number(pw || 2);
+  const [pid, month, pw, dayArg] = args;
   const p = loadProduct(pid);
+  // 요일·주당횟수는 **제품 파일**에 적어 둔다. CLI 인자가 있으면 그게 이긴다.
+  // 까닭: 요일을 CLI 로만 주던 동안, 인자를 빼고 재생성하면 조용히 기본 화·금으로
+  //   다시 깔렸다. 2026-11-02 터치톡 계획이 목 → 화·금 으로 밀려 11/5 발행이
+  //   11/3 로 당겨졌고, 양쪽 세션이 하루 넘게 「4편/5편」으로 엇갈렸다.
+  //   제품 파일에 적어 두면 인자를 잊어도 제자리로 깔린다 (2026-11-02 claude-22).
+  const perWeek = Number(pw || p.publish.perWeek || 2);
+  const day = dayArg != null ? dayArg : (p.publish.day != null ? p.publish.day : null);
+  const daySrc = dayArg != null ? 'CLI 인자' : (p.publish.day != null ? `products/${pid}.json` : '기본값 화·금');
   const tool = p.publish.tool;
   const channels = p.publish.channels;
   const cost = channels.length;                 // 한 편이 소비하는 건수
@@ -108,12 +117,22 @@ if (cmd === 'plan') {
     });
   }
 
+  // ── 장부 대조. 장부 planned 는 **사람이 적은 의도**다. 계획 날짜가 거기서 벗어나면
+  //    요일 인자를 빼먹었거나 장부가 낡은 것이다. 어느 쪽이든 사람이 봐야 한다.
+  const wantDates = Q.plannedDatesFor(month, tool, pid);
+  const gotDates = plan.map(x => x.when.slice(5, 10));
+  const dayDrift = wantDates.length
+    ? { ledger: wantDates.map(w => w.d), planned: gotDates,
+        match: wantDates.length === gotDates.length && wantDates.every((w, i) => w.d === gotDates[i]) }
+    : null;
+
   const outPath = `out/plan-${pid}-${month}.json`;
   const result = {
     product: pid, name: p.name, owner: p.owner, month, tool,
     channels, costPerPost: cost,
     quota: { cap: Q.CAPS[tool].perMonth, left: Q.left(month, tool), reservedByOthers: reserved, available, willUse: plan.length * cost },
-    perWeek, day: day || null, posts: plan.length,
+    perWeek, day: day != null ? Number(day) : null, daySrc, posts: plan.length,
+    dayDrift,
     blocked,
     hooksLeftAfter: pool.length,
     plan
@@ -125,6 +144,15 @@ if (cmd === 'plan') {
   console.log(`  한도 ${Q.CAPS[tool].perMonth}건 · 발행됨 ${Q.CAPS[tool].perMonth - Q.left(month, tool)}건 · 다른 제품 계획 ${reserved}건 · 이 계획 ${plan.length * cost}건 · 남김 ${available - plan.length * cost}건`);
   if (blocked === 'quota') console.log(`  ⚠ 한도에 걸려 ${plan.length}편에서 끊겼습니다.`);
   if (blocked === 'hooks_exhausted') console.log(`  ⚠ 안 쓴 소재가 떨어졌습니다. 후킹을 더 넣어야 합니다.`);
+  console.log(`  요일 ${day != null ? WDAY[Number(day)] || day : '화·금(기본)'} · 주당 ${perWeek}회 — 출처 ${daySrc}`);
+  if (dayDrift && !dayDrift.match) {
+    console.log(`  🔴 장부와 날짜가 어긋납니다 — 사람이 보셔야 합니다`);
+    console.log(`     장부 planned : ${dayDrift.ledger.join(' · ')} (${dayDrift.ledger.length}편)`);
+    console.log(`     이 계획      : ${dayDrift.planned.join(' · ')} (${dayDrift.planned.length}편)`);
+    console.log(`     → 요일 인자를 빼고 재생성하면 기본 화·금으로 깔립니다. products/${pid}.json 의 publish.day 를 채우세요`);
+  } else if (dayDrift) {
+    console.log(`  ✓ 장부 planned 와 날짜 일치 (${dayDrift.ledger.length}편)`);
+  }
   console.log('');
   for (const x of plan) {
     const mark = (x.gate === 'pass' && x.required === 'pass') ? '✓' : '✗';

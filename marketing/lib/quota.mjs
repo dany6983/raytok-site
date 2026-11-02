@@ -107,4 +107,21 @@ export function record(month, tool, { productId, hookId, channels, when }) {
   return left(month, tool);
 }
 
+/** 장부 planned 중 **이 제품** 몫의 날짜·후킹. plan 이 세운 날짜와 맞대 보는 데 쓴다.
+ *  까닭: `plan` 은 요일 인자를 빼면 조용히 기본 요일(화·금)로 다시 깔린다.
+ *    2026-11-02 터치톡 계획이 그렇게 목→화·금 으로 밀려 4편(11/5·12·19·26)이
+ *    5편(11/3·6·10·13·17)으로 바뀌었고, 양쪽 세션이 하루 넘게 못 봤다.
+ *    장부는 사람이 쓴 의도라 그쪽이 정본에 가깝다. 어긋나면 plan 이 소리를 내게 한다.
+ *  반환 [{ d: "11-05", hook: "T1", channels: 2 }, ...] — 아직 posts 로 안 올라간 것만. */
+export function plannedDatesFor(month, tool, pid) {
+  const j = readJson(toolPath(month, tool));
+  if (!j || !Array.isArray(j.planned)) return [];
+  const posts = Array.isArray(j.posts) ? j.posts : [];
+  return j.planned
+    .filter(pl => pl.p === pid)
+    .filter(pl => !posts.some(po => pl.hook && (po.hook === pl.hook || po.hookId === pl.hook)))
+    .map(pl => ({ d: String(pl.d || ''), hook: pl.hook || null, channels: Number(pl.channels) || 1 }));
+}
+
 export { CAPS };
+
