@@ -46,9 +46,9 @@ export function check(text, product) {
 
 /** 고지문 문장을 공백에 느슨한 정규식으로 바꾼다.
  *  고지문은 캡션·상세에 들어갈 때 줄바꿈이 섞이므로 공백은 \s+ 로 맞춘다. */
-function looseRe(sentence) {
+function looseRe(sentence, flags = '') {
   return new RegExp(sentence.trim().split(/\s+/)
-    .map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'));
+    .map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), flags);
 }
 
 /** 법정 고지문(mustInclude)을 본문에서 떼어낸다.
@@ -58,8 +58,11 @@ export function stripRequired(text, product) {
   let body = text;
   const stripped = [];
   for (const n of (product.mustInclude || [])) {
-    const re = looseRe(n);
-    if (re.test(body)) { body = body.replace(re, ' '); stripped.push(n); }
+    // ★ g 가 없으면 **첫 1건만** 떼였다. 캡션 여러 편을 이어 붙이거나 상세 한 장에 고지문이
+    //   두 번 들어가면 둘째 고지문 속 「치료」가 ✗ 로 떴다 (2026-11-02 smartever 신고).
+    const re = looseRe(n, 'g');
+    const hits = (body.match(re) || []).length;
+    if (hits) { body = body.replace(re, ' '); stripped.push(hits > 1 ? `${n} ×${hits}` : n); }
   }
   return { body: body.replace(/[ \t]{2,}/g, ' ').trim(), stripped };
 }
