@@ -894,3 +894,15 @@ mcp__metricool-social__getScheduledPosts(brandId=<장부의 brandId>,
 - `auditRequired` 는 `looseRe(n)`(플래그 없음) 그대로입니다 — `.test` 한 번만 쓰므로 `g` 의
   `lastIndex` 가 끼어들 자리가 없게 **떼는 쪽에만** `g` 를 줬습니다
 - 상세페이지처럼 고지문이 두 번 들어간 문서도 이제 한 번에 넣으면 됩니다
+
+### 2026-11-02 · claude-22 — `rebase --continue` 가 detached HEAD 를 남긴다
+클론이 detached 상태면 `git pull --rebase` 뒤 `rebase --continue` 가 **브랜치가 아닌 자리**에
+커밋을 얹습니다. 그 뒤 `git push origin main` 은 「behind its remote counterpart」로 거절되는데
+**내 커밋이 뒤처진 게 아니라 `main` 포인터가 안 따라온 것**입니다. 진단·복구:
+```bash
+git status -sb            # "## HEAD (no branch)" 면 detached
+git merge-base --is-ancestor origin/main HEAD && git branch -f main HEAD && git checkout main
+git push origin main
+```
+`reset --hard origin/main` 로 가면 **방금 쓴 커밋이 날아갑니다.** 먼저 `--is-ancestor` 로
+얹을 수 있는지 보고 포인터만 옮기세요.
