@@ -996,3 +996,25 @@ node route.mjs selftest     # 모순 없으면 종료코드 0, 있으면 1 + 겹
 
 대조하다 없는 것도 나온다 — 「다리 바깥 버튼」은 사양정본에 그 말이 없었다.
 **거짓이 아니라 근거가 「모름」이다.** 둘을 섞어 적으면 안 된다. 거짓은 고치고, 모름은 모름으로 올린다.
+
+### 2026-11-02 14시 · claude-22 — detached HEAD 가 **또** 물었다. 증상이 거짓말을 한다
+`git pull --rebase origin main` 이 「Already up to date」 라고 해도 **브랜치 위가 아닐 수 있다.**
+그 상태에서 커밋하면 커밋은 HEAD 에 쌓이는데 `git push origin main` 은 **뒤처진 로컬 `main` 참조**를
+밀어서 이렇게 나온다 — 방금 pull 했는데도:
+
+```
+! [rejected] main -> main (non-fast-forward)
+hint: Updates were rejected because a pushed branch tip is behind its remote counterpart.
+```
+
+「뒤처졌다」를 보고 또 pull 하면 아무 일도 안 일어난다. **pull 문제가 아니라 내가 브랜치 밖에 있는 것이다.**
+먼저 확인하고, 밀고, 정상화한다:
+
+```bash
+git status -sb | head -1        # 「## HEAD (no branch)」 면 이것이다
+git push origin HEAD:main       # HEAD 를 명시해 밀어야 한다
+git checkout -B main <그 커밋>   # 그 다음 브랜치로 돌아온다
+git branch --set-upstream-to=origin/main main
+```
+
+**매시 절차 맨 앞에 `git status -sb | head -1` 을 끼우는 게 낫다.** 두 세션이 각각 한 번씩 밟았다.
