@@ -4,6 +4,7 @@
 //   node route.mjs plan <productId> <YYYY-MM> [주당횟수]
 //   node route.mjs quota <YYYY-MM>
 //   node route.mjs check <productId> "검사할 문구"
+//   node route.mjs selftest
 //
 // 계획만 뱉는다. 실제 발행은 Metricool / Upload-Post MCP 도구가 한다.
 // 쓴 후킹은 quota 로그에 남아 다음 달에 중복되지 않는다.
@@ -184,6 +185,48 @@ else if (cmd === 'check') {
   else if ((p.mustInclude || []).length) console.log('  ✓ 필수 표기 들어 있음');
 }
 
+else if (cmd === 'selftest') {
+  // 낱말 목록 자체의 모순을 찾는다. 문구가 아니라 **게이트를 검사한다.**
+  // 생긴 까닭: 터치톡에 통지 「모공 조임」을 넣었더니 게이트가 내놓는 **대체어**
+  //   「일시적 모공 조임」에 그 통지가 뜨게 됐다 (2026-11-02 smartever 신고).
+  //   사람이 고칠 때마다 눈으로 보고 있을 수 없으니 한 번에 돌린다.
+  // 공용 목록은 check.mjs 안에만 있다. 거기를 고치지 않고 여기서 한 번 더 읽는다
+  const common = JSON.parse(readFileSync(new URL('./products/_common-forbidden.json', import.meta.url), 'utf8'));
+  const PRODUCTS = ['raytok-glass', 'raytok-app', 'touchtok'];
+  let bad = 0;
+  for (const id of PRODUCTS) {
+    const p = loadProduct(id);
+    const inh = p.forbidden?.inherit === 'common';
+    const words  = [...(inh ? common.words : []), ...(p.forbidden?.words || [])];
+    const notice = [...(inh ? (common.notice || []) : []), ...(p.forbidden?.notice || [])];
+    const table  = { ...(common.allowed_instead || {}), ...(p.allowedInstead || {}) };
+    const say = (m) => { bad++; console.log(`  ✗ ${m}`); };
+    console.log(`[${id}] 금지어 ${words.length} · 통지 ${notice.length} · 대체어 ${Object.keys(table).length}`);
+
+    // ① 대체어가 제 발을 밟나 — 게이트가 권하는 말이 또 걸리면 고칠 길이 막힌다
+    for (const [w, alt] of Object.entries(table)) {
+      if (!alt) continue;
+      const r = check(alt, p);
+      r.hits.forEach(h => say(`대체어가 금지어: 「${w}」 → 「${alt}」 안에 「${h.word}」`));
+      (r.notices || []).forEach(h => say(`대체어에 통지: 「${w}」 → 「${alt}」 안에 「${h.word}」`));
+    }
+    // ② 같은 말이 금지어·통지 양쪽에 — 막으면서 통지도 하면 사람이 헷갈린다
+    for (const w of words)
+      if (notice.some(n => n.toLowerCase() === w.toLowerCase())) say(`금지어·통지 양쪽에 있음: 「${w}」`);
+    // ③ 통지어가 금지어 안에 들어 있나 — 한 자리가 ✗ 와 통지로 두 번 뜬다
+    for (const n of notice)
+      for (const w of words)
+        if (w.toLowerCase().includes(n.toLowerCase())) say(`금지어 「${w}」 안에 통지어 「${n}」 (한 자리가 두 번 보고됨)`);
+    // ④ 법정 고지문 자체가 게이트에 걸리나 — 걸리면 어떤 글도 통과 못 한다
+    for (const s of (p.mustInclude || [])) {
+      const r = check(stripRequired(s, p).body, p);
+      r.hits.forEach(h => say(`고지문에 금지어: 「${h.word}」 … ${s.slice(0, 25)}…`));
+    }
+  }
+  console.log(bad ? `\n✗ 모순 ${bad}개` : '\n✓ 모순 없음 (대체어·금지어·통지·고지문)');
+  process.exitCode = bad ? 1 : 0;
+}
+
 else {
   console.log(`
 범용 마케팅 엔진
@@ -192,6 +235,7 @@ else {
                                                         요일 2=화 5=금 (같은 도구 공유 시 분리)
   node route.mjs quota <YYYY-MM>                          무료 한도 사용량
   node route.mjs check <productId> "문구"                  금지어 검사
+  node route.mjs selftest                                 낱말 목록 모순 검사
 
   제품: ${['raytok-glass', 'raytok-app', 'touchtok'].join(' · ')}
   제품 추가 = products/<id>.json 하나 더. 엔진은 안 건드린다.
