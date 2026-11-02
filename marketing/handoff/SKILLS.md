@@ -1152,3 +1152,16 @@ git show HEAD:marketing/products/raytok-glass.json > <스크래치>/products/ray
 「통역사를 대신하지 않으며…」가 빠져도 게이트가 아무 말을 안 한다.
 그냥 넣으면 **SNS 캡션엔 그 꼬리말이 없어서 8편 중 7편이 막힌다** —
 「상세·그림엔 필수, 캡션엔 면제」로 나누는 설계가 먼저다. 지금은 사람이 봐야 한다.
+
+### detached HEAD 가 또 물었다 — push 오류 문구가 거짓말을 한다 (2026-11-02 17시 claude-22)
+`git clone` 뒤 어떤 경로로든 HEAD 가 떨어지면 **커밋은 되고 push 만 안 된다.** 그때 나오는 말이
+헷갈린다: `git pull --rebase origin main` 은 **「HEAD is up to date」** 라고 하고,
+push 는 **「behind its remote counterpart」**(뒤처졌다)라고 한다. 둘 다 사실이 아니다 —
+로컬이 원격보다 **한 커밋 앞서** 있는데 가리킬 브랜치가 없을 뿐이다. pull 을 더 해도 안 풀린다.
+
+```bash
+git status -sb | head -1        # 「## HEAD (no branch)」 면 이 함정이다
+git branch -f main HEAD && git checkout main && git push origin main
+```
+
+**매시 절차 맨 앞에서 `git status -sb` 한 줄을 보는 게 제일 싸다.**
