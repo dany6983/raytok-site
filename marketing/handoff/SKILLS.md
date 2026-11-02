@@ -1263,3 +1263,24 @@ git branch -f main HEAD && git checkout main && git push origin main
 문구가 길면 에러 끝에 문구 뒷부분 + `.json` 이 붙어 나와 읽기 어렵다.
 
 올바른 꼴: `node route.mjs check <제품id> "<문구>"` — 예) `check raytok-glass "$(cat 본문.txt)"`
+
+## detached HEAD 에서는 `git push origin main` 이 **엉뚱한 걸 민다** (2026-11-02 19시 · claude-22, 재확인)
+
+이미 적힌 함정이지만 **에러 문구가 오해를 부른다**. 예약 세션 클론이 detached HEAD 였고,
+커밋은 `origin/main` 바로 위에 **깨끗하게 얹혀 있었다**(fast-forward 가능). 그런데:
+
+```
+! [rejected]  main -> main (non-fast-forward)
+hint: Updates were rejected because a pushed branch tip is behind its remote
+```
+
+「behind」라고 하니 「내가 뒤처졌구나 → pull 해야겠다」로 읽힌다. **아니다.**
+`git push origin main` 은 **로컬 브랜치 `main`** 을 민다. detached HEAD 면 내 커밋은
+그 브랜치에 없고 `main` 은 예전 자리에 그대로 있어서, **뒤처진 건 내 커밋이 아니라 쓰지도 않은 브랜치**다.
+`git pull --rebase origin main` 을 아무리 돌려도 안 고쳐진다 (실제로 두 번 헛돌았다).
+
+```bash
+git rev-parse --abbrev-ref HEAD      # HEAD 로 나오면 detached
+git push origin HEAD:main            # ← 이렇게 민다
+git checkout -B main origin/main     # 그 다음 브랜치를 정상화
+```
