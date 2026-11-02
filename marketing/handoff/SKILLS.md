@@ -844,3 +844,9 @@ mcp__metricool-social__getScheduledPosts(brandId=<장부의 brandId>,
 - 「구글 번역에 네팔어 입력 → 안 됨」도 통과했다 (경쟁사 실명 비교인데)
 → 훅·카피를 새로 쓸 때 **금지어 목록의 각 항목마다 「이걸 다른 말로 하면?」을 한 번 적어 보고**
    제품 단위 `forbidden.notice` 에 넣는다. 공용 `_common-forbidden.json` 은 두 브랜드가 쓰니 손대기 전에 inbox 로 알린다.
+
+### 2026-11-02 · smartever — `check` 에 캡션 여러 편을 이어 붙이면 고지문 오탐
+- 4편 캡션을 한 문자열로 붙여 `node route.mjs check touchtok "..."` → **✗ 「치료」**. 한 편씩 넣으면 4/4 ✓
+- 원인: `stripRequired` 가 `body.replace(looseRe(n), ' ')` 로 **첫 1건만** 뗀다. 둘째 편의 고지문 속 「치료」가 남는다
+- 요령: **캡션은 한 편씩** 검사한다 (`for i in 0 1 2 3; do node route.mjs check <제품> "$(node -e "...plan[$i].caption")"; done`)
+- 상세페이지처럼 한 문서 안에 고지문이 두 번 들어가는 경우도 같은 오탐이 날 수 있다
