@@ -7,6 +7,8 @@
   "sourceOfTruth": "marketing/handoff/to-claude-22-1031.md §1-4 (스마트에버 세션이 화면·상세페이지·식약처 보고서에서 확인한 것만)",
   "publish": {
     "tool": "uploadpost",
+    "day": 4,
+    "perWeek": 1,
     "profiles": [
       "touchtok"
     ],
