@@ -137,12 +137,34 @@ if (cmd === 'plan') {
     hooksLeftAfter: pool.length,
     plan
   };
-  writeFileSync(outPath, JSON.stringify(result, null, 2));
+  // 🔴 빈 계획으로 멀쩡한 스냅샷을 덮지 않는다 (2026-11-02 19시 claude-22, 직접 밟음).
+  //   out/plan-*.json 은 「출력」이면서 **이미 세운 계획의 기록**이다. 한도가 꽉 찬 달에
+  //   plan 을 다시 돌리면 0편 파일이 4편 기록을 덮어쓴다. 게이트는 전부 ✓ 라 조용하다.
+  //   더 나쁜 것은 **옮음**이다: plannedElsewhere() 가 이 파일들을 읽어 다른 제품 몫을 세므로
+  //   하나가 0 이 되면 **다음에 돌리는 제품의 「다른 제품 계획」 수가 틀린다.**
+  let kept = null;
+  if (plan.length === 0 && existsSync(outPath)) {
+    try {
+      const prev = JSON.parse(readFileSync(outPath, 'utf8'));
+      if (Array.isArray(prev.plan) && prev.plan.length > 0) kept = prev.plan.length;
+    } catch {}
+  }
+  if (kept == null) writeFileSync(outPath, JSON.stringify(result, null, 2));
 
   console.log(`\n■ ${p.name} — ${month}`);
   console.log(`  도구 ${tool} · 채널 ${channels.join('+')} (한 편 = ${cost}건)`);
   console.log(`  한도 ${Q.CAPS[tool].perMonth}건 · 발행됨 ${Q.CAPS[tool].perMonth - Q.left(month, tool)}건 · 다른 제품 계획 ${reserved}건 · 이 계획 ${plan.length * cost}건 · 남김 ${available - plan.length * cost}건`);
   if (blocked === 'quota') console.log(`  ⚠ 한도에 걸려 ${plan.length}편에서 끊겼습니다.`);
+  // 🔴 「남김」은 음수가 될 수 없다. 음수면 **같은 자리를 두 번 센 것**이다 (2026-11-02 19시 claude-22)
+  //   metricool 은 장부 used=20 에 진짜 예약이 다 들어 있는데, out/ 에 남은 **지난 계획 스냅샷**을
+  //   reserved 로 또 센다. 어느 쪽이 정본인지는 「모름」 → 수를 고쳐 쌓지 않고 사람에게 소리를 낸다
+  const leftover = available - plan.length * cost;
+  if (leftover < 0) {
+    console.log(`  🔴 「남김 ${leftover}건」 — 음수는 나올 수 없는 수입니다. 어딘가 **두 번 셉니다**`);
+    console.log(`     장부 used=${Q.CAPS[tool].perMonth - Q.left(month, tool)} 에 이미 들어 있는 예약을 out/plan-*-${month}.json 스냅샷으로 또 센 것으로 보입니다`);
+    console.log(`     → 장부 quota/${tool}-${month}.json 의 posts 와 out/ 스냅샷의 후킹·날짜를 맞대 보셔야 합니다`);
+    console.log(`     → 한도 판정 자체는 이 줄과 상관없이 **장부 used 기준**입니다 — 초과 발행은 안 됩니다`);
+  }
   if (blocked === 'hooks_exhausted') console.log(`  ⚠ 안 쓴 소재가 떨어졌습니다. 후킹을 더 넣어야 합니다.`);
   console.log(`  요일 ${day != null ? WDAY[Number(day)] || day : '화·금(기본)'} · 주당 ${perWeek}회 — 출처 ${daySrc}`);
   if (dayDrift && !dayDrift.match) {
@@ -163,7 +185,14 @@ if (cmd === 'plan') {
     if (!x.image) console.log(`      ⚠ 이미지 없음 — products/${pid}.json 의 images.${x.hookId} 를 채워야 발행 가능`);
     if (x.unknownNumbers.length) console.log(`      출처 확인 필요한 숫자: ${x.unknownNumbers.join(', ')}`);
   }
-  console.log(`\n  → ${outPath}\n`);
+  if (kept != null) {
+    console.log(`  🔴 **덮어쓰지 않았습니다** — 이번 계획은 0편인데 기존 스냅샷엔 ${kept}편이 들어 있습니다`);
+    console.log(`     ${outPath} 는 **그대로 둡니다.** 이미 세워 둔 계획의 기록이기 때문입니다`);
+    console.log(`     0편은 한도가 꽉 찬 탓입니다. 기록을 정말 비우려면 그 파일을 사람이 지우세요`);
+  } else {
+    console.log(`\n  → ${outPath}`);
+  }
+  console.log('');
 }
 
 else if (cmd === 'quota') {
