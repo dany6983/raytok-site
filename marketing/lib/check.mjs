@@ -53,7 +53,10 @@ function looseRe(sentence, flags = '') {
 
 /** 법정 고지문(mustInclude)을 본문에서 떼어낸다.
  *  plan 은 body 만 게이트에 넣어 고지문 속 「치료」를 넘긴다. check 도 같아야 한다.
- *  반환 { body, stripped: [고지문 전문...] } */
+ *  반환 { body, stripped: [{ sentence, hits }...] }
+ *  ★ 반환이 문자열 배열이 아니라 **{문장, 횟수}** 다. 예전엔 「문장 ×4」로 이어 붙여 넘겼는데
+ *    부르는 쪽이 30자로 자르면서 ×4 가 잘려 「4회 떼였는데 1건으로 보인다」가 됐다
+ *    (2026-11-02 smartever 신고). 횟수를 따로 주면 부르는 쪽이 어디든 둘 수 있다 */
 export function stripRequired(text, product) {
   let body = text;
   const stripped = [];
@@ -62,7 +65,7 @@ export function stripRequired(text, product) {
     //   두 번 들어가면 둘째 고지문 속 「치료」가 ✗ 로 떴다 (2026-11-02 smartever 신고).
     const re = looseRe(n, 'g');
     const hits = (body.match(re) || []).length;
-    if (hits) { body = body.replace(re, ' '); stripped.push(hits > 1 ? `${n} ×${hits}` : n); }
+    if (hits) { body = body.replace(re, ' '); stripped.push({ sentence: n, hits }); }
   }
   return { body: body.replace(/[ \t]{2,}/g, ' ').trim(), stripped };
 }
@@ -88,7 +91,11 @@ export function auditNumbers(text, product) {
   const masked = text
     .replace(/\b(?:19|20)\d{2}\.\d{1,2}(?:\.\d{1,2})?\b/g, ' ')
     .replace(/\b(?:19|20)\d{2}\s*년(?:\s*\d{1,2}\s*월(?:\s*\d{1,2}\s*일)?)?/g, ' ')
-    .replace(/^[ \t]*\d{1,2}\.(?=\s)/gm, ' ');
+    .replace(/^[ \t]*\d{1,2}\.(?=\s)/gm, ' ')
+    //  ④ 「年」이 없는 헹 달 이름 「11월과 12월」 — 달이다. 1~12 만 가린다
+    //     (2026-11-02 claude-22: 11-02 예약엘 「남은 건 11월과 12월」 의 11·12 가 통계처럼 걸렸다)
+    //     ★ 「월」만 가린다. 「일」은 가리지 않는다 — 「67일 남았습니다」 는 산수를 물어야 한다
+    .replace(/(?<![\d.,])(?:1[0-2]|[1-9])\s*월(?![\s]*\d)/g, ' ');
   const found = masked.match(/\d[\d,]*\.?\d*/g) || [];
   const unknown = [...new Set(found)].filter(n => {
     // 꼬리 마침표는 떼고 센다. 「1.」 이 두 글자로 세어져 한 자리 숫자가 걸려 나왔다

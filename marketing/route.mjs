@@ -178,7 +178,8 @@ else if (cmd === 'check') {
   g.hits.forEach(h => console.log(`  「${h.word}」 … ${h.where}${h.suggest ? `\n     → ${h.suggest}` : ''}`));
   (g.notices || []).forEach(h => console.log(`  통지(막지 않음) 「${h.word}」 … ${h.where}`));
   if (n.length) console.log(`  출처 확인 필요: ${n.join(', ')}`);
-  stripped.forEach(m => console.log(`  법정 고지문 1건 떼고 검사했습니다: ${m.slice(0, 30)}…`));
+  // 「1종 N회」로 적는다. 횟수를 **말줄임 앞**에 두어야 잘리지 않는다 (2026-11-02 smartever 신고).
+  stripped.forEach(m => console.log(`  법정 고지문 1종 ${m.hits}회 떼고 검사했습니다: ${m.sentence.slice(0, 30)}…`));
   if (miss.length) miss.forEach(m => console.log(`  빠진 필수 표기: ${m}`));
   else if ((p.mustInclude || []).length) console.log('  ✓ 필수 표기 들어 있음');
 }
