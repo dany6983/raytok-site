@@ -9,7 +9,7 @@
 // 계획만 뱉는다. 실제 발행은 Metricool / Upload-Post MCP 도구가 한다.
 // 쓴 후킹은 quota 로그에 남아 다음 달에 중복되지 않는다.
 
-import { loadProduct, check, auditNumbers, auditRequired, stripRequired } from './lib/check.mjs';
+import { loadProduct, check, auditNumbers, auditRequired, stripRequired, resolveForbidden } from './lib/check.mjs';
 import * as Q from './lib/quota.mjs';
 import { writeFileSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 
@@ -196,9 +196,8 @@ else if (cmd === 'selftest') {
   let bad = 0;
   for (const id of PRODUCTS) {
     const p = loadProduct(id);
-    const inh = p.forbidden?.inherit === 'common';
-    const words  = [...(inh ? common.words : []), ...(p.forbidden?.words || [])];
-    const notice = [...(inh ? (common.notice || []) : []), ...(p.forbidden?.notice || [])];
+    // 낱말 합치기는 check.mjs 의 resolveForbidden 하나만 쓴다 — 두 군데서 합치면 갈라진다
+    const { words, notice } = resolveForbidden(p);
     const table  = { ...(common.allowed_instead || {}), ...(p.allowedInstead || {}) };
     const say = (m) => { bad++; console.log(`  ✗ ${m}`); };
     console.log(`[${id}] 금지어 ${words.length} · 통지 ${notice.length} · 대체어 ${Object.keys(table).length}`);

@@ -10,19 +10,41 @@ export function loadProduct(id) {
   return JSON.parse(readFileSync(join(ROOT, `products/${id}.json`), 'utf8'));
 }
 
+/** forbidden.inherit 을 풀어 낱말목록을 합친다.
+ *  inherit 는 **문자열 하나 또는 배열**을 받는다 (배열은 2026-11-02 추가, smartever 동의).
+ *    "common"                     → 공용 목록만        (예전 그대로 · 하위호환)
+ *    ["common", "raytok-app"]     → 공용 + 앱 제품목록
+ *  까닭: 선글라스 상세가 앱의 번역 기능을 같이 파는데 낱말목록은 선글라스 것만 썼다.
+ *    그래서 「구독료 0원」·「휴대폰 안에서 번역」이 제품 경계를 타고 샜다
+ *    (2026-11-02 claude-22). 베껴 적으면 또 갈라지므로 물려받게 한다.
+ *  제품을 물려받으면 그 제품의 inherit 도 따라 풀린다. 고리(A→B→A)는 한 번만 보고 끊는다. */
+export function resolveForbidden(product, seen = new Set()) {
+  const words = [...(product.forbidden?.words || [])];
+  const notice = [...(product.forbidden?.notice || [])];
+  const inh = product.forbidden?.inherit;
+  const list = inh == null ? [] : (Array.isArray(inh) ? inh : [inh]);
+  for (const src of list) {
+    if (seen.has(src)) continue;
+    seen.add(src);
+    if (src === 'common') {
+      words.push(...(common.words || []));
+      notice.push(...(common.notice || []));
+      continue;
+    }
+    const up = resolveForbidden(loadProduct(src), seen);
+    words.push(...up.words);
+    notice.push(...up.notice);
+  }
+  const uniq = (a) => [...new Map(a.map(w => [w.toLowerCase(), w])).values()];
+  return { words: uniq(words), notice: uniq(notice) };
+}
+
 /** 금지어 검사. { ok, hits: [{word, where, suggest}], notices: [...] }
  *  words  = 법 자체라 막는다 (ok=false).
  *  notice = 2026-10-26 대표님 해제분. 막지 않고 통지만 한다 (ok 에 영향 없음).
  *           출처: claude/RayTok-광고규정_해제_1026.md */
 export function check(text, product) {
-  const words = [
-    ...(product.forbidden?.inherit === 'common' ? common.words : []),
-    ...(product.forbidden?.words || [])
-  ];
-  const noticeWords = [
-    ...(product.forbidden?.inherit === 'common' ? (common.notice || []) : []),
-    ...(product.forbidden?.notice || [])
-  ];
+  const { words, notice: noticeWords } = resolveForbidden(product);
   const hits = [];
   const find = (w) => {
     const m = looseFind(text, w);
