@@ -24,24 +24,41 @@ export function check(text, product) {
     ...(product.forbidden?.notice || [])
   ];
   const hits = [];
-  const lower = text.toLowerCase();
   const find = (w) => {
-    const i = lower.indexOf(w.toLowerCase());
-    return i < 0 ? null : { word: w, where: text.slice(Math.max(0, i - 15), i + w.length + 15) };
+    const m = looseFind(text, w);
+    return m ? { word: w, where: context(text, m) } : null;
   };
   const notices = noticeWords.map(find).filter(Boolean);
   for (const w of words) {
-    const i = lower.indexOf(w.toLowerCase());
-    if (i >= 0) {
+    const m = looseFind(text, w);
+    if (m) {
       hits.push({
         word: w,
-        where: text.slice(Math.max(0, i - 15), i + w.length + 15),
+        where: context(text, m),
         // 제품별 교체표가 공통보다 우선한다 (터치톡은 식약처 기준으로 따로 있다)
         suggest: (product.allowedInstead || {})[w] || common.allowed_instead[w] || null
       });
     }
   }
   return { ok: hits.length === 0, hits, notices };
+}
+
+/** 여러 낱말로 된 금지어·통지어를 **공백에 느슨하게** 찾는다.
+ *  까닭: 카드 그림은 머리글을 줄바꿈으로 쪼개 넣는다. 11-05 예약 그림이
+ *  「월 구독료 / 0원」 두 줄이라 금지어 「구독료 0원」이 indexOf 로 안 걸렸다.
+ *  캡션(한 줄)은 ✗ 였는데 **같은 말이 박힌 그림은 ✓ 로 통과**했다 (2026-11-02 claude-22).
+ *  고지문은 2026-11-01 부터 이미 looseRe 로 보고 있었다 — 금지어만 뒤처져 있었다.
+ *  ★ \s+ 는 공백·줄바꿈만 잇는다. 「치료. 효과」처럼 사이에 글자가 끼면 안 걸린다 — 의도대로 */
+function looseFind(text, w) {
+  if (!w || !w.trim()) return null;
+  const m = looseRe(w, 'i').exec(text);
+  return m ? { index: m.index, length: m[0].length } : null;
+}
+
+/** 걸린 자리 앞뒤 15자. 줄바꿈이 섞이면 읽기 어려워 한 칸으로 눕힌다 */
+function context(text, m) {
+  return text.slice(Math.max(0, m.index - 15), m.index + m.length + 15)
+             .replace(/\s+/g, ' ').trim();
 }
 
 /** 고지문 문장을 공백에 느슨한 정규식으로 바꾼다.
