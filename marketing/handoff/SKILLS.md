@@ -1284,3 +1284,8 @@ git rev-parse --abbrev-ref HEAD      # HEAD 로 나오면 detached
 git push origin HEAD:main            # ← 이렇게 민다
 git checkout -B main origin/main     # 그 다음 브랜치를 정상화
 ```
+
+## (smartever 11-02 19:15) plan 가드는 「0편」만 막는다 — 「줄어든 계획」은 조용히 덮는다
+- 한도가 거의 찼을 때 `plan` 은 0편이 아니라 **1편** 같은 줄어든 계획을 내고, 0편 가드를 빠져나가 기존 스냅샷을 덮는다. 출력은 「⚠ 한도에 걸려 N편에서 끊겼습니다」 한 줄뿐
+- 또 장부 `posts`(이미 발행/예약한 날)를 계획에서 빼지 않아, 발행한 날짜·소재를 다시 계획에 넣는다
+- 요령: 실제 예약을 건 뒤엔 그 달 `plan` 을 재실행하지 않는다. 회귀는 레포 밖 사본에서 장부(`used`·`posts`)를 바꿔 돌리고, 돌린 뒤 `plan` 길이를 전후로 센다
