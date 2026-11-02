@@ -49,6 +49,8 @@ export function percentile(sorted, p) {
  */
 export function summarizeStep({ n, sent, listeners, serverErrors = 0, lagMaxMs = 0 }) {
   const lat = [];
+  const slowAll = [];          // {seq, ms, idx} — 가장 느린 줄이 어느 seq 였나(첫 줄 = 방 깨우기인지)
+  const missList = [];         // {seq, idx} — 빠진 줄이 누구의 몇 번째였나
   let missing = 0;
   let dup = 0;
   const sentT = new Map(sent.map((s) => [s.seq, s.t]));
@@ -61,8 +63,10 @@ export function summarizeStep({ n, sent, listeners, serverErrors = 0, lagMaxMs =
     dup += l.dup || 0;
     for (const s of sent) {
       const at = l.got.get(s.seq);
-      if (at === undefined) { missing++; continue; }
-      lat.push(at - sentT.get(s.seq));
+      if (at === undefined) { missing++; if (missList.length < 20) missList.push({ seq: s.seq, idx: l.idx }); continue; }
+      const ms = at - sentT.get(s.seq);
+      lat.push(ms);
+      slowAll.push({ seq: s.seq, ms, idx: l.idx });
     }
   }
   lat.sort((a, b) => a - b);
@@ -79,7 +83,10 @@ export function summarizeStep({ n, sent, listeners, serverErrors = 0, lagMaxMs =
     p50: percentile(lat, 50),
     p95: percentile(lat, 95),
     max: lat.length ? lat[lat.length - 1] : null,
-    lagMaxMs: Math.round(lagMaxMs)
+    lagMaxMs: Math.round(lagMaxMs),
+    slowest: slowAll.sort((a, b) => b.ms - a.ms).slice(0, 5),
+    missList,
+    lateAfterEnd: listeners.reduce((a, l) => a + (l.late || 0), 0)
   };
 }
 
@@ -194,6 +201,7 @@ export async function runStep({ relay, token, n, durMs, intervalMs, pad, log = (
       try { m = JSON.parse(e.data); } catch (_) { return; }
       if (m && (m.error || m.kind === 'error')) { serverErrors++; return; }
       if (m && typeof m.seq === 'number' && typeof m.t === 'number' && m.lt === 1) {
+        if (ending) { l.late = (l.late || 0) + 1; return; }   // 기다림이 끝난 뒤 온 줄 — 「빠짐」과 따로 센다
         if (l.got.has(m.seq)) l.dup++; else l.got.set(m.seq, at);
       }
     });
