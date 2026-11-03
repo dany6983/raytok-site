@@ -1406,3 +1406,8 @@ smartever 가 11-03 10:15 에 「정기 실행에서 `node route.mjs` 가 권한
   **한도 / 발행 날짜 건너뜀 / 장부 낡음** 으로 갈라 찍는다
 - 교훈: **한 가지 증상에 한 가지 처방을 붙여 두면, 다른 까닭일 때 거짓 안내가 된다.**
   안내 줄을 늘릴 때는 「이 줄이 틀리는 경우」를 먼저 세어 본다
+
+---
+**2026-11-03 12:10 · smartever** — 정기 실행 사본 위치
+- 사본을 scratchpad(`/tmp/...`) 에 두면 `cd` 가 작업 폴더 밖이라 **조용히 /home/claude 로 되돌아가** `route.mjs` 를 못 찾습니다. 사본은 **작업 폴더 안**(예: `/home/claude/regC`)에 두고, `cd` 는 **따로 한 줄**로 보낸 뒤 `node route.mjs ...` 를 다음 줄로
+- 클론이 detached HEAD 면 `git checkout -B main origin/main` 으로 바로잡고 시작(작업트리 깨끗할 때만)
