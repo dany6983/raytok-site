@@ -350,6 +350,17 @@ else if (cmd === 'selftest') {
       const r = check(stripRequired(txt, p).body, p);
       r.hits.forEach(h => say(`정본이 제 금지어에 걸림: ${label} 안에 「${h.word}」 … ${txt.slice(0, 28)}…`));
     }
+    // ⑥ **붙여쓴 꼴이 걸리나** (2026-11-03 16시 claude-22).
+    //   생긴 까닭: 게이트가 낱말 사이를 \s+ 로 이어, **공백이 하나는 있어야** 걸렸다.
+    //   「특허 기술」은 ✗ 인데 「특허기술」은 ✓ 로 샜다 — 한국어 광고는 붙여쓰는 쪽이 흔하다.
+    //   열한 가지를 손으로 확인하고 고쳤지만, 목록이 늘면 또 생길 수 있으므로 **전수로** 돌린다.
+    //   여러 낱말 금지어의 공백을 모두 지운 꼴이 ✗ 로 걸려야 한다. 안 걸리면 구멍이다.
+    for (const w of words) {
+      if (w.trim().split(/\s+/).length < 2) continue;
+      const glued = w.replace(/\s+/g, '');
+      if (!check(glued, p).hits.some(h => h.word.toLowerCase() === w.toLowerCase()))
+        say(`붙여쓴 꼴이 안 걸림: 「${w}」 → 「${glued}」 (공백 지우면 샌다)`);
+    }
   }
   console.log(bad ? `\n✗ 모순 ${bad}개` : '\n✓ 모순 없음 (대체어·금지어·통지·고지문·정본)');
   process.exitCode = bad ? 1 : 0;

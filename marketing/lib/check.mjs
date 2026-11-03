@@ -86,9 +86,26 @@ export function check(text, product) {
  *  ★ \s+ 는 공백·줄바꿈만 잇는다. 「치료. 효과」처럼 사이에 글자가 끼면 안 걸린다 — 의도대로 */
 function looseFind(text, w) {
   if (!w || !w.trim()) return null;
-  const m = looseRe(w, 'i').exec(text);
+  const m = forbidRe(w, 'i').exec(text);
   if (m) return { index: m.index, length: m[0].length };
   return specFind(text, w);
+}
+
+/** 금지어·통지어 전용 정규식. 낱말 사이를 **\s* (0개 이상)** 로 잇는다.
+ *  까닭 (2026-11-03 16시 claude-22): `looseRe` 는 \s+ 라 **공백이 꼭 하나는 있어야** 했다.
+ *    그래서 **붙여쓴 꼴이 전부 샜다** — 한국어 광고 문구는 오히려 붙여쓰는 쪽이 흔하다:
+ *      「특허 기술」 ✗ 걸림  ↔  「특허기술」 ✓ 샘
+ *      「세계 최초」·「스마트 안경」·「청력 보호」·「주름 제거」·「효과 보장」·
+ *      「임상 입증」·「무료 증정」·「14일 만에」·「블루투스 5.4」 전부 같은 구멍
+ *    (「피부 재생」·「모공 수축」은 터치톡 목록에 붙여쓴 꼴이 따로 적혀 있어 걸렸다 —
+ *     목록마다 손으로 두 번 적어야 막히는 구조였다. 그 손일을 없앤다)
+ *  오탐 위험을 따져 본 결과: 붙여쓴 꼴이 **다른 뜻이 되는 낱말은 세 제품 목록에 없다.**
+ *    두 꼴이 같은 주장을 가리킨다. 그래서 목록을 안 고치고 **판정만** 느슨하게 한다.
+ *  ★ 고지문(mustInclude)은 그대로 `looseRe`(\s+) 를 쓴다 — 판정이 바뀌면 안 되는 정본이다.
+ *    그래서 stripRequired·auditRequired 는 **전과 한 글자도 같다** (터치톡 영향 없음) */
+function forbidRe(w, flags = '') {
+  return new RegExp(w.trim().split(/\s+/)
+    .map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*'), flags);
 }
 
 /** 사양표·수치 띠에서 **값이 이름 위**에 올 때를 잡는다 (2026-11-03 claude-22).
@@ -115,7 +132,7 @@ function specFind(text, w) {
   // 「사이에 글자가 끼면 안 걸린다」는 looseRe 의 원칙을 그대로 지킨다.
   const GAP = '[\\s/·|]+(?:[가-힣A-Za-z]{1,3}[\\s/·|]+)?';
   // 값 뒤에 한글이 이어 붙으면(「0원으로」) 홑 수치가 아니다 — 사양표 값이 아니라 문장이다
-  const re = new RegExp(esc(tail) + '(?![가-힣])' + GAP + head.map(esc).join('\\s+'), 'i');
+  const re = new RegExp(esc(tail) + '(?![가-힣])' + GAP + head.map(esc).join('\\s*'), 'i');
   const m = re.exec(text);
   return m ? { index: m.index, length: m[0].length } : null;
 }
