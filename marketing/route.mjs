@@ -249,7 +249,21 @@ else if (cmd === 'quota') {
 else if (cmd === 'check') {
   const [pid, ...rest] = args;
   const p = loadProduct(pid);
-  const text = rest.join(' ');
+  // 2026-11-03 14시 claude-22: 전엔 받은 인자를 **무조건 글자로** 봤다.
+  // 그래서 파일 경로를 넘기면 **경로 글자만** 검사하고 본문은 한 번도 안 읽어
+  // 금지어가 든 파일도 「✓ 금지어 없음」으로 통과했다 (거짓 통과).
+  // 인자가 하나이고 그것이 **있는 파일**이면 읽는다. 파일처럼 보이는데 없으면 멈춘다.
+  let text;
+  if (rest.length === 1 && existsSync(rest[0])) {
+    text = readFileSync(rest[0], 'utf8');
+    console.log(`  파일을 읽었습니다: ${rest[0]} (${text.length}자)`);
+  } else if (rest.length === 1 && /[\/\\]|\.(txt|md|json|html?)$/i.test(rest[0])) {
+    console.error(`✗ 파일을 못 찾았습니다: ${rest[0]}`);
+    console.error('  경로를 다시 보십시오. 글자를 바로 검사하려면 따옴표로 감싸 주십시오.');
+    process.exit(2);
+  } else {
+    text = rest.join(' ');
+  }
   // plan 과 같은 판정으로 맞춘다: 금지어는 **고지문을 뗀 본문**만 본다.
   // 법정 고지문(mustInclude)은 정본이라 「치료」가 들어 있어도 고칠 수 없다.
   // 예전엔 받은 문구 전체를 검사해 고지문을 넣으면 ✗, 빼면 「빠진 필수 표기」가 떠서
@@ -316,7 +330,7 @@ else {
   node route.mjs plan  <productId> <YYYY-MM> [주당횟수] [요일]  발행 계획 생성
                                                         요일 2=화 5=금 (같은 도구 공유 시 분리)
   node route.mjs quota <YYYY-MM>                          무료 한도 사용량
-  node route.mjs check <productId> "문구"                  금지어 검사
+  node route.mjs check <productId> "문구"|<파일>          금지어 검사 (파일이면 읽습니다)
   node route.mjs selftest                                 낱말 목록 모순 검사
 
   제품: ${['raytok-glass', 'raytok-app', 'touchtok'].join(' · ')}
