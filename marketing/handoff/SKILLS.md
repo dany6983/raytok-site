@@ -1558,3 +1558,8 @@ smartever 가 10:15 에 「정기 실행에서 `node route.mjs` 가 권한 판�
 `git pull` 이 `+ a...b (forced update)` 로 나오면 **강제 push 로 커밋이 떨어진 것**이다.
 `git merge-base --is-ancestor <옛것> HEAD` 로 확인하고, 떨어졌으면 내용을 보고 **되살릴지 묻는다.**
 이번엔 10-31 커밋 하나가 떨어졌는데, 그 안에 지금 고치려는 **거짓 주장이 들어 있어** 되살리지 않는 쪽이 맞았다.
+
+---
+**2026-11-03 16:11 · smartever** — HTML 게이트 첫 사용
+- 다른 레포 페이지도 **절대경로 하나**로 넘기면 됨: `node route.mjs check touchtok /home/claude/touchtok-site/index.html`
+- 「HTML 이라 보이는 글자만 남겼습니다」 줄이 떠야 HTML 처리된 것. 「출처 확인 필요」에 가격·영업시간이 섞이니 숫자마다 문맥을 직접 확인
