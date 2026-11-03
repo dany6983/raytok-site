@@ -83,7 +83,13 @@ if (cmd === 'plan') {
 
   const plan = [];
   let blocked = null;
+  // 장부 posts 에 이미 올라간 날짜는 계획에서 뺀다. 안 빼면 같은 날에 소재가 또 얹힌다
+  // (2026-11-02 smartever 재현 → 11-03 claude-22 고침).
+  const donePub = Q.publishedDatesFor(month, tool, pid);
+  const skippedDates = [];
   for (const when of slots(month, perWeek, day)) {
+    const md = when.slice(5, 10);
+    if (donePub.has(md)) { skippedDates.push(md); continue; }
     if (!pool.length) { blocked = 'hooks_exhausted'; break; }
     if (!Q.canFit(month, tool, cost + plan.length * cost - plan.length * cost)) { /* 아래에서 합산 */ }
     const willUse = (plan.length + 1) * cost;
@@ -133,6 +139,7 @@ if (cmd === 'plan') {
     quota: { cap: Q.CAPS[tool].perMonth, left: Q.left(month, tool), reservedByOthers: reserved, available, willUse: plan.length * cost },
     perWeek, day: day != null ? Number(day) : null, daySrc, posts: plan.length,
     dayDrift,
+    skippedPublishedDates: skippedDates,
     blocked,
     hooksLeftAfter: pool.length,
     plan
@@ -142,11 +149,14 @@ if (cmd === 'plan') {
   //   plan 을 다시 돌리면 0편 파일이 4편 기록을 덮어쓴다. 게이트는 전부 ✓ 라 조용하다.
   //   더 나쁜 것은 **옮음**이다: plannedElsewhere() 가 이 파일들을 읽어 다른 제품 몫을 세므로
   //   하나가 0 이 되면 **다음에 돌리는 제품의 「다른 제품 계획」 수가 틀린다.**
+  //   ★ 2026-11-03: 0편만 보던 조건을 **「줄어들면」** 으로 넓혔다. smartever 가 사본에서
+  //     4편 → 1편으로 덮이는 것을 재현했다(한도가 거의 찬 경우). 0 은 그 특수한 경우일 뿐이었다
   let kept = null;
-  if (plan.length === 0 && existsSync(outPath)) {
+  if (existsSync(outPath)) {
     try {
       const prev = JSON.parse(readFileSync(outPath, 'utf8'));
-      if (Array.isArray(prev.plan) && prev.plan.length > 0) kept = prev.plan.length;
+      const n = Array.isArray(prev.plan) ? prev.plan.length : 0;
+      if (n > plan.length) kept = n;
     } catch {}
   }
   if (kept == null) writeFileSync(outPath, JSON.stringify(result, null, 2));
@@ -166,6 +176,7 @@ if (cmd === 'plan') {
     console.log(`     → 한도 판정 자체는 이 줄과 상관없이 **장부 used 기준**입니다 — 초과 발행은 안 됩니다`);
   }
   if (blocked === 'hooks_exhausted') console.log(`  ⚠ 안 쓴 소재가 떨어졌습니다. 후킹을 더 넣어야 합니다.`);
+  if (skippedDates.length) console.log(`  · 이미 장부 posts 에 있는 날짜는 건너뛰었습니다: ${skippedDates.join(' · ')}`);
   console.log(`  요일 ${day != null ? WDAY[Number(day)] || day : '화·금(기본)'} · 주당 ${perWeek}회 — 출처 ${daySrc}`);
   if (dayDrift && !dayDrift.match) {
     console.log(`  🔴 장부와 날짜가 어긋납니다 — 사람이 보셔야 합니다`);
@@ -186,9 +197,10 @@ if (cmd === 'plan') {
     if (x.unknownNumbers.length) console.log(`      출처 확인 필요한 숫자: ${x.unknownNumbers.join(', ')}`);
   }
   if (kept != null) {
-    console.log(`  🔴 **덮어쓰지 않았습니다** — 이번 계획은 0편인데 기존 스냅샷엔 ${kept}편이 들어 있습니다`);
+    console.log(`  🔴 **덮어쓰지 않았습니다** — 이번 계획은 ${plan.length}편인데 기존 스냅샷엔 ${kept}편이 들어 있습니다`);
     console.log(`     ${outPath} 는 **그대로 둡니다.** 이미 세워 둔 계획의 기록이기 때문입니다`);
-    console.log(`     0편은 한도가 꽉 찬 탓입니다. 기록을 정말 비우려면 그 파일을 사람이 지우세요`);
+    console.log(`     편 수가 줄어드는 까닭은 보통 한도가 찼거나 소재가 떨어진 것입니다`);
+    console.log(`     줄어든 계획을 정말 쓰시려면 그 파일을 사람이 지우고 다시 돌리세요`);
   } else {
     console.log(`\n  → ${outPath}`);
   }

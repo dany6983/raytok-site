@@ -123,5 +123,22 @@ export function plannedDatesFor(month, tool, pid) {
     .map(pl => ({ d: String(pl.d || ''), hook: pl.hook || null, channels: Number(pl.channels) || 1 }));
 }
 
+/** 장부 posts(이미 발행·예약된 것) 중 **이 제품** 몫의 날짜. 「MM-DD」 집합.
+ *  까닭: plan 은 요일만 보고 그 달 날짜를 전부 깔아서, **이미 나간 날짜에 또 소재를 얹었다.**
+ *    2026-11-02 smartever 가 사본에서 재현: posts 에 11-05 T1 이 들어 있는데도 plan 이
+ *    11-05 T1 을 다시 계획에 넣었다 — 같은 소재가 두 번 나갈 자리다 (claude-22 고침 11-03).
+ *  ★ 장부 p 는 짧은 이름을 쓰는 데가 있다 (metricool: "app"·"glass" / uploadpost: "touchtok").
+ *    그래서 제품 id 와 **꼬리 일치**까지 본다. 못 맞추면 안 빼는 쪽으로 둔다(조용히 덜 빼기). */
+export function publishedDatesFor(month, tool, pid) {
+  const j = readJson(toolPath(month, tool));
+  const posts = j && Array.isArray(j.posts) ? j.posts : [];
+  const mine = (po) => {
+    const q = String(po.p || po.product || '');
+    if (!q) return false;
+    return q === pid || pid === `raytok-${q}` || pid.endsWith(`-${q}`) || q.endsWith(`-${pid}`);
+  };
+  return new Set(posts.filter(mine).map(po => String(po.d || '')).filter(Boolean));
+}
+
 export { CAPS };
 
