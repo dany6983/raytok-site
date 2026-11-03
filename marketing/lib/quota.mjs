@@ -137,7 +137,38 @@ export function publishedDatesFor(month, tool, pid) {
     if (!q) return false;
     return q === pid || pid === `raytok-${q}` || pid.endsWith(`-${q}`) || q.endsWith(`-${pid}`);
   };
-  return new Set(posts.filter(mine).map(po => String(po.d || '')).filter(Boolean));
+  // 날짜꼴을 MM-DD 로 맞춘다. 장부에 2026-11-05 처럼 해까지 적힌 줄이 섞여도
+  // route.mjs 의 비교(MM-DD)가 조용히 어긋나지 않게 두 꼴을 다 담는다
+  // (2026-11-03 claude-22: 11-03 09:40 고침의 빈틈. 실제 장부는 MM-DD 라 영향 없었음).
+  const out = new Set();
+  for (const po of posts.filter(mine)) {
+    const d = String(po.d || '').trim();
+    if (!d) continue;
+    out.add(d);
+    const m = d.match(/^(\d{4})-(\d{2}-\d{2})$/);
+    if (m) out.add(m[2]);
+  }
+  return out;
+}
+
+/** 장부 posts 에 이미 올라간 **후킹 id** — 제품 기준.
+ *  publishedDatesFor 와 짝이다. 날짜만 빼면 남은 자리에 **이미 나간 소재가 다시 붙는다**
+ *  (2026-11-03 smartever 재현: posts 3줄 → 남은 11-26 에 T1 이 또 잡혔다).
+ *  ★ 장부 줄에 hook 이 없으면 아무것도 빼지 않는다 — 조용히 덜 빼는 쪽으로 둔다. */
+export function publishedHooksFor(month, tool, pid) {
+  const j = readJson(toolPath(month, tool));
+  const posts = j && Array.isArray(j.posts) ? j.posts : [];
+  const mine = (po) => {
+    const q = String(po.p || po.product || '');
+    if (!q) return false;
+    return q === pid || pid === `raytok-${q}` || pid.endsWith(`-${q}`) || q.endsWith(`-${pid}`);
+  };
+  const out = new Set();
+  for (const po of posts.filter(mine)) {
+    const h = String(po.hook || po.hookId || '').trim();
+    if (h) out.add(h);
+  }
+  return out;
 }
 
 export { CAPS };

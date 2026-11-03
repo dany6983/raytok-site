@@ -32,10 +32,14 @@ const WDAY = ['일', '월', '화', '수', '목', '금', '토'];
 
 const [cmd, ...args] = process.argv.slice(2);
 
-function usedHooks(month, productId) {
+function usedHooks(month, productId, tool) {
   const seen = new Set();
   for (const m of [month, prevMonth(month), prevMonth(prevMonth(month))]) {
     for (const e of Q.read(m).log || []) if (e.productId === productId) seen.add(e.hookId);
+    // 엔진 log 만 보면 **사람이 장부에 적은 발행분**이 빠진다. 장부 posts[].hook 도 더한다
+    // (2026-11-03 smartever 재현 → 같은 날 claude-22 고침).
+    // hook 이 안 적힌 줄은 아무것도 빼지 않는다 — 조용히 덜 빼는 쪽.
+    if (tool) for (const h of Q.publishedHooksFor(m, tool, productId)) seen.add(h);
   }
   return seen;
 }
@@ -76,7 +80,7 @@ if (cmd === 'plan') {
   // out/ 계획 파일과 장부 planned 는 **같은 자리**를 가리킨다. 더하면 두 번 센다 → 큰 쪽을 쓴다
   const reserved = Math.max(plannedElsewhere(month, tool, pid), Q.plannedByOthers(month, tool, pid));
   const available = Q.left(month, tool) - reserved;
-  const already = usedHooks(month, pid);
+  const already = usedHooks(month, pid, tool);
   const pool = (p.hooks || [])
     .filter(h => !already.has(h.id))
     .sort((a, b) => (a.priority || 99) - (b.priority || 99));
@@ -182,7 +186,17 @@ if (cmd === 'plan') {
     console.log(`  🔴 장부와 날짜가 어긋납니다 — 사람이 보셔야 합니다`);
     console.log(`     장부 planned : ${dayDrift.ledger.join(' · ')} (${dayDrift.ledger.length}편)`);
     console.log(`     이 계획      : ${dayDrift.planned.join(' · ')} (${dayDrift.planned.length}편)`);
-    console.log(`     → 요일 인자를 빼고 재생성하면 기본 화·금으로 깔립니다. products/${pid}.json 의 publish.day 를 채우세요`);
+    // 안내 문구는 **까닭에 맞는 것만** 찍는다. 요일이 이미 제품 파일에 박혀 있는데
+    // 「publish.day 를 채우세요」가 뜨면 사람이 엉뚱한 데를 본다
+    // (2026-11-03 smartever 가 짚음: 실제 까닭은 한도였다).
+    if (p.publish.day == null) {
+      console.log(`     → 요일 인자를 빼고 재생성하면 기본 화·금으로 깔립니다. products/${pid}.json 의 publish.day 를 채우세요`);
+    } else if (skippedDates.length || blocked === 'quota') {
+      const why = blocked === 'quota' ? '한도에 걸려 편 수가 줄었습니다' : '이미 발행된 날짜를 건너뛰었습니다';
+      console.log(`     → 요일은 products/${pid}.json 에 박혀 있습니다(${WDAY[Number(p.publish.day)] || p.publish.day}). ${why} — 요일 문제가 아닙니다`);
+    } else {
+      console.log(`     → 요일은 products/${pid}.json 에 박혀 있습니다(${WDAY[Number(p.publish.day)] || p.publish.day}). 장부 planned 쪽이 낡았는지 보세요`);
+    }
   } else if (dayDrift) {
     console.log(`  ✓ 장부 planned 와 날짜 일치 (${dayDrift.ledger.length}편)`);
   }
