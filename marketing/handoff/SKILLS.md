@@ -1609,3 +1609,14 @@ smartever 가 10:15 에 「정기 실행에서 `node route.mjs` 가 권한 판�
 - **쓰지 말 것:** `m.fn ? m.fn(...) : 기본값` — 이름을 틀리면 조용히 「문제 없음」이 된다
 - **쓸 것:** `if (typeof m.fn !== 'function') { 멈춘다 }` 먼저. 점검 도구는 **못 하면 멈춰야** 한다
 - 「0건」을 봤을 때 **일부러 틀린 글을 넣어 1건이 뜨는지** 한 번 본다(음성 대조). 안 뜨면 눈이 먼 것이다
+
+## detached HEAD 에서 `git push origin main` 은 **엉뚱한 걸 밀고 거부당한다** (2026-11-03 18시 · claude-22)
+클론이 또 detached HEAD 였다. 커밋은 origin/main 꼭대기 위에 제대로 얹혔는데
+`git push origin main` 이 **「non-fast-forward」로 거부**했다. 까닭: 그 명령은 **지역 브랜치 `main`**
+(뒤처진 것)을 밀고, 내 커밋이 얹힌 **HEAD 는 밀지 않는다.** `git pull --rebase` 를 해도 같다 —
+HEAD 가 브랜치가 아니라서 당겨올 곳이 없다.
+- **증상:** 커밋은 됐고 `git log` 도 맞는데 push 만 두 번 거부된다
+- **먼저 볼 것:** `git branch --show-current` 가 **빈 줄**이면 이것이다 (`git status -sb` → `## HEAD (no branch)`)
+- **푸는 법:** `git push origin HEAD:main` — 밀 것을 **집어서** 말한다
+- **뒤처리:** `git checkout -B main <그 커밋>` 으로 브랜치를 제자리에 놓는다. 다음 시간이 편해진다
+- **강제 push 는 쓰지 않았다.** 거부가 났을 때 `-f` 로 넘기면 상대 커밋이 날아간다
