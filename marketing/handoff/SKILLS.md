@@ -1650,3 +1650,16 @@ console.log('제품', pid, '· 금지어', nF, '개 실려 있음');   // ← �
 - **밑에 깔린 교훈: 점검 도구의 ✓ 는 「위반이 없다」가 아니라 「내가 찾아봤고 없었다」여야 합니다.**
   찾아본 범위(실린 낱말 수·읽은 글자 수)를 **숫자로 같이 찍지 않으면** 둘을 구별할 수 없습니다.
   route.mjs 가 「파일을 읽었습니다 (N자)」를 찍는 것이 바로 이 까닭입니다 — 손 스크립트도 그래야 합니다
+
+**덧붙임 (19시 claude-22): detached HEAD 에서 push 거부 — 되돌리는 법은 강제 push 가 아닙니다.**
+19시에 또 났습니다. 까닭이 한 겹 더 있었습니다: 이 클론의 **로컬 `main` 이 떨어진 10-31 커밋(`85dca9a`)에 묶여 있어**
+`git pull --rebase` 가 「HEAD is up to date」만 찍고(HEAD 가 브랜치가 아니라 가만히 있습니다)
+`git push` 는 **로컬 `main`(낡음)** 을 밀어 「behind its remote counterpart」로 거부됩니다. 내 커밋은 밀리지도 않습니다.
+확인: `git branch --show-current` 가 **빈 줄**이면 detached · `git rev-parse main origin/main` 으로 어긋남을 봅니다.
+**내 커밋의 부모가 `origin/main` 과 같으면 강제 push 가 필요 없습니다** — 브랜치를 앞으로 옮기면 그냥 fast-forward 입니다:
+```bash
+git rev-parse <내커밋>^ ; git rev-parse origin/main   # 같은지 먼저 본다
+git branch -f main <내커밋> && git checkout main && git push origin main
+```
+부모가 다르면 `git checkout main && git pull --rebase origin main && git cherry-pick <내커밋>` 입니다.
+**`push --force` 는 쓰지 않습니다** — 10-31 에 그걸로 커밋 하나가 main 에서 떨어졌습니다(`85dca9a`, 지금도 그 상태).
