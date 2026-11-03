@@ -1569,8 +1569,13 @@
       return true;
     }
 
+    /* ★ ③④ 손님 소리 지킴 — `web/common/tts-guard.js` (들어갈 때 싣는다 · 첫 화면 37KB 밖). 실시간 줄은
+       순서대로 읽고 5초 넘게 밀리면 최신으로, 발화마다 시간 상한. 못 실으면 옛 판 그대로(새 줄마다 cancel).
+       멈춤·원고 읽기의 cancel 뒤 남은 줄은 다음 줄이 올 때 지킴이 스스로 비운다(읽는 것이 없으면 비우고 시작). */
+
     function speak(text, via, audioUrl) {
       if (!isTtsEnabled) return;
+      if (!audioUrl && window.rtTtsGuard && rtTtsGuard.say(text, via)) return;
       speechSynthesis.cancel();
 
       if (audioUrl) {
@@ -1670,6 +1675,8 @@
       };
       u.onend = advance;
       u.onerror = (e) => { if (!e || !/interrupted|canceled/.test(e.error)) advance(); };
+      /* ③ 시간 상한 — onend 가 안 오면 지킴이가 넘긴다(arm 이 onend·onerror 를 감싸 「살아 있음」을 센다) */
+      if (window.rtTtsGuard) rtTtsGuard.arm(u, r.sents[r.idx].length, () => reader === r && r.cur === u && !r.paused, advance, 'para=' + r.line.para);
       speechSynthesis.speak(u);
     }
     function pauseReading(why) {
@@ -1700,6 +1707,11 @@
 
     // 연결 관리
     function connect() {
+      /* ③④ 지킴이는 방에 들어갈 때 싣는다 — 첫 화면에는 싣지 않는다(37KB) */
+      if (!window.__rtTtsGuardReady) {
+        window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog });
+        document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js' }));
+      }
       /* ★ 10-27 14:14 대표님 tail: 아이폰이 같은 초에 `/ws` 를 **둘** 열고 둘 다 Canceled. 이 함수가 두 곳
          (들어가기 단추 · 화면이 다시 보일 때)에서 불리는데, 앞 것이 아직 **여는 중**(CONNECTING)이면
          `ws.close()` 가 그것을 끊고 새것을 연다 — 아이폰은 들어가기 때 화면 깨우기(무음 영상)로 visibility 가

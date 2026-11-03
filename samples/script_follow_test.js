@@ -47,7 +47,9 @@ const sends = host.match(/sendSpokenLine\(/g) || [];
  * `send: sendSpokenLine` 은 괄호가 없어 세지 않는다 — 처음에 셋으로 썼다가
  * 내 기대가 틀린 것을 돌려 보고 알았다(코드는 맞았다).
  */
-ok(sends.length === 2, `sendSpokenLine 자리 ${sends.length}개 (정의 1 · 부르는 곳 1)`);
+/* 11-03 ① (「final 없음」 감시견): 끊은 인식기의 마지막 interim 도 **같은 함수**로 보낸다 — 부르는 곳 둘,
+   둘 다 원고 판정을 거친다(문은 여전히 하나: sendSpokenLine). */
+ok(sends.length === 3, `sendSpokenLine 자리 ${sends.length}개 (정의 1 · 부르는 곳 2: 확정 줄 · no_final interim)`);
 ok(/scriptOffScript\(|offScript\(/.test(host), '보내기 전에 원고 밖인지 묻는다');
 
 /*

@@ -37,7 +37,7 @@ const ttsStub = () => {
   window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
   if (window.speechSynthesis) {
     window.speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en' }, { lang: 'ja-JP', name: 'ja' }];
-    window.speechSynthesis.speak = function (u) { if (u && u.text) window.__spoken.push(u.text); };
+    window.speechSynthesis.speak = function (u) { if (u && u.text) window.__spoken.push(u.text); setTimeout(() => { if (u && u.onend) u.onend({}); }, 0); /* 진짜 엔진처럼 onend — 11-03 ④ 큐가 기다린다(D-11) */ };
     window.speechSynthesis.cancel = function () {};
   }
 };

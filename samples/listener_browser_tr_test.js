@@ -164,7 +164,7 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
       Object.defineProperty(window, 'speechSynthesis', {
         configurable: true,
         value: { getVoices: () => [{ lang: 'vi-VN', name: 'vi' }], cancel() {},
-                 speak: (u) => { if (u && u.text) window.__spoken.push(u.text); } }
+                 speak: (u) => { if (u && u.text) window.__spoken.push(u.text); setTimeout(() => { if (u && u.onend) u.onend({}); }, 0); /* 진짜 엔진처럼 onend — 11-03 ④ 큐(D-11) */ } }
       });
     });
     await page3.goto(`${base}/web/listener/?lang=vi`);

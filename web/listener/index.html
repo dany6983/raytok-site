@@ -1337,6 +1337,7 @@ return true;
 
 function speak(text, via, audioUrl) {
 if (!isTtsEnabled) return;
+if (!audioUrl && window.rtTtsGuard && rtTtsGuard.say(text, via)) return;
 speechSynthesis.cancel();
 
 if (audioUrl) {
@@ -1416,6 +1417,7 @@ r.idx += 1; r.cur = null; readNext();
 };
 u.onend = advance;
 u.onerror = (e) => { if (!e || !/interrupted|canceled/.test(e.error)) advance(); };
+if (window.rtTtsGuard) rtTtsGuard.arm(u, r.sents[r.idx].length, () => reader === r && r.cur === u && !r.paused, advance, 'para=' + r.line.para);
 speechSynthesis.speak(u);
 }
 function pauseReading(why) {
@@ -1443,6 +1445,10 @@ say: function (text, via) { speakWebTts(text, via || ''); }
 };
 
 function connect() {
+if (!window.__rtTtsGuardReady) {
+window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog });
+document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js' }));
+}
 if (ws && ws.readyState === WebSocket.CONNECTING) { connLog.push(`${ts()} connect skipped (connecting)`); return; }
 if (ws) ws.close();
 

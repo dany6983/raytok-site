@@ -11,6 +11,14 @@
 ```
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
+## 11-03 19:50 — [웹 일꾼] NOW 11-03 18:45 「개발된 모든 노하우를 웹도」 ①~⑥
+했다: ① 강사 「final 없음 15초」 감시견(`?nofinal=0` 끔) — interim 만 15초면 stop→되열기, 마지막 interim 은 확정 줄로(stop 뒤 final 오면 그것만, 두 번 안 감) · 조용하면 손 안 댐 ② 강사 원장 localStorage `raytok_host_ledger_<방>` {seq,t,text,para} 3000줄, 리포트는 원장>메모리면 원장, 방 닫으면 지움·서버 안 감(`?ledger=0`) ③ 손님 TTS 시간 상한 tts_timeout·2연속 tts_rebind(`?ttscap=0`) ④ 숫자 먼저 → 큐+5초 건너뜀 tts_jump(`?ttsq=0`) ⑤ 해당 없음 ⑥ `?soak=1` 5분마다 `[mic] soak reopens= no_final= pending= lines=` (커밋 COMMIT)
+어디서 보나: ④ 숫자 `docs/reclog/2026-11-03-web/tts-queue-sim.txt`(앱 11-02 강연 29분 492줄): 끝까지 읽힌 줄 ⓐ지금 28~45% ↔ ⓑ큐+5초 55~75%, 대가 평균 1.3~1.7초·최대 7초 늦음 (1초 6/8/10글자) → ⓑ 넣음 · ③④ 는 `web/common/tts-guard.js` 를 **방 들어갈 때** 싣는다(첫 화면 37KB 한도 — 안에 두면 37.6KB), 못 실으면 옛 판
+막힘: 없음. 판단 셋 — ⓐ ③ 상한 셈은 NOW 의 `1500+글자×90ms`(최대 20초) 대신 **앱 `ttsCap.js timeoutMsFor` 그대로**(1초 6글자×2, 5~30초): 90ms/글자면 한국어 보통 읽기(7자/초≈143ms)를 자른다(D-11) ⓑ ② 「확정 줄」= 리포트가 읽는 줄(나간 원고 문단, `live.sent`) — 웹 리포트엔 🎤 줄이 원래 없다. 새로 고친 뒤 원장을 꺼내는 단추는 없다(원장은 남음, 꺼내기는 마스터 판단) ⓒ ⑤ 웹 리포트 줄 = 원고 문단(이미 문단) · 🎤 줄은 리포트에 안 들어가 묶을 줄이 없다 → 안 넣음(§5). 그리고 앱 규칙 숫자는 1.5초가 아니라 `PARA_GAP_MS` 3000ms·4문장
+확인만: test 102개 하나씩 — 붉은 4 = 이 일로 새로 붉은 것 0 (i18n·generator·contact·site-wording 넷은 기준 fa638e0 에서도 붉다 — 사이트 글자·연락 폼 쪽, 안 건드림) · 새 시험 test:host-knowhow 26 · test:listener-tts-cap 15, 각 3회 초록 · D-09 되돌림 9곳(①2·②2·⑥1·③2·④2) 전부 붉음 + 시험 안 옛 판 스위치 거울 4 확인 · 시험 고친 셋: end·listener-browser-tr 가짜 TTS 가 onend 를 안 냈다(진짜와 다름, D-11 — ④ 큐가 onend 를 기다림), script-follow sendSpokenLine 자리 2→3(①, 문은 그대로 하나) · 마스터 검수 대기
+다음: 소크 1시간(⑥ 조건: 노트북 크롬+유튜브 강연 1시간+🎤+청취 1명, `?soak=1`)은 마스터 · 손님 실기 한 번(안드로이드 크롬 긴 문단에서 tts_timeout 이 멀쩡한 읽기를 자르지 않나 — 설정 기록 줄)
+건드린 파일: web/host/index.html(①②⑥) · web/listener/index.src.html+index.html(③④ 싣기·연결) · web/common/tts-guard.js(새 — ③④ 본체, 첫 화면 밖) · samples/host_knowhow_test.js·listener_tts_cap_test.js(새) · samples/end_test.js·listener_browser_tr_test.js·script_follow_test.js(위 까닭) · package.json(test 묶음 둘) · docs/reclog/2026-11-03-web/(④ 셈 스크립트·결과). 릴레이 안 건드림 — 배포 불필요. P-14: 원장·지킴이 모두 서버로 아무것도 안 보냄. 이전 정상: fa638e0
+
 ## 11-01 14:07 — [웹 일꾼] NOW 11-01 13:47 동시 접속 부하 시험
 했다: ① `relay/wrangler.toml` `[env.loadtest]`(이름 raytok-relay-loadtest · 자기 DO · ALLOW_TEST_KEY=1 · ROOM_TR=0 · KV 없음) ② `scripts/loadtest-room.mjs`(시험 키 0번→redeem→issue→`/room`→강사 1+손님 N, 1.5초마다 한 줄 → p50·p95·최대·빠짐·실패·끊김·서버 오류·시험기 lag → `--out` 으로 .md+.json, 운영 주소는 거절) ③ 로컬 결과 `docs/loadtest-2026-11-01-local.md`(50·100·200 p95 15·20·125ms 빠짐 0 — **로컬값, 운영 한계 아님**). **알아둘 것: 코드에 방 손님 상한 200(room.js)** — 500·1000 단계는 그 위라 연결 실패로 나온다(설계값). 200 넘게 받을지는 대표님 결정. 기본안: 강사는 원문만 보냄(P-14 — NOW 의 「번역(tr) 실어」 대신 같은 무게 덧붙임 `--pad`)
 어디서 보나: `scripts/loadtest-room.mjs` · 시험 `samples/loadtest_room_test.mjs`(test:loadtest-room) · 결과 `docs/loadtest-2026-11-01-local.md`
