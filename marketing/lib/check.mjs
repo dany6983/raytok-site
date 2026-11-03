@@ -74,6 +74,36 @@ export function check(text, product) {
 function looseFind(text, w) {
   if (!w || !w.trim()) return null;
   const m = looseRe(w, 'i').exec(text);
+  if (m) return { index: m.index, length: m[0].length };
+  return specFind(text, w);
+}
+
+/** 사양표·수치 띠에서 **값이 이름 위**에 올 때를 잡는다 (2026-11-03 claude-22).
+ *  까닭: `looseRe` 는 공백·줄바꿈만 잇고 **말 순서는 못 바꾼다.** 그래서
+ *    「월 구독료 0원」  → ✗ 걸린다
+ *    「0원 / 월 구독료」 → ✓ 샜다      ← 11-05 예약 그림이 바로 이 꼴이었다
+ *  낱말 순서를 전부 섞으면 엉뚱한 데서 걸리므로(2026-11-02 결정) **딱 한 가지만** 본다:
+ *    **맨 끝 낱말이 홑 수치**(「0원」·「5.4」·「14일」)인 금지어만, 그 수치가 먼저 오고
+ *    남은 낱말이 **12자 안에** 뒤따르는 경우. 사양표 이름줄에 붙는 접두사(「월 」)를 넘긴다.
+ *  ★ 남은 낱말이 **한 글자면 건너뛴다** — 「단 14일」의 「단」이 「단계」·「진단」에 걸린다.
+ *    그래서 지금 실제로 보는 것은 「구독료 0원」·「블루투스 5.4/5.2」 세 개뿐이다. */
+const VALUE_TAIL = /^\d[\d.,]*\s*(?:원|%|개|g|kg|시간|분|초|일|배|회|명|mm|cm|m)?$/;
+function specFind(text, w) {
+  const toks = w.trim().split(/\s+/);
+  if (toks.length < 2) return null;
+  const tail = toks[toks.length - 1];
+  const head = toks.slice(0, -1);
+  if (!VALUE_TAIL.test(tail)) return null;
+  if (head.some(t => t.length < 2)) return null;   // 한 글자 낱말은 오탐이 난다
+  const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 값과 이름 사이는 **사양표 사이값만** 넘긴다: 공백·줄바꿈·슬래시·가운뎃점, 그리고
+  // 이름줄 접두사 한 낱말(「월 」)까지. 마침표·쉼표는 안 넘긴다 —
+  // 「0원으로 쓰십니다. 구독료는…」처럼 **문장을 건너뛰면** 엉뚱한 데서 걸린다.
+  // 「사이에 글자가 끼면 안 걸린다」는 looseRe 의 원칙을 그대로 지킨다.
+  const GAP = '[\\s/·|]+(?:[가-힣A-Za-z]{1,3}[\\s/·|]+)?';
+  // 값 뒤에 한글이 이어 붙으면(「0원으로」) 홑 수치가 아니다 — 사양표 값이 아니라 문장이다
+  const re = new RegExp(esc(tail) + '(?![가-힣])' + GAP + head.map(esc).join('\\s+'), 'i');
+  const m = re.exec(text);
   return m ? { index: m.index, length: m[0].length } : null;
 }
 
