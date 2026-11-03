@@ -36,7 +36,20 @@ export function resolveForbidden(product, seen = new Set()) {
     notice.push(...up.notice);
   }
   const uniq = (a) => [...new Map(a.map(w => [w.toLowerCase(), w])).values()];
-  return { words: uniq(words), notice: uniq(notice) };
+  // forbidden.exclude = **물려받되 빼는 낱말** (2026-11-03 15시 claude-22).
+  //  까닭: 11-02 에 선글라스가 앱 목록을 물려받게 했다. 「휴대폰 안에서 번역」이
+  //    제품 경계를 타고 새는 것을 막으려는 것이었는데, 앱 전용 금지어
+  //    「구독료 0원」·「구독료 없음」까지 같이 끌려와 **선글라스 자기 정본이 제 게이트에 걸렸다**
+  //    (products/raytok-glass.json listingTitle — 마켓플러스·쿠팡에 쓰는 상품명).
+  //  근거 셋이 모두 「선글라스는 써도 된다」로 같다:
+  //    · products/_common-forbidden.json rules[4] 「구독료 0원 문구는 선글라스에만」
+  //    · products/raytok-app.json forbiddenNote 「구독료 0원은 선글라스 전용」
+  //    · 공용 words 에는 구독료가 **없다** — 금지는 앱 제품목록에서만 온다
+  //  그래서 판정 로직은 건드리지 않고 **빼는 칸**만 더했다. 칸이 없는 제품은 전과 같다.
+  //  물려받는 쪽으로는 따라간다(이미 뺀 목록이 내려간다). 되돌리려면 그쪽 words 에 다시 적는다.
+  const ex = new Set((product.forbidden?.exclude || []).map(w => String(w).toLowerCase()));
+  const drop = (a) => a.filter(w => !ex.has(String(w).toLowerCase()));
+  return { words: drop(uniq(words)), notice: drop(uniq(notice)) };
 }
 
 /** 금지어 검사. { ok, hits: [{word, where, suggest}], notices: [...] }

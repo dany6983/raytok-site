@@ -113,6 +113,11 @@
     "words": [
       "프리미엄"
     ],
+    "exclude": [
+      "구독료 0원",
+      "구독료 없음"
+    ],
+    "$excludeComment": "앱 목록을 물려받으면서 앱 전용 금지어까지 끌려와 선글라스 자기 정본(listingTitle·listingTitleCoupang·G축 후킹)이 제 게이트에 걸렸다. 선글라스는 써도 된다 — 근거: _common-forbidden.json rules[4] 「구독료 0원 문구는 선글라스에만」 · raytok-app.json forbiddenNote 「구독료 0원은 선글라스 전용」 · 공용 words 에는 구독료가 없다. 2026-11-03 15시 claude-22. 유료 상품(앱 현장교육·관광쿠폰)은 그대로 금지.",
     "$comment": "선글라스 상세·SNS 는 앱의 번역 기능을 같이 판다(TRANSLATION·85개 언어·구독료). 그래서 앱 제품목록을 inherit 로 물려받는다 — 베껴 적으면 또 갈라진다(2026-11-02). 여기 words 는 선글라스 고유분만."
   },
   "forbiddenNote": "프리미엄(유학생용 15개 언어)은 결정장부 62-②로 출시 문구·가격 모두 금지. 85개는 RayPac 팩 수이고 프리미엄과 무관.",

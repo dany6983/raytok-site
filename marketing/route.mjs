@@ -257,6 +257,25 @@ else if (cmd === 'check') {
   if (rest.length === 1 && existsSync(rest[0])) {
     text = readFileSync(rest[0], 'utf8');
     console.log(`  파일을 읽었습니다: ${rest[0]} (${text.length}자)`);
+    // HTML 은 **사람 눈에 보이는 글자만** 검사한다 (2026-11-03 15시 claude-22).
+    //  까닭: 파일을 읽게 고치자마자 glass/index.html 이 ✗「100%」로 걸렸다 —
+    //    본문이 아니라 `style="width:100%"` 였다. 「출처 확인 필요」에도
+    //    그림 크기(860·4314·1200·630)가 줄줄이 떠서 **진짜 수치가 묻혔다.**
+    //  남기는 것: 본문 글자 + alt·title 속성(사람에게 읽히고 법적으로도 글자다).
+    //    그래서 line 35 alt 의 「월 구독료 0원」은 그대로 잡힌다.
+    //  버리는 것: <script>·<style> 덩어리, 태그, 그 밖의 속성(style·width·href 등).
+    if (/\.html?$/i.test(rest[0])) {
+      const keep = [];
+      text.replace(/<[^>]*\s(?:alt|title)\s*=\s*"([^"]*)"/gi, (_, v) => { keep.push(v); return ''; });
+      const body = text
+        .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')
+        .replace(/<!--[\s\S]*?-->/g, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+        .replace(/[ \t]+/g, ' ');
+      text = [body, ...keep].join('\n');
+      console.log(`  HTML 이라 보이는 글자만 남겼습니다 (${text.length}자 · alt·title ${keep.length}개 포함)`);
+    }
   } else if (rest.length === 1 && /[\/\\]|\.(txt|md|json|html?)$/i.test(rest[0])) {
     console.error(`✗ 파일을 못 찾았습니다: ${rest[0]}`);
     console.error('  경로를 다시 보십시오. 글자를 바로 검사하려면 따옴표로 감싸 주십시오.');
@@ -318,8 +337,21 @@ else if (cmd === 'selftest') {
       const r = check(stripRequired(s, p).body, p);
       r.hits.forEach(h => say(`고지문에 금지어: 「${h.word}」 … ${s.slice(0, 25)}…`));
     }
+    // ⑤ **제품 자기 정본 문구가 제 게이트에 걸리나** (2026-11-03 15시 claude-22).
+    //   생긴 까닭: 선글라스가 앱 목록을 물려받으면서 앱 전용 「구독료 없음」이 끌려와
+    //   선글라스 **상품명 정본**(마켓플러스·쿠팡에 올리는 글자)이 ✗ 가 됐다. 석 달 들키지 않았다.
+    //   정본이 제 게이트에 걸리면 **둘 중 하나는 틀린 것**이라 사람이 봐야 한다.
+    const canon = [
+      ['listingTitle', p.listingTitle],
+      ['listingTitleCoupang', p.listingTitleCoupang],
+      ...(p.hooks || []).map(h => [`후킹 ${h.id}`, h.first3s]),
+    ].filter(([, v]) => typeof v === 'string' && v.trim());
+    for (const [label, txt] of canon) {
+      const r = check(stripRequired(txt, p).body, p);
+      r.hits.forEach(h => say(`정본이 제 금지어에 걸림: ${label} 안에 「${h.word}」 … ${txt.slice(0, 28)}…`));
+    }
   }
-  console.log(bad ? `\n✗ 모순 ${bad}개` : '\n✓ 모순 없음 (대체어·금지어·통지·고지문)');
+  console.log(bad ? `\n✗ 모순 ${bad}개` : '\n✓ 모순 없음 (대체어·금지어·통지·고지문·정본)');
   process.exitCode = bad ? 1 : 0;
 }
 
