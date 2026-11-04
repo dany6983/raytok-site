@@ -398,6 +398,36 @@ else if (cmd === 'selftest') {
       if (!check(glued, p).hits.some(h => h.word.toLowerCase() === w.toLowerCase()))
         say(`붙여쓴 꼴이 안 걸림: 「${w}」 → 「${glued}」 (공백 지우면 샌다)`);
     }
+
+    // ⑦ **보이지 않는 글자로 금지어가 새나** (2026-11-04 19시 claude-22 — 아홉 번째 거짓 통과).
+    //   생긴 까닭: 인스타 캡션은 **빈 줄을 만들려고** 보이지 않는 글자를 넣는 것이 흔하다.
+    //   `ㅤ`(U+3164 한글 채움)·U+200B·U+2063 이 섞이면 `\s*` 로 이은 금지어 정규식이 못 봤다.
+    //   「월 구독료<U+200B> 0원」이 ✓ 로 샜다. `normalizeInvisible` 로 고쳤고, 여기서 **전수로** 지킨다.
+    for (const w of words) {
+      const toks = w.trim().split(/\s+/);
+      if (toks.length < 2) continue;
+      for (const [nm, c] of [['U+200B', '\u200b'], ['U+3164', '\u3164'], ['U+2063', '\u2063']]) {
+        const sneaky = toks.join(c + ' ');
+        if (!check(sneaky, p).hits.some(h => h.word.toLowerCase() === w.toLowerCase()))
+          say(`보이지 않는 글자(${nm})로 샘: 「${w}」`);
+      }
+    }
+    // ⑧ **정본에 홑으로 적힌 수는 아무 단위에나 통과한다 — 경고만 한다**
+    //   (2026-11-04 19:10 smartever 실측 · 19시 claude-22 기계화).
+    //   까닭: `auditNumbers` 는 정본이 `languages: 85` 처럼 숫자만 적어 둔 칸을
+    //     **단위를 안 가리고** known 으로 본다. 안 그러면 「85개 언어」가 걸린다(1차판 실수).
+    //     그 대가로 `mask.wearMinutes: 10` 때문에 **「10초 완성」이 출처 모름 0** 으로 통과한다.
+    //   ★ 막는 법은 엔진이 아니라 **정본에 단위를 붙이는 것**(`10` → `"10분"`)이다.
+    //     정본 수정은 대표님 확인 사항이라 여기서는 **셈만 보여 주고 모순으로 세지 않는다.**
+    const lone = [];
+    (function walk(v, path) {
+      if (v == null) return;
+      if (typeof v === 'number' && Number.isFinite(v)) { lone.push(`${path}=${v}`); return; }
+      if (Array.isArray(v)) return v.forEach((x, i) => walk(x, `${path}[${i}]`));
+      if (typeof v === 'object') return Object.entries(v).forEach(([k, x]) => walk(x, path ? `${path}.${k}` : k));
+    })(p.facts || {}, '');
+    if (lone.length)
+      console.log(`  🟡 정본 홑 숫자 ${lone.length}칸 — 이 수는 **아무 단위에나** 통과합니다 (「10」이 있으면 「10초」도 ✓):\n     ${lone.join(' · ')}`);
   }
   console.log(bad ? `\n✗ 모순 ${bad}개` : '\n✓ 모순 없음 (대체어·금지어·통지·고지문·정본)');
   process.exitCode = bad ? 1 : 0;
