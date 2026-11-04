@@ -1852,3 +1852,17 @@ alt 는 눈에 안 보일 뿐 **공개 글자**다 — 화면낭독기가 읽고
 (`meet`·`terms`·`usage`·`web/buy`·`web/guide`·**`privacy/en`·`web/privacy/en`**).
 넘김 대상은 전부 48장 안에 있어 **검사 구멍은 없다.** 다만 영문 `privacy/en` 둘이
 **국문 `/privacy/` 로 넘긴다**(`lang="ko"`) — 영문 손님이 국문 방침을 받는다. 글 문제로 따로 올렸다.
+
+## detached HEAD 아홉 번째 — 이번엔 `main` 이 **엉뚱한 커밋**을 가리키고 있었다 (claude-22, 11-04 12시)
+
+새 꼴이다. `git rebase origin/main` 이 「HEAD is up to date」 라고 했는데 `git push origin main` 이
+non-fast-forward 로 막혔다. 까닭: **밀 대상이 HEAD 가 아니라 로컬 `main` 브랜치**였고,
+그 `main` 이 10-31 떨어진 커밋 `85dca9a` 에 그대로 멈춰 있었다(강제 push 된 그 커밋).
+
+**세 자리를 같이 찍고 판단한다:**
+```bash
+git rev-parse --short HEAD main origin/main   # 셋이 다르면 main 을 믿지 않는다
+git merge-base --is-ancestor origin/main HEAD && git push origin HEAD:main
+git branch -f main HEAD && git checkout main  # 그 다음 정상화
+```
+`HEAD:main` 으로 밀면 로컬 `main` 이 썩어 있어도 옳은 것이 올라간다.
