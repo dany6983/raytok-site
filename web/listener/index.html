@@ -350,6 +350,7 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
 <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, var(--card-bg));" data-i18n="ask_title">✋ 질문하기</div>
 <div id="ask-status-msg" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" data-i18n="ask_speaking">🎤 말씀하세요 — 끝나면 자동 전송</div>
+<button class="tool-btn" id="btn-ask-mic" style="display:none; width:100%; padding:10px; font-size:16px; margin-bottom:8px;" data-i18n="ask_mic_btn">🎤 말하기</button>
 <textarea id="ask-input-text" style="width:100%; height:64px; box-sizing:border-box; border:1px solid #444141; border-radius:6px; padding:8px; font-size:13px; resize:none; margin-bottom:8px;" data-i18n-placeholder="ask_input_placeholder" placeholder="질문 내용을 입력하세요..."></textarea>
 <div style="display:flex; justify-content:flex-end; gap:8px;">
 <button class="tool-btn" id="btn-ask-cancel" style="padding:4px 10px;" data-i18n="btn_ask_cancel">취소</button>
@@ -1204,9 +1205,6 @@ if (btnCloseVoicePicker && voicePickerModal) {
 btnCloseVoicePicker.onclick = () => { voicePickerModal.style.display = 'none'; };
 }
 
-let activeSpeechRec = null;
-let activeMediaStream = null;
-let askMicFailed = false;   // 마이크가 안 되는 폰 — 글자 칸으로 넘어갔나
 let askSpeakingFor = null;  // 지금 발언권을 받은 질문 {id, seq} — 보내는 길이 이것으로 갈린다
 
 function loadRecLang() {
@@ -1217,68 +1215,32 @@ sc.onload = res; sc.onerror = res; document.head.appendChild(sc);
 setTimeout(res, 3000);
 });
 }
-async function startListenerMicQuestion(askId, askSeq) {
-askMicFailed = false;
+function startListenerMicQuestion(askId, askSeq) {
 askSpeakingFor = { id: askId, seq: askSeq };
+pauseReading('ask');                         // ③ 말할 때 소리 끈다 (cancel 포함)
 const iosNoMic = ASK_IOS_TEXT && /iP(hone|od|ad)/.test(navigator.userAgent || '');
-const SpeechRec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
+const Rec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
+showAskModalFallback(askId, askSeq);         // 먼저 글자 칸 — 마이크 단추는 본체가 붙인다
 if (iosNoMic) connLog.push(`${ts()} ask ios→text`);
-if (SpeechRec) {
-try {
-showAskModalFallback(askId, askSeq, true);
-await loadRecLang();                      // 표가 안 오면 코드를 그대로 넘긴다(§20)
-activeSpeechRec = new SpeechRec();
-activeSpeechRec.lang = (window.rtRecLang && window.rtRecLang.tag)
-? window.rtRecLang.tag(selectedLang || 'ko')
-: (selectedLang || 'ko');
-activeSpeechRec.continuous = true;
-activeSpeechRec.interimResults = false;
-activeSpeechRec.onerror = (ev) => {
-const why = (ev && ev.error) || '';
-connLog.push(`${ts()} ask rec error ${why}`);
-if (why === 'aborted') return;            // 우리가 stop() 한 것
-askMicFailed = true;
-try { activeSpeechRec && activeSpeechRec.stop(); } catch (_) {}
-activeSpeechRec = null;
-showAskModalFallback(askId, askSeq);
-};
-activeSpeechRec.onend = () => {
-};
-activeSpeechRec.onresult = (e) => {
-const from = typeof e.resultIndex === 'number' ? e.resultIndex : 0;
-const transcript = Array.from(e.results).slice(from).filter(r => r.isFinal !== false).map(r => r[0].transcript).join(' ').trim();
-connLog.push(`${ts()} ask rec result len=${transcript.length}`);
-if (transcript && ws && ws.readyState === WebSocket.OPEN) {
-ws.send(JSON.stringify({
-kind: 'question',
-id: askId,
-seq: askSeq,
-name: myName || t('anon_name') || 'Anonymous',
-src: transcript,
-srcLang: selectedLang || 'ko',
-at: Date.now()
-}));
-}
-};
-activeSpeechRec.start();
-} catch (_) {
-showAskModalFallback(askId, askSeq);
-}
-} else {
-showAskModalFallback(askId, askSeq);
-}
+if (!Rec) return;
+const go = () => window.rtAskMic && rtAskMic.open({
+Rec, id: askId, seq: askSeq, t, loadRecLang,
+lang: () => selectedLang || 'ko',
+log: (l) => connLog.push(`${ts()} ${l}`),
+alive: () => !!askSpeakingFor && askSpeakingFor.id === askId,
+send: (o) => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(o)); },
+name: () => myName || t('anon_name') || 'Anonymous',
+strings: (o) => { if (uiStrings && uiStrings.strings) Object.assign(uiStrings.strings, o); }
+});
+if (window.rtAskMic) return go();
+document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/ask-mic.js', onload: go }));
 }
 
 function stopListenerMicQuestion() {
+const had = !!askSpeakingFor;
 askSpeakingFor = null;          // 발언권이 끝났다 — 단추는 다시 손들기 쪽
-if (activeSpeechRec) {
-try { activeSpeechRec.stop(); } catch (_) {}
-activeSpeechRec = null;
-}
-if (activeMediaStream) {
-try { activeMediaStream.getTracks().forEach(t => t.stop()); } catch (_) {}
-activeMediaStream = null;
-}
+if (window.rtAskMic) rtAskMic.close();
+if (had) resumeReading('ask');  // ③ 발언권이 끝나면 이어 읽는다
 const askModal = document.getElementById('ask-modal');
 if (askModal) askModal.style.display = 'none';
 }
@@ -1336,7 +1298,7 @@ return true;
 }
 
 function speak(text, via, audioUrl) {
-if (!isTtsEnabled) return;
+if (!isTtsEnabled || askSpeakingFor) return;   // ③ 발언권 동안은 소리 내지 않는다(글자는 그대로)
 if (!audioUrl && window.rtTtsGuard && rtTtsGuard.say(text, via)) return;
 speechSynthesis.cancel();
 

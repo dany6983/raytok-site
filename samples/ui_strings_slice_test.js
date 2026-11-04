@@ -16,7 +16,7 @@ const ok = (c, d) => { assert(c, d); checks++; console.log('  [PASS] ' + d); };
 
 const ROOT = path.join(__dirname, '..');
 const DICTS = [
-  { src: 'web/listener/ui-strings.json', out: 'web/listener/ui-strings', index: true },
+  { src: 'web/listener/ui-strings.json', out: 'web/listener/ui-strings', index: true, later: /^ask_(mic|err)_/ },
   { src: 'join/ui-strings.json', out: 'join/ui-strings', index: false }
 ];
 
@@ -44,6 +44,17 @@ for (const d of DICTS) {
   const sample = [langs[0], langs[Math.floor(langs.length / 2)], langs[langs.length - 1]];
   for (const lang of sample) {
     const slice = JSON.parse(fs.readFileSync(path.join(dir, lang + '.json'), 'utf-8'));
+    /* 11-04: 지명된 손님만 보는 글자는 `later/<언어>.json` 에 따로 있다(첫 화면 37KB). 첫 조각에는 없고,
+       둘을 합치면 손 표와 같아야 한다 — 빠진 키가 없게. */
+    if (d.later) {
+      const lp = path.join(dir, 'later', lang + '.json');
+      ok(fs.existsSync(lp), `${d.out}/later/${lang}: 나중 조각이 있다`);
+      const lt = JSON.parse(fs.readFileSync(lp, 'utf-8'));
+      const inFirst = Object.keys(slice.strings).filter((k) => d.later.test(k));
+      ok(inFirst.length === 0 && Object.keys(lt.strings).every((k) => d.later.test(k)),
+         `${d.out}/${lang}: 나중 글자 ${Object.keys(lt.strings).length}개는 첫 조각에 없다`);
+      Object.assign(slice.strings, lt.strings);
+    }
     const srcKeys = Object.keys(dict.strings).filter((k) => {
       const v = dict.strings[k];
       return v[lang] != null || v.en != null || v.ko != null;

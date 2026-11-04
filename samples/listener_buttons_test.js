@@ -19,7 +19,8 @@ const PRESSED = ['btn-join', 'btn-toggle-tts', 'btn-toggle-src', 'btn-open-voice
   'btn-save', 'btn-save-close', 'btn-save-execute', 'btn-fullscreen', 'btn-save-end'];
 const ELSEWHERE = {
   'btn-tr-server': 'test:listener-browser-tr (브라우저 번역 길에서만 보인다)',
-  'btn-open-chrome': 'test:open-chrome (아이폰에서만 보인다)'
+  'btn-open-chrome': 'test:open-chrome (아이폰에서만 보인다)',
+  'btn-ask-mic': 'test:listener-ask-mic · test:question (지명된 손님에게만 보인다 — 누르면 인식 start 1회, 11-04)'
 };
 
 function checkAllListed(html) {

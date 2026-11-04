@@ -320,6 +320,9 @@ const outsideRequests = [];
         .find(el => el.querySelector('button'));
       row.querySelector('button').click();
     });
+    /* 11-04 16:00: 인식기는 사람이 「🎤 말하기」를 눌러야 연다(지명 안에서 저절로 연 start 가 실기에서 막혔다) */
+    await lis3Page.waitForSelector('#btn-ask-mic', { state: 'visible', timeout: 5000 });
+    await lis3Page.click('#btn-ask-mic');
     await lis3Page.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 5000 });
     ok(true, '지명되면 손님 폰의 **받아쓰기가 열린다** (마이크는 손님 폰에 있다)');
     /* ★ 되돌림 실증 — `myAskId` 가 **그 id** 다. 이름 견주기로 되돌리면 이름 없는 손님은

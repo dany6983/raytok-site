@@ -25,13 +25,21 @@ const FALLBACK = ['en', 'ko'];          // t() 의 떨어지는 순서와 같다
 
 /* 쪼갤 사전 둘. 더 생기면 여기 한 줄 — 그리고 시험이 그 줄을 센다. */
 const DICTS = [
-  { src: 'web/listener/ui-strings.json', out: 'web/listener/ui-strings', index: true },
+  { src: 'web/listener/ui-strings.json', out: 'web/listener/ui-strings', index: true, later: true },
   { src: 'join/ui-strings.json',         out: 'join/ui-strings',         index: false }
 ];
 
-function sliceOf(dict, lang) {
+/*
+ * ★ **나중 글자** (11-04, 질문 마이크): 지명된 손님만 보는 글자는 첫 조각에서 빼고 `later/<언어>.json` 으로
+ * 따로 낸다 — 첫 화면 gz 37KB 한도(first_load_bytes_test). 받는 곳은 `web/common/ask-mic.js` 하나.
+ * 손 표는 그대로 한 파일이다(§4). 키 이름으로 고른다 — 이 줄과 ask-mic.js 가 같은 키를 본다.
+ */
+const LATER = /^ask_(mic|err)_/;
+
+function sliceOf(dict, lang, pick = () => true) {
   const strings = {};
   for (const [key, vals] of Object.entries(dict.strings)) {
+    if (!pick(key)) continue;
     const one = {};
     for (const l of [lang, ...FALLBACK]) {
       if (vals[l] != null) one[l] = vals[l];
@@ -55,7 +63,14 @@ for (const d of DICTS) {
   if (!CHECK) fs.mkdirSync(outDir, { recursive: true });
 
   const files = new Map();
-  for (const lang of langs) files.set(lang + '.json', text(sliceOf(dict, lang)));
+  for (const lang of langs) {
+    files.set(lang + '.json', text(sliceOf(dict, lang, (k) => !(d.later && LATER.test(k)))));
+    if (d.later) {
+      const later = sliceOf(dict, lang, (k) => LATER.test(k));
+      files.set('later/' + lang + '.json', text({ strings: later.strings }));
+    }
+  }
+  if (d.later && !CHECK) fs.mkdirSync(path.join(outDir, 'later'), { recursive: true });
   if (d.index) files.set('_langs.json', text({ ver: dict.ver, langs }));   // 고를 수 있는 언어 목록만 (조각보다 먼저 받는다)
 
   for (const [name, body] of files) {

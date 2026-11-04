@@ -49,6 +49,7 @@
 | btn-font-s · m · l | — | 글자 13 < 15 < 20px |
 | btn-ask (✋ 질문, q:1 방) · btn-ask-cancel | — | 질문 창 열림/닫힘 |
 | btn-ask-submit (손들기 전송) | kind:ask (원문·언어만, P-14) | 창 닫힘 · 「✋ 대기」 |
+| btn-ask-mic (🎤 말하기, 지명됐을 때만) | 누르면 인식기 start 1회(사람 손가락 안에서) → kind:question (원문·언어만, P-14) | 「말씀하세요」·붉은 단추 → 끝나면 「다시 말하기」 · 안 되면 까닭 한 줄 (11-04, test:listener-ask-mic) |
 | btn-save · btn-save-close | — | 저장 창 열림/닫힘 |
 | btn-save-execute (저장) | — | 파일 받기 1 |
 | btn-fullscreen (⛶) | — | 전체 화면 요청(기록 `fullscreen go=1`) |

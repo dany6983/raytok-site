@@ -384,6 +384,7 @@
   <div id="ask-modal" style="display:none; position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:70; width:300px; max-width:90vw; background:var(--card-bg, #fff); border:1px solid #444141; border-radius:10px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color:var(--text, var(--card-bg));" data-i18n="ask_title">✋ 질문하기</div>
     <div id="ask-status-msg" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" data-i18n="ask_speaking">🎤 말씀하세요 — 끝나면 자동 전송</div>
+    <button class="tool-btn" id="btn-ask-mic" style="display:none; width:100%; padding:10px; font-size:16px; margin-bottom:8px;" data-i18n="ask_mic_btn">🎤 말하기</button>
     <textarea id="ask-input-text" style="width:100%; height:64px; box-sizing:border-box; border:1px solid #444141; border-radius:6px; padding:8px; font-size:13px; resize:none; margin-bottom:8px;" data-i18n-placeholder="ask_input_placeholder" placeholder="질문 내용을 입력하세요..."></textarea>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
       <button class="tool-btn" id="btn-ask-cancel" style="padding:4px 10px;" data-i18n="btn_ask_cancel">취소</button>
@@ -1406,9 +1407,6 @@
     }
 
     // 7번: 브라우저 청취자 마이크 — N:1 질문
-    let activeSpeechRec = null;
-    let activeMediaStream = null;
-    let askMicFailed = false;   // 마이크가 안 되는 폰 — 글자 칸으로 넘어갔나
     let askSpeakingFor = null;  // 지금 발언권을 받은 질문 {id, seq} — 보내는 길이 이것으로 갈린다
 
     /* 인식 언어 표 — 질문으로 지명된 손님만 쓴다. 첫 화면에서 내려받지 않고 그때 읽는다 */
@@ -1420,81 +1418,43 @@
         setTimeout(res, 3000);
       });
     }
-    async function startListenerMicQuestion(askId, askSeq) {
-      askMicFailed = false;
+    /* ★ 11-04 16:00 대표님 실기 「지명 받으면 마이크 표시는 보이는데 마이크 안 됨」(안드로이드 크롬).
+       ① **왜**를 화면에 — 전에는 `ask rec error` 가 connLog 에만 있어 아무도 몰랐다.
+       ② 인식기는 **사람 손가락으로** 연다 — 지명 메시지(WS) 안에서 저절로 부른 `start()` 는 사용자 동작이
+          아니라, 크롬이 권한 창을 안 띄우거나 `not-allowed` 를 낸다. 창에 「🎤 말하기」 단추 하나.
+          자동은 `?askauto=1` 로만(지금 기본이 실기에서 깨졌으니 §3 반대로).
+       ③ 발언권 동안 소리를 끈다 — TTS 가 말하는 동안 인식기가 마이크를 못 잡는 폰이 있다. 끝나면 이어 읽는다.
+       본체는 `web/common/ask-mic.js` — **지명됐을 때** 싣는다(첫 화면 37KB 한도, tts-guard 와 같은 꼴).
+       못 실으면 글자 칸이 그대로 있다(손든 사람이 말을 못 하고 끝나지 않게, R-15). 보내는 것은 원문+언어만(P-14). */
+    function startListenerMicQuestion(askId, askSeq) {
       // 발언권을 받았다 — 마이크로 말하든 글자로 말하든 보내는 길은 같은 하나다.
       askSpeakingFor = { id: askId, seq: askSeq };
+      pauseReading('ask');                         // ③ 말할 때 소리 끈다 (cancel 포함)
       /* ★ 아이폰(사파리·아이폰 크롬 모두 WebKit): 지명 뒤 마이크 인식을 열면 **페이지가 죽는다**(대표님 실기
-         10-27 15:14). 아이폰은 글자 칸으로 간다(스위치 기본 켬, §3). 안드로이드는 전과 같다. */
+         10-27 15:14). 아이폰은 글자 칸으로 간다(스위치 기본 켬, §3). */
       const iosNoMic = ASK_IOS_TEXT && /iP(hone|od|ad)/.test(navigator.userAgent || '');
-      const SpeechRec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
+      const Rec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
+      showAskModalFallback(askId, askSeq);         // 먼저 글자 칸 — 마이크 단추는 본체가 붙인다
       if (iosNoMic) connLog.push(`${ts()} ask ios→text`);
-      if (SpeechRec) {
-        try {
-          /* ★ 10-27 15:16 대표님 「안드로이드 크롬도 마이크 안 됨」: 전에는 여기서 `getUserMedia` 로 마이크를 **먼저
-             잡고** 인식기를 열었다 — 안드로이드 크롬은 그러면 인식기가 마이크를 못 잡아 `audio-capture`/빈 결과로
-             끝난다(권한 창은 인식기가 스스로 띄운다). 잡지 않는다. 창은 **보이게** 연다(말씀하세요 + 글자 칸). */
-          showAskModalFallback(askId, askSeq, true);
-          await loadRecLang();                      // 표가 안 오면 코드를 그대로 넘긴다(§20)
-          activeSpeechRec = new SpeechRec();
-          // 언어 이름을 분기에 두지 않는다 — 말하는 쪽 호스트와 **같은 표**를 읽는다
-          // (§6, web/common/rec-lang.js). 표가 안 실렸으면 코드를 그대로 넘긴다(§20).
-          activeSpeechRec.lang = (window.rtRecLang && window.rtRecLang.tag)
-            ? window.rtRecLang.tag(selectedLang || 'ko')
-            : (selectedLang || 'ko');
-          activeSpeechRec.continuous = true;
-          activeSpeechRec.interimResults = false;
-          // 마이크를 거절당하거나 인식 서비스가 입을 닫으면 **질문할 길이 없어진다.**
-          // 그때는 글자 칸으로 넘긴다 — 손든 사람이 말을 못 하고 끝나는 것이 가장 나쁘다(R-15).
-          activeSpeechRec.onerror = (ev) => {
-            const why = (ev && ev.error) || '';
-            connLog.push(`${ts()} ask rec error ${why}`);
-            if (why === 'aborted') return;            // 우리가 stop() 한 것
-            askMicFailed = true;
-            try { activeSpeechRec && activeSpeechRec.stop(); } catch (_) {}
-            activeSpeechRec = null;
-            showAskModalFallback(askId, askSeq);
-          };
-          // 인식기는 말이 끊기면 스스로 멈춘다(아이폰·안드로이드 둘 다). 발언권이 아직
-          // 내 것이면 다시 연다 — 안 열면 두 번째 문장부터 조용히 사라진다.
-          activeSpeechRec.onend = () => {
-            // 10-27 18:03 대표님: 지명 중 재시작 루프 제거
-          };
-          activeSpeechRec.onresult = (e) => {
-            const from = typeof e.resultIndex === 'number' ? e.resultIndex : 0;
-            const transcript = Array.from(e.results).slice(from).filter(r => r.isFinal !== false).map(r => r[0].transcript).join(' ').trim();
-            connLog.push(`${ts()} ask rec result len=${transcript.length}`);
-            if (transcript && ws && ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
-                kind: 'question',
-                id: askId,
-                seq: askSeq,
-                name: myName || t('anon_name') || 'Anonymous',
-                src: transcript,
-                srcLang: selectedLang || 'ko',
-                at: Date.now()
-              }));
-            }
-          };
-          activeSpeechRec.start();
-        } catch (_) {
-          showAskModalFallback(askId, askSeq);
-        }
-      } else {
-        showAskModalFallback(askId, askSeq);
-      }
+      if (!Rec) return;
+      const go = () => window.rtAskMic && rtAskMic.open({
+        Rec, id: askId, seq: askSeq, t, loadRecLang,
+        lang: () => selectedLang || 'ko',
+        log: (l) => connLog.push(`${ts()} ${l}`),
+        alive: () => !!askSpeakingFor && askSpeakingFor.id === askId,
+        send: (o) => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(o)); },
+        name: () => myName || t('anon_name') || 'Anonymous',
+        strings: (o) => { if (uiStrings && uiStrings.strings) Object.assign(uiStrings.strings, o); }
+      });
+      if (window.rtAskMic) return go();
+      document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/ask-mic.js', onload: go }));
     }
 
     function stopListenerMicQuestion() {
+      const had = !!askSpeakingFor;
       askSpeakingFor = null;          // 발언권이 끝났다 — 단추는 다시 손들기 쪽
-      if (activeSpeechRec) {
-        try { activeSpeechRec.stop(); } catch (_) {}
-        activeSpeechRec = null;
-      }
-      if (activeMediaStream) {
-        try { activeMediaStream.getTracks().forEach(t => t.stop()); } catch (_) {}
-        activeMediaStream = null;
-      }
+      if (window.rtAskMic) rtAskMic.close();
+      if (had) resumeReading('ask');  // ③ 발언권이 끝나면 이어 읽는다
       const askModal = document.getElementById('ask-modal');
       if (askModal) askModal.style.display = 'none';
     }
@@ -1574,7 +1534,7 @@
        멈춤·원고 읽기의 cancel 뒤 남은 줄은 다음 줄이 올 때 지킴이 스스로 비운다(읽는 것이 없으면 비우고 시작). */
 
     function speak(text, via, audioUrl) {
-      if (!isTtsEnabled) return;
+      if (!isTtsEnabled || askSpeakingFor) return;   // ③ 발언권 동안은 소리 내지 않는다(글자는 그대로)
       if (!audioUrl && window.rtTtsGuard && rtTtsGuard.say(text, via)) return;
       speechSynthesis.cancel();
 

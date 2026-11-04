@@ -141,6 +141,11 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
        발언권(activeAsk)이 안 세워져, 뒤에 말한 것이 릴레이에서 막힌다(P-17). */
     await me.page.waitForTimeout(100);
     host.send(JSON.stringify({ kind: 'grant', id: myItem.id, max_sec: 90 }));
+    /* 11-04 16:00 (대표님 실기 — 지명 안에서 저절로 연 start 가 안드로이드 크롬에서 막혔다): 인식기는 **사람이
+       「🎤 말하기」를 눌러야** 연다. 누르기 전에는 start 0. */
+    await me.page.waitForSelector('#btn-ask-mic', { state: 'visible', timeout: 5000 });
+    ok(!(await me.page.evaluate(() => (window.__micLog || []).includes('start'))), '지명만으로는 인식을 열지 않는다 — 「🎤 말하기」를 눌러야 (11-04)');
+    await me.page.click('#btn-ask-mic');
     await me.page.waitForFunction(() => (window.__micLog || []).includes('start'), null, { timeout: 5000 });
     ok(true, '지명된 청취자: 마이크가 켜진다 (인식 start)');
     /* 10-27 15:16 대표님 「안드로이드 크롬도 마이크 안 됨」: getUserMedia 로 **먼저 잡지 않는다** — 안드로이드 크롬은
@@ -214,6 +219,8 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
       return it;
     };
     const itemK = await grantMe(ko.page, roomK, hostK);
+    await ko.page.waitForSelector('#btn-ask-mic', { state: 'visible', timeout: 5000 });
+    await ko.page.click('#btn-ask-mic');   // 11-04: 사람 손가락으로 연다
     await ko.page.waitForFunction(() => (window.__micLog || []).includes('start'), null, { timeout: 5000 });
     const recLangKo = await ko.page.evaluate(() => window.__lisRec.lang);
     ok(recLangKo === 'ko-KR', `ko 는 표에 적힌 태그(ko-KR) 로 나간다 (지금 "${recLangKo}")`);
@@ -254,6 +261,8 @@ async function openListener(browser, base, port, room, { init, lang = 'vi', name
     const hostD = await openHost(base, roomD);
     const denied = await openListener(browser, base, port, roomD.code, { init: FAKE_REC, name: 'Lee' });
     const itemD = await grantMe(denied.page, roomD, hostD);
+    await denied.page.waitForSelector('#btn-ask-mic', { state: 'visible', timeout: 5000 });
+    await denied.page.click('#btn-ask-mic');   // 11-04: 사람 손가락으로 연다
     await denied.page.waitForFunction(() => (window.__micLog || []).includes('start'), null, { timeout: 5000 });
     await denied.page.evaluate(() => window.__lisRec.fail('not-allowed'));
     await denied.page.waitForSelector('#ask-modal', { state: 'visible', timeout: 5000 });
