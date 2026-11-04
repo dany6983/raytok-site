@@ -69,8 +69,13 @@ for (const f of files) {
     //   실측: img/d3/page.html 118행 「RayTok은 휴대폰 안에서 번역합니다.」(단정) 바로 아래
     //   121행에 「※ 폰에 그 언어가 없으면 서버가 번역합니다(인터넷 필요).」가 있다.
     //   이게 11-04 「안 B」(문장은 두고 ※ 한 줄만 더함)가 이미 쓰이고 있다는 증거다.
-    const near = ss.slice(Math.max(0, i - 2), i + 4).join(' ');
-    const star = !cond && /※/.test(near) && /(서버|인터넷|없으면|한해)/.test(near);
+    const nearArr = ss.slice(Math.max(0, i - 2), i + 4);
+    const near = nearArr.join(' ');
+    // 2026-11-04 16시 smartever 알림: **받침 기호는 ※ 만이 아니다.** 터치톡 상세는
+    //   줄 머리에 `* `(별표+빈칸)를 쓴다(347~350행). ※ 만 보면 그 꼴이 **민 단정으로 떨어진다**(거짓 🔴).
+    //   후보를 넓힌다: ※ · 줄머리 `* ` · `주)` · `단,` · `(단`. 다른 몰·다른 제작자 글에 쓸 때를 위한 것.
+    const MARK = (t) => /※/.test(t) || /^\s*\*\s/.test(t) || /주\)|단,|\(단/.test(t);
+    const star = !cond && nearArr.some(MARK) && /(서버|인터넷|없으면|한해)/.test(near);
     rows.push({ file: label, n: i + 1, words: hit, cond, star, s: s.length > 180 ? s.slice(0, 180) + '…' : s });
   });
   }
