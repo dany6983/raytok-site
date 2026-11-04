@@ -1167,7 +1167,19 @@
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
+        /* ★ 11-04 실측: 전에는 `items.map(i => i.str).join(' ')` 이었다.
+           pdf.js 는 **낱말 사이의 빈칸도 하나의 item(' ')으로 준다.** 그래서 ' ' 로 이으면
+           빈칸이 겹쳐 「01   빈칸은   전시물이」가 되고, 글자마다 item 을 내는 PDF(한글
+           내보내기가 그렇다)에서는 「빈 칸 은 전 시 물 이」까지 간다. 그 글을 번역기에
+           넣으면 한국어로 읽히지 않는다 — 11-04 세션에서 「도슨트」가 「도 수 타」로,
+           「피엔엘에코」가 「프 엔 연 에」로 나온 까닭이다.
+           빈칸은 PDF 가 이미 item 으로 주므로 **그대로 잇고**, 줄바꿈만 `hasEOL` 로 넣는다.
+           (hasEOL 은 pdf.js 가 주는 값이다 — 좌표로 줄을 추측하지 않는다, D-11) */
+        let pageText = '';
+        for (const item of textContent.items) {
+          if (typeof item.str === 'string') pageText += item.str;
+          if (item.hasEOL) pageText += '\n';
+        }
         fullText += pageText + '\n\n';
       }
       return fullText;
