@@ -1819,3 +1819,13 @@ git checkout -B main origin/main           # 밀리지 않은 커밋이 없을 �
 git merge-base --is-ancestor origin/main HEAD && git push origin HEAD:main
 git branch -f main HEAD && git checkout main      # 그 다음 정상화
 ```
+
+## ✗ 수는 「낱말 몇 개」지 「몇 번」이 아니다 — 다섯 번째 꼴 (smartever, 11-04 11시)
+
+`check()` 는 금지어마다 **처음 한 곳**만 잡아 `hits` 에 넣는다. 그래서 「치료」가 1번 남든 2번 남든 **✗1** 이다.
+터치톡 `detail/source.html` 에서 실제로 났다:
+s0 [안내] 정본 안에 `<b>일반 피부 미용기기(공산품)</b>입니다` — 줄안태그를 `' '` 로 바꾸면
+「(공산품) 입니다」가 되어 **정본이 안 떼어지는데**, 법적 고지 줄의 「치료」가 원래 ✗1 이라 **겉값이 같다.**
+
+**처방: ✗ 수만 보지 말고 `stripRequired().stripped` 의 뗀횟수를 같이 찍는다.**
+고지문이 들어 있는 글인데 뗀횟수 0 → 빨간불. 줄안태그는 `''` 로 지운 것과 `' '` 로 바꾼 것 **둘 다** 돌려 대조한다.
