@@ -118,7 +118,7 @@ def top(cur):
 '''
 
 # 사업자 정보는 통신판매업 고지 항목이라 **줄이지 않는다**(지금 11쪽 그대로).
-BIZ = f'주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 010-6695-6983 · 문의: <a href="mailto:{MAIL}">{MAIL}</a>'
+BIZ = f'주식회사 피엔엘에코 · 대표 박용음 · 경기도 화성시 동탄대로 635, SH TIME SQUARE Ⅰ 1동 15층 1507호 · 사업자등록번호 376-88-02280 · 통신판매업 신고번호 2025-화성동탄-2002 · 호스팅 GitHub Pages · 전화 1800-6825 · 문의: <a href="mailto:{MAIL}">{MAIL}</a>'
 FOOT_ROW = '<a href="/field/">현장교육</a><a href="/tour/">관광가이드</a><a href="/museum/">도슨트</a><a href="/student/">유학생</a><a href="/ows/">OWS 통역 이어폰</a><a href="/glass/">블루투스 선글라스</a><a class="ko-only" href="/desk/">Desk 화상회의</a><a href="/#tech">기술</a><a href="/guide/">사용설명서</a><a href="/download/">앱 설치</a>'
 # 특허 목록 — 수(NPAT)는 여기서 센다. 바닥글·홈·Desk 가 다 이것을 읽는다 (손 숫자 금지, NOW 10-28 ②)
 PATS = [

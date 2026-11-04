@@ -276,6 +276,14 @@ else if (cmd === 'check') {
       text = [body, ...keep].join('\n');
       console.log(`  HTML 이라 보이는 글자만 남겼습니다 (${text.length}자 · alt·title ${keep.length}개 포함)`);
     }
+  } else if (rest.length > 1 && rest.some((a) => existsSync(a) || /[\/\\]|\.(txt|md|json|html?)$/i.test(a))) {
+    // 2026-11-04 16시 claude-22: **여섯 번째 거짓 통과.** 11-03 에 「인자 하나면 파일로 읽는다」로
+    //   고쳤지만 **여러 개를 주면** 아래 else 로 떨어져 경로 글자들을 이어 붙인 **글자**를 검사했다.
+    //   `check raytok-app a.html b.html` → 파일을 한 장도 안 읽고 「✓ 금지어 없음」. 읽은 줄이 안 떠서
+    //   눈으로는 통과와 구별이 안 된다. 조용히 넘기지 않고 멈춘다. 파일은 **한 번에 한 장**.
+    console.error(`✗ 파일은 한 번에 한 장만 주십시오 (받은 인자 ${rest.length}개)`);
+    console.error('  여러 장은 한 장씩 따로 부르십시오. 글자를 바로 검사하려면 따옴표로 감싸 주십시오.');
+    process.exit(2);
   } else if (rest.length === 1 && /[\/\\]|\.(txt|md|json|html?)$/i.test(rest[0])) {
     console.error(`✗ 파일을 못 찾았습니다: ${rest[0]}`);
     console.error('  경로를 다시 보십시오. 글자를 바로 검사하려면 따옴표로 감싸 주십시오.');
