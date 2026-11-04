@@ -270,6 +270,13 @@ else if (cmd === 'check') {
       const body = text
         .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')
         .replace(/<!--[\s\S]*?-->/g, ' ')
+        // 2026-11-04 17시 claude-22 (smartever 11:11·12:11 실측): **줄 안 태그는 빈칸으로 바꾸면 안 된다.**
+        //   `(공산품)<b>입니다` → `(공산품) 입니다` 가 되어 `looseRe` 의 낱말 하나가 쪼개지고
+        //   **법정 고지문을 한 번도 못 뗀다**(면제 실패 → 고지문 속 「치료」가 거짓 ✗ 로 뜬다).
+        //   smartever 실측: touchtok `detail/source.html` → `''` 뗀1 / `' '` 뗀0.
+        //   그래서 줄 안 태그만 **빈칸 없이** 지우고, 덩어리 태그는 그대로 빈칸으로 바꾼다
+        //   (덩어리를 ''로 지우면 `<p>치료</p><p>안녕` 이 `치료안녕` 으로 붙어 엉뚱한 낱말이 생긴다).
+        .replace(/<\/?(?:b|strong|em|i|u|s|span|mark|small|sub|sup|a|font|abbr|code|label|time|bdi|q|cite|ins|del|big|wbr)\b[^>]*>/gi, '')
         .replace(/<[^>]+>/g, ' ')
         .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
         .replace(/[ \t]+/g, ' ');
@@ -305,6 +312,28 @@ else if (cmd === 'check') {
   if (n.length) console.log(`  출처 확인 필요: ${n.join(', ')}`);
   // 「1종 N회」로 적는다. 횟수를 **말줄임 앞**에 두어야 잘리지 않는다 (2026-11-02 smartever 신고).
   stripped.forEach(m => console.log(`  법정 고지문 1종 ${m.hits}회 떼고 검사했습니다: ${m.sentence.slice(0, 30)}…`));
+  // 🔴 **일곱 번째 거짓 판정 보초** (2026-11-04 17시 claude-22 · smartever 11:11 제안한 「뗀횟수 보초」)
+  //   까닭: 고지문이 문장 가운데서 토막나면 뗀횟수가 0 이 되고, 면제가 안 걸려
+  //     고지문 속 낱말(「치료」)이 **거짓 ✗** 로 뜬다. 그런데 화면에는 ✗ 하나로만 보여
+  //     「정말 금지어가 있다」와 구별이 안 된다. 앞뒤 조각이 다 있는데 통째로는 안 맞으면 짚어 준다.
+  //   짧은 캡션처럼 고지문이 아예 없는 글에서는 울리지 않는다(조각도 없으므로).
+  for (const n of (p.mustInclude || [])) {
+    if (stripped.some(s => s.sentence === n)) continue;
+    // ★ 앞뒤 10자로 보면 **벌어진 자리가 끝에 있을 때 못 잡는다**(첫 시험에서 실패했다).
+    //   그래서 **네 글자 이상 낱말**이 몇 개나 보이는지로 센다. 7할 이상 보이는데
+    //   통째로는 안 맞으면 「문장 가운데가 벌어졌다」는 뜻이다. 흔한 짧은 낱말은 빼서
+    //   고지문이 아예 없는 캡션에서는 울리지 않는다.
+    const t = n.trim();
+    const toks = t.split(/\s+/).filter(x => x.length >= 4);
+    const seen = toks.filter(x => text.includes(x));
+    if (toks.length >= 4 && seen.length / toks.length >= 0.7 && seen.length < toks.length) {
+      const lost = toks.filter(x => !text.includes(x));
+      console.log(`  🔴 고지문이 토막나 있습니다 — 뗀횟수 0 인데 낱말 ${seen.length}/${toks.length} 은 보입니다`);
+      console.log(`     안 보이는 조각: ${lost.map(x => `「${x}」`).join(' ')}`);
+      console.log('     줄 안 태그(<b>·<span> 등)나 줄바꿈이 문장 가운데 끼었을 수 있습니다.');
+      console.log('     면제가 안 걸리므로 위의 ✗ 는 **거짓일 수 있습니다.** 고지문을 한 줄로 맞추고 다시 도십시오');
+    }
+  }
   if (miss.length) miss.forEach(m => console.log(`  빠진 필수 표기: ${m}`));
   else if ((p.mustInclude || []).length) console.log('  ✓ 필수 표기 들어 있음');
 }
