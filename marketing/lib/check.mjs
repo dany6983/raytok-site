@@ -52,11 +52,37 @@ export function resolveForbidden(product, seen = new Set()) {
   return { words: drop(uniq(words)), notice: drop(uniq(notice)) };
 }
 
+/** 보이지 않는 글자를 떼어낸 뒤 검사한다 (2026-11-04 19시 claude-22 — 아홉 번째 거짓 통과).
+ *  까닭: 인스타 캡션은 **빈 줄을 만들려고 보이지 않는 글자를 넣는 것이 흔하다.**
+ *    줄바꿈 생성기·캔바 붙여넣기가 `ㅤ`(U+3164 한글 채움)·U+200B(폭 없는 빈칸)·
+ *    U+2063 따위를 섞어 넣는다. 사람 눈에는 안 보이고 화면에도 똑같이 보인다.
+ *  그런데 `forbidRe` 는 낱말 사이를 `\s*` 로만 이었다. `\s` 는 이 글자들을 **공백으로 안 본다.**
+ *    「월 구독료<U+200B> 0원」 → ✓ 샘        ← 금지어 「구독료 0원」이 안 걸린다
+ *    「월 구독료 0원」        → ✗ 걸림
+ *    실측(19시): U+200B·U+200C·U+200D·U+2060·U+2063·U+3164 **여섯 꼴 전부 샜다.**
+ *    BOM·NBSP 둘만 \s 에 걸려 살아 있었다
+ *  막는 법은 목록을 늘리는 게 아니라 **검사 직전에 떼는 것**이다 —
+ *  목록·정규식을 안 건드리므로 지금까지 나온 판정이 바뀌지 않는다(아래 ★).
+ *  ★ 떼는 것은 **검사용 사본뿐이다.** 공개 문구·언어팩 파일은 손대지 않는다.
+ *    `packs/km.json` 의 U+200B 132개·`si.json` ZWJ 56개는 크메르어·신할라어 **정서법에 필요한 글자**다.
+ *    게이트는 한국어 광고 문구만 보므로 사본에서 떼도 표기에 영향이 없다.
+ *  ★ NBSP(U+00A0)·얇은 빈칸은 **공백 한 칸으로** 바꾼다(지우면 낱말이 붙는다).
+ *    나머지 폭 없는 글자는 **지운다**(원래 자리를 차지하지 않는 글자다).
+ *  ★ 판정이 느슨해지는 쪽으로만 움직인다: 고지문(mustInclude)도 더 잘 찾게 되므로
+ *    전에 통과한 글은 그대로 통과한다. 새로 걸리는 것은 **숨어 있던 금지어**뿐이다. */
+const ZERO_WIDTH = /[\u200b\u200c\u200d\u2060\u2061\u2062\u2063\u2064\u206a-\u206f\ufeff\u3164\u115f\u1160\u180e\u17b4\u17b5\ufe00-\ufe0f]/g;
+const BLANKISH   = /[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]/g;
+export function normalizeInvisible(text) {
+  if (typeof text !== 'string') return text;
+  return text.replace(ZERO_WIDTH, '').replace(BLANKISH, ' ');
+}
+
 /** 금지어 검사. { ok, hits: [{word, where, suggest}], notices: [...] }
  *  words  = 법 자체라 막는다 (ok=false).
  *  notice = 2026-10-26 대표님 해제분. 막지 않고 통지만 한다 (ok 에 영향 없음).
  *           출처: claude/RayTok-광고규정_해제_1026.md */
-export function check(text, product) {
+export function check(rawText, product) {
+  const text = normalizeInvisible(rawText);
   const { words, notice: noticeWords } = resolveForbidden(product);
   const hits = [];
   const find = (w) => {
@@ -156,7 +182,8 @@ function looseRe(sentence, flags = '') {
  *  ★ 반환이 문자열 배열이 아니라 **{문장, 횟수}** 다. 예전엔 「문장 ×4」로 이어 붙여 넘겼는데
  *    부르는 쪽이 30자로 자르면서 ×4 가 잘려 「4회 떼였는데 1건으로 보인다」가 됐다
  *    (2026-11-02 smartever 신고). 횟수를 따로 주면 부르는 쪽이 어디든 둘 수 있다 */
-export function stripRequired(text, product) {
+export function stripRequired(rawText, product) {
+  const text = normalizeInvisible(rawText);
   let body = text;
   const stripped = [];
   for (const n of (product.mustInclude || [])) {
@@ -170,7 +197,8 @@ export function stripRequired(text, product) {
 }
 
 /** 숫자가 제품 facts에 있는 값인지 거친 확인. 없는 숫자는 경고만. */
-export function auditNumbers(text, product) {
+export function auditNumbers(rawText, product) {
+  const text = normalizeInvisible(rawText);
   const known = new Set();
   const walk = (v) => {
     if (v == null) return;
@@ -284,7 +312,8 @@ export function auditNumbers(text, product) {
 }
 
 /** 반드시 들어가야 하는 문구가 빠졌는지 (터치톡 의료기기 아님 고지 등) */
-export function auditRequired(text, product) {
+export function auditRequired(rawText, product) {
+  const text = normalizeInvisible(rawText);
   const need = product.mustInclude || [];
   // 공백에 느슨한 전문(全文) 대조. 예전엔 머리 20자를 그대로 includes 로 봤는데,
   // 머리 20자 **안에** 줄바꿈이 떨어지면 들어 있는 고지문도 「빠짐」으로 떴다.
