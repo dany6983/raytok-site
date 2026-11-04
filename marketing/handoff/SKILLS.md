@@ -1663,3 +1663,59 @@ git branch -f main <내커밋> && git checkout main && git push origin main
 ```
 부모가 다르면 `git checkout main && git pull --rebase origin main && git cherry-pick <내커밋>` 입니다.
 **`push --force` 는 쓰지 않습니다** — 10-31 에 그걸로 커밋 하나가 main 에서 떨어졌습니다(`85dca9a`, 지금도 그 상태).
+
+---
+## 거짓 「금지어 0건」의 **세 번째 꼴** — 넘긴 *글자*의 모양이 틀렸다 (2026-11-04 09시 claude-22)
+
+앞선 두 꼴은 **부르는 함수**(이름 틀림)와 **둘째 칸**(제품 대신 글자 id)이었다.
+이번 것은 **첫째 칸**이다. 11-04 09시 회귀에서 공개 페이지 **21장 전부 ✓ · ✗ 0건**이 나왔다. 거짓이었다.
+
+```js
+const txt = stripRequired(visible(html), p);   // ← 틀림
+const r = check(txt, p);                       // "[object Object]" 를 검사한다
+```
+
+`stripRequired` 는 **글자열이 아니라 `{ body, stripped }` 객체**를 돌려준다
+(2026-11-02 정정 때 「문장 ×4」가 잘리는 걸 막으려고 객체로 바꾼 그것이다. lib/check.mjs 159줄 주석에 적혀 있다).
+객체를 그대로 `check` 에 넘기면 정규식이 `"[object Object]"` 를 훑는다 → **무엇도 안 걸린다.**
+
+**앞선 보초로는 안 막힌다.** 「금지어 수가 0이 아닌지」(11-03 19시 처방)는 *낱말 쪽* 보초다.
+이번엔 낱말 33개가 제대로 실렸고 **검사할 글자가 없었다.** 보초가 통과를 찍고 지나갔다.
+
+### 알아챈 방법 — 글자 수를 찍어 두면 보인다
+줄마다 `✓ index.html (undefined자)` 로 나왔다. **`undefined자` 가 유일한 단서였다.**
+앞 시간 값(✗ 1 = `guide` 「Dolby」)과 비교해서 뒤집힌 걸 확인했다.
+**앞 시간 값이 없으면 또 못 잡는다.** 두 시간 치를 나란히 두는 습관이 세 번 연속으로 범인을 잡았다.
+
+### 처방 — 보초를 **양쪽**에 둔다
+```js
+// ① 낱말 쪽 (11-03 처방, 그대로 둔다)
+const n = resolveForbidden(p).words.length;
+console.log(`제품 ${pid} · 금지어 ${n} 개 실려 있음`);
+if (!n) process.exit(2);
+
+// ② 글자 쪽 (새로 넣은 것)
+const sr = stripRequired(visible(html), p);
+const txt = typeof sr === 'string' ? sr : sr.body;     // 객체면 .body 를 꺼낸다
+if (typeof txt !== 'string') process.exit(2);          // 글자열 아니면 멈춘다
+console.log(`${f} (${txt.length}자)`);                 // ★ 글자 수를 줄마다 찍는다
+```
+**교훈: 게이트가 「무엇을 몇 자 검사했는지」를 찍지 않으면, 아무것도 검사하지 않은 것과 통과가 똑같이 보인다.**
+반환값이 객체인 함수는 `lib/check.mjs` 에 `stripRequired`(`{body,stripped}`)·`resolveForbidden`(`{words,notice}`) **둘**이다. 둘 다 당했다.
+
+## 「전수 21장」에 **넘김 페이지 3장**이 섞여 있었다 (2026-11-04 09시 claude-22)
+
+글자 수를 찍기 시작하니 바로 드러났다. 21장 중 셋은 **본문이 없는 넘김(redirect) 껍데기**다.
+
+| 껍데기 | 보이는 글자 | 진짜 본문 |
+|---|---|---|
+| `usage/index.html` | 45자 | `/web/usage/` |
+| `meet/index.html` | 28자 | `/desk/` |
+| `terms/index.html` | 40자 | `/web/terms/` |
+
+`<meta http-equiv="refresh">` + `location.replace()` 꼴이다. **「21장 ✓」는 사실 18장이었고,
+`/web/usage/`·`/web/terms/` 는 여태 한 번도 검사된 적이 없었다.** (이번에 돌렸다 → 둘 다 ✗ 0)
+
+**요령:** 보이는 글자가 50자 미만이면 **멈추지 말고 「넘김 페이지 → 대상」으로 찍고 그 대상을 검사 목록에 넣는다.**
+멈추면 회귀가 중간에 끊긴다(처음에 그렇게 짰다가 `usage` 에서 멈췄다).
+대상 뽑는 꼴: `t.match(/url=([^"'>\s]+)/i) || t.match(/location\.replace\(['"]([^'"]+)/)`
