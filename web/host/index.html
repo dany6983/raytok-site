@@ -529,6 +529,10 @@
     <section id="step-live" class="card" style="display: none;">
       <div class="card-title"><span data-t="live_title"></span> <span id="liveProgress" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></span></div>
       <div id="breakBand" class="break-band" data-t="live_break_badge"></div>
+      <!-- 11-04 KFT4TM: 고른 말이 **고르개 한 곳에만** 있었다. 틀려도 방송 내내 안 보여서
+           말레이어로 한국어를 받아쓰는 줄 아무도 몰랐다. 송출 중에도 계속 보인다(§20). -->
+      <div id="liveSrcLang" class="notice info" style="margin:0 0 12px 0; font-weight:600;"></div>
+      <div class="notice warn" id="srcMismatchNote" style="display:none; margin:0 0 12px 0;"></div>
       <div class="live-grid">
         <div>
           <div id="liveParaList" class="live-list"></div>
@@ -850,8 +854,15 @@
       }
     }
     if (srcLangSelect) {
+      /* ★ 11-04: 82줄짜리 고르개는 **포커스만 있으면 휠로 바뀐다.** 손가락이 한 번
+         스치면 말이 바뀌고, 바뀐 것을 알려 주는 곳이 없다. 열려 있지 않을 때의 휠은
+         먹는다 — 클릭·키보드로 고르는 길은 그대로다. */
+      srcLangSelect.addEventListener('wheel', (e) => {
+        if (document.activeElement === srcLangSelect) { e.preventDefault(); srcLangSelect.blur(); }
+      }, { passive: false });
       srcLangSelect.addEventListener('change', () => {
         SRC_LANG = srcLangSelect.value || 'ko';
+        renderLiveSrcLang();
         trLog.push(`src_lang set=${SRC_LANG} n=${allLangs.length}`);
         /* 고른 말을 번역 대상에서 뺀다 — **바꿀 때마다** 다시 센다(한 번만 걸렀더니 옛
            말이 칩에 남았다).
@@ -862,6 +873,15 @@
         syncTargetLangs();
         initLangChips();
       });
+    }
+
+    /** 송출 화면의 「말하는 언어」 줄을 다시 그린다 — 읽는 곳은 여기 하나다(§4) */
+    function renderLiveSrcLang() {
+      const box = document.getElementById('liveSrcLang');
+      if (!box) return;
+      const row = (allLangs || []).find((l) => l && l.code === SRC_LANG);
+      const name = row ? langName(row, SRC_LANG) : SRC_LANG;
+      box.textContent = T('live_src_lang') + ' ' + name + ' (' + SRC_LANG + ')';
     }
 
     const langChips = document.getElementById('langChips');
@@ -1995,9 +2015,33 @@
     }
 
     /** 말한 문장 하나 — **원문+언어만**. 번역 칸을 만들지 않는다 (P-14). */
+    /* 받아쓴 글자가 **고른 말의 글자가 아니다.** 고치지 않고 알린다 — 글자만 보고
+       말을 바꾸면 한국어 강의에 섞인 영어 한 줄이 언어를 되돌린다(D-11). 한 세션에
+       한 번만 띄운다(같은 줄이 계속 뜨면 아무도 안 본다). */
+    let srcMismatchShown = false;
+    function checkSrcMismatch(clean) {
+      if (srcMismatchShown) return;
+      const R = window.rtRecLang;
+      if (!R || !R.mismatch) return;
+      const bad = R.mismatch(SRC_LANG, clean);
+      if (!bad) return;
+      srcMismatchShown = true;
+      const row = (allLangs || []).find((l) => l && l.code === bad.got[0]);
+      const guess = row ? langName(row, bad.got[0]) : bad.got[0];
+      const note = document.getElementById('srcMismatchNote');
+      if (note) {
+        note.textContent = T('src_mismatch_warn')
+          .replace('{src}', SRC_LANG)
+          .replace('{guess}', guess + ' (' + bad.got[0] + ')');
+        note.style.display = 'block';
+      }
+      micNote('src_mismatch', { src: SRC_LANG, script: bad.script, guess: bad.got[0] });
+    }
+
     function sendSpokenLine(text) {
       const clean = (text || '').trim();
       if (!clean) return false;
+      checkSrcMismatch(clean);
       /*
        * ★ 원고를 읽는 중인 말은 **버리지 않고 안 보낸다** — 손님은 그 문단을 이미
        * 검수 번역문으로 받았다(겹침). 기록에는 남겨 "왜 안 갔나"를 볼 수 있게 한다.
@@ -2855,6 +2899,7 @@
         live.finalSummary = null;
         stepPrepare.style.display = 'none';
         stepLive.style.display = 'block';
+        renderLiveSrcLang();
         document.getElementById('roomCode').textContent = live.code;
         refreshJoinQr();                     // 주소를 만드는 자리는 하나다 (joinQrUrl)
         renderAtt({ now: 0, max: 0, langs: {} });
@@ -2901,6 +2946,8 @@
         auth_ok: '강사 이용권 인증됨',
         prep_title: '강의 원고 준비 및 사전 번역',
         prep_src_lang: '내가 말하는 언어',
+        live_src_lang: '말하는 언어 —',
+        src_mismatch_warn: '말하는 언어가 「{src}」로 잡혀 있는데, 받아쓴 글자는 {guess} 글자입니다. 손님에게 가는 번역이 어긋납니다 — 송출을 멈추고 「내가 말하는 언어」를 고쳐 주세요.',
         prep_src_lang_sub: '이 언어로 받아쓰고, 손님은 각자 고른 언어로 듣습니다. (손님 언어를 강사가 고르지 않습니다)',
         prep_pre_open: '원고 미리 번역 (선택 · 강사 검수용)',
         prep_step1: '① 원고 파일 올리기 (TXT · PDF · DOCX · HWPX)',
@@ -3059,6 +3106,8 @@
         auth_ok: 'Instructor licence verified',
         prep_title: 'Prepare the script and pre-translate',
         prep_src_lang: 'The language I speak',
+        live_src_lang: 'Speaking in —',
+        src_mismatch_warn: 'The speaking language is set to "{src}", but the dictated text is in {guess}. Listener translations will be wrong — stop the session and fix "The language I speak".',
         prep_src_lang_sub: 'Dictation uses this language; each listener hears their own. (You do not pick listener languages.)',
         prep_pre_open: 'Pre-translate the script (optional · for your own review)',
         prep_step1: '① Upload the script (TXT · PDF · DOCX · HWPX)',
@@ -3471,6 +3520,7 @@
       live.endedAt = null;
       stepEnd.style.display = 'none';
       stepLive.style.display = 'block';
+      renderLiveSrcLang();
       acquireWakeLock();      // 진행으로 돌아왔다 — 다시 잡는다
       renderLive();
     }
