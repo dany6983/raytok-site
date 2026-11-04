@@ -487,6 +487,10 @@
           <label style="margin: 0;"><span data-t="prep_step3a"></span><span id="paraCount">0</span><span data-t="prep_step3b"></span></label>
           <button id="btnResetParas" class="btn-action" data-t="prep_reset"></button>
         </div>
+        <!-- 11-04: 전에 올린 원고를 **말없이** 불러왔다. 대표님은 새로 올린 줄 알았고,
+             글자 추출이 고쳐지기 전에 뽑힌 쪼개진 글이 그대로 다시 나갔다(세션 6MRFFH).
+             불러왔으면 불러왔다고 말한다(§20). -->
+        <div class="notice info" id="restoredNote" style="display:none; margin-bottom:10px;"></div>
         <div id="paraList" style="max-height: 380px; overflow-y: auto; padding-right: 4px;">
           <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;" data-t="prep_empty"></div>
         </div>
@@ -772,13 +776,18 @@
       });
     }
 
+    /* 글자를 뽑은 방식의 판. 올라가면 **전에 저장된 원고는 낡은 것**이 된다.
+       2 = 11-04, pdf.js item 을 빈칸 없이 잇고 hasEOL 로 줄을 나눈 판(444d2f6).
+       1 = 그 전(낱말 사이 빈칸이 겹쳐 「빈 칸 은」이 되던 판) · 도장이 없으면 1로 친다. */
+    const EXTRACT_VER = 2;
+
     async function saveParagraphsToDB(paragraphs) {
       if (!db) await openDatabase();
       return new Promise((resolve, reject) => {
         const tx = db.transaction(['paragraphs'], 'readwrite');
         const store = tx.objectStore('paragraphs');
         store.clear();
-        paragraphs.forEach(p => store.put(p));
+        paragraphs.forEach(p => store.put(Object.assign({}, p, { ex: EXTRACT_VER })));
         tx.oncomplete = () => resolve();
         tx.onerror = (e) => reject(e.target.error);
       });
@@ -1376,6 +1385,7 @@
     });
 
     document.getElementById('btnResetParas').addEventListener('click', () => {
+      const _n = document.getElementById('restoredNote'); if (_n) _n.style.display = 'none';
       if (confirm(T('ask_reset'))) {
         paragraphs = [];
         renderParagraphs();
@@ -2968,6 +2978,8 @@
         prep_drop_sub: '또는 클릭하여 파일 선택 (브라우저 안에서만 처리되며 서버 업로드 0건)',
         prep_step2: '② 번역할 청취 언어 선택 (여럿 가능)',
         prep_reset: '원고 초기화',
+        restored_note: '전에 올린 원고 {n}문단을 불러왔습니다. 새 원고로 하시려면 「원고 초기화」를 누르고 파일을 다시 올리세요.',
+        restored_stale: '⚠ 이 원고는 글자 추출이 고쳐지기 전(11-04 이전)에 올린 것입니다. 낱말 사이가 벌어져 번역이 어긋날 수 있으니 다시 올려 주세요.',
         prep_empty: '원고 파일을 올리면 문단이 자동으로 나뉘어 표시됩니다.',
         prep_pre_title: '미리 번역 실행 (릴레이 경유)',
         prep_pre_desc: '선택한 언어로 모든 문단을 미리 번역하여 브라우저 IndexedDB에 저장합니다.',
@@ -3128,6 +3140,8 @@
         prep_drop_sub: 'or click to choose a file — handled in this browser, nothing is uploaded',
         prep_step2: '② Choose listener languages (more than one is fine)',
         prep_reset: 'Clear script',
+        restored_note: 'Restored {n} paragraph(s) from a script you uploaded earlier. To use a new one, press "Clear script" and upload the file again.',
+        restored_stale: '⚠ This script was uploaded before the text-extraction fix (pre 11-04). Words may be split apart and translate badly — please upload it again.',
         prep_empty: 'Upload a script and it will be split into paragraphs here.',
         prep_pre_title: 'Pre-translate (via relay)',
         prep_pre_desc: 'Every paragraph is translated into the chosen languages and kept in this browser (IndexedDB).',
@@ -3624,6 +3638,14 @@
           paragraphs = saved;
           renderParagraphs();
           renderReadyArea();
+          const stale = saved.some((p) => (Number(p && p.ex) || 1) < EXTRACT_VER);
+          const note = document.getElementById('restoredNote');
+          if (note) {
+            note.textContent = T('restored_note').replace('{n}', String(saved.length))
+              + (stale ? ' ' + T('restored_stale') : '');
+            note.className = stale ? 'notice warn' : 'notice info';
+            note.style.display = 'block';
+          }
         }
       } catch (e) {
         console.warn('Failed to restore from IndexedDB:', e);
