@@ -2063,7 +2063,10 @@
     function sendSpokenLine(text) {
       const clean = (text || '').trim();
       if (!clean) return false;
-      checkSrcMismatch(clean);
+      /* ⚠ 알림은 **말을 보내는 길 위에 있다.** 던지면 `sendSpokenLine` 이 통째로 죽어
+         말한 줄이 전부 사라진다(R-15 · 바로 위 `scriptOffScript` 주석의 그 함정).
+         알리다 실패하는 것이 말을 잃는 것보다 낫다 — 감싼다. */
+      try { checkSrcMismatch(clean); } catch (_) {}
       /*
        * ★ 원고를 읽는 중인 말은 **버리지 않고 안 보낸다** — 손님은 그 문단을 이미
        * 검수 번역문으로 받았다(겹침). 기록에는 남겨 "왜 안 갔나"를 볼 수 있게 한다.
