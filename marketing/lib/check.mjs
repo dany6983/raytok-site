@@ -223,13 +223,64 @@ export function auditNumbers(text, product) {
     .replace(/\b\d{1,2}\s*시?\s*[~～–—-]\s*\d{1,2}\s*시(?!간)/g, ' ');
   // 꼬리에 붙은 쉼표·마침표를 떼고 모은다. 예전엔 「635,」처럼 쉼표가 붙은 채 찍혀
   // (주소 「동탄대로 635, SH TIME…」) 사람이 숫자를 못 알아봤다 (2026-11-03 claude-22)
-  const found = (masked.match(/\d[\d,]*\.?\d*/g) || []).map(n => n.replace(/[,.]+$/, ''));
-  const unknown = [...new Set(found)].filter(n => {
+  //  ⑩ 차례 이름표 「1단계·2단계」 — 단계 번호는 산수가 아니다 (2026-11-04 18시 claude-22)
+  const masked2 = masked.replace(/\d+\s*단계/g, ' ');
+
+  // ── 여덟 번째 거짓 통과 (2026-11-04 18시 claude-22) ─────────────────────────
+  //  숫자를 **맨숫자로만** 대조했다. 정본에 「약 5시간」(연속재생)이 있으니 「5」가 known 이 되고,
+  //  전혀 다른 「5초면 됩니다」(11-13 릴스 예약)가 **출처 모름 0** 으로 통과했다. 손으로 찾아야 했다.
+  //  거기에 `bare.length > 1` 이 한 자리 수를 전부 버려서 「5초」는 두 번 걸러졌다.
+  //  **단위가 다르면 다른 주장이다 → 숫자+단위 짝으로 본다.**
+  //  ★ `%` 는 단위로 세지 않는다 — CSS `width:4%` 가 쏟아져 사람이 줄을 안 읽는다
+  //  ★ 「홑으로 적힌 수」는 단위를 안 가린다: `languages: 85` 처럼 정본이 숫자만 적어 둔 칸은
+  //    글에서 「85개 언어」로 쓰이므로, 짝을 요구하면 멀쩡한 수가 걸린다 (이 고침의 1차판이 그랬다)
+  //  ★ 「5V」·「1A」처럼 뒤에 글자가 붙은 수는 홑으로 세지 않는다 — 그러면 5 가 아무 단위에나 통과한다
+  const UNIT = '개월|시간|주년|초|분|일|주|년|개|명|원|장|종|건|칸|곳|가지|배|회|mm|cm|kg|mg|ml|g';
+  const pairRe = new RegExp('(?<![\\d,.])(\\d[\\d,]*(?:\\.\\d+)?)\\s*(' + UNIT + ')(?![A-Za-z0-9])', 'g');
+  //  ★ 붙임표로 이어진 식별번호 조각은 「홑으로 적힌 수」가 아니다 — 상표 「RayPac 40-2026-0229441」의
+  //    40 이 홑으로 세어져 「30~40시간」이 통과했다 (이 고침의 2차판에서 잡힌 자리)
+  const loneRe = new RegExp('(?<![\\d,.\\-])(\\d[\\d,]*(?:\\.\\d+)?)(?![\\d.,\\-]|\\s*(?:' + UNIT + ')|[A-Za-z가-힣])', 'g');
+  const knownPairs = new Set();   // 「10000|원」 — 단위까지 같아야 통과
+  const knownAnyUnit = new Set(); // 「85」 — 단위를 안 가리고 통과
+  const walk2 = (v) => {
+    if (v == null) return;
+    if (typeof v === 'number') knownAnyUnit.add(String(v));
+    else if (typeof v === 'string') {
+      for (const m of v.matchAll(pairRe)) knownPairs.add(m[1].replace(/,/g, '') + '|' + m[2]);
+      for (const m of v.matchAll(loneRe)) knownAnyUnit.add(m[1].replace(/,/g, ''));
+    }
+    else if (Array.isArray(v)) v.forEach(walk2);
+    else if (typeof v === 'object') Object.values(v).forEach(walk2);
+  };
+  walk2(product.facts);
+  walk2(product.lead);
+
+  // 글에 쓰인 짝 가운데 정본에 없는 것 — **단위를 붙여** 찍는다.
+  // 「5」가 아니라 「5초」로 보여야 사람이 무엇을 찾아야 하는지 안다
+  const pairHits = [];
+  const pairSeen = new Set();
+  for (const m of masked2.matchAll(pairRe)) {
+    const num = m[1].replace(/,/g, '');
+    const key = num + '|' + m[2];
+    if (pairSeen.has(key)) continue;
+    pairSeen.add(key);
+    //  ★ 여기서 맨숫자 `known` 을 보면 안 된다 — 그게 바로 이 고침이 막으려는 구멍이다.
+    //    `known` 에는 「약 5시간」에서 뽑힌 5 가 들어 있어, 보면 「5초」가 또 통과한다 (1차판 실수)
+    if (knownPairs.has(key) || knownAnyUnit.has(num)) continue;
+    pairHits.push(num + m[2]);
+  }
+
+  // 꼬리에 붙은 쉼표·마침표를 떼고 모은다. 예전엔 「635,」처럼 쉼표가 붙은 채 찍혀
+  // (주소 「동탄대로 635, SH TIME…」) 사람이 숫자를 못 알아봤다 (2026-11-03 claude-22)
+  const found = (masked2.match(/\d[\d,]*\.?\d*/g) || []).map(n => n.replace(/[,.]+$/, ''));
+  const bareUnknown = [...new Set(found)].filter(n => {
     // 꼬리 마침표는 떼고 센다. 「1.」 이 두 글자로 세어져 한 자리 숫자가 걸려 나왔다
     const bare = n.replace(/,/g, '').replace(/\.$/, '');
-    return !known.has(n) && !known.has(bare) && bare.length > 1;
+    if (known.has(n) || known.has(bare) || knownAnyUnit.has(bare)) return false;
+    if (bare.length <= 1) return false;   // 홑 한 자리는 차례·번호가 섞인다. 단위 붙은 것만 짝 길에서 잡는다
+    return !pairHits.some(h => h.startsWith(bare));   // 짝으로 이미 찍은 수는 두 번 찍지 않는다
   });
-  return unknown;
+  return [...pairHits, ...bareUnknown];
 }
 
 /** 반드시 들어가야 하는 문구가 빠졌는지 (터치톡 의료기기 아님 고지 등) */
