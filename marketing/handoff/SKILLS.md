@@ -1804,3 +1804,18 @@ if (hits(kill).join() !== hits(space).join()) console.log('⚠ 줄안태그 함�
 
 **교훈: 대외 글의 사실을 고칠 때는 새 문장을 짓기 전에 레포의 다른 정본을 먼저 훑는다.**
 이미 누군가 그 단서를 달아 두었을 수 있다. 짓는 것보다 **맞추는 것**이 싸고 안전하다.
+
+### detached HEAD — 여덟 번째 재발(11-04 10시). **고치는 자리를 앞으로 옮긴다**
+위 일곱 번은 모두 **push 가 거절된 뒤** 고쳤다. 그런데 **예약 세션은 매번 새 컨테이너**라
+클론이 **늘 detached 로 시작**한다. 그래서 push 때 고치면 **매시간 다시 밟는다.**
+**매시 절차 1번을 이렇게 바꾼다 — 받은함을 읽기 전에:**
+
+```bash
+git rev-parse --abbrev-ref HEAD            # 'HEAD' 면 detached
+git checkout -B main origin/main           # 밀리지 않은 커밋이 없을 때
+```
+이미 커밋해 버렸다면 되감기 없는 것만 확인하고 한 줄로 민다:
+```bash
+git merge-base --is-ancestor origin/main HEAD && git push origin HEAD:main
+git branch -f main HEAD && git checkout main      # 그 다음 정상화
+```
