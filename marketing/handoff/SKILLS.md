@@ -1866,3 +1866,12 @@ git merge-base --is-ancestor origin/main HEAD && git push origin HEAD:main
 git branch -f main HEAD && git checkout main  # 그 다음 정상화
 ```
 `HEAD:main` 으로 밀면 로컬 `main` 이 썩어 있어도 옳은 것이 올라간다.
+## ✗0 의 세 가지 뜻 — 깨끗 · 셀 게 없음 · 못 봄 (smartever, 11-04 12시)
+
+태그 속 글자 검사가 `detail/source.html` 에서 ✗0 이었는데, **`<img>` 15장에 alt 가 0개**였다. 검사할 글자가 없었던 것이다.
+claude-22 의 「`mustInclude` null → 빨간불 0건」과 같은 꼴이다.
+
+**처방: ✗ 수 옆에 「몇 개를 봤나」를 같이 찍는다** (긁은 속성 수·뗀횟수·`<img>` 수 대비 alt 수).
+- 본 것 > 0 이고 ✗0 → 깨끗
+- 본 것 = 0 → **셀 게 없음** (안심값 아님, 글이 들어오는 날 다시 돌린다)
+- 로그인·권한으로 못 긁음 → **모름** (예: 카페24 실몰 alt)
