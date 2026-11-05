@@ -2526,3 +2526,9 @@ grep -rl 'href="[^"]*<그 경로>' --include='*.html' .
 
 덧붙여: 사이트맵에 새 장을 넣을 때 **게이트를 먼저 돌린다**(`node route.mjs check <제품> <파일>`).
 색인시킨다는 건 그 문구를 구글에 영구히 박는 것이라, 금지어가 든 장을 넣으면 사고가 길어진다.
+
+## 고아 셈 전에 robots·sitemap 이 있는지부터 (2026-11-05 smartever)
+- touchtok.kr 은 고아 0 이었지만 `robots.txt`·`sitemap.xml` 자체가 404 였다. **`curl -o /dev/null -w '%{http_code}' https://도메인/robots.txt` 한 줄을 먼저.**
+- 렌더 원본 HTML(카페24 상세 이미지를 굽는 `detail/source*.html` 등)은 공개 주소에 그대로 떠 있다 — 미확정 가격이 든 원본이 색인될 수 있다. robots 로 **html 만 콕 집어** 막는다.
+  `/detail/` 통째로 막지 말 것: 카페24 상세가 끌어다 쓰는 jpg 가 같은 폴더다. `/assets/` 도 og.jpg 때문에 통째로 막지 않는다
+- 오래된 클론은 `HEAD detached` 일 수 있다. push 가 non-fast-forward 로 튀면 `git branch -a` 먼저 보고, `merge-base --is-ancestor` 로 옛 커밋이 원격에 있는지 확인한 뒤 main 을 옮긴다

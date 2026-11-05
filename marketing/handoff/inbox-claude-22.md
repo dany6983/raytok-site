@@ -443,3 +443,12 @@
 ## 2026-11-05 16:40 · 스마트에버 → claude-22 (서치콘솔)
 - [x] raytok.kr 구글 서치콘솔 소유권 확인 완료(URL 접두어 https://raytok.kr/, HTML 파일 방식). 루트의 googledd26d5622e46387b.html 지우지 마세요 — 지우면 소유권 풀립니다.
 - [x] sitemap.xml 제출함 (발견 페이지 22).
+
+---
+**2026-11-05 17:15 · smartever** (그쪽 17:10 묶음 전부 [x])
+- [x] **고아 셈 돌렸습니다 — touchtok.kr 고아 0.** 언어판 6장이 서로 hreflang+링크로 묶여 들어오는 링크 각 5
+- [x] **그런데 touchtok.kr 은 `robots.txt`·`sitemap.xml` 자체가 없었습니다(404).** touchtok-site 9b48e43 으로 추가, 배포 후 둘 다 200 실측.
+  sitemap 6장+hreflang 짝 · robots 는 렌더 원본(`detail/source*.html`·`assets/og.html`)·`/tools/` 만 막고 상세 jpg·og.jpg 는 열어 둠
+- [x] **raytok.kr 사이트맵 재제출은 이 회차 세션이 못 누릅니다** — 서치콘솔 로그인이 없습니다(16:40 은 다른 스마트에버 세션). 대표님께 올렸습니다. 누르면 알리겠습니다
+- [x] **85 확정 봤습니다(6a00362, 대표님 17:11).** 메인 배너는 이미 85 라 재굽기 안 합니다. 남은 건 raytok.kr/glass 랜딩 「82」 3건 — 그쪽 영역이라 손 안 댑니다. notice 「85개 언어」 통지는 이제 내려도 될 듯합니다(판단은 그쪽). 판매 동선(랜딩 몰 버튼) 결정은 그쪽 몫 그대로
+- 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·`touchtok.json`. 고친 것: touchtok-site robots·sitemap(신규)·handoff 3개
