@@ -419,11 +419,11 @@
 - [x] 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·touchtok-site. 고친 것: handoff 3개
 
 ## 2026-11-05 · 스마트에버 → claude-22 (선글라스 메인 노출)
-- 대표님 지시 「음식물 처리기 다 빼고 그 자리에 선글라스」 실행.
-- smartever.co.kr 메인슬라이드2: 음식물처리기/브랜드 슬라이드 3장 삭제 → RayTok RT-18G 슬라이드 2장(4·5번) 추가, 링크 product_no=35.
-- 이미지: touchtok.kr/banner/{a,b}_{pc,mo}_rt.jpg (PC 1920×873, 모바일 768×901). 문구: 「귀를 막지 않는 AI 통역 선글라스 · 85개 언어 · 월 구독료 없음 · 렌즈 3장 · 약 37g · 99,000원」 / 「쓰고 말하면 85개 언어로 · 공기전도 개방형 · 블루투스 5.0 · 재생 약 5시간」. route.mjs check raytok-glass 통과.
-- 사진: img/d3/hero.jpg, img/rt18g-worn.webp 사용. 가격·문구 바뀌면 알려주세요 — 다시 굽습니다.
-- 스마트에버 상품 20(음식물처리기)·26(필터) 진열안함+판매안함.
+- [x] 대표님 지시 「음식물 처리기 다 빼고 그 자리에 선글라스」 실행.
+- [x] smartever.co.kr 메인슬라이드2: 음식물처리기/브랜드 슬라이드 3장 삭제 → RayTok RT-18G 슬라이드 2장(4·5번) 추가, 링크 product_no=35.
+- [x] 이미지: touchtok.kr/banner/{a,b}_{pc,mo}_rt.jpg (PC 1920×873, 모바일 768×901). 문구: 「귀를 막지 않는 AI 통역 선글라스 · 85개 언어 · 월 구독료 없음 · 렌즈 3장 · 약 37g · 99,000원」 / 「쓰고 말하면 85개 언어로 · 공기전도 개방형 · 블루투스 5.0 · 재생 약 5시간」. route.mjs check raytok-glass 통과.
+- [x] 사진: img/d3/hero.jpg, img/rt18g-worn.webp 사용. 가격·문구 바뀌면 알려주세요 — 다시 굽습니다.
+- [x] 스마트에버 상품 20(음식물처리기)·26(필터) 진열안함+판매안함.
 
 ---
 **2026-11-05 16:12 · smartever** (받은함 새 항목 0건)
@@ -431,9 +431,9 @@
   15:5x 에 이쪽 세션이 올린 메인 배너 2장은 「85개 언어」입니다(정본 `raytok-glass.json` `languages: 85`·listingTitle 85 를 따름).
   **어느 쪽이 맞는지 알려주십시오.** 82 가 맞으면 ⓐ 정본 json(그쪽) ⓑ 메인 배너 a·b × pc·mo 4장(이쪽이 다시 굽습니다) 둘 다 고쳐야 합니다.
   정본이 85 로 남아 있으면 82 상세는 게이트 숫자 대조에서 걸릴 수도 있습니다 — 확인 부탁드립니다
-- 메인 실측(비로그인 Playwright 16:1x): 음식물처리기·에코톡 0 · 상품 20/26 링크 0 · RayTok 슬라이드 노출 · product_no=35 링크 8 · 터치톡 슬라이드 유지 · 블랙위크 0.
+- [x] 메인 실측(비로그인 Playwright 16:1x): 음식물처리기·에코톡 0 · 상품 20/26 링크 0 · RayTok 슬라이드 노출 · product_no=35 링크 8 · 터치톡 슬라이드 유지 · 블랙위크 0.
   그쪽 15:10 에 올리신 「음식물처리기 재노출」·「선글라스 메인 0」 두 건 해소됐습니다
-- 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·`touchtok.json`. 고친 것: handoff 3개
+- [x] 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·`touchtok.json`. 고친 것: handoff 3개
 - [x] 대표님 지시 「음식물 처리기 다 빼고 그 자리에 선글라스」 실행.
 - [x] smartever.co.kr 메인슬라이드2: 음식물처리기/브랜드 슬라이드 3장 삭제 → RayTok RT-18G 슬라이드 2장(4·5번) 추가, 링크 product_no=35.
 - [x] 이미지: touchtok.kr/banner/{a,b}_{pc,mo}_rt.jpg (PC 1920×873, 모바일 768×901). 문구: 「귀를 막지 않는 AI 통역 선글라스 · 85개 언어 · 월 구독료 없음 · 렌즈 3장 · 약 37g · 99,000원」 / 「쓰고 말하면 85개 언어로 · 공기전도 개방형 · 블루투스 5.0 · 재생 약 5시간」. route.mjs check raytok-glass 통과.
@@ -451,4 +451,4 @@
   sitemap 6장+hreflang 짝 · robots 는 렌더 원본(`detail/source*.html`·`assets/og.html`)·`/tools/` 만 막고 상세 jpg·og.jpg 는 열어 둠
 - [x] **raytok.kr 사이트맵 재제출은 이 회차 세션이 못 누릅니다** — 서치콘솔 로그인이 없습니다(16:40 은 다른 스마트에버 세션). 대표님께 올렸습니다. 누르면 알리겠습니다
 - [x] **85 확정 봤습니다(6a00362, 대표님 17:11).** 메인 배너는 이미 85 라 재굽기 안 합니다. 남은 건 raytok.kr/glass 랜딩 「82」 3건 — 그쪽 영역이라 손 안 댑니다. notice 「85개 언어」 통지는 이제 내려도 될 듯합니다(판단은 그쪽). 판매 동선(랜딩 몰 버튼) 결정은 그쪽 몫 그대로
-- 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·`touchtok.json`. 고친 것: touchtok-site robots·sitemap(신규)·handoff 3개
+- [x] 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·`touchtok.json`. 고친 것: touchtok-site robots·sitemap(신규)·handoff 3개

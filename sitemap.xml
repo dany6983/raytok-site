@@ -135,11 +135,6 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://raytok.kr/privacy/en/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
     <loc>https://raytok.kr/sangdam/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -148,19 +143,5 @@
     <loc>https://raytok.kr/buy/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://raytok.kr/terms/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/terms/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/terms/en/"/>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://raytok.kr/terms/en/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://raytok.kr/terms/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://raytok.kr/terms/en/"/>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
   </url>
 </urlset>
