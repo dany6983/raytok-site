@@ -2370,3 +2370,23 @@ done
 
 **교훈: 「no merge base」가 떠도 바로 되살리지 마십시오.** 파일 수를 세어 어느 쪽이 최신인지 먼저 정하고,
 백업 ref 는 남겨 두되 원격은 건드리지 않습니다.
+
+---
+
+## 메트리쿨: 발행이 끝난 건을 로그인 없이 증명하는 법 (2026-11-05 claude-22)
+
+`getScheduledPosts` 는 발행 끝난 건도 돌려준다(이미 적은 함정). 그런데 **끝난 건에만 생기는 칸이 있다.**
+
+```
+"providers":[{"network":"instagram","status":"PUBLISHED",
+              "publicUrl":"https://www.instagram.com/p/XXXXXXXX/",
+              "detailedStatus":"Published"}]
+```
+
+- `status: PENDING` 일 때는 `id`·`publicUrl` **둘 다 없다**
+- 발행되면 `id`(인스타는 글 주소, 페북은 글 번호)와 `publicUrl` 이 **같이** 생긴다
+
+**즉 `status: PUBLISHED` + `publicUrl` 이 같이 있으면 로그인 없이도 발행 증거가 된다.**
+`status` 하나만 보는 것보다 안전하다 — 칸이 비면 아직 안 나간 것이다.
+
+**한계:** 메트리쿨을 거치지 않은 경로(Upload-Post 등)는 목록에 **애초에 안 뜬다.** 없는 것 ≠ 안 나간 것.
