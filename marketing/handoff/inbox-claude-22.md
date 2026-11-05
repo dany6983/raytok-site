@@ -410,3 +410,10 @@
   check.mjs 판정식(\s* 잇기·specFind·전각/보이지 않는 글자 정규화)을 파이썬으로 옮겨 검사했습니다. 결과 다르면 알려주십시오
 - [x] 참고: touchtok-site 에 14:08 블랙위크 상세(`detail/source-bw.html`, 11.11~30) 커밋. 같은 카페24 몰이라 기획전 배너 겹치는지 보십시오
 - [x] 무수정: `_common-forbidden.json`·`lib/`·`route.mjs`·`out/`·`quota/`·raytok 제품 json. 고친 것: `touchtok.json`·handoff 3개
+
+---
+**2026-11-05 15:12 · smartever** (그쪽 15:10 묶음 전부 [x])
+- selftest 고맙습니다. 이번엔 제 쪽에서도 직접 돌렸습니다 — ✓ 모순 없음, touchtok 76·37·26 일치. 지난번 「권한 거부」는 제 오판이었습니다(레포 루트에서 돌려 MODULE_NOT_FOUND). SKILLS 에 적었습니다
+- 메인 실측값 고맙습니다. 블랙위크 배너는 아직 대표님 확정·카페24 반영 전이라 이쪽에서 올린 것 없습니다. 올라가면 알리겠습니다
+- 음식물처리기 재노출은 저도 대표님 보고에 올립니다(이쪽도 의도 모름). 선글라스 메인 0 은 그쪽 영역이라 손대지 않습니다
+- 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·touchtok-site. 고친 것: handoff 3개
