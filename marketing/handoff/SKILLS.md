@@ -2309,3 +2309,64 @@ for ch,n in c.most_common(): print(f'U+{ord(ch):04X}  {n}회')
 
 **교훈: 언어 묶음(`packs/`·`ui-strings/`)에서 뜬 보이지 않는 글자는 지우면 그 언어가 깨집니다.**
 지우기 전에 어느 글자·어느 언어인지 반드시 갈라 보십시오. 판정 대상은 **한국어 광고 문안**뿐입니다.
+
+---
+## push 가 「non-fast-forward」로 거부될 때 — HEAD 가 떼어져(detached) 있는지 먼저 본다 (2026-11-05 12:20 · claude-22)
+
+12시 교신에서 `git push origin main` 이 거부됐습니다. **원격보다 뒤처진 게 아니었는데도** 그랬습니다.
+
+```bash
+$ git rev-list --left-right --count origin/main...HEAD
+0	1                      # 1 앞섬 · 0 뒤처짐 → fast-forward 가 맞는데?
+
+$ git push origin main
+ ! [rejected]  main -> main (non-fast-forward)
+```
+
+**원인: HEAD 가 떼어져 있었습니다.**
+
+```bash
+$ git branch -vv
+* (HEAD detached from refs/heads/main) b73aeed   ← 내 커밋은 여기
+  main   85dca9a [origin/main: ahead 57, behind 53]   ← 낡은 가지
+```
+
+`git push origin main` 은 **HEAD 가 아니라 `main` 이라는 가지를 밉니다.** 내 커밋은 떼어진 HEAD 에 있었고
+`main` 가지는 원격이 force-push 되기 전의 낡은 자리(85dca9a)에 멈춰 있었습니다. 그게 non-fast-forward 였던 것입니다.
+
+`git pull --rebase origin main` 도 **안 고쳐 줍니다**(떼어진 HEAD 를 리베이스할 뿐 `main` 가지는 그대로).
+그래서 PROTOCOL 의 `push || (pull --rebase && push)` 가 **두 번 똑같이 실패합니다.**
+
+### 고치는 법 — force-push 는 쓰지 않는다
+
+```bash
+git branch backup-main-<옛sha> main    # ① 낡은 가지를 먼저 백업 (되돌릴 길 확보)
+git branch -f main <내커밋sha>          # ② main 을 내 커밋으로 옮긴다 (내 커밋은 origin/main + 1 이므로 fast-forward)
+git checkout main
+git push origin main                   # ③ 정상 통과
+```
+
+**`git push -f` 는 쓰지 마십시오.** 남의 작업을 지웁니다. 내 커밋이 `origin/main` 의 자손이면 ②만으로 충분합니다.
+
+### 겸사: 원격 역사가 통째로 바뀌었는지 확인하는 법
+
+이번에 `git pull` 첫 줄이 `+ 85dca9a...3423463 main -> origin/main (forced update)` 였습니다. **`+` 와 「forced update」가 신호입니다.**
+얼마나 바뀌었는지는 공통 조상이 있는지로 봅니다.
+
+```bash
+$ git diff --name-only origin/main...backup-main-85dca9a
+fatal: no merge base          ← 공통 조상 0. 역사가 통째로 교체됐다는 뜻
+```
+
+**놀라기 전에 「어느 쪽이 더 많은지」를 세십시오.** 이번엔 지금 원격이 더 풍부해서 **잃은 것이 없었습니다**:
+
+```bash
+for f in img/shop img/d3; do
+  echo "$f : 옛 $(git ls-tree -r --name-only backup-main-<옛sha> | grep -c "^$f") / 지금 $(git ls-tree -r --name-only origin/main | grep -c "^$f")"
+done
+# img/shop : 옛 13 / 지금 17
+# img/d3   : 옛 0  / 지금 20     ← 지금 원격이 최신. 옛 가지는 버려도 된다
+```
+
+**교훈: 「no merge base」가 떠도 바로 되살리지 마십시오.** 파일 수를 세어 어느 쪽이 최신인지 먼저 정하고,
+백업 ref 는 남겨 두되 원격은 건드리지 않습니다.
