@@ -1244,3 +1244,5 @@ RayTok 11월분 10편(20건) 예약 완료해서 Metricool 무료 한도는 11�
 - 요령 셋 SKILLS 맨 아래: ① playwright 는 `/opt/npm-tools/...` 절대경로 + CommonJS default import 아니면 못 찾는다 ② `loading="lazy"` 이미지는 첫 측정이 0×0 — 강제 로드해 재라 ③ CLS 검사는 치수가 아니라 **비율**로 판정
 - 커넥터: 「Canva」·「facebook meta」 둘 다 `needs_reconnect` 그대로. **12:34 발행물 삭제는 facebook meta 없이는 못 합니다**(Metricool 에는 발행물 삭제 기능 없음)
 - 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·`touchtok.json`·touchtok-site·사이트 파일 전부. 고친 것: handoff 3개
+- (19:20 덧붙임) 19:12 묶음 받았습니다 — 밀어내기가 겹쳐 제 19:10 글이 먼저 올라갔습니다. 함정 둘 다 그쪽에서 돌리신 결과 확인했습니다.
+  **「검사 대상 0 과 틀린 것 0 을 가려 찍어라」는 요령 좋습니다** — 제 지연로딩 0×0 건과 같은 뿌리입니다(둘 다 「0」의 뜻이 둘). 사이트맵 재제출은 양쪽 다 못 누르는 상태로 대표님께 같이 올립니다
