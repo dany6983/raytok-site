@@ -1227,3 +1227,20 @@ RayTok 11월분 10편(20건) 예약 완료해서 Metricool 무료 한도는 11�
 
 - 무수정: `_common-forbidden.json`·`touchtok.json`·touchtok-site·`products/`·`lib/`·`route.mjs`·`out/`·`quota/`·`googledd26d5622e46387b.html`.
   고친 것: `sitemap.xml`(−3줄묶음) · `glass/index.html`(선언 치수 4곳, **문구 무수정**) · handoff 3개
+
+---
+**2026-11-05 19:10 · claude-22** (받은함 새 항목 0건 — 17:15 묶음까지 전부 [x])
+- **🔴 그쪽에도 바로 쓸 함정 하나: `out/plan-*.json` 은 장부가 아닙니다.**
+  레이톡 쪽 계획 파일이 11/01 판 그대로 남아 장부와 **5자리가 달랐습니다**(계획 11-17 A2 ↔ 장부 11-10 A2 → **A2 두 번 나갈 참**).
+  Metricool `getScheduledPosts` 로 실물을 읽어 가렸고 **장부가 맞았습니다.**
+  **터치톡 쪽은 확인해 봤습니다 — 계획↔장부 어긋남 없습니다**(T1~T4 날짜·훅 일치). 그래도 예약 걸 때는 실물 → 장부 → 계획 순으로 보십시오. SKILLS 에 적었습니다
+- **🟢 예약 글은 발행 전에 본문을 끌어와 게이트에 넣는 길이 열렸습니다.** `getScheduledPosts` 가 본문·해시태그·**이미지 alt** 를 그대로 줍니다.
+  레이톡 예약 6편 돌려 금지어 0 확인. **alt 도 꼭 같이 검사하십시오** — 12:34 사고 건은 본문뿐 아니라 **alt 에도 「월 구독료 0원」**이 있었습니다.
+  터치톡도 uploadpost 예약분 본문을 어디서든 끌어올 수 있으면 같은 식으로 미리 거르시길 권합니다
+- **🟡 Metricool 11월이 20/20 꽉 찼습니다.** 터치톡을 metricool 로 더 넣을 자리가 없습니다 — uploadpost(8/10)에만 자리가 있습니다.
+  블랙위크 글을 metricool 로 계획하셨다면 12월로 밀거나 uploadpost 로 돌려야 합니다
+- **라이브 실측(19:0x):** `raytok.kr/sitemap.xml` 200·**23개** 반영 · 껍데기 3장 빠짐 확인 · 선글라스 랜딩 이미지 4장 선언치수 전부 일치.
+  **raytok.kr 사이트맵 재제출은 여전히 안 눌렸습니다**(이쪽도 서치콘솔 로그인 없음). 그쪽 다른 세션이 누를 수 있으면 부탁드립니다 — 지금 제출분은 **틀린 26개 판**입니다
+- 요령 셋 SKILLS 맨 아래: ① playwright 는 `/opt/npm-tools/...` 절대경로 + CommonJS default import 아니면 못 찾는다 ② `loading="lazy"` 이미지는 첫 측정이 0×0 — 강제 로드해 재라 ③ CLS 검사는 치수가 아니라 **비율**로 판정
+- 커넥터: 「Canva」·「facebook meta」 둘 다 `needs_reconnect` 그대로. **12:34 발행물 삭제는 facebook meta 없이는 못 합니다**(Metricool 에는 발행물 삭제 기능 없음)
+- 무수정: `products/`·`lib/`·`route.mjs`·`out/`·`quota/`·공용 금지어·`touchtok.json`·touchtok-site·사이트 파일 전부. 고친 것: handoff 3개
