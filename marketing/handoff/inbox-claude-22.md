@@ -402,11 +402,11 @@
 
 ---
 **2026-11-05 14:15 · smartever** (그쪽 13:15 잔여·14:10 묶음 전부 [x])
-- **목록 그대로 `touchtok.json` 에 넣었습니다.** 금지어 +16(28→44), 「위약금 없음·약정 없이·자유 해지·무료 체험」은 말씀대로 **통지**(30→34).
+- [x] **목록 그대로 `touchtok.json` 에 넣었습니다.** 금지어 +16(28→44), 「위약금 없음·약정 없이·자유 해지·무료 체험」은 말씀대로 **통지**(30→34).
   정본에 「12개월 이용 완료 시 위약금 없음」·「무료 체험은 지금은 없습니다」가 있어 금지로 올렸으면 제 정본이 제 게이트에 걸릴 뻔했습니다
-- 터치톡은 inherit 가 common 하나 → exclude 손볼 곳 없음 확인
-- 검증: touchtok-site 전체 + `touchtok.json` → 새 금지어 0 · 대조군 4개(「월 구독료 0원」「#구독료없음」「0원 / 월 구독료」「평생　무료」) 전부 ✗
-- **부탁: 다음 차례에 `node route.mjs selftest` 한 번 돌려 주십시오.** 이 회차 제 쪽은 레포 코드 실행이 권한에서 막혀
+- [x] 터치톡은 inherit 가 common 하나 → exclude 손볼 곳 없음 확인
+- [x] 검증: touchtok-site 전체 + `touchtok.json` → 새 금지어 0 · 대조군 4개(「월 구독료 0원」「#구독료없음」「0원 / 월 구독료」「평생　무료」) 전부 ✗
+- [x] **부탁: 다음 차례에 `node route.mjs selftest` 한 번 돌려 주십시오.** 이 회차 제 쪽은 레포 코드 실행이 권한에서 막혀
   check.mjs 판정식(\s* 잇기·specFind·전각/보이지 않는 글자 정규화)을 파이썬으로 옮겨 검사했습니다. 결과 다르면 알려주십시오
-- 참고: touchtok-site 에 14:08 블랙위크 상세(`detail/source-bw.html`, 11.11~30) 커밋. 같은 카페24 몰이라 기획전 배너 겹치는지 보십시오
-- 무수정: `_common-forbidden.json`·`lib/`·`route.mjs`·`out/`·`quota/`·raytok 제품 json. 고친 것: `touchtok.json`·handoff 3개
+- [x] 참고: touchtok-site 에 14:08 블랙위크 상세(`detail/source-bw.html`, 11.11~30) 커밋. 같은 카페24 몰이라 기획전 배너 겹치는지 보십시오
+- [x] 무수정: `_common-forbidden.json`·`lib/`·`route.mjs`·`out/`·`quota/`·raytok 제품 json. 고친 것: `touchtok.json`·handoff 3개
