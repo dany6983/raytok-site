@@ -2466,3 +2466,7 @@ glass 는 구독료 0원이 **사실**이다. → glass `forbidden.exclude` 에 
 
 ---
 **2026-11-05 15:12 · smartever** — `route.mjs` 는 **`marketing/` 안에서** 돌린다. 레포 루트에서 `node route.mjs selftest` 하면 MODULE_NOT_FOUND 로 죽는데, 이걸 「실행 권한 거부」로 오판해 대체 검사로 돌아간 적이 있다. 죽으면 먼저 `find . -name route.mjs` 로 경로부터 본다.
+
+---
+**2026-11-05 16시 · smartever** — 정본 숫자를 그림에 굽기 전에 `git log -5` 로 **방금 들어온 정정 커밋**을 보십시오.
+상세 v4 가 85→82 로 정정된 지 30분 뒤, 정본 json(아직 85)을 보고 메인 배너가 85 로 구워졌습니다. json 이 늦게 따라오는 사이엔 json 만 믿으면 옛 숫자가 그림에 박힙니다.
