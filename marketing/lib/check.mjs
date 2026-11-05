@@ -72,9 +72,25 @@ export function resolveForbidden(product, seen = new Set()) {
  *    전에 통과한 글은 그대로 통과한다. 새로 걸리는 것은 **숨어 있던 금지어**뿐이다. */
 const ZERO_WIDTH = /[\u200b\u200c\u200d\u2060\u2061\u2062\u2063\u2064\u206a-\u206f\ufeff\u3164\u115f\u1160\u180e\u17b4\u17b5\ufe00-\ufe0f]/g;
 const BLANKISH   = /[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]/g;
+
+/** 전각(全角) 글자를 반각으로 접은 뒤 검사한다 (2026-11-05 11시 claude-22 — 열 번째 거짓 통과).
+ *  까닭: 금지어 목록은 반각으로 적혀 있는데 **캡션에는 전각이 섞여 들어온다.**
+ *    인스타·캔바·한글 입력기가 숫자·기호를 전각으로 바꿔 놓는 일이 흔하다.
+ *    실측(11:10): 「구독료０원」(U+FF10 전각 영) → ✓ 샘   ← 금지어 「구독료 0원」이 안 걸린다
+ *                「구독료 0원」(반각)            → ✗ 걸림
+ *  아홉 번째(보이지 않는 글자)와 **같은 종류**다: 목록을 늘릴 일이 아니라 검사 직전에 접을 일이다.
+ *  ★ U+FF01~U+FF5E → U+0021~U+007E 로 **한 글자가 한 글자로** 바뀐다(길이 보존).
+ *    미리보기 발췌가 자리를 세어 뜨므로 길이가 바뀌면 발췌가 밀린다. 1:1 이라 안 밀린다.
+ *  ★ 접는 것은 **검사용 사본뿐이다.** 공개 문구는 손대지 않는다.
+ *  ★ 판정이 느슨해지는 쪽으로는 움직이지 않는다: 전에 ✗ 였던 글은 그대로 ✗ 다.
+ *    새로 걸리는 것은 **전각으로 숨어 있던 금지어**뿐이다. (회귀 확인: 페이지 21장 × 상품 3 = ✗ 6줄, 고침 전후 같음) */
+const FULLWIDTH = /[\uff01-\uff5e]/g;
 export function normalizeInvisible(text) {
   if (typeof text !== 'string') return text;
-  return text.replace(ZERO_WIDTH, '').replace(BLANKISH, ' ');
+  return text
+    .replace(ZERO_WIDTH, '')
+    .replace(BLANKISH, ' ')
+    .replace(FULLWIDTH, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
 }
 
 /** 금지어 검사. { ok, hits: [{word, where, suggest}], notices: [...] }

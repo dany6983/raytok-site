@@ -37,5 +37,16 @@ const 원본 = `ស្រុក${크메르}ខ្មែរ`;
 봄('원본 문자열 무변경', 원본.includes('​'));
 봄('사본에서만 떼임', !normalizeInvisible(원본).includes('​'));
 
+// ⑥ 전각(全角) 글자도 걸려야 한다 (2026-11-05 11시 — 열 번째 거짓 통과)
+//    까닭: 금지어 목록은 반각인데 캡션엔 전각이 섞여 온다. 「구독료０원」이 샜다
+봄('전각 영 U+FF10', check('구독료０원입니다.', app).hits.length === 1);
+봄('전각 영 + 빈칸', check('월 구독료 ０원', app).hits.length === 1);
+봄('전각 해시 U+FF03', check('＃구독료없음', app).hits.length === 1);
+봄('반각 그대로', check('월 구독료 0원', app).hits.length === 1);
+봄('전각→반각 1:1 길이 보존', normalizeInvisible('０Ａ＃').length === 3);
+봄('전각 접기 값', normalizeInvisible('０Ａ＃') === '0A#');
+// 오탐 금지 — 전각 아닌 깨끗한 글은 그대로 통과
+봄('전각 고침 뒤에도 깨끗한 글 통과', check('RayPac™, 85개 언어.', app).ok);
+
 console.log(`\n시험 ${통과 + 실패}개 · 통과 ${통과} · 실패 ${실패}`);
 process.exit(실패 ? 1 : 0);
