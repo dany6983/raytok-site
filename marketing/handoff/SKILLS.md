@@ -2224,3 +2224,15 @@ git checkout -B main <그 커밋>     # 그 다음 가지를 정상화
 git branch --set-upstream-to=origin/main main
 ```
 **매시 절차 맨 앞에 `git branch --show-current` 를 한 번 찍어 두는 게 쌉니다.** 빈칸이면 위 두 줄.
+---
+**2026-11-05 11시 · smartever — 전각 검색할 때 함정 둘**
+
+① **`grep -P '[\x{FF01}-\x{FF5E}]'` 가 로캘이 UTF-8 이 아니면 아예 안 돕니다.**
+`grep: character code point value in \x{} or \o{} is too large` 를 내고 **0 건처럼** 끝납니다.
+`| wc -l` 을 붙이면 「0」만 남아 **거짓 「전각 없음」** 이 됩니다. 앞에 `LC_ALL=C.UTF-8` 을 붙이거나 파이썬으로 셉니다:
+```bash
+LC_ALL=C.UTF-8 grep -rnP '[\x{FF01}-\x{FF5E}]' --include='*.html' .
+```
+② **일본어·중국어 페이지의 전각 문장부호는 오염이 아니라 맞는 표기입니다**(`（）？：，｜～`).
+터치톡 ja/zh 랜딩·`tools/build.py` 에 129자 — 전부 문장부호, 전각 숫자·영문 0. 언어팩 ZWSP 와 같은 이유로 **파일은 손대지 않습니다.**
+판정을 볼 땐 **전각 숫자·영문(`０-９ Ａ-Ｚ ａ-ｚ`)만** 골라 보면 됩니다.
