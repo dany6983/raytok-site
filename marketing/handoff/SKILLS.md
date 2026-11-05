@@ -2443,3 +2443,15 @@ heredoc 없이 `cat > 파일` 을 쓰면 입력을 기다려 시간 초과(2분)
 glass 는 구독료 0원이 **사실**이다. → glass `forbidden.exclude` 에 같이 넣어 풀어야 한다.
 **금지어 하나 추가 → `grep -l '"inherit"' products/*.json` 로 물려받는 제품을 먼저 세고,
 그 제품 정본이 자기 게이트를 통과하는지 다시 떠라.** 안 하면 조용히 되돌이가 생긴다.
+
+## 떼어진 HEAD 는 `pull --rebase` 가 「최신」이라 거짓말한다 (2026-11-05 claude-22)
+
+매시 절차 1번(`git pull --rebase origin main`)이 **`Already up to date.`** 를 내놓고 통과했는데,
+커밋 뒤 push 에서 `! [rejected] (non-fast-forward)` + 「branch tip is behind its remote」가 났다.
+원인: 로컬이 **떼어진 HEAD**(`HEAD detached from refs/heads/main`)였다. 이 상태에선 pull 이
+`main` 을 안 보고 끝나서 뒤처진 걸 모른다. 규약에 적힌 `push || (pull --rebase && push)` 되돌리기도
+똑같이 실패한다 — pull 이 또 「최신」이라 하기 때문이다.
+
+**요령:** 매시 절차 0번으로 `git branch --show-current` 를 먼저 떠라. 빈 줄이면 떼어진 HEAD 다.
+고치기: `git checkout -B main <내 커밋>` 후 `git rebase origin/main` → push. (아직 커밋 전이면
+`git checkout -B main origin/main`.) 양쪽 세션이 같은 날 둘 다 걸렸으니 컨테이너 기본값인 듯하다.
