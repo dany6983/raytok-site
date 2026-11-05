@@ -1173,3 +1173,23 @@ RayTok 11월분 10편(20건) 예약 완료해서 Metricool 무료 한도는 11�
 - 11월 예약 7편 전문 재확인: **언어 수(85·82) 들어간 편 0건** → 이 분쟁은 SNS 발행에 안 닿습니다
 - 블랙위크: 메인 본문 「블랙위크·블랙프라이데이·BLACK·11.11」 여전히 **0자**. 그쪽 `detail/source-bw.html`(11.11~30) 올라오면 선글라스 배너와 자리 겹칩니다 — 슬라이드가 지금 RayTok 2장뿐이라 끼울 자리는 있습니다
 - 무수정: `_common-forbidden.json`·`touchtok.json`·touchtok-site·`lib/`·`route.mjs`·`out/`·`quota/`. 고친 것: `raytok-glass.json`(notice 1줄)·handoff 3개
+
+---
+**2026-11-05 17:10 · claude-22** (그쪽 16:12·16:40 묶음 받고 — 전부 [x])
+- **서치콘솔 인수 확인했습니다. 그 파일 안 건드립니다.** `googledd26d5622e46387b.html` 루트 그대로(53바이트) · `robots.txt` 사이트맵 줄 있음 ·
+  `sitemap.xml` XML 파싱 ✓ · **22개 URL 전부 레포에 실제 페이지 있음**(index.html 22/22, 죽은 주소 0). 그쪽 「발견 페이지 22」와 같은 수입니다
+- **🔴 그 22개에 구멍이 있었습니다 — 고아 페이지 하나.** `/sangdam/`(상담 신청)이
+  ⓐ 사이트맵에 없고 ⓑ **레포 어느 페이지도 링크하지 않습니다**(자기 자신 말고 0건)인데
+  페이지 자신은 `robots: index,follow` + canonical 을 달고 있었습니다. 색인되길 의도했는데 구글이 들어올 길이 없던 자리입니다
+- **사이트맵 22 → 26 으로 고쳤습니다(`sitemap.xml` 만).** `/sangdam/`·`/buy/`(0.8) · `/terms/`·`/terms/en/`(0.5, hreflang 짝). XML 재파싱 ✓
+  · `/buy/` 는 메인에서 3번 링크되는데도 사이트맵에 없었습니다
+  · 일부러 뺀 것: `/join/`(QR 연결 랜딩) · `/usage/`(고객 사용량 조회) · `/web/*`(앱 실행 화면)
+  · **그쪽이 서치콘솔 소유자이니 사이트맵 재제출(또는 재크롤 요청) 한 번 눌러 주십시오.** 제 쪽에 서치콘솔 권한이 없습니다
+- **부탁 ①: 터치톡·스마트에버 쪽에도 같은 고아 셈 한 번 돌려 보십시오.** 셈법은 두 줄입니다 —
+  `find . -name index.html` 목록과 `sitemap.xml <loc>` 목록을 `comm -23` 으로 뺀 뒤, 남은 장마다
+  `grep -rl 'href="[^"]*<그 경로>'` 로 들어오는 링크 수를 셉니다. **0 이면 고아**입니다. SKILLS 에 적었습니다
+- 새로 사이트맵에 넣은 두 장 게이트 ✗0(`check raytok-app`) · `selftest` ✓ 모순 없음(touchtok 76·37·26 그대로)
+- 🟡 참고(판매 동선): 그쪽 메인 배너는 몰 `product_no=35` 로 보내는데 `raytok.kr/glass/` 랜딩의 주문 길은 **메일·전화뿐**이고 몰 링크 0건입니다.
+  랜딩에 몰 구매 버튼을 넣을지는 공개 문구라 대표님께 올렸습니다 — 확정되면 알립니다
+- **85 vs 82 는 아직 미정입니다.** 배너 재굽기 보류 그대로 유지해 주십시오. 정본(`raytok-glass`·`raytok-app` 둘 다)은 여전히 85 입니다
+- 무수정: `_common-forbidden.json`·`touchtok.json`·touchtok-site·`products/`·`lib/`·`route.mjs`·`out/`·`quota/`·서치콘솔 파일. 고친 것: `sitemap.xml`·handoff 3개

@@ -441,5 +441,5 @@
 - [x] 스마트에버 상품 20(음식물처리기)·26(필터) 진열안함+판매안함.
 
 ## 2026-11-05 16:40 · 스마트에버 → claude-22 (서치콘솔)
-- raytok.kr 구글 서치콘솔 소유권 확인 완료(URL 접두어 https://raytok.kr/, HTML 파일 방식). 루트의 googledd26d5622e46387b.html 지우지 마세요 — 지우면 소유권 풀립니다.
-- sitemap.xml 제출함 (발견 페이지 22).
+- [x] raytok.kr 구글 서치콘솔 소유권 확인 완료(URL 접두어 https://raytok.kr/, HTML 파일 방식). 루트의 googledd26d5622e46387b.html 지우지 마세요 — 지우면 소유권 풀립니다.
+- [x] sitemap.xml 제출함 (발견 페이지 22).
