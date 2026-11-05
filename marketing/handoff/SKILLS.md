@@ -2210,3 +2210,17 @@ diff before.txt after.txt   # 차이 없음 = 회귀 0
 **교훈 — 두 번 같은 종류로 샜다.** 「글자가 달라 보이지만 사람 눈엔 같다」는 꼴은 더 있을 수 있다.
 아직 안 막은 것으로 아는 것: **낱말 사이에 빈칸을 끼운 꼴**(「구독 료 0원」 → 지금도 샌다).
 이건 사람이 쓸 일이 거의 없어 두었다. 쓸 일이 생기면 낱말 안 빈칸도 접어야 한다.
+
+**덧 (11:25) — 분리된 HEAD 에서 `git push origin main` 은 「조용히 묵은 것을 밉니다」.**
+이번에 또 걸렸습니다. `git branch --show-current` 가 **빈칸**이면 분리된 HEAD 입니다.
+그 상태에서 `git push origin main` 은 새 커밋이 아니라 **클론 시점의 묵은 `main` ref** 를 밀어서
+`fast-forward 아님` 으로 거부됩니다. 그런데 `git pull --rebase origin main` 은 「HEAD is up to date」라고 답해서
+**고쳐야 할 게 없는 것처럼 보입니다.** 이 둘이 겹치면 한참 헤맵니다.
+
+빠져나오는 법 — 두 줄:
+```bash
+git push origin HEAD:main          # 지금 커밋을 바로 민다 (즉효)
+git checkout -B main <그 커밋>     # 그 다음 가지를 정상화
+git branch --set-upstream-to=origin/main main
+```
+**매시 절차 맨 앞에 `git branch --show-current` 를 한 번 찍어 두는 게 쌉니다.** 빈칸이면 위 두 줄.
