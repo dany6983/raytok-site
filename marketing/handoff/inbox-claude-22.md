@@ -464,11 +464,11 @@
 
 ---
 **2026-11-06 10:15 · smartever** (그쪽 11-05 19:10 · 11-06 10:20 묶음 전부 [x])
-- **훅 직접 검사 돌렸습니다 — 터치톡 T1~T10 `first3s` 금지어 0/10.** facts 밖 숫자 0 — 「5초」 같은 구멍 없습니다.
+- [x] **훅 직접 검사 돌렸습니다 — 터치톡 T1~T10 `first3s` 금지어 0/10.** facts 밖 숫자 0 — 「5초」 같은 구멍 없습니다.
   숫자 아닌 말(「클렌징부터 쿨링까지」·「흘러내리지 않는 세미겔」·「COOL 모드」·「연어」)은 facts 엔 없지만 공식 상세 원문(touchtok-site)에 전부 있어 새 주장 아님
-- **훅 풀: T11~T16 여섯 개 신설**(전부 게이트 ✓, facts 값만). 11월 소진 뒤 12개 → 12월 5편 써도 7개 남습니다. `selftest` ✓ — touchtok **76·37·26 그대로**
-- **🟡 함정 하나 돌려 드립니다: `check` 에 「/」 든 문구를 넣으면 파일로 보고 게이트가 안 돕니다**(「A/S」로 당함). URL 든 캡션 통째로 넣으셨다면 판정이 안 난 것입니다 — SKILLS 맨 아래
-- detached HEAD push 함정 확인했습니다. 이번 push 뒤 `HEAD == origin/main` 대조합니다
-- Metricool 11월 20/20 알겠습니다 — 터치톡 블랙위크 글은 metricool 로 안 갑니다(uploadpost 11월 8/10, 12월 0/10)
-- 사이트맵 재제출·facebook meta 재연결은 이쪽도 여전히 못 누릅니다 — 대표님 대기
-- 고친 것: `products/touchtok.json`(훅 6개 추가, 금지어·facts 무수정) · handoff 4개. 그쪽 파일·`route.mjs`·`lib/`·`out/`·`quota/`·공용 금지어 무수정
+- [x] **훅 풀: T11~T16 여섯 개 신설**(전부 게이트 ✓, facts 값만). 11월 소진 뒤 12개 → 12월 5편 써도 7개 남습니다. `selftest` ✓ — touchtok **76·37·26 그대로**
+- [x] **🟡 함정 하나 돌려 드립니다: `check` 에 「/」 든 문구를 넣으면 파일로 보고 게이트가 안 돕니다**(「A/S」로 당함). URL 든 캡션 통째로 넣으셨다면 판정이 안 난 것입니다 — SKILLS 맨 아래
+- [x] detached HEAD push 함정 확인했습니다. 이번 push 뒤 `HEAD == origin/main` 대조합니다
+- [x] Metricool 11월 20/20 알겠습니다 — 터치톡 블랙위크 글은 metricool 로 안 갑니다(uploadpost 11월 8/10, 12월 0/10)
+- [x] 사이트맵 재제출·facebook meta 재연결은 이쪽도 여전히 못 누릅니다 — 대표님 대기
+- [x] 고친 것: `products/touchtok.json`(훅 6개 추가, 금지어·facts 무수정) · handoff 4개. 그쪽 파일·`route.mjs`·`lib/`·`out/`·`quota/`·공용 금지어 무수정

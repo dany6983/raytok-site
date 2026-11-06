@@ -81,8 +81,14 @@ if (cmd === 'plan') {
   const reserved = Math.max(plannedElsewhere(month, tool, pid), Q.plannedByOthers(month, tool, pid));
   const available = Q.left(month, tool) - reserved;
   const already = usedHooks(month, pid, tool);
+  // 2026-11-06 11시 claude-22: **출처 없는 수가 든 훅이 조용히 계획에 들어갔다.**
+  //   게이트(`check`)는 금지어만 막는다. `auditNumbers` 의 「출처 확인 필요」는 **경고일 뿐 막지 않는다.**
+  //   그래서 G2 「5초」가 gate=pass 로 11/13 에 얹혔고, 앱 훅 6개(A5·C4·C5·D1·D2·E3)도 같은 길이었다.
+  //   고침: 훅에 `hold: true` 를 달면 **뽑기 풀에서 빠진다.** 대표님 판정 전인 주장을 가둬 두는 자리다.
+  //   조용히 빼지 않는다 — 몇 개를 왜 가뒀는지 아래에서 찍는다. 판정이 나면 `hold` 를 지우면 돌아온다.
+  const held = (p.hooks || []).filter(h => h.hold && !already.has(h.id));
   const pool = (p.hooks || [])
-    .filter(h => !already.has(h.id))
+    .filter(h => !already.has(h.id) && !h.hold)
     .sort((a, b) => (a.priority || 99) - (b.priority || 99));
 
   const plan = [];
@@ -118,6 +124,8 @@ if (cmd === 'plan') {
       caption,
       gate: g.ok ? 'pass' : 'BLOCK',
       gateHits: g.hits,
+      // 막지는 않는다(금지어가 아니다). 다만 **조용히 지나가지 않게** 계획에 남긴다
+      numbersNeedSource: auditNumbers(body, p),
       gateNotices: g.notices || [],
       required: missingRequired.length ? 'BLOCK' : 'pass',
       missingRequired,
@@ -180,6 +188,10 @@ if (cmd === 'plan') {
     console.log(`     → 한도 판정 자체는 이 줄과 상관없이 **장부 used 기준**입니다 — 초과 발행은 안 됩니다`);
   }
   if (blocked === 'hooks_exhausted') console.log(`  ⚠ 안 쓴 소재가 떨어졌습니다. 후킹을 더 넣어야 합니다.`);
+  if (held.length) {
+    console.log(`  🔒 가둔 훅 ${held.length}개 — 뽑기에서 뺐습니다 (대표님 판정 대기):`);
+    held.forEach(h => console.log(`     ${h.id} ${h.holdReason ? `— ${h.holdReason}` : ''}`));
+  }
   if (skippedDates.length) console.log(`  · 이미 장부 posts 에 있는 날짜는 건너뛰었습니다: ${skippedDates.join(' · ')}`);
   console.log(`  요일 ${day != null ? WDAY[Number(day)] || day : '화·금(기본)'} · 주당 ${perWeek}회 — 출처 ${daySrc}`);
   if (dayDrift && !dayDrift.match) {
@@ -249,12 +261,24 @@ else if (cmd === 'quota') {
 else if (cmd === 'check') {
   const [pid, ...rest] = args;
   const p = loadProduct(pid);
+  // 2026-11-06 11시 claude-22 (smartever 10:15 함정 신고): **「/」 든 문구가 검사 자체를 못 받았다.**
+  //   전엔 경로 판정이 `/[\/\\]|\.(txt|md|json|html?)$/` 였다. 「/」 하나만 있어도 경로로 봐서
+  //   `check touchtok "1년 무상 A/S"` 가 「✗ 파일을 못 찾았습니다」로 끝나고 **게이트가 안 돌았다.**
+  //   11월 예약 캡션 12편 전부가 `https://raytok.kr/...` 를 물고 있어 **12편 다 CLI 로는 검사 불가**였다.
+  //   고침: 경로로 보는 조건을 **「공백 없음 + 알려진 확장자로 끝남」** 으로 좁힌다.
+  //   「A/S」·「24/7」·URL 든 캡션은 이제 글자로 검사된다. 경로 오타(`out/없는것.txt`)는 그대로 멈춘다
+  //   (경로 글자만 검사하고 통과하던 옛 거짓 통과를 막는 장치는 유지).
+  //   확장자로 끝나는 URL 처럼 애매한 것은 `--text` 로 못박는다: `check <pid> --text "<문구>"`.
   // 2026-11-03 14시 claude-22: 전엔 받은 인자를 **무조건 글자로** 봤다.
   // 그래서 파일 경로를 넘기면 **경로 글자만** 검사하고 본문은 한 번도 안 읽어
   // 금지어가 든 파일도 「✓ 금지어 없음」으로 통과했다 (거짓 통과).
   // 인자가 하나이고 그것이 **있는 파일**이면 읽는다. 파일처럼 보이는데 없으면 멈춘다.
   let text;
-  if (rest.length === 1 && existsSync(rest[0])) {
+  let forceText = false;
+  if (rest[0] === '--text') { forceText = true; rest.shift(); }
+  // 경로로 보는 조건: **공백이 없고** 알려진 확장자로 끝난다. 「/」 만으론 경로가 아니다
+  const isPathArg = (a) => !/\s/.test(a) && /\.(txt|md|json|html?)$/i.test(a);
+  if (!forceText && rest.length === 1 && existsSync(rest[0])) {
     text = readFileSync(rest[0], 'utf8');
     console.log(`  파일을 읽었습니다: ${rest[0]} (${text.length}자)`);
     // HTML 은 **사람 눈에 보이는 글자만** 검사한다 (2026-11-03 15시 claude-22).
@@ -283,7 +307,7 @@ else if (cmd === 'check') {
       text = [body, ...keep].join('\n');
       console.log(`  HTML 이라 보이는 글자만 남겼습니다 (${text.length}자 · alt·title ${keep.length}개 포함)`);
     }
-  } else if (rest.length > 1 && rest.some((a) => existsSync(a) || /[\/\\]|\.(txt|md|json|html?)$/i.test(a))) {
+  } else if (!forceText && rest.length > 1 && rest.some((a) => existsSync(a) || isPathArg(a))) {
     // 2026-11-04 16시 claude-22: **여섯 번째 거짓 통과.** 11-03 에 「인자 하나면 파일로 읽는다」로
     //   고쳤지만 **여러 개를 주면** 아래 else 로 떨어져 경로 글자들을 이어 붙인 **글자**를 검사했다.
     //   `check raytok-app a.html b.html` → 파일을 한 장도 안 읽고 「✓ 금지어 없음」. 읽은 줄이 안 떠서
@@ -291,12 +315,13 @@ else if (cmd === 'check') {
     console.error(`✗ 파일은 한 번에 한 장만 주십시오 (받은 인자 ${rest.length}개)`);
     console.error('  여러 장은 한 장씩 따로 부르십시오. 글자를 바로 검사하려면 따옴표로 감싸 주십시오.');
     process.exit(2);
-  } else if (rest.length === 1 && /[\/\\]|\.(txt|md|json|html?)$/i.test(rest[0])) {
+  } else if (!forceText && rest.length === 1 && isPathArg(rest[0])) {
     console.error(`✗ 파일을 못 찾았습니다: ${rest[0]}`);
-    console.error('  경로를 다시 보십시오. 글자를 바로 검사하려면 따옴표로 감싸 주십시오.');
+    console.error('  경로를 다시 보십시오. 이 글자를 문구로 검사하려면 --text 를 앞에 주십시오.');
     process.exit(2);
   } else {
     text = rest.join(' ');
+    console.log(`  글자로 검사합니다 (${text.length}자)`);
   }
   // plan 과 같은 판정으로 맞춘다: 금지어는 **고지문을 뗀 본문**만 본다.
   // 법정 고지문(mustInclude)은 정본이라 「치료」가 들어 있어도 고칠 수 없다.
@@ -441,6 +466,7 @@ else {
                                                         요일 2=화 5=금 (같은 도구 공유 시 분리)
   node route.mjs quota <YYYY-MM>                          무료 한도 사용량
   node route.mjs check <productId> "문구"|<파일>          금지어 검사 (파일이면 읽습니다)
+  node route.mjs check <productId> --text "문구"           무조건 글자로 검사 (URL·「A/S」 든 캡션)
   node route.mjs selftest                                 낱말 목록 모순 검사
 
   제품: ${['raytok-glass', 'raytok-app', 'touchtok'].join(' · ')}
