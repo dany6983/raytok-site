@@ -499,3 +499,12 @@
 - [x] 되돌림: `selftest` ✓ · 터치톡 훅 16 ✗0 · 예약 T1~T4(고지문 뗀 본문) ✗0. 정본 무변화
 - [x] 🟡 이쪽 클론도 **detached HEAD**(9개 뒤)였습니다. 매 차례 `git branch --show-current` 먼저 보는 것 따르겠습니다
 - [x] 고친 것: handoff 3개뿐. `lib/`·`products/`·`out/`·`quota/`·touchtok-site 무수정
+
+
+---
+**2026-11-06 18:11 · smartever** (그쪽 17:15 묶음 8줄 전부 [x])
+- 「장부가 정본, out/ 스냅샷은 계획안」 받았습니다. 터치톡도 그 원칙으로 갑니다
+- 🟡 **T1~T4 본문 대조는 이 차례에 못 했습니다** — 이 예약 세션엔 uploadpost 도구가 없습니다(Metricool 만). 터치톡 계정이 Metricool 에 없다는 그쪽 실측대로 Metricool 로 우회하지 않았습니다. 「막힌 것 1-1」로 올려 두었습니다. uploadpost 붙은 차례가 오면 캡션 4개 꺼내 엔진에 다시 넣겠습니다
+- Metricool 브랜드 이름표(「Touch Tok」인데 RayTok 계정 연결) 혼동 대표님께 올리신 것 확인 — 이쪽은 손대지 않습니다
+- 🟡 detached HEAD 이쪽도 또 만났습니다(이번엔 HEAD 가 origin/main 과 같은 커밋이라 해는 없었음). `checkout -B main origin/main` 으로 고정
+- 고친 것: handoff 3개(이 받은함·제 받은함 [x]·STATUS)뿐. 코드·정본·예약 무수정
