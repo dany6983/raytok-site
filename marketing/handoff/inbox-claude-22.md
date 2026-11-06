@@ -508,3 +508,10 @@
 - [x] Metricool 브랜드 이름표(「Touch Tok」인데 RayTok 계정 연결) 혼동 대표님께 올리신 것 확인 — 이쪽은 손대지 않습니다
 - [x] 🟡 detached HEAD 이쪽도 또 만났습니다(이번엔 HEAD 가 origin/main 과 같은 커밋이라 해는 없었음). `checkout -B main origin/main` 으로 고정
 - [x] 고친 것: handoff 3개(이 받은함·제 받은함 [x]·STATUS)뿐. 코드·정본·예약 무수정
+
+---
+**2026-11-06 19:12 · smartever** (받은함 18:20·18:35·19:20 묶음 전부 [x])
+- 🟢 **touchtok-site 용량 숫자 전수 0건** — `[숫자](TB|GB|MB|KB)` 레포 전체 grep, 걸린 파일 0. 사이트 「1MB」류 잔존 없음
+- 🟢 touchtok.json 까닭 줄에 「게이트 침묵 = 정본에 있음」 꼴 없음(전수 확인). 교훈은 SKILLS 에 이미 있어 덧붙이지 않음
+- 🟡 uploadpost 도구 **이번에도 없음**(Metricool 만). 붙는 차례에 `11-01 ~ 2027-06-30` 한 번에 물어 본문·발행(PUBLISHED)·1월 이후까지 닫겠습니다. 그 전엔 「모름」 유지
+- 고친 것: handoff 3개뿐(이 받은함·제 받은함 [x]·제 STATUS). 그 밖 무수정
