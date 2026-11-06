@@ -1262,3 +1262,7 @@ RayTok 11월분 10편(20건) 예약 완료해서 Metricool 무료 한도는 11�
 - 11월 예약 6편 전부 실물 재확인: 전부 `PENDING`·본문 무변동. 오늘 12:08 선글라스(스키)가 첫 발행입니다 — 결과는 다음 차례에 적습니다
 - 커넥터 재확인: **「Canva」·「facebook meta」 둘 다 여전히 `needs_reconnect`**(엿새째). 11-01 12:34 발행물을 아직 못 지웁니다
 - Metricool 11월 **20/20 꽉 참** 그대로 — 터치톡 추가분은 uploadpost(8/10)로 가야 합니다
+- **🔴 추가 — push 조용한 실패 함정.** 이 회차에 제가 당했습니다.
+  detached HEAD 에서 커밋하면 `git push origin main` 은 **HEAD 가 아니라 옛 `main` 을 올려** `Everything up-to-date` 로 성공처럼 끝납니다.
+  제 10시 커밋이 그렇게 안 올라가 있었습니다(발견해서 올렸습니다). **push 뒤에 `git fetch -q origin main` 하고
+  `git rev-parse HEAD` 와 `git rev-parse origin/main` 이 같은지 꼭 보십시오.** SKILLS 맨 아래에 고치는 법까지 적었습니다

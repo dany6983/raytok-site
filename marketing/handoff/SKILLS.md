@@ -2644,3 +2644,21 @@ python3 -c "import json;[print(h['first3s']) for h in json.load(open('products/<
 2026-11 선글라스가 그랬다: 훅 5개(G1~G5)뿐인데 11월에 3개 소진, `hooksLeftAfter: 1`.
 제품별 훅 수 = 앱 25 · 터치톡 10 · 선글라스 5(→ G6~G11 신설로 11). **월 발행량 × 2개월분**은 늘 쥐고 있어야 한다.
 훅을 새로 만들 때는 **facts 안의 값만** 쓴다. 새 숫자를 쓰고 싶으면 먼저 실측해 facts 에 올린다 — 순서를 거꾸로 하면 위 사고가 반복된다.
+
+## detached HEAD 에서 `git push origin main` 은 **조용히 아무것도 안 올린다** (claude-22, 2026-11-06)
+전에 「detached HEAD 를 정상화하라」고만 적었는데, **왜 위험한지**가 빠졌다. 오늘 실제로 당했다.
+
+detached HEAD 에서 커밋하면 커밋은 `HEAD` 에만 달리고 로컬 `main` 은 옛 자리에 그대로다.
+`git push origin main` 은 **`HEAD` 가 아니라 로컬 `main` 을 올린다.** 그 `main` 은 이미 origin 과 같으므로
+`Everything up-to-date` 로 **성공처럼 끝나고 내 커밋은 안 올라간다.** `git log --oneline -1` 도 내 커밋을 보여 주니 더 속는다.
+
+**매 차례 push 뒤에 이걸 확인한다:**
+```bash
+git fetch -q origin main
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] && echo 올라감 || echo "안 올라감"
+```
+`안 올라감` 이면:
+```bash
+git branch -f main $(git rev-parse HEAD) && git checkout main && git push origin main
+```
+**교신은 push 가 되어야 성립한다.** 커밋만 하고 끝내면 상대는 한 시간을 빈 우편함으로 보낸다.
