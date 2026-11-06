@@ -5,6 +5,8 @@
  *
  * 환경(값은 저장소 어디에도 쓰지 않는다):
  *   SERVER_MT_URL         서버의 /translate 주소 (wrangler secret 또는 vars)
+ *                         또는 RunPod 서버리스 `https://api.runpod.ai/v2/<끝점>/runsync` — 그 꼴이면
+ *                         `{input:{q,source,target}}` 로 감싸 `Authorization: Bearer <KEY>` 로 보내고 `output.t` 를 읽는다(마스터 11-06)
  *   SERVER_MT_KEY         요청 머리 `X-Raytok-Key` 에 싣는 열쇠 (wrangler secret)
  *   SERVER_MT_MODE        off(기본) | reverse(X→ko 만) | premium(이용권 플래그) | all
  *   SERVER_MT_FLAG        premium 일 때 여는 이용권 비트 (예: 0x20). **비면 premium 은 아무에게도 안 열린다**(§20)
@@ -102,12 +104,14 @@ export async function callServerMt({ texts, sourceLang, targetLang, env, fetchIm
       const chunk = texts.slice(i, i + SMT_MAX_BATCH);
       let res;
       try {
-        res = await doFetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Raytok-Key': key },
-          body: JSON.stringify({ q: chunk, source: sourceLang || 'auto', target: targetLang }),
-          signal: ctl.signal
-        });
+        const job = { q: chunk, source: sourceLang || 'auto', target: targetLang };
+        res = await doFetch(url, isRunpod(url)
+          ? { method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+              body: JSON.stringify({ input: job }), signal: ctl.signal }
+          : { method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Raytok-Key': key },
+              body: JSON.stringify(job), signal: ctl.signal });
       } catch (err) {
         if (ctl.signal.aborted || (err && (err.name === 'AbortError' || err.name === 'TimeoutError'))) {
           throw fail(SMT_FALLBACK.SLOW);
@@ -122,7 +126,9 @@ export async function callServerMt({ texts, sourceLang, targetLang, env, fetchIm
         if (ctl.signal.aborted) throw fail(SMT_FALLBACK.SLOW);
         throw fail(SMT_FALLBACK.ERROR, { upstreamStatus: res.status });
       }
-      const t = data && Array.isArray(data.t) ? data.t : null;
+      // RunPod 꼴: {status:'COMPLETED', output:{t:[…]}} — 다 안 끝났으면(IN_QUEUE·첫 시동) 빈 답으로 보고 구글로
+      const body = isRunpod(url) ? (data && data.status === 'COMPLETED' ? data.output : null) : data;
+      const t = body && Array.isArray(body.t) ? body.t : null;
       // §20 빈 답: null·[]·줄 수 다름·빈 글자 하나라도 → 구글로
       if (!t || t.length !== chunk.length) throw fail(SMT_FALLBACK.EMPTY);
       for (let k = 0; k < chunk.length; k++) {
@@ -139,6 +145,11 @@ export async function callServerMt({ texts, sourceLang, targetLang, env, fetchIm
     translations: out.map((s) => ({ translatedText: s })),
     detectedSrc: sourceLang || null
   };
+}
+
+/** RunPod 서버리스 runsync 주소인가 (마스터 11-06) */
+export function isRunpod(url) {
+  return /^https:\/\/api\.runpod\.ai\/v2\/[A-Za-z0-9]+\/runsync\/?$/.test(String(url || '').trim());
 }
 
 /** 하루 호출 수를 세는 칸 이름 (room.js /usage/summary?key= 가 읽는다) */

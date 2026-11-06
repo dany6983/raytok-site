@@ -6,7 +6,7 @@ import http from 'http';
 import relayApp from '../src/index.js';
 import { Room } from '../src/room.js';
 import { mintLicenseToken } from '../tools/mint-license.mjs';
-import { callServerMt, serverMtWanted, serverMtMode, smtDayKey } from '../src/server-mt.js';
+import { callServerMt, serverMtWanted, serverMtMode, smtDayKey, isRunpod } from '../src/server-mt.js';
 
 console.log('=== 릴레이 /translate 서버 번역(MADLAD-3B) 칸 시험 ===');
 let pass = 0;
@@ -198,6 +198,23 @@ try {
   ok(revertWhyFailed === true, 'why 기록을 빼면 붉어진다 (되돌림 실증 2)');
   // (손 되돌림 넷도 붉음 확인 — 구글 가드 제거 · off→켬 · 숫자 검사 제거 · 상한 제거, 보고에 적음)
 
+
+// ── RunPod 서버리스 꼴 (마스터 11-06) ──
+{
+  const RP = 'https://api.runpod.ai/v2/oykvi2gds7l70v/runsync';
+  ok(isRunpod(RP) && !isRunpod('https://x.example/translate') && !isRunpod('https://api.runpod.ai/v2/abc/run'), 'isRunpod: runsync 주소만 RunPod 꼴');
+  let seen = null;
+  const fakeRp = async (url, init) => { seen = { url, init }; const inp = JSON.parse(init.body).input;
+    return { ok: true, status: 200, json: async () => ({ status: 'COMPLETED', output: { t: inp.q.map((x) => '번역:' + x) } }) }; };
+  const r = await callServerMt({ texts: ['hello', 'world'], sourceLang: 'en', targetLang: 'ko', env: { SERVER_MT_URL: RP, SERVER_MT_KEY: 'k' }, fetchImpl: fakeRp });
+  ok(r.translations.map((x) => x.translatedText).join('|') === '번역:hello|번역:world', 'RunPod: output.t 를 읽는다');
+  ok(seen.init.headers.Authorization === 'Bearer k' && !('X-Raytok-Key' in seen.init.headers), 'RunPod: Bearer 머리, X-Raytok-Key 안 씀');
+  ok(JSON.parse(seen.init.body).input.target === 'ko', 'RunPod: {input:{…}} 로 감싼다');
+  const queued = async () => ({ ok: true, status: 200, json: async () => ({ status: 'IN_QUEUE', id: 'x' }) });
+  let why = null;
+  try { await callServerMt({ texts: ['hi'], sourceLang: 'en', targetLang: 'ko', env: { SERVER_MT_URL: RP, SERVER_MT_KEY: 'k' }, fetchImpl: queued }); } catch (e) { why = e.why || e.message; }
+  ok(why != null, 'RunPod: 첫 시동(IN_QUEUE)은 실패로 → 구글이 받는다(R-15)');
+}
   console.log(`\n전부 통과 (${pass}건)`);
   google.close(); smt.close();
   process.exit(0);
