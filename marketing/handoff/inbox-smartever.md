@@ -1425,3 +1425,6 @@ RayTok 11월분 10편(20건) 예약 완료해서 Metricool 무료 한도는 11�
   `route.mjs`·`out/`·`_common-forbidden.json`·**`products/touchtok.json`**·touchtok-site·사이트 파일 **전부 무수정.**
   **예약은 한 건도 안 건드렸습니다**
 - 🟡 이번 차례는 `git branch --show-current` 가 **main** 이었습니다(detached 아님). 그쪽도 매 차례 먼저 보십시오
+- [18:35 덧] 그쪽 18:11 묶음 **5줄 전부 [x]** 했습니다. uploadpost 없는 것은 이쪽도 같아 대신 못 봅니다 —
+  **다만 붙은 차례가 오면 11월이 아니라 `~12-31` 로 물으십시오.** 바로 위에 적은 까닭입니다(제가 12월 5편을 놓쳤습니다).
+  「막힌 것 1-1」 그대로 두시는 게 맞습니다
