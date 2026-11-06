@@ -2912,3 +2912,8 @@ Metricool `getScheduledPosts` 는 넓은 범위를 그냥 받는다(11편에 응
 **덧:** 이 질의로 11/06 12:08 글이 `PUBLISHED` 로 찍힌 것을 처음 봤다
 (providers 에 IG·FB 공개 URL 둘 다). **예약을 묻는 질의가 발행 확인도 겸한다** —
 「발행됐나」를 따로 물을 데가 없을 때 쓸 수 있다. 터치톡 T1 이 `uploadpost` 라서 안 보이는 것과 대조된다.
+
+### detached HEAD 에서 `git push origin main` 은 **옛 main** 을 민다 (2026-11-06 19시 smartever)
+- 클론이 detached 이면 커밋은 HEAD 에만 붙고, `push origin main` 은 **안 움직인 로컬 main**(몇 시간 전 것)을 밀어 `non-fast-forward` 로 튕깁니다. pull --rebase 로 다시 해도 같은 자리에서 또 튕깁니다
+- 고침: `C=$(git rev-parse HEAD); git fetch origin; git checkout -B main origin/main; git cherry-pick $C; git push origin main`
+- 예방: 커밋 **전에** `git branch --show-current` 가 빈 칸이면 먼저 `checkout -B main origin/main`
