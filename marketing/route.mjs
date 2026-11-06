@@ -308,6 +308,31 @@ else if (cmd === 'check') {
       text = [body, ...keep].join('\n');
       console.log(`  HTML 이라 보이는 글자만 남겼습니다 (${text.length}자 · alt·title ${keep.length}개 포함)`);
     }
+    // JSON 은 **글자값만** 검사한다 (2026-11-06 16시 claude-22 · smartever 15:11 신고에서 출발).
+    //  까닭: 정본을 통째로 검사하면 `id`·`priority`·`seq` 같은 **셈씨 아닌 숫자**가
+    //    「출처 확인 필요」로 쏟아진다. smartever 가 훅을 객체째 stringify 해서 당한 것과
+    //    같은 일이 CLI 파일 검사에서도 났다 (실측: T11·T13·T14·T15·T16 거짓 경고 5건).
+    //  또 `lib/check.mjs` 의 새 보초가 JSON 꼴 글자를 막으므로, 걸러 주지 않으면 **멈춘다.**
+    //  남기는 것: 글자값 전부(훅·리드·고지어·금지어 모두 사람이 읽는 글이다).
+    //  버리는 것: 숫자값·참거짓·칸 이름. 숫자는 `selftest` 가 정본 쪽에서 따로 본다.
+    if (/\.json$/i.test(rest[0])) {
+      let parsed;
+      try { parsed = JSON.parse(text); }
+      catch (e) {
+        console.error(`✗ JSON 을 읽지 못했습니다: ${e.message.slice(0, 80)}`);
+        console.error('  파일이 깨졌거나 JSON 이 아닙니다. 글자로 검사하려면 --text 를 주십시오.');
+        process.exit(2);
+      }
+      const strs = [];
+      const walk = (v) => {
+        if (typeof v === 'string') strs.push(v);
+        else if (Array.isArray(v)) v.forEach(walk);
+        else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+      };
+      walk(parsed);
+      text = strs.join('\n');
+      console.log(`  JSON 이라 글자값만 남겼습니다 (${text.length}자 · ${strs.length}개 값 · 숫자값은 selftest 가 봅니다)`);
+    }
   } else if (!forceText && rest.length > 1 && rest.some((a) => existsSync(a) || isPathArg(a))) {
     // 2026-11-04 16시 claude-22: **여섯 번째 거짓 통과.** 11-03 에 「인자 하나면 파일로 읽는다」로
     //   고쳤지만 **여러 개를 주면** 아래 else 로 떨어져 경로 글자들을 이어 붙인 **글자**를 검사했다.

@@ -97,7 +97,44 @@ export function normalizeInvisible(text) {
  *  words  = 법 자체라 막는다 (ok=false).
  *  notice = 2026-10-26 대표님 해제분. 막지 않고 통지만 한다 (ok 에 영향 없음).
  *           출처: claude/RayTok-광고규정_해제_1026.md */
+/** 🔴 **여덟 번째 거짓 판정 보초** (2026-11-06 16시 claude-22 · smartever 15:11 신고에서 출발)
+ *  smartever 가 훅을 **객체째** stringify 해서 `auditNumbers` 에 넣었더니 `id`·`priority` 의
+ *  숫자(T11·T13…)가 거짓 경고 5건으로 떴다. 이쪽에서 재현해 보니 **더 나쁜 자리**가 같이 나왔다:
+ *
+ *    check(객체, p).ok === true   ← 「치료」가 들어 있는 객체인데 **조용히 ✓**
+ *
+ *  까닭: `normalizeInvisible` 이 문자열이 아니면 **받은 것을 그대로 돌려준다**. 그래서
+ *  `looseFind` 가 아무것도 못 찾고 금지어 0 으로 통과한다. `auditNumbers`·`stripRequired` 는
+ *  `.replace`·`.match` 에서 터져 **시끄럽게** 죽지만, 게이트인 `check` 만 **조용히 통과**한다.
+ *  게이트가 조용히 통과하는 것이 가장 위험하다 — 사람은 ✓ 를 보고 발행한다.
+ *
+ *  그래서 글자를 받는 문 넷 모두에서 **문자열이 아니면 선다.** 조용한 ✓ 보다 선 것이 낫다.
+ *  JSON 꼴 글자(`{…}`·`[…]`)도 선다 — 캡션이 그렇게 생길 일은 없고, 바로 그것이 거짓 경고의 출처다.
+ */
+function mustBeText(v, who) {
+  if (typeof v !== 'string') {
+    throw new TypeError(
+      `${who}: 글자가 아닌 것을 받았습니다 (${Array.isArray(v) ? '배열' : typeof v}). ` +
+      `객체째 넣지 마십시오 — 훅이면 \`h.first3s\`, 계획이면 \`x.caption\` 만 주십시오. ` +
+      `객체를 넣으면 금지어 검사가 조용히 통과합니다.`);
+  }
+  const t = v.trim();
+  if ((t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'))) {
+    try {
+      const o = JSON.parse(t);
+      if (o && typeof o === 'object') {
+        throw new TypeError(
+          `${who}: JSON 꼴 글자를 받았습니다. 객체를 stringify 해서 넣으신 것 같습니다 — ` +
+          `\`id\`·\`priority\` 의 숫자가 거짓 경고로 뜹니다 (2026-11-06 smartever 실측 5건). ` +
+          `\`first3s\`·\`caption\` 만 주십시오.`);
+      }
+    } catch (e) { if (e instanceof TypeError) throw e; /* JSON 이 아니면 그냥 글자다 */ }
+  }
+  return v;
+}
+
 export function check(rawText, product) {
+  mustBeText(rawText, 'check');
   const text = normalizeInvisible(rawText);
   const { words, notice: noticeWords } = resolveForbidden(product);
   const hits = [];
@@ -199,6 +236,7 @@ function looseRe(sentence, flags = '') {
  *    부르는 쪽이 30자로 자르면서 ×4 가 잘려 「4회 떼였는데 1건으로 보인다」가 됐다
  *    (2026-11-02 smartever 신고). 횟수를 따로 주면 부르는 쪽이 어디든 둘 수 있다 */
 export function stripRequired(rawText, product) {
+  mustBeText(rawText, 'stripRequired');
   const text = normalizeInvisible(rawText);
   let body = text;
   const stripped = [];
@@ -214,6 +252,7 @@ export function stripRequired(rawText, product) {
 
 /** 숫자가 제품 facts에 있는 값인지 거친 확인. 없는 숫자는 경고만. */
 export function auditNumbers(rawText, product, opt = {}) {
+  mustBeText(rawText, 'auditNumbers');
   const text = normalizeInvisible(rawText);
   const known = new Set();
   const walk = (v) => {
@@ -394,6 +433,7 @@ export function auditNumbers(rawText, product, opt = {}) {
 
 /** 반드시 들어가야 하는 문구가 빠졌는지 (터치톡 의료기기 아님 고지 등) */
 export function auditRequired(rawText, product) {
+  mustBeText(rawText, 'auditRequired');
   const text = normalizeInvisible(rawText);
   const need = product.mustInclude || [];
   // 공백에 느슨한 전문(全文) 대조. 예전엔 머리 20자를 그대로 includes 로 봤는데,
