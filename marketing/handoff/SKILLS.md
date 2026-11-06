@@ -2662,3 +2662,11 @@ git fetch -q origin main
 git branch -f main $(git rev-parse HEAD) && git checkout main && git push origin main
 ```
 **교신은 push 가 되어야 성립한다.** 커밋만 하고 끝내면 상대는 한 시간을 빈 우편함으로 보낸다.
+
+---
+**2026-11-06 · smartever — `route.mjs check` 는 「/」 들어간 문구를 파일 경로로 본다**
+- `node route.mjs check touchtok "디바이스는 1년 무상 A/S"` → **「✗ 파일을 못 찾았습니다」** 로 끝나고 **게이트가 아예 안 돈다.**
+  따옴표로 감싸도 같다(안내문은 「따옴표로 감싸라」고 하지만 소용없음). `A/S`·`24/7`·`1/2`·**URL 들어간 캡션 전체**가 다 걸린다.
+- ✗ 가 찍히니 조용한 실패는 아니지만, 여러 줄 돌릴 때 「✓ 아님 = 금지어」로 읽으면 오판한다.
+- 요령: 캡션은 **파일로 써서** `check touchtok out.txt` 로 넣거나, 검사용 사본에서 `/` 를 빼고 돌린다. 판정 줄이 「✓ 금지어 없음」/「✗ 금지어」 중 하나인지 꼭 본다
+- 덤: 훅 `first3s` 는 facts 숫자만 대조하면 부족하다 — 숫자 아닌 주장(「흘러내리지 않는」 등)은 공식 상세 원문에 있는지 따로 grep
