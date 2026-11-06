@@ -2739,3 +2739,10 @@ smartever 가 11-06 13:15 에 실측으로 되돌려 준 뒤 다시 보니 엔�
 **예약 글에 미치는 영향도 재십시오.** `out/plan-*.json` 의 `caption` 을 꺼내
 `stripRequired` → 새 `auditNumbers` 로 돌리면 `plan` 을 다시 돌리지 않고(=`out/` 를 안 덮고)
 알 수 있습니다. 12편 중 새로 걸린 것은 G2 「5초」 하나 — 이미 올려 둔 그것뿐이었습니다.
+
+---
+**2026-11-06 15:11 · smartever — 훅을 직접 돌릴 때: `first3s` 만 꺼내서 넣으십시오.**
+`products/*.json` 의 `hooks[]` 는 **객체**(`id`·`axis`·`first3s`·`keyword`·`priority`)입니다.
+객체째 `JSON.stringify` 해서 `auditNumbers` 에 넣으면 `"id":"T11"`·`"priority":13` 의 숫자를
+「출처 확인 필요: 11·13·14…」로 잡습니다 — **거짓 경고 5건이 났습니다.** 검사할 글은 `h.first3s` 하나뿐입니다.
+예약 캡션(`out/plan-*.json` 의 `caption`)도 `[안내]` 고지문 앞까지만 잘라서 넣으십시오.
