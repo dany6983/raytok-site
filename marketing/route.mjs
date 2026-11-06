@@ -125,13 +125,13 @@ if (cmd === 'plan') {
       gate: g.ok ? 'pass' : 'BLOCK',
       gateHits: g.hits,
       // 막지는 않는다(금지어가 아니다). 다만 **조용히 지나가지 않게** 계획에 남긴다
-      numbersNeedSource: auditNumbers(body, p),
+      numbersNeedSource: auditNumbers(body, p, { strictPercent: true }),
       gateNotices: g.notices || [],
       required: missingRequired.length ? 'BLOCK' : 'pass',
       missingRequired,
       humanCheck: p.mustIncludeRules || [],
       image: (p.images || {})[h.id] || null,
-      unknownNumbers: auditNumbers(body, p)
+      unknownNumbers: auditNumbers(body, p, { strictPercent: true })
     });
   }
 
@@ -275,6 +275,7 @@ else if (cmd === 'check') {
   // 인자가 하나이고 그것이 **있는 파일**이면 읽는다. 파일처럼 보이는데 없으면 멈춘다.
   let text;
   let forceText = false;
+  let asCaption = false;   // 글자로 받은 것(=캡션)이면 `%` 도 단위로 센다
   if (rest[0] === '--text') { forceText = true; rest.shift(); }
   // 경로로 보는 조건: **공백이 없고** 알려진 확장자로 끝난다. 「/」 만으론 경로가 아니다
   const isPathArg = (a) => !/\s/.test(a) && /\.(txt|md|json|html?)$/i.test(a);
@@ -321,6 +322,7 @@ else if (cmd === 'check') {
     process.exit(2);
   } else {
     text = rest.join(' ');
+    asCaption = true;   // 캡션이다 → `%` 를 단위로 센다 (파일은 CSS 가 쏟아져 끈다)
     console.log(`  글자로 검사합니다 (${text.length}자)`);
   }
   // plan 과 같은 판정으로 맞춘다: 금지어는 **고지문을 뗀 본문**만 본다.
@@ -329,7 +331,7 @@ else if (cmd === 'check') {
   // 두 번 돌려야 했다 (2026-11-01 smartever 보고). 한 번에 둘 다 본다.
   const { body, stripped } = stripRequired(text, p);
   const g = check(body, p);
-  const n = auditNumbers(body, p);
+  const n = auditNumbers(body, p, { strictPercent: asCaption });
   const miss = auditRequired(text, p);          // 필수 표기는 **받은 전문**으로 본다
   console.log(g.ok ? '✓ 금지어 없음' : '✗ 금지어 있음');
   g.hits.forEach(h => console.log(`  「${h.word}」 … ${h.where}${h.suggest ? `\n     → ${h.suggest}` : ''}`));
@@ -437,13 +439,14 @@ else if (cmd === 'selftest') {
           say(`보이지 않는 글자(${nm})로 샘: 「${w}」`);
       }
     }
-    // ⑧ **정본에 홑으로 적힌 수는 아무 단위에나 통과한다 — 경고만 한다**
-    //   (2026-11-04 19:10 smartever 실측 · 19시 claude-22 기계화).
-    //   까닭: `auditNumbers` 는 정본이 `languages: 85` 처럼 숫자만 적어 둔 칸을
-    //     **단위를 안 가리고** known 으로 본다. 안 그러면 「85개 언어」가 걸린다(1차판 실수).
-    //     그 대가로 `mask.wearMinutes: 10` 때문에 **「10초 완성」이 출처 모름 0** 으로 통과한다.
-    //   ★ 막는 법은 엔진이 아니라 **정본에 단위를 붙이는 것**(`10` → `"10분"`)이다.
-    //     정본 수정은 대표님 확인 사항이라 여기서는 **셈만 보여 주고 모순으로 세지 않는다.**
+    // ⑧ **정본에 홑으로 적힌 수 — 이제 「셈 단위」에만 통과한다. 셈만 보여 준다**
+    //   (2026-11-04 19:10 smartever 실측 → 2026-11-06 14시 claude-22 **엔진으로 좁힘**).
+    //   예전: `mask.wearMinutes: 10` 때문에 「10초 완성」이 출처 모름 0 으로 통과했다.
+    //   지금: 홑 숫자는 **개·명·장·종·건·칸·곳·가지·회** 에만 통과한다. 효능·기간·치수 단위
+    //     (초·분·시간·일·주·개월·년·배·원·g·mm…)는 **짝이 있어야** 한다. 단위는 칸 이름에서도
+    //     읽는다 — `wearMinutes` → 「10분」 ✓ 「10초」 ✗ / `price.*` → 「99,000원」 ✓
+    //   ★ 그래도 셈 단위는 여전히 느슨하다: `modes: 5` 는 「5가지」·「5개」를 묻지 않는다.
+    //     아래 목록은 **그 느슨함이 남아 있는 칸**이다. 모순으로 세지 않는다(정본은 멀쩡하다).
     const lone = [];
     (function walk(v, path) {
       if (v == null) return;
@@ -452,7 +455,7 @@ else if (cmd === 'selftest') {
       if (typeof v === 'object') return Object.entries(v).forEach(([k, x]) => walk(x, path ? `${path}.${k}` : k));
     })(p.facts || {}, '');
     if (lone.length)
-      console.log(`  🟡 정본 홑 숫자 ${lone.length}칸 — 이 수는 **아무 단위에나** 통과합니다 (「10」이 있으면 「10초」도 ✓):\n     ${lone.join(' · ')}`);
+      console.log(`  🟡 정본 홑 숫자 ${lone.length}칸 — 이 수는 **셈 단위(개·명·장·종·건·칸·곳·가지·회)에만** 통과합니다\n     (「10」이 있어도 「10초」는 이제 걸립니다. 다만 「10개」는 안 묻습니다):\n     ${lone.join(' · ')}`);
   }
   console.log(bad ? `\n✗ 모순 ${bad}개` : '\n✓ 모순 없음 (대체어·금지어·통지·고지문·정본)');
   process.exitCode = bad ? 1 : 0;

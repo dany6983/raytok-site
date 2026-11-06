@@ -213,7 +213,7 @@ export function stripRequired(rawText, product) {
 }
 
 /** 숫자가 제품 facts에 있는 값인지 거친 확인. 없는 숫자는 경고만. */
-export function auditNumbers(rawText, product) {
+export function auditNumbers(rawText, product, opt = {}) {
   const text = normalizeInvisible(rawText);
   const known = new Set();
   const walk = (v) => {
@@ -284,25 +284,88 @@ export function auditNumbers(rawText, product) {
   //  ★ 붙임표로 이어진 식별번호 조각은 「홑으로 적힌 수」가 아니다 — 상표 「RayPac 40-2026-0229441」의
   //    40 이 홑으로 세어져 「30~40시간」이 통과했다 (이 고침의 2차판에서 잡힌 자리)
   const loneRe = new RegExp('(?<![\\d,.\\-])(\\d[\\d,]*(?:\\.\\d+)?)(?![\\d.,\\-]|\\s*(?:' + UNIT + ')|[A-Za-z가-힣])', 'g');
+  // ── 열 번째 거짓 통과 (2026-11-06 13:15 smartever 실측 · 14시 claude-22 기계화) ──
+  //  신고: 「5초 만에」·「12주 만에」가 **출처 모름 0** 으로 통과한다. 터치톡 정본에
+  //    `specs.modes: 5`(모드 수) · `package12m.gel: 12`(겔 개수)가 **홑 숫자**로 있어
+  //    `knownAnyUnit` 이 단위를 안 가리고 통과시켰다. 11-04 에 이 구멍을 적어 두고
+  //    「정본에 단위를 붙이는 수밖에 없다」고 했는데 — **엔진으로 좁힐 수 있다.**
+  //  고침 셋:
+  //   ⓐ 홑 숫자가 통과시키는 단위를 **셈 단위**로 좁힌다(개·명·장·종·건·칸·곳·가지·회).
+  //      `modes: 5` 는 「5가지 모드」를 통과시키되 **「5초」는 통과시키지 않는다.**
+  //      효능·기간·치수 단위(초·분·시간·일·주·개월·년·배·원·g·mm…)는 **짝이 있어야** 한다
+  //   ⓑ 정본 **칸 이름(키)에서도 단위를 읽는다.** 정본은 이미 키에 단위를 적어 뒀다 —
+  //      `mask.wearMinutes: 10` → 「10분」 ✓ 「10초」 ✗ / `price.*` → 「99,000원」 ✓ /
+  //      키에 한글 단위가 있으면 그대로(`"3개월 구독 패키지"` → 3|개월)
+  //   ⓒ `%` 는 **캡션 검사에서만** 단위로 센다(`opt.strictPercent`). 파일 검사에서 켜면
+  //      CSS 의 `width:100%` 가 쏟아진다(사이트 HTML 실측 908곳) → 사람이 줄을 안 읽는다
+  //  ★ 실측으로 고른 선: 이 좁힘으로 **세 정본의 훅·리드 235개 글에서 새로 걸리는 것 0건**.
+  //    (끊으면 깨지던 단위는 개·원·장·분 넷뿐이었고 — 개·장은 셈 단위, 원·분은 키에서 읽는다)
+  const BARE_OK = /^(?:개|명|장|종|건|칸|곳|가지|회)$/;   // 홑 숫자가 통과시켜도 되는 단위
+  // 칸 이름 꼬리 → 단위. 정본이 영어 키에 단위를 적어 둔 것을 그대로 읽는다
+  const KEY_UNIT = [
+    [/(?:seconds?|secs?)$/i, '초'], [/(?:minutes?|mins?)$/i, '분'],
+    [/(?:hours?|hrs?)$/i, '시간'], [/days?$/i, '일'], [/weeks?$/i, '주'],
+    [/months?$/i, '개월'], [/years?$/i, '년'],
+    [/(?:price|won|krw|가격)$/i, '원'],
+    [/grams?$/i, 'g'], [/kg$/i, 'kg'], [/mm$/i, 'mm'], [/cm$/i, 'cm'],
+  ];
   const knownPairs = new Set();   // 「10000|원」 — 단위까지 같아야 통과
-  const knownAnyUnit = new Set(); // 「85」 — 단위를 안 가리고 통과
-  const walk2 = (v) => {
+  const knownAnyUnit = new Set(); // 「5」 — **셈 단위에만** 통과 (예전엔 아무 단위에나)
+  //  ★ `units` = 이 값이 놓인 칸 이름들에서 읽은 단위. 바로 위 칸 이름만 보면
+  //    `price.관광쿠폰1일 = 3300` 의 「원」을 놓친다(바로 위는 "관광쿠폰1일") → 길 전체를 본다
+  const walk2 = (v, units = []) => {
     if (v == null) return;
-    if (typeof v === 'number') knownAnyUnit.add(String(v));
+    if (typeof v === 'number') {
+      knownAnyUnit.add(String(v));
+      for (const u of units) knownPairs.add(String(v) + '|' + u);
+    }
     else if (typeof v === 'string') {
       for (const m of v.matchAll(pairRe)) knownPairs.add(m[1].replace(/,/g, '') + '|' + m[2]);
-      for (const m of v.matchAll(loneRe)) knownAnyUnit.add(m[1].replace(/,/g, ''));
+      for (const m of v.matchAll(loneRe)) {
+        const num = m[1].replace(/,/g, '');
+        knownAnyUnit.add(num);
+        for (const u of units) knownPairs.add(num + '|' + u);
+      }
     }
-    else if (Array.isArray(v)) v.forEach(walk2);
-    else if (typeof v === 'object') Object.values(v).forEach(walk2);
+    else if (Array.isArray(v)) v.forEach(x => walk2(x, units));
+    else if (typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) {
+        const next = [...units];
+        for (const [re, u] of KEY_UNIT) if (re.test(k)) next.push(u);
+        // 키에 한글 단위가 그대로 박힌 것: "3개월 구독 패키지" → 3|개월 (값과 무관한 자기 짝)
+        for (const m of k.matchAll(pairRe)) knownPairs.add(m[1].replace(/,/g, '') + '|' + m[2]);
+        walk2(x, next);
+      }
+    }
   };
   walk2(product.facts);
   walk2(product.lead);
+  // 정본 안의 「2%」·「0.04%」를 짝으로 모은다 (pairRe 에 % 를 넣으면 파일 검사가 쏟아진다)
+  {
+    const grab = (v) => {
+      if (v == null) return;
+      if (typeof v === 'string') { for (const m of v.matchAll(/(?<![\d,.])(\d[\d,]*(?:\.\d+)?)\s*%/g)) knownPairs.add(m[1].replace(/,/g, '') + '|%'); }
+      else if (Array.isArray(v)) v.forEach(grab);
+      else if (typeof v === 'object') Object.values(v).forEach(grab);
+    };
+    grab(product.facts); grab(product.lead);
+  }
 
   // 글에 쓰인 짝 가운데 정본에 없는 것 — **단위를 붙여** 찍는다.
   // 「5」가 아니라 「5초」로 보여야 사람이 무엇을 찾아야 하는지 안다
   const pairHits = [];
   const pairSeen = new Set();
+  //  `%` 는 캡션 검사에서만 본다 — 까닭은 위 ⓒ. 정본의 「0.04%」·「2%」는 짝으로 들어 있다
+  if (opt.strictPercent) {
+    for (const m of masked2.matchAll(/(?<![\d,.])(\d[\d,]*(?:\.\d+)?)\s*%/g)) {
+      const num = m[1].replace(/,/g, '');
+      if (knownPairs.has(num + '|%')) continue;
+      const key = num + '|%';
+      if (pairSeen.has(key)) continue;
+      pairSeen.add(key);
+      pairHits.push(num + '%');
+    }
+  }
   for (const m of masked2.matchAll(pairRe)) {
     const num = m[1].replace(/,/g, '');
     const key = num + '|' + m[2];
@@ -310,7 +373,9 @@ export function auditNumbers(rawText, product) {
     pairSeen.add(key);
     //  ★ 여기서 맨숫자 `known` 을 보면 안 된다 — 그게 바로 이 고침이 막으려는 구멍이다.
     //    `known` 에는 「약 5시간」에서 뽑힌 5 가 들어 있어, 보면 「5초」가 또 통과한다 (1차판 실수)
-    if (knownPairs.has(key) || knownAnyUnit.has(num)) continue;
+    //  ★ 홑 숫자(`knownAnyUnit`)는 **셈 단위일 때만** 통과시킨다. 효능·기간 단위에까지
+    //    통과시키던 것이 「5초」·「12주」를 샌 구멍이다 (2026-11-06 smartever 실측)
+    if (knownPairs.has(key) || (BARE_OK.test(m[2]) && knownAnyUnit.has(num))) continue;
     pairHits.push(num + m[2]);
   }
 
