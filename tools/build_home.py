@@ -167,14 +167,25 @@ def faq(items):
 
 # 만드는 쪽(이 파일)과 저장소의 쪽을 **견주는 자리**가 있어야 덫이 다시 생기지 않는다
 # (10-17: 이 생성기가 낡아 돌리면 홍보자료·유학생 메뉴·구매 링크가 지워졌다 — B 14 가 발견).
-#   python3 tools/build_home.py            → 저장소에 쓴다 (전과 같다)
+#   python3 tools/build_home.py            → 저장소에 쓴다. **단, 다른 쪽이 있으면 멈춘다**(11-07 가드)
+#   python3 tools/build_home.py --force    → 다른 쪽이 있어도 덮는다 (손 고침이 지워진다)
 #   python3 tools/build_home.py --check    → 쓰지 않고 **다른 곳만 센다**. 다르면 종료코드 1
 #   python3 tools/build_home.py --out <디렉터리>  → 그 디렉터리에 쓴다 (시험용)
 import sys
 CHECK = "--check" in sys.argv
+FORCE = "--force" in sys.argv
 _outArg = sys.argv.index("--out") + 1 if "--out" in sys.argv else 0
 OUT_DIR = os.path.abspath(sys.argv[_outArg]) if _outArg and _outArg < len(sys.argv) else OUT
 DIFFS = []
+
+# ── 가드 (11-07, smartever 권고 · touchtok build.py b871e30 과 같은 꼴) ─────────────
+# 「돌리지 말 것」을 문서에 적는 것으로는 못 막는다. 다음 세션은 문서를 안 읽는다.
+# **저장소에 바로 쓰는 경우에만** 걸린다: 쓰려는 글이 지금 파일과 다르면
+# **한 쪽도 쓰지 않고 멈춘다.** 손으로 고친 것이 생성기에 안 들어와 있다는 뜻이다.
+#   --force 를 붙이면 통과한다 (덮는 것을 알고 하는 때만).
+# --check · --out 은 전과 똑같다 (저장소를 건드리지 않으므로 가드가 필요 없다).
+GUARD = (not CHECK) and (OUT_DIR == OUT) and (not FORCE)
+PENDING = []   # 가드가 켜지면 글을 모아 두고, 다 모은 뒤 한꺼번에 판정한다
 
 def write(path, html):
     rel = os.path.join(path.strip("/"), "index.html") if path != "/" else "index.html"
@@ -187,14 +198,30 @@ def write(path, html):
         else:
             print(f"같다: {rel}")
         return
+    if GUARD:
+        PENDING.append((rel, html))   # 아직 쓰지 않는다 — _guard_verdict() 가 판정한다
+        return
     p = os.path.join(OUT_DIR, rel)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     open(p, "w", encoding="utf-8", newline="\n").write(html)
     print("wrote", p, len(html))
 
-import atexit
-@atexit.register
+
+def _flush_pending():
+    """가드를 통과한 뒤에만 부른다 — 모아 둔 글을 저장소에 쓴다"""
+    for rel, html in PENDING:
+        p = os.path.join(OUT_DIR, rel)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        open(p, "w", encoding="utf-8", newline="\n").write(html)
+        print("wrote", p, len(html))
+
+# 11-07: 전에는 이 판정이 `@atexit.register` 였다. 그래서 「다르면 종료코드 1」이라
+# 적혀 있는데도 `sys.exit(1)` 이 「Exception ignored in atexit callback」로 삼켜지고
+# **실제 종료코드는 0** 이었다(실측). 글자로는 「다름」이라 찍히는데 부르는 쪽은 성공으로 본다.
+# → 가드와 함께 **파일 맨 끝에서** 부른다. 아래 _guard_verdict() 주석도 같은 까닭이다.
 def _verdict():
+    if GUARD:
+        return   # 가드는 _guard_verdict() 가 **파일 맨 끝에서** 센다 (까닭은 그 함수 주석)
     if not CHECK:
         return
     if DIFFS:
@@ -202,6 +229,33 @@ def _verdict():
         print("→ 손으로 고친 것이 있으면 이 생성기에도 넣는다. 안 넣으면 다음에 누가 돌릴 때 지워진다.")
         sys.exit(1)
     print("\n생성기 출력 == 저장소 (전부 같다)")
+
+
+def _guard_verdict():
+    """가드 판정 — **`atexit` 가 아니라 파일 맨 끝에서** 부른다.
+
+    11-07: 처음엔 이것을 `atexit` 안에 뒀다. 그랬더니 `sys.exit(2)` 가
+    「Exception ignored in atexit callback」로 삼켜지고 **종료코드가 0** 이 됐다.
+    멈췄다고 글자는 찍히는데 부르는 쪽(시험·CI)은 성공으로 본다 — 조용한 고장이다.
+    그래서 보통 자리에서 부른다. 여기서 raise 되는 SystemExit 는 그대로 2 가 된다.
+    """
+    if not GUARD:
+        return
+    drift = []
+    for rel, html in PENDING:
+        cur = os.path.join(OUT, rel)
+        old = open(cur, encoding="utf-8").read() if os.path.exists(cur) else None
+        if old != html:
+            drift.append(rel + ("" if old is not None else " (저장소에 없다)"))
+    if drift:
+        print(f"\n멈춤 — 생성기 출력이 저장소와 다르다 ({len(drift)}쪽): " + ", ".join(drift))
+        print("손으로 고친 것이 생성기에 안 들어와 있다. 지금 쓰면 그 고침이 **지워진다.**")
+        print("→ 손 고침을 이 생성기에 먼저 넣는다. 덮는 줄 알고 하는 때만: --force")
+        print("  (무엇이 다른지만 보려면: python3 tools/build_home.py --check)")
+        print("**한 쪽도 쓰지 않았다.**")
+        sys.exit(2)
+    _flush_pending()
+    print("\n생성기 출력 == 저장소 — 그대로 썼다 (바뀐 쪽 없음)")
 
 
 NPAT = len(PATS)  # ② 특허 수는 목록에서 센다 — 손 숫자 금지 (samples/site_wording_test.js)
@@ -792,3 +846,7 @@ product = head("RayTok 제품 — 통역 이어폰과 블루투스 선글라스"
 </div></section>
 ''' + FOOT
 write("/product/", product)
+
+# ── 판정은 **맨 끝**에서 (atexit 안에서 하면 sys.exit 가 삼켜져 종료코드가 0 이 된다) ──
+_verdict()
+_guard_verdict()
