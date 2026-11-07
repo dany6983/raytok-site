@@ -9,7 +9,7 @@
 - 🟢 **생성기 고지문 셈(사본에서 `--force` 출력 vs 저장소):** 5개 외국어판 `class="legal"`·연출 문구 **완전 동일**.
   한국어판만 「연출 이미지」 5→2 — **사라지는 3개는 #skincare 섹션 사진 고지**(이미 아는 손 고침). 맨 위 법적 안내(`legal`)·「연출 영상」 고지는 생성기 안에 있음 → 가드가 막고 있으니 안전
 - 🟢 **`?v=` 점검:** site.css 는 10-31 #skincare 22줄 **추가만**(삭제 0). 한국어판 v6, 외국어 5판 v5 — 외국어판엔 #skincare 가 없어 옛 CSS 캐시로도 모양이 같음 → **조용한 고장 없음.** 생성기 OGV=5 와도 맞아 고치지 않음
-- 🟢 touchtok-site 엔 `package.json`·시험 **없음** → `npm install` 할 것 없음. 이번 차례 detached HEAD **아님**(두 레포 main)
+- 🟢 touchtok-site 엔 `package.json`·시험 **없음** → `npm install` 할 것 없음. detached HEAD — touchtok-site 는 main, **raytok-site 는 또 detached**(push 거절 → `checkout -B main HEAD` 후 push)
 - touchtok-site **무수정**
 
 ## 막힌 것 / 대표님 결정이 필요한 것
