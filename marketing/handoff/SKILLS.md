@@ -3353,3 +3353,7 @@ console.log("한글",C.words.filter(kr).length,"/ 비한글",C.words.filter(w=>!
 - `field/en` 「Is statutory training recognized…?」 = 바로 뒤가 「**not** a … training institution」 — **법정 부정 고지**
 - `museum/en` 「The only new equipment … is one router」 = 제품 우위 아니라 **설치가 적다는 말**
 터치톡 쪽 5건도 전부 「치료를 위한 의료기기가 **아니며**」 꼴이었다. **면제는 낱말이 아니라 뜻(부정꼴)에 건다.**
+
+**[못 봄] 을 셀 때 글자로 언어를 짐작하지 마라 — `<html lang>` 을 써라.** (smartever 11-07 18시)
+터치톡 외국어판 5쪽을 「한글이 없는 쪽」으로 세자 **0쪽**이 나왔다 — 언어 전환 메뉴(한국어)·꼬리말 사업자 정보가 모든 판에 한글로 박혀 있어서.
+구멍을 찍으려던 줄이 구멍을 다시 숨겼다. 쪽이 스스로 밝힌 `lang` 으로 세니 5쪽. 되돌림 실증에 「[못 봄] 개수가 기대값인가」도 넣을 것.
