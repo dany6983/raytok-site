@@ -2957,3 +2957,70 @@ Metricool `getScheduledPosts` 는 넓은 범위를 그냥 받는다(11편에 응
 터치톡은 이걸로 #skincare 섹션·FAQ 2개·CSS 22줄이 **생성기 밖에 손으로만** 있다는 게 나왔다. 아무도 돌리지 않아 터지지 않았을 뿐이다.
 막는 법: 생성기 `__main__` 첫 줄에 「손 고침 표지(`id="skincare"` 같은 고유 토막)가 대상 파일에 있으면 `sys.exit`, `--force` 일 때만 통과」.
 설명 문서에 「돌리지 말 것」이라 적는 것보다 **생성기가 스스로 멈추는 게** 낫다 — 다음 세션은 문서를 안 읽을 수 있다.
+
+---
+
+## 2026-11-07 10:40 · claude-22 — 「시험을 돌려라」를 내가 안 지켰다. 106개 전부 돌리니 36개가 붉었다
+
+어제 이 파일에 **「레포가 들고 있는 시험을 먼저 돌려라」**고 적었다.
+그러면서 나는 `site_wording_test.js` **한 개**만 돌렸다. 이번에 `package.json` 의 `test:*` **106개를 전부** 돌렸다 → **36개 붉음.**
+
+### 1. 붉은 시험의 과반은 결함이 아니다 — 먼저 셋을 걸러낸다
+
+`npm test` 는 `&&` 로 이어 붙여서 **첫 실패에서 멈춘다.** 그래서 전체 그림이 안 보인다.
+**한 개씩 따로 돌려 통과·실패를 모은다:**
+
+```bash
+node -e 'console.log(Object.keys(require("./package.json").scripts).filter(k=>k.startsWith("test:")).join("\n"))' > /tmp/t.txt
+echo >> /tmp/t.txt   # ★ 마지막 줄에 개행이 없으면 while read 가 한 개를 안 읽는다 (이번에 당했다)
+while read t; do timeout 150 npm run --silent "$t" >/dev/null 2>&1 && echo "초록 $t" || echo "붉음 $t"; done < /tmp/t.txt
+```
+
+걸러낼 셋:
+
+| 꼴 | 까닭 | 고침 |
+|---|---|---|
+| `MODULE_NOT_FOUND` · `ERR_MODULE_NOT_FOUND` **29개** | `node_modules` 가 **0개** — `npm install` 을 한 번도 안 했다 | `npm install --ignore-scripts` (한 줄에 29개 초록) |
+| 「없는 커밋을 가리키는 해시 N개」 | **얕은 클론.** `git rev-parse --is-shallow-repository` → true, 커밋 50개뿐 | `git fetch --unshallow` (50 → 1,122개, 23건 통과) |
+| 운영 주소에 붙어 401/403 | 운영 비밀값이 필요하다 | **손대지 않는다.** 대표님 몫 |
+
+`--ignore-scripts` 를 붙이는 까닭: playwright 의 postinstall 이 브라우저를 또 내려받는데 **컨테이너에 미리 깔린 판과 어긋난다.**
+스크립트를 막아도 `require('playwright')` 는 node_modules 판을 집고, 그것으로 **브라우저가 떴다**(실측).
+
+### 2. 사전·CSS 를 고치면 그것을 싣는 쪽의 `?v=` 를 같이 올려야 한다 — 내가 바로 어제 당했다
+
+09시에 `assets/i18n/*.json` 6개를 8→10 으로 고쳤다. **쪽이 든 `i18n.js?v=` 는 그대로 뒀다.**
+13쪽이 옛 번호(`d0c6b220`)를 들고 있었고 지금 사전값은 `8080fef9`.
+→ **손님 브라우저는 캐시에서 옛 사전(8건)을 계속 읽는다. 외국어 손님에게 고침이 아예 안 보인다.**
+게이트도 초록, 문구 시험도 초록, 사전 파일도 10. **조용한 고장이다.**
+
+```bash
+# 지금 값 세기 (생성기와 같은 셈: md5(파일 이어붙임) 앞 8자, CRLF→LF)
+node -e 'const fs=require("fs"),c=require("crypto");const L=["en","zh","ja","vi","th","id"];
+const h=c.createHash("md5");for(const x of ["assets/i18n.js",...L.map(l=>`assets/i18n/${l}.json`)])
+h.update(fs.readFileSync(x).toString("binary").replace(/\r\n/g,"\n"),"binary");console.log(h.digest("hex").slice(0,8))'
+# 쪽이 든 값 세기 — 갈라져 있으면 바로 보인다
+grep -rho 'i18n\.js?v=[0-9a-f]*' --include=*.html . | sort | uniq -c
+```
+
+`samples/asset_version_test.js` 가 **바로 이것**을 보고 있었다. 그 시험 머리글에 **10-22 에 똑같은 일을 겪은 기록**이 적혀 있다.
+같은 결함을 보름 뒤에 또 냈다. 시험은 있었는데 **아무도 안 돌렸다.**
+**교훈: 사전·CSS 같은 「딸려 가는 파일」을 고치면 그것을 싣는 쪽을 함께 고친다. 판 번호는 손으로 적지 말고 세게 한다.**
+
+### 3. 붉은 시험은 「코드가 틀렸나, 시험이 늙었나」를 먼저 가린다
+
+`test:contact` 는 릴레이에 `env = {}` 를 주고 **200** 을 바랐다. 그런데 10-31 에
+「저장할 곳(LEADS)이 없으면 받았다고 하지 않는다 — 조용히 삼키지 않는다」는 보초가 들어가 **503 이 맞는 답**이 됐다.
+운영에는 LEADS 가 붙어 있다(`relay/wrangler.toml`, 10-31 에 id 기입). **코드가 아니라 시험이 늙었다.**
+
+고친 방향(이대로 하면 시험이 약해지지 않는다):
+1. 저장소를 **흉내만** 내서 준다 — `{ LEADS: { put: async () => {} } }`
+2. **보초 자체를 세는 줄을 더한다** — env 를 비우면 **503 이어야 한다**, 본문에 까닭과 대신 닿을 길(메일·DM)이 있어야 한다
+3. **실제로 쓰였는지도 센다** — `lead:` + `todo:` 두 줄이 저장소에 들어갔나
+
+**통과시키려고 단언을 지우면 안 된다. 단언을 *더해서* 통과시킨다.**
+
+### 4. 결과
+
+**36 붉음 → 3 붉음(103/106 초록).** 고친 결함 셋: `?v=` 13쪽 · `terms_test.js` 면제 목록(구글 소유확인 파일은 한 줄짜리라 바닥글을 넣으면 소유확인이 깨진다) · `contact_test.js` 늙음.
+남은 셋은 전부 대표님 결정·비밀값: `test:generator`(7쪽 어긋남) · `test:i18n`(제9·제10 특허 번역 없음, 통지라 막지 않음) · `test:prod`(운영 라이선스 401).
