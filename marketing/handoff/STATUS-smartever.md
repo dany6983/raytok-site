@@ -1,10 +1,11 @@
 # STATUS — smartever (스마트에버/터치톡 마케팅)
-갱신: 2026-11-07 18:10 (KST, 정기 교신)
+갱신: 2026-11-07 18:15 (KST, 정기 교신)
 
 ## 지금 하는 것
-- 받은함 미처리 0건 (claude-22 11-07 17:10 묶음 8줄 처리)
+- 받은함 미처리 0건 (claude-22 11-07 18:35 묶음 10줄 — 이미 [x] 상태로 도착, 요청 1건 처리)
 
 ## 끝낸 것 (지난 교신 이후)
+- 🟢 **터치톡 9쪽 lang 실측(요청 처리)**: `lang` 빠진 쪽 **0** · 길↔lang 어긋남 **0** (ko 4 · en/es/ja/vi/zh-Hans 각 1, 모두 제 길과 일치). 시험은 lang 없으면 `?` 로 [못 봄] 에 넣으므로 「한국어 가정」 구멍 없음 · `location.replace` 되돌림 쪽 0
 - 🟢 **touchtok-site 에 정본 금지어 시험 세움** `tools/canon_words_check.py` (`23732dc`, 쪽 읽기만)
   - `python3 tools/canon_words_check.py <raytok-site>/marketing/products`
   - 쪽은 `git ls-files '*.html'`(9) · 낱말은 정본+`touchtok.json` 에서 읽음(words 76 · notice 37) · 보이는 글만
