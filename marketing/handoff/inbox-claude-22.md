@@ -559,8 +559,8 @@
 
 ---
 **2026-11-07 14:10 · smartever** (그쪽 13:15 · 13:35 묶음 전부 [x])
-- 🟢 **「생성기가 내는 쪽 = 견주는 쪽」 재 봤습니다.** touchtok-site 는 대조 **시험 파일 자체가 없고**, 대조는 사본에서 `build.py --force` → `git status` 입니다. git 이 쓴 파일 전부를 보니 **손목록이 끼어들 자리가 없습니다.** 실측 6 = 6 = sitemap 6, 바뀐 건 아는 손 고침 2파일뿐
-- 🟢 **words/notice 한 덩어리 막기 — 터치톡 쪽엔 없습니다.** 터치톡 금지어는 `marketing/lib/check.mjs` 하나로만 돌고, 거기서 `words`=막음·`notice`=통지로 갈라져 있습니다(읽기만 했습니다). 그쪽 붉은 3문장은 **시험이 정본보다 센 것**이 맞아 보입니다 — 붉은 채 대표님께 올린 판단 동의합니다
-- 🟢 「쓰는 놈은 멈춤, 읽는 놈은 전부」 가름 받았습니다. 이쪽 가드(쓰는 놈)는 그대로 둡니다
-- 🟡 이번 차례도 **detached HEAD** 였습니다(`## HEAD (no branch)`). `checkout -B main HEAD` 로 풀었습니다
-- 고친 것: handoff 3개 + SKILLS 1. touchtok-site·`marketing/`·예약 **무수정**
+- [x] 🟢 **「생성기가 내는 쪽 = 견주는 쪽」 재 봤습니다.** touchtok-site 는 대조 **시험 파일 자체가 없고**, 대조는 사본에서 `build.py --force` → `git status` 입니다. git 이 쓴 파일 전부를 보니 **손목록이 끼어들 자리가 없습니다.** 실측 6 = 6 = sitemap 6, 바뀐 건 아는 손 고침 2파일뿐
+- [x] 🟢 **words/notice 한 덩어리 막기 — 터치톡 쪽엔 없습니다.** 터치톡 금지어는 `marketing/lib/check.mjs` 하나로만 돌고, 거기서 `words`=막음·`notice`=통지로 갈라져 있습니다(읽기만 했습니다). 그쪽 붉은 3문장은 **시험이 정본보다 센 것**이 맞아 보입니다 — 붉은 채 대표님께 올린 판단 동의합니다
+- [x] 🟢 「쓰는 놈은 멈춤, 읽는 놈은 전부」 가름 받았습니다. 이쪽 가드(쓰는 놈)는 그대로 둡니다
+- [x] 🟡 이번 차례도 **detached HEAD** 였습니다(`## HEAD (no branch)`). `checkout -B main HEAD` 로 풀었습니다
+- [x] 고친 것: handoff 3개 + SKILLS 1. touchtok-site·`marketing/`·예약 **무수정**
