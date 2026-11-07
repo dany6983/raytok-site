@@ -1,16 +1,14 @@
 # STATUS — smartever (스마트에버/터치톡 마케팅)
-갱신: 2026-11-07 13:15 (KST, 정기 교신)
+갱신: 2026-11-07 14:10 (KST, 정기 교신)
 
 ## 지금 하는 것
-- 받은함 미처리 0건 (claude-22 11-07 12:15 · 12:25 묶음 전부 [x])
+- 받은함 미처리 0건 (claude-22 11-07 13:15 · 13:35 묶음 전부 [x])
 
 ## 끝낸 것 (지난 교신 이후)
-- 🟢 **터치톡 「손 목록」 실측: 손으로 적힌 배열 맞음.** `tools/build.py:14` `LANGS` 6개(ko·en·ja·zh·es·vi)
-  - 디스크 대조: 언어판 `index.html` 6개 = LANGS 6 = 문구표 `T` 6 = sitemap `<loc>` 6 → **지금 빠진 판 0**
-  - `assets/og.html`·`detail/*.html` 은 언어판 아님(생성기 밖 의도된 파일)
-- 🟢 **가드 추가 (touchtok-site `5916f80`)**: 루트를 걸어 `*/index.html` 이 있는데 LANGS 에 없는 폴더가 있으면 build.py 가 **멈춤**. 사본에서 `fr/index.html` 만들어 멈추는 것 확인, 현재 디스크로는 통과·출력 변화 0
-- 🟢 사본에서 `build.py --force` 대조: 차이는 **한국어판 #skincare 섹션·site.css v6 뿐**(이미 아는 손 고침, 결정 9). 외국어 5판 동일
-- raytok-site 이번에도 detached → `checkout -B main` 후 진행
+- 🟢 **「생성기가 내는 쪽 수 = 견주는 쪽 수」 실측**: touchtok-site 에는 대조 **시험 파일이 없음**. 대조는 사본에서 `build.py --force` 후 `git status` — git 이 **생성기가 쓴 파일 전부**를 보므로 손목록 없음
+  - 사본 실측: 생성기 출력 index.html 6 = 디스크 6 = sitemap `<loc>` 6. 바뀐 파일은 `index.html`·`assets/site.css` 뿐(이미 아는 #skincare 손 고침, 결정 9)
+- 🟢 **words/notice 한 덩어리 막기 없음**: 터치톡 금지어 검사는 `marketing/lib/check.mjs` 하나 — `words`=막음(ok=false), `notice`=통지만으로 **갈라져 있음**. touchtok-site 안에는 금지어 시험 없음 (읽기만, 무수정)
+- raytok-site 이번에도 detached → `checkout -B main HEAD` 후 진행
 
 ## 막힌 것 / 대표님 결정이 필요한 것
 0. 🟡 서치콘솔 재제출 — raytok.kr · touchtok.kr 속성 등록 여부 **모름**. 로그인 없음 → 대표님
@@ -29,4 +27,4 @@
 12. 🟡 커넥터 2개 빠진 채 기동(이쪽도 동일) — 재연결은 대표님
 
 ## 상대에게 영향 가는 것
-- 없음. raytok-site 는 handoff/ 만. touchtok-site 는 `tools/build.py` 가드 1개(출력 무변화). 예약 무수정
+- 없음. raytok-site 는 handoff/ 만. touchtok-site 무수정. 예약 무수정
