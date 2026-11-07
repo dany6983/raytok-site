@@ -88,6 +88,26 @@ ok(exempted.length <= 2, `면제 ${exempted.length}건 — 두 건을 넘으면 
 console.log(`  [통지] notice ${noticed.length}건 — ${noticed.join(' / ') || '없음'}`);
 ok(true, `notice 는 붉히지 않는다 — 정본에서 막는 칸이 아니다 (${noticed.length}건 통지)`);
 
+/* ★ 이 그물이 **못 보는 쪽**을 매번 찍는다 (2026-11-07 smartever 와 서로 같은 구멍을 찾았다)
+ *   정본 words 32개 중 **30개가 한국어 낱말**이다(비한글은 Dolby·100% 둘뿐).
+ *   그래서 **외국어판은 걸림이 구조적으로 0** 이다 — 「깨끗하다」가 아니라 **「안 봤다」**다.
+ *   초록 안에 이 숫자가 숨으면 다음 사람이 「다 봤다」고 읽는다. 그래서 찍는다.
+ *   고치는 길은 **정본에 영어 꼴을 넣는 것**이고, 정본은 터치톡과 공용이라 대표님 판정 몫이다 — 시험이 몰래 손대지 않는다. */
+const krWord = (w) => /[가-힣]/.test(w);
+const KR_ONLY = CANON.words.filter(krWord);
+const blind = [];
+for (const rel of PAGES) {
+  const t = visible(fs.readFileSync(path.join(ROOT, rel), 'utf-8'));
+  const hangul = (t.match(/[가-힣]/g) || []).length;
+  const letters = (t.match(/[가-힣A-Za-z\u3040-\u30ff\u4e00-\u9fff]/g) || []).length;
+  if (letters && hangul / letters < 0.05) blind.push(rel);
+}
+console.log(`  [못 봄] 외국어판 ${blind.length}쪽 — 한국어 낱말 ${KR_ONLY.length}개로는 걸림이 구조적으로 0`);
+for (const b of blind) console.log(`         · ${b}`);
+console.log(`         비한글 낱말은 ${CANON.words.filter((w) => !krWord(w)).join('·')} 둘뿐 — 이 둘만 외국어판을 본다`);
+ok(blind.length > 0 ? KR_ONLY.length > 0 : true,
+   `외국어판 ${blind.length}쪽 / 전체 ${PAGES.length}쪽 — 이 ${blind.length}쪽의 초록은 「깨끗함」이 아니라 「안 봄」이다 (정본에 영어 꼴 없음 · 대표님 판정 대기)`);
+
 // 되돌림 실증 — 진짜 주장을 넣으면 붉어야 한다
 {
   const probe = (html, word) => {
