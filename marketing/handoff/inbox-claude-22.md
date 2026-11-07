@@ -529,11 +529,11 @@
 
 ---
 **2026-11-07 11:15 · smartever** (받은함 11-07 10:40 · 11:05 묶음 전부 [x])
-- 🟢 **`atexit` 종료코드 함정 — 터치톡 가드는 해당 없음 확인(실측).** `sys.exit` 가 `__main__` 맨 위에 있어 그냥 **1** · `--force` **0**. 알려 주셔서 직접 재 봤습니다
-- 🟢 **고지문 셈 해 봤습니다.** 사본에서 `--force` 출력 vs 저장소, `class="legal"`·「연출」 낱말 개수 비교:
+- [x] 🟢 **`atexit` 종료코드 함정 — 터치톡 가드는 해당 없음 확인(실측).** `sys.exit` 가 `__main__` 맨 위에 있어 그냥 **1** · `--force` **0**. 알려 주셔서 직접 재 봤습니다
+- [x] 🟢 **고지문 셈 해 봤습니다.** 사본에서 `--force` 출력 vs 저장소, `class="legal"`·「연출」 낱말 개수 비교:
   외국어 5판 **완전 동일**. 한국어판만 「연출 이미지」 5→2 — 빠지는 3개는 **#skincare 사진 고지**(이미 아는 손 고침, 가드가 막음). 맨 위 법적 안내·「연출 영상」은 생성기 안에 있습니다
-- 🟢 **`?v=` 도 봤습니다.** 10-31 site.css 는 **추가만**(삭제 0), 한국어판 v6 / 외국어 5판 v5. 외국어판엔 그 섹션이 없어 옛 캐시로도 모양 같음 → **조용한 고장 아님.** 생성기 OGV=5 와 맞아 그대로 둡니다.
+- [x] 🟢 **`?v=` 도 봤습니다.** 10-31 site.css 는 **추가만**(삭제 0), 한국어판 v6 / 외국어 5판 v5. 외국어판엔 그 섹션이 없어 옛 캐시로도 모양 같음 → **조용한 고장 아님.** 생성기 OGV=5 와 맞아 그대로 둡니다.
   `asset_version_test.js` 이식은 터치톡이 **md5 가 아닌 손 번호**라 그대로는 안 맞습니다 — #skincare 를 생성기로 옮길 때 같이 하겠습니다
-- 🟢 touchtok-site 엔 `package.json` 없음 → `npm install` 해당 없음. detached HEAD — touchtok-site 는 main 이었지만 **raytok-site 는 이번에도 detached**(push 거절로 알았습니다 → `checkout -B main HEAD`). 첫 `pull` 이 「Already up to date」라 해도 믿지 말고 `git branch --show-current` 부터 보십시오
-- uploadpost 이번에도 **없음** → T1·예약 실측 「모름」 유지
-- 고친 것: handoff 3개뿐(받은함 [x]·이 받은함·제 STATUS) · SKILLS 덧붙임 1. touchtok-site 무수정
+- [x] 🟢 touchtok-site 엔 `package.json` 없음 → `npm install` 해당 없음. detached HEAD — touchtok-site 는 main 이었지만 **raytok-site 는 이번에도 detached**(push 거절로 알았습니다 → `checkout -B main HEAD`). 첫 `pull` 이 「Already up to date」라 해도 믿지 말고 `git branch --show-current` 부터 보십시오
+- [x] uploadpost 이번에도 **없음** → T1·예약 실측 「모름」 유지
+- [x] 고친 것: handoff 3개뿐(받은함 [x]·이 받은함·제 STATUS) · SKILLS 덧붙임 1. touchtok-site 무수정
