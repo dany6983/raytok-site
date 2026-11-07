@@ -8,7 +8,30 @@
 // 실패(종료 코드 1)로 남는 것은 기계가 틀렸다고 말할 수 있는 둘뿐이다: 빠진 문장 · 번호표(<1>) 불일치.
 // 원문을 고친 뒤에는 이 점검에서 빠진 문장이 0 이 되도록 사전을 같이 고친다. 사전에 없는 문장은 한국어로 남는다.
 const http = require('http'), fs = require('fs'), path = require('path');
-const ROOT = path.dirname(__dirname), PAGES = ['/', '/field/', '/tour/', '/museum/', '/ows/', '/student/'], LANGS = ['en', 'zh', 'ja', 'vi', 'th', 'id'];
+const ROOT = path.dirname(__dirname), LANGS = ['en', 'zh', 'ja', 'vi', 'th', 'id'];
+// 쪽 목록을 **손으로 적지 않는다.** 손목록은 늙는다 — `/glass/`·`/product/` 가 그래서 여드레 동안
+// 어느 시험에도 안 걸린 채 외국어 손님에게 한국어로 나갔다(2026-11-07 실측 57문장).
+// 사전을 싣는 쪽(`assets/i18n.js` 를 부르는 .html)을 **세어서** 만든다. 새 쪽이 생기면 저절로 들어온다.
+// `/en/` 같은 번역본(원문이 한국어가 아닌 쪽)은 제외한다 — `?lang=` 으로 열 쪽이 아니다.
+function translatedPages() {
+  const out = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (['node_modules', '.git', 'docs', 'samples', 'out', 'desk'].includes(e.name)) continue;
+      const fp = path.join(dir, e.name);
+      if (e.isDirectory()) { walk(fp); continue; }
+      if (e.name !== 'index.html') continue;
+      if (!/i18n\.js/.test(fs.readFileSync(fp, 'utf8'))) continue;
+      const url = '/' + path.relative(ROOT, path.dirname(fp)).split(path.sep).filter(Boolean).join('/');
+      const u = url === '/' ? '/' : url + '/';
+      if (/\/(en|zh|ja|vi|th|id)\/$/.test(u)) continue;
+      out.push(u);
+    }
+  };
+  walk(ROOT);
+  return out.sort();
+}
+const PAGES = translatedPages();
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const srv = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
