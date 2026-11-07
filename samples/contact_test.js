@@ -54,8 +54,25 @@ const contactFile = path.join(ROOT, 'contact', 'index.html');
       message: 'Inquiry regarding 50 listener group tour package.'
     })
   });
-  const validRes = await relayWorker.fetch(validReq, {}, {});
+  /* 2026-11-07 (claude-22): 이 시험은 env 를 `{}` 로 주고 200 을 바랐다. 그런데 10-31 에
+   * 「저장할 곳이 없으면 받았다고 하지 않는다」는 보초가 들어갔다(relay/src/index.js §/contact).
+   * 그래서 시험은 **옛것**이 되어 붉은 채 며칠 있었다. 운영에는 LEADS(KV)가 붙어 있다
+   * (relay/wrangler.toml, 10-31 id 기입) — 코드가 아니라 시험이 틀렸다.
+   * 고치는 방향: 저장소를 흉내만 내서 주고, **보초 자체도 따로 센다**(아래 Test 2-0). */
+  const kvPuts = new Map();
+  const mockLeads = { put: async (k, v) => { kvPuts.set(k, v); } };
+
+  // Test 2-0: 저장소가 없으면 200 을 주지 않는다 (조용히 삼키지 않는다 — 10-31 보초)
+  const noStoreRes = await relayWorker.fetch(validReq.clone(), {}, {});
+  ok(noStoreRes.status === 503, '저장소(LEADS)가 없으면 503 — 받았다고 거짓말하지 않는다');
+  const noStoreBody = await noStoreRes.json();
+  ok(noStoreBody.error === 'storage_unconfigured' && !!noStoreBody.email,
+    '503 본문이 까닭과 대신 닿을 길(메일·DM)을 준다');
+
+  const validRes = await relayWorker.fetch(validReq, { LEADS: mockLeads }, {});
   ok(validRes.status === 200, 'relay POST /contact 정상 제출 시 200 OK');
+  ok(kvPuts.size === 2 && [...kvPuts.keys()].some((k) => k.startsWith('lead:')),
+    '받은 문의가 저장소에 실제로 쓰였다 (lead: + todo: 두 줄)');
   const validData = await validRes.json();
   ok(validData.ok === true && typeof validData.receivedAt === 'number', 'ok: true 및 receivedAt 응답 확인');
 
@@ -98,7 +115,9 @@ const contactFile = path.join(ROOT, 'contact', 'index.html');
           headers: { 'Content-Type': 'application/json' },
           body: raw
         });
-        const relayRes = await relayWorker.fetch(relayReq, {}, {});
+        // 2026-11-07 (claude-22): 여기도 env 가 `{}` 였다 → 릴레이가 503 을 주고
+        // 브라우저엔 #contact-success 가 끝까지 안 떴다. 운영엔 LEADS 가 붙어 있다.
+        const relayRes = await relayWorker.fetch(relayReq, { LEADS: { put: async () => {} } }, {});
         const data = await relayRes.text();
         res.writeHead(relayRes.status, { 'Content-Type': 'application/json' });
         res.end(data);

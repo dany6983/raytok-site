@@ -294,6 +294,7 @@ const FOOTER_EXEMPT = {
   'web/privacy/en/index.html': '넘기는 쪽 → /web/privacy/ (국문 하나)',
   'web/buy/index.html': '넘기는 쪽 → /buy/ (10-14 13:20 에 본 페이지를 /buy/ 로 옮겼다)',
   // 그 밖
+  'googledd26d5622e46387b.html': '구글 서치콘솔 소유확인 파일 — 본문이 google-site-verification 한 줄뿐이다. 글자를 더하면 구글이 소유확인에 실패한다 (11-07 claude-22)',
   '404.html': 'noindex, 없는 주소 안내 + /lic/ 되돌리기만',
   'join/index.html': 'QR 진입 — 본문이 81개 언어 사전으로 뜬다. 국문 한 줄을 박으면 그 설계가 깨진다(ui-strings.json)',
   'web/listener/selftest.html': '개발용 자체 점검, 공개 링크 0개',
