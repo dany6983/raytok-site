@@ -20,8 +20,21 @@ const ok = (c, d) => { assert(c, d); checks++; console.log('  [PASS] ' + d); };
 
 const ROOT = path.join(__dirname, '..');
 const GEN = path.join(ROOT, 'tools', 'build_home.py');
-const PAGES = ['index.html', 'field/index.html', 'tour/index.html', 'ows/index.html',
-               'desk/index.html', 'meet/index.html'];
+/* ★ **쪽 목록을 손으로 적지 않는다** (2026-11-07).
+ *
+ * 전에는 여기 여섯 쪽이 손으로 박혀 있었다: index·field·tour·ows·desk·meet.
+ * 그런데 생성기는 그 뒤에 `glass`·`product` **두 쪽을 더** 낸다. 목록에 넣은 사람이
+ * 없어서 두 쪽은 **이 시험이 아예 안 봤다** — 시험은 초록이고 쪽은 어긋난 채였다.
+ * (같은 날 `tools/i18n_check.js` 에서 똑같은 꼴을 찾았다: 손목록이 /glass/·/product/
+ *  를 빠뜨려 외국어 손님이 한국어를 보고 있었는데 시험은 여드레 동안 초록이었다.)
+ *
+ * 그래서 목록을 **생성기에게 묻는다** — `--out <임시>` 로 돌린 뒤 그 안을 걸어 찾는다.
+ * **새 쪽이 생기면 저절로 들어온다.** 손으로 적을 자리가 없다. */
+const walkHtml = (dir, base = dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+  const full = path.join(dir, e.name);
+  if (e.isDirectory()) return walkHtml(full, base);
+  return e.name === 'index.html' ? [path.relative(base, full).split(path.sep).join('/')] : [];
+});
 
 ok(fs.existsSync(GEN), '생성기 tools/build_home.py 가 있다');
 
@@ -35,10 +48,10 @@ ok(/--out/.test(genSrc) && /--check/.test(genSrc),
    '생성기가 --out·--check 를 안다 (모르면 저장소에 바로 써서 쪽을 덮는다)');
 
 /* 그래도 안전망: 돌리기 전 쪽 여섯을 떠 두고, 돌린 뒤 바뀐 것이 있으면 **되돌리고** 붉어진다 */
+/* 어느 쪽이 생성기 몫인지 돌려 보기 전엔 모른다 → 저장소의 index.html 을 **전부** 떠 둔다 */
 const before = new Map();
-for (const rel of PAGES) {
-  const p = path.join(ROOT, rel);
-  if (fs.existsSync(p)) before.set(rel, bytes(p));
+for (const rel of walkHtml(ROOT).filter((r) => !r.startsWith('node_modules/'))) {
+  before.set(rel, bytes(path.join(ROOT, rel)));
 }
 
 /*
@@ -67,12 +80,17 @@ const touched = [...before.keys()].filter((rel) => !bytes(path.join(ROOT, rel)).
 for (const rel of touched) fs.writeFileSync(path.join(ROOT, rel), before.get(rel));   // 되돌린다
 ok(touched.length === 0, `--out 로 돌려도 저장소 쪽은 그대로 (${touched.join(', ') || '건드린 것 없음'})`);
 ok(ran, `생성기가 돌았다 (--out <임시>)${ran ? '' : ' — ' + runErr}`);
+
+/* 생성기가 **실제로 낸** 쪽 — 손목록이 아니다 */
+const PAGES = ran ? walkHtml(tmp).sort() : [];
+ok(PAGES.length > 0, `생성기가 낸 쪽을 걸어 찾았다 — ${PAGES.length}쪽 (${PAGES.join(', ')})`);
+
 const different = [];
+const missing = [];
 for (const rel of PAGES) {
   const made = path.join(tmp, rel);
   const kept = path.join(ROOT, rel);
-  ok(fs.existsSync(made), `${rel}: 생성기가 만들었다`);
-  ok(fs.existsSync(kept), `${rel}: 저장소에 있다`);
+  if (!fs.existsSync(kept)) { missing.push(rel); console.log(`  [FAIL] ${rel}: 저장소에 없다`); continue; }
   /*
    * ★ **줄바꿈은 세지 않는다** (2026-10-20, A1).
    *
@@ -87,9 +105,13 @@ for (const rel of PAGES) {
    */
   const nl = (b) => b.toString('utf8').replace(/\r\n/g, '\n');
   const same = nl(bytes(made)) === nl(bytes(kept));
-  if (!same) different.push(rel);
-  ok(same, `${rel}: 생성기 출력 == 저장소 (글자 하나까지)`);
+  /* ★ 여기서 멈추지 않는다 (2026-11-07). 전에는 `ok()` 가 **첫 어긋남에서 던져** 뒤 쪽을
+   *   아예 안 봤다 — `desk` 가 붉으면 `glass`·`product` 는 세어지지도 않았다.
+   *   어긋남을 **모아서** 맨 아래에서 한 번에 판정한다: 몇 쪽이 어긋났는지 한눈에 보인다. */
+  if (!same) { different.push(rel); console.log(`  [FAIL] ${rel}: 생성기 출력 != 저장소`); }
+  else { checks++; console.log(`  [PASS] ${rel}: 생성기 출력 == 저장소 (글자 하나까지)`); }
 }
+ok(missing.length === 0, `생성기가 낸 쪽이 저장소에 다 있다 (없는 쪽: ${missing.join(', ') || '없음'})`);
 ok(different.length === 0, `다른 쪽 0 (${different.join(', ') || '없음'})`);
 
 /* 손으로 고친 쪽을 생성기에 안 넣으면 붉어지는가 — 임시본 한 쪽을 바꿔 본다.

@@ -77,17 +77,26 @@ const IOS_TRAPS = [
   [/Object\.hasOwn\(/, 'Object.hasOwn — 사파리 15.4 미만에 없다'],
   [/\?\?=/, '??= — 사파리 14 미만에 없다']
 ];
+/* ★ **파일 목록도 손에 걸지 않는다** (2026-11-07).
+ *
+ * 위 주석은 「폰이 받는 파일 **전부**에서 센다」·「사람 기억에 걸지 않는다」고 적어 두고도
+ * **파일 목록만은 손으로** 적어 두었다. 그래서 그 뒤에 생긴 `web/common/ask-mic.js` 와
+ * `web/common/tts-guard.js` 는 **이 시험이 한 번도 안 봤다** — 둘 다 손님 화면이
+ * (`web/listener/index.html` 1236·1412줄) 실제로 싣는 파일이다.
+ * 재 보니 지금은 둘 다 걸린 것 0 — **다친 데는 없었다.** 다음 사람이 그 두 파일에
+ * `?.` 한 줄을 넣으면 조용히 나갈 수 있었다. 그래서 **걸어 찾는다.**
+ * (같은 날 `tools/i18n_check.js`·`generator_sync_test.js`·`site_wording_test.js` 에서
+ *  똑같은 꼴을 찾았다. 늙은 손목록은 한 자리의 버릇이 아니었다.) */
 const PHONE_FILES = [
   'web/host/index.html',
   'web/listener/index.src.html',
   'web/listener/index.html',
   'join/index.html',
-  'web/common/rec-lang.js',
-  'web/common/region.js',
-  'web/common/report.js',
-  'web/common/script-follow.js',
-  'web/common/script-play.js',
-  'web/common/voice-fallback.js'
+  /* web/common/*.js — 두 화면이 같이 싣는다. 새 파일이 생기면 저절로 들어온다 */
+  ...fs.readdirSync(path.join(ROOT, 'web', 'common'))
+      .filter((f) => f.endsWith('.js'))
+      .sort()
+      .map((f) => `web/common/${f}`)
 ];
 const trapHits = [];
 for (const f of PHONE_FILES) {

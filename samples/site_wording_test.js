@@ -18,15 +18,34 @@ const ROOT = path.join(__dirname, '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 // ① 금지어 — 한국어·영문 둘 다
-const PAGES = ['index.html', 'field/index.html', 'field/en/index.html', 'tour/index.html', 'tour/en/index.html',
-  'student/index.html', 'student/en/index.html', 'guide/index.html', 'desk/index.html',
-  'ows/index.html', 'ows/en/index.html', 'museum/index.html', 'museum/en/index.html'];
+/* ★ **쪽 목록을 손으로 적지 않는다** (2026-11-07).
+ *
+ * 전에는 여기 열세 쪽이 손으로 박혀 있었다. 그 목록엔 `/glass/`·`/product/`·`/privacy/`·
+ * `/buy/`·`/sangdam/`·`web/` 이 **없었다** — 나중에 생긴 쪽을 넣은 사람이 없었다.
+ * 금지어는 **손님이 읽는 자리면 어디든** 위험하다. 그래서 걸어 찾는다.
+ * (같은 날 `tools/i18n_check.js`·`samples/generator_sync_test.js` 에서 똑같은 꼴을 찾았다:
+ *  손목록이 늙어 두 쪽을 영원히 안 보고 있었다.) */
+const walkHtml = (dir, base = dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+  const full = path.join(dir, e.name);
+  if (e.isDirectory()) return e.name === 'node_modules' || e.name === '.git' ? [] : walkHtml(full, base);
+  return e.name === 'index.html' ? [path.relative(base, full).split(path.sep).join('/')] : [];
+});
+const PAGES = walkHtml(ROOT).sort();
 const BANNED = /인터넷\s*없이|인터넷 없는 곳|인터넷이 필요 없|인터넷 불필요|without (?:an? |the )?internet|no internet is needed/i;
+const hits = [];
 for (const rel of PAGES) {
-  const html = read(rel);
-  const m = html.match(BANNED);
-  ok(!m, `① ${rel}: 금지어 없음${m ? ' — 찾음: ' + m[0] : ''}`);
+  const m = read(rel).match(BANNED);
+  if (m) { hits.push(`${rel} (${m[0]})`); console.log(`  [FAIL] ① ${rel}: 금지어 — ${m[0]}`); }
 }
+/* ★ 2026-11-07 — 걸어 찾으니 세 쪽이 걸렸다. **세 쪽 다 「조건이 붙은 꼴」이다**
+ *   (「인터넷 없이 **쓰려면** 언어 팩을 미리 받으면 됩니다」 · 「**받은 뒤에는** 인터넷 없이도」).
+ *   그리고 정본 `marketing/products/_common-forbidden.json` 에서 「인터넷 없이」는
+ *   **`words`(막는다)가 아니라 `notice`(막지 않고 통지만 한다 · 10-26 해제분)** 다.
+ *   → **이 시험이 정본보다 세다.** 어느 쪽이 맞는지는 대표님 몫이라 고치지 않았다:
+ *     ⓐ 정본에 맞춰 통지로 내린다  ⓑ 세 문장을 고친다  ⓒ 그대로 둔다 */
+ok(hits.length === 0,
+   `① 금지어 0 — ${PAGES.length}쪽 전수 (${hits.join(' / ') || '걸린 것 없음'})`
+   + (hits.length ? '\n      ↑ 세 쪽 다 조건이 붙은 꼴. 정본에선 이 낱말이 notice(막지 않음)다 — 시험이 정본보다 셈. 대표님 판정 필요' : ''));
 // 생성기도 같은 문장을 다시 넣지 않는다 (주석의 금지 목록 줄은 뺀다)
 const gen = read('tools/build_home.py').split('\n').filter(l => !l.trim().startsWith('#')).join('\n');
 const gm = gen.match(BANNED);
