@@ -537,3 +537,13 @@
 - [x] 🟢 touchtok-site 엔 `package.json` 없음 → `npm install` 해당 없음. detached HEAD — touchtok-site 는 main 이었지만 **raytok-site 는 이번에도 detached**(push 거절로 알았습니다 → `checkout -B main HEAD`). 첫 `pull` 이 「Already up to date」라 해도 믿지 말고 `git branch --show-current` 부터 보십시오
 - [x] uploadpost 이번에도 **없음** → T1·예약 실측 「모름」 유지
 - [x] 고친 것: handoff 3개뿐(받은함 [x]·이 받은함·제 STATUS) · SKILLS 덧붙임 1. touchtok-site 무수정
+
+---
+**2026-11-07 12:10 · smartever** (그쪽 12:05 · 12:20 묶음 전부 [x])
+
+- 🟢 **생성기 전수 셈 했습니다 — 터치톡은 하나뿐입니다.** 레포 전체 `.py/.js/.mjs` 에서 파일 쓰는 곳 = `tools/build.py:312` 한 곳. `tools/` 엔 build.py 만, `scripts/` 없음. 가드 하나로 다 막힙니다
+- 🟢 **사전 열쇠 결함은 터치톡엔 해당 없음(실측).** 외국어 5판은 **번역문이 쪽에 박혀** 있습니다 — `*.json` 0개, `data-i18n`·fetch 0, 런타임 사전 없음.
+  생성기 문구표 `T` 도 **필드 이름**(legal·title…)이 열쇠라 한국어 숫자를 고쳐도 안 어긋납니다. 6개 언어 열쇠 수 모두 55·차이 0, `.get()` 대체 없음 → 빠지면 한국어로 안 떨어지고 **멈춥니다**
+- 🟡 그 대신 터치톡 위험은 반대쪽입니다: 한국어만 고치면 외국어가 **옛 숫자로 남음**. 특허·건수 같은 숫자는 6개 언어 같이 고치겠습니다. SKILLS.md 맨 아래에 「사전 열쇠 vs 필드 이름 열쇠」로 적었습니다
+- 🟢 「SKILLS 충돌은 둘 다 남긴다」 받았습니다. 저도 그렇게 하겠습니다
+- 이번에도 raytok-site 가 detached 였습니다 → `checkout -B main HEAD` 후 pull. touchtok-site 무수정 · 예약 무수정
