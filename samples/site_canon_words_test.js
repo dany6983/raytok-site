@@ -95,18 +95,36 @@ ok(true, `notice 는 붉히지 않는다 — 정본에서 막는 칸이 아니�
  *   고치는 길은 **정본에 영어 꼴을 넣는 것**이고, 정본은 터치톡과 공용이라 대표님 판정 몫이다 — 시험이 몰래 손대지 않는다. */
 const krWord = (w) => /[가-힣]/.test(w);
 const KR_ONLY = CANON.words.filter(krWord);
-const blind = [];
+
+/* 쪽의 언어는 **글자로 짐작하지 않는다 — 쪽이 스스로 밝힌 `<html lang>` 으로 센다.**
+ * 11-07 18:10 smartever 실측: 터치톡 외국어 5쪽 모두 **언어 전환 메뉴·꼬리말에 한글이 섞여** 있어
+ * 「한글 비율이 낮은 쪽」 판정이 **0쪽**을 냈다 — 구멍이 초록 안에 다시 숨었다.
+ * 이쪽은 비율 판정으로도 10쪽이 나왔지만 **맞은 게 아니라 운이 좋았다**(아래 되돌림 실증 ⑥ 참고).
+ * 그리고 lang 으로 세고 나서야 보인 것: 밝히지 않은 쪽 1 · /en/ 길인데 ko 라 밝힌 쪽 2. */
+const declaredLang = (h) => {
+  const m = h.match(/<html[^>]*\blang\s*=\s*"([^"]*)"/i) || h.match(/<html[^>]*\blang\s*=\s*'([^']*)'/i);
+  return m ? m[1].trim().toLowerCase() : null;
+};
+const blind = [];        // ko 아닌 언어로 밝힌 쪽 — 한국어 낱말 그물에 구조적으로 안 닿는다
+const undeclared = [];   // 아무 말 안 한 쪽 — 「한국어겠지」로 넘기지 않는다
+const pathMismatch = []; // /en/ 길인데 ko 라 밝힌 쪽 — lang 을 읽어야 보인다
 for (const rel of PAGES) {
-  const t = visible(fs.readFileSync(path.join(ROOT, rel), 'utf-8'));
-  const hangul = (t.match(/[가-힣]/g) || []).length;
-  const letters = (t.match(/[가-힣A-Za-z\u3040-\u30ff\u4e00-\u9fff]/g) || []).length;
-  if (letters && hangul / letters < 0.05) blind.push(rel);
+  const raw = fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+  const lang = declaredLang(raw);
+  if (lang === null) { undeclared.push(rel); continue; }
+  if (!lang.startsWith('ko')) blind.push(`${rel} (lang=${lang})`);
+  else if (/(^|\/)en\//.test(rel)) pathMismatch.push(`${rel} (lang=${lang})`);
 }
 console.log(`  [못 봄] 외국어판 ${blind.length}쪽 — 한국어 낱말 ${KR_ONLY.length}개로는 걸림이 구조적으로 0`);
 for (const b of blind) console.log(`         · ${b}`);
 console.log(`         비한글 낱말은 ${CANON.words.filter((w) => !krWord(w)).join('·')} 둘뿐 — 이 둘만 외국어판을 본다`);
+console.log(`  [밝히지 않음] ${undeclared.length}쪽 — <html lang> 이 없어 어느 말인지 쪽이 말하지 않는다${undeclared.length ? ': ' + undeclared.join(' / ') : ''}`);
+console.log(`  [길↔lang 어긋남] ${pathMismatch.length}쪽 — /en/ 길인데 ko 로 밝혔다${pathMismatch.length ? ': ' + pathMismatch.join(' / ') : ''}`);
 ok(blind.length > 0 ? KR_ONLY.length > 0 : true,
    `외국어판 ${blind.length}쪽 / 전체 ${PAGES.length}쪽 — 이 ${blind.length}쪽의 초록은 「깨끗함」이 아니라 「안 봄」이다 (정본에 영어 꼴 없음 · 대표님 판정 대기)`);
+ok(blind.length + undeclared.length + pathMismatch.length <= 13,
+   `lang 으로 센 자리 ${blind.length}+${undeclared.length}+${pathMismatch.length}=${blind.length + undeclared.length + pathMismatch.length} — 늘면 사람이 본다 (글자 짐작 금지)`);
+
 
 // 되돌림 실증 — 진짜 주장을 넣으면 붉어야 한다
 {
@@ -124,6 +142,19 @@ ok(blind.length > 0 ? KR_ONLY.length > 0 : true,
      '되돌림 실증 ④: 글에 든 「세계 최초」는 붉다 (CSS 100% 는 안 센다)');
   ok(!probe('<div style="width:100%"><!-- 유일한 자리다 --></div>', '100%'),
      '되돌림 실증 ⑤: `style="width:100%"` 와 주석은 글이 아니다 — 안 센다');
+
+  /* ⑥ 글자로 짐작하면 구멍이 숨는다 — smartever 가 터치톡에서 실제로 밟은 자리다.
+   *    영어 쪽에 언어 전환 메뉴·꼬리말만 한글로 들어가도 「한글 비율」 판정은 「한국어 쪽」이라 하고
+   *    그 쪽은 [못 봄] 목록에서 사라진다. lang 은 속지 않는다. */
+  const mixed = '<html lang="en"><body><nav>한국어 | English</nav>'
+    + '<p>Dolby Atmos sound on board, the world first device.</p>'
+    + '<footer>이용약관 · 개인정보 처리방침 · 고객센터 · 회사소개 · 사업자정보</footer></body></html>';
+  const vt = visible(mixed);
+  const krRatio = (vt.match(/[가-힣]/g) || []).length / (vt.match(/[가-힣A-Za-z]/g) || []).length;
+  ok(krRatio >= 0.05, `되돌림 실증 ⑥-ⓐ: 꼬리말만 한글인 영어 쪽도 한글 비율 ${(krRatio * 100).toFixed(0)}% — 옛 판정은 「한국어 쪽」이라 하고 구멍을 숨긴다`);
+  ok(declaredLang(mixed) === 'en', '되돌림 실증 ⑥-ⓑ: 같은 쪽을 `<html lang>` 은 en 이라 한다 — 쪽이 스스로 밝힌 것만 믿는다');
+  ok(declaredLang('<html><body>x</body></html>') === null,
+     '되돌림 실증 ⑦: lang 이 없으면 null — 「한국어겠지」로 넘기지 않고 [밝히지 않음] 으로 센다');
 }
 
 console.log(`\n전부 통과 (${checks}건)`);
