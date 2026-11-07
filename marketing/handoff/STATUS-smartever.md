@@ -1,18 +1,16 @@
 # STATUS — smartever (스마트에버/터치톡 마케팅)
-갱신: 2026-11-07 18:15 (KST, 정기 교신)
+갱신: 2026-11-07 19:15 (KST, 정기 교신)
 
 ## 지금 하는 것
-- 받은함 미처리 0건 (claude-22 11-07 18:35 묶음 10줄 — 이미 [x] 상태로 도착, 요청 1건 처리)
+- 받은함 미처리 0건 (claude-22 11-07 19:10 묶음 10줄 — [x] 상태로 도착, 권고 3건 처리)
 
 ## 끝낸 것 (지난 교신 이후)
-- 🟢 **터치톡 9쪽 lang 실측(요청 처리)**: `lang` 빠진 쪽 **0** · 길↔lang 어긋남 **0** (ko 4 · en/es/ja/vi/zh-Hans 각 1, 모두 제 길과 일치). 시험은 lang 없으면 `?` 로 [못 봄] 에 넣으므로 「한국어 가정」 구멍 없음 · `location.replace` 되돌림 쪽 0
-- 🟢 **touchtok-site 에 정본 금지어 시험 세움** `tools/canon_words_check.py` (`23732dc`, 쪽 읽기만)
-  - `python3 tools/canon_words_check.py <raytok-site>/marketing/products`
-  - 쪽은 `git ls-files '*.html'`(9) · 낱말은 정본+`touchtok.json` 에서 읽음(words 76 · notice 37) · 보이는 글만
-  - 면제는 뜻(낱말 뒤 40자 안 부정 고지꼴)에 걸고 **상한 5건 · 매번 찍음** → 지금 5/5
-  - **[못 봄] 매번 찍음**: html lang 이 ko 아닌 5쪽(en·es·ja·vi·zh) — 0건은 「안 봄」
-  - 결과: 걸림 0 · 면제 5/5 · 통지 5 · 되돌림 실증 2건(「세계 최초」 넣으면 붉음 · 면제 6건이면 멈춤)
-- 공용 정본은 무수정(읽기만)
+- 🟢 **쪽 셈 나란히**: 터치톡 `git ls-files` **9** = 디스크 걸음(`.html` 로 끝나는 것 전부, 이름 거르개 없음) **9**. 이제 시험이 매번 둘을 찍고 **다르면 붉음**
+- 🟢 **`[밝히지 않음]` 칸 분리**(지금 0) — 옛 `?` 는 [못 봄] 에 섞여 있었음. lang 없는 쪽이 생기면 붉음
+- 🟢 **`[길↔lang 어긋남]` 칸 새로**(지금 0) — 언어 폴더는 손목록 말고 `build.py` LANGS 에서 읽음(5개 미만이면 멈춤)
+- 🟢 `build.py` 낱쪽 확인: 언어판은 전부 `<폴더>/index.html`, 낱쪽은 **`assets/og.html` 하나**(썸네일 찍는 쪽). `detail/source*.html` 2쪽은 손쪽. `ls-files` 로 세므로 셋 다 이미 들어옴
+- 되돌림 실증 3건: lang 지움→붉음 · `/en/` 에 lang=ko→붉음 · 추적 안 된 `stray.html`→붉음 / 원상 초록(걸림 0 · 면제 5/5 · 통지 5)
+- touchtok-site `0e70cfa` (`tools/canon_words_check.py` 1개). 쪽(HTML)·공용 정본·예약 무수정
 
 ## 막힌 것 / 대표님 결정이 필요한 것
 0. 🟡 서치콘솔 재제출 — raytok.kr · touchtok.kr 속성 등록 여부 **모름**. 로그인 없음 → 대표님
