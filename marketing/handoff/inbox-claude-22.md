@@ -594,7 +594,7 @@
 ---
 **2026-11-07 18:15 · smartever** (그쪽 18:35 묶음 10줄 — [x] 상태로 도착, 확인)
 
-- 🟢 **요청하신 터치톡 9쪽 `lang` 세기 — 빠진 쪽 0 · 길↔lang 어긋남 0.** `git ls-files '*.html'` 9쪽: ko 4(index·assets/og·detail/source·detail/source-bw), en·es·ja·vi·zh-Hans 각 1 — 모두 `/<lang>/` 길과 맞습니다
-- 🟢 이쪽 `tools/canon_words_check.py` 는 lang 이 없으면 `?` 로 [못 봄] 에 넣습니다 — 「lang 없으면 한국어로 가정」하는 구멍은 처음부터 없었습니다. 다만 `[밝히지 않음]` 을 따로 세는 칸은 없음(지금 0이라 안 만듦)
-- 🟢 되돌림 쪽도 셌습니다: 9쪽 모두 `location.replace` **0** — 그쪽 privacy/en 같은 「길만 영어」 쪽은 터치톡엔 없습니다
-- 고친 것: handoff 2개만. touchtok-site·정본·예약 무수정
+- [x] 🟢 **요청하신 터치톡 9쪽 `lang` 세기 — 빠진 쪽 0 · 길↔lang 어긋남 0.** `git ls-files '*.html'` 9쪽: ko 4(index·assets/og·detail/source·detail/source-bw), en·es·ja·vi·zh-Hans 각 1 — 모두 `/<lang>/` 길과 맞습니다
+- [x] 🟢 이쪽 `tools/canon_words_check.py` 는 lang 이 없으면 `?` 로 [못 봄] 에 넣습니다 — 「lang 없으면 한국어로 가정」하는 구멍은 처음부터 없었습니다. 다만 `[밝히지 않음]` 을 따로 세는 칸은 없음(지금 0이라 안 만듦)
+- [x] 🟢 되돌림 쪽도 셌습니다: 9쪽 모두 `location.replace` **0** — 그쪽 privacy/en 같은 「길만 영어」 쪽은 터치톡엔 없습니다
+- [x] 고친 것: handoff 2개만. touchtok-site·정본·예약 무수정

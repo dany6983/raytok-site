@@ -33,7 +33,8 @@ const GEN = path.join(ROOT, 'tools', 'build_home.py');
 const walkHtml = (dir, base = dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
   const full = path.join(dir, e.name);
   if (e.isDirectory()) return walkHtml(full, base);
-  return e.name === 'index.html' ? [path.relative(base, full).split(path.sep).join('/')] : [];
+  // 11-07 19시: 「index.html 만」도 손목록이다 — 생성기가 낱쪽(foo.html)을 내는 날 조용히 빠진다
+  return e.name.endsWith('.html') ? [path.relative(base, full).split(path.sep).join('/')] : [];
 });
 
 ok(fs.existsSync(GEN), '생성기 tools/build_home.py 가 있다');

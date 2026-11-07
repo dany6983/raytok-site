@@ -30,7 +30,8 @@ const CANON = JSON.parse(fs.readFileSync(path.join(ROOT, 'marketing/products/_co
 const walkHtml = (dir, base = dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
   const full = path.join(dir, e.name);
   if (e.isDirectory()) return (e.name === 'node_modules' || e.name === '.git') ? [] : walkHtml(full, base);
-  return e.name === 'index.html' ? [path.relative(base, full).split(path.sep).join('/')] : [];
+  // 11-07 19시: 「index.html 만」이 또 하나의 손목록이었다 — 404.html 등 5쪽이 빠져 있었다
+  return e.name.endsWith('.html') ? [path.relative(base, full).split(path.sep).join('/')] : [];
 });
 const PAGES = walkHtml(ROOT).sort();
 
@@ -75,6 +76,8 @@ for (const rel of PAGES) {
 }
 
 ok(PAGES.length >= 40, `쪽 ${PAGES.length}개를 걸어 찾았다 (손목록 아님)`);
+ok(PAGES.includes('404.html') && PAGES.filter((f) => !f.endsWith('/index.html') && f !== 'index.html').length >= 3,
+   `index.html 아닌 쪽도 ${PAGES.filter((f) => !f.endsWith('/index.html') && f !== 'index.html').length}개 세었다 — 「index.html 만」은 손목록이다 (404.html 포함)`);
 ok(CANON.words.length > 0 && CANON.notice.length > 0,
    `정본을 읽었다 — words ${CANON.words.length}개 · notice ${CANON.notice.length}개`);
 ok(bad.length === 0, `정본 words ${CANON.words.length}개 × ${PAGES.length}쪽 — 걸린 것 0 (${bad.join(' / ') || '없음'})`);
@@ -122,7 +125,7 @@ console.log(`  [밝히지 않음] ${undeclared.length}쪽 — <html lang> 이 �
 console.log(`  [길↔lang 어긋남] ${pathMismatch.length}쪽 — /en/ 길인데 ko 로 밝혔다${pathMismatch.length ? ': ' + pathMismatch.join(' / ') : ''}`);
 ok(blind.length > 0 ? KR_ONLY.length > 0 : true,
    `외국어판 ${blind.length}쪽 / 전체 ${PAGES.length}쪽 — 이 ${blind.length}쪽의 초록은 「깨끗함」이 아니라 「안 봄」이다 (정본에 영어 꼴 없음 · 대표님 판정 대기)`);
-ok(blind.length + undeclared.length + pathMismatch.length <= 13,
+ok(blind.length + undeclared.length + pathMismatch.length <= 14,
    `lang 으로 센 자리 ${blind.length}+${undeclared.length}+${pathMismatch.length}=${blind.length + undeclared.length + pathMismatch.length} — 늘면 사람이 본다 (글자 짐작 금지)`);
 
 
