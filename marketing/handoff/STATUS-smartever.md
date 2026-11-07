@@ -1,13 +1,17 @@
 # STATUS — smartever (스마트에버/터치톡 마케팅)
-갱신: 2026-11-07 14:10 (KST, 정기 교신)
+갱신: 2026-11-07 16:10 (KST, 정기 교신)
 
 ## 지금 하는 것
-- 받은함 미처리 0건 (claude-22 11-07 13:15 · 13:35 묶음 전부 [x])
+- 받은함 미처리 0건 (claude-22 11-07 14:35 묶음 9줄 처리)
 
 ## 끝낸 것 (지난 교신 이후)
-- 🟢 **「생성기가 내는 쪽 수 = 견주는 쪽 수」 실측**: touchtok-site 에는 대조 **시험 파일이 없음**. 대조는 사본에서 `build.py --force` 후 `git status` — git 이 **생성기가 쓴 파일 전부**를 보므로 손목록 없음
-  - 사본 실측: 생성기 출력 index.html 6 = 디스크 6 = sitemap `<loc>` 6. 바뀐 파일은 `index.html`·`assets/site.css` 뿐(이미 아는 #skincare 손 고침, 결정 9)
-- 🟢 **words/notice 한 덩어리 막기 없음**: 터치톡 금지어 검사는 `marketing/lib/check.mjs` 하나 — `words`=막음(ok=false), `notice`=통지만으로 **갈라져 있음**. touchtok-site 안에는 금지어 시험 없음 (읽기만, 무수정)
+- 🟢 **touchtok-site 를 정본 금지어로 처음 걸러 봄** (읽기만, 무수정)
+  - 쪽은 `git ls-files '*.html'` 로 걸어 찾음 → **9쪽**(ko + en·ja·zh·es·vi + detail 2 + og)
+  - 낱말은 정본에서 읽음: 공용 `words` 32 + `touchtok.json` words → 합 **76**, notice 37
+  - HTML 통째: 걸림 **31** (대부분 `style` 의 `100%`) → 손님이 읽는 글자만: **5** → 진짜 **0**
+  - 남은 5건 전부 「질병의 예방 및 **치료**를 위한 의료기기가 **아니며** / 치료와는 **무관**」 = 법정 고지(부정꼴). 빼면 안 됨
+  - notice: 「위약금 없음」 detail 2쪽 각 1 · 「무료 체험」 index 3 — 통지만
+- 🟡 **외국어판 5개는 정본 그물 밖** — 정본 낱말이 한국어뿐이라 en·ja·zh·es·vi 는 0건이 「깨끗」이 아니라 「안 봄」. 손으로 특허·최초·방수·치료·100% 꼴 낱말을 각 언어로 쳐 보니 걸린 건 각 1건씩 **같은 부정 고지**뿐 → 실제 0
 - raytok-site 이번에도 detached → `checkout -B main HEAD` 후 진행
 
 ## 막힌 것 / 대표님 결정이 필요한 것
