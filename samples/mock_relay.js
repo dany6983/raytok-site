@@ -184,10 +184,41 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
     if (room.att) attSend(room);
   }
 
+  /* 교육 확인 — relay/src/room.js `confirmFrom`·`leaveNotice` 와 같은 문(D-11) */
+  function confirmItems(room) { return Object.values(room.confirms || {}).sort((a, b) => a.at - b.at); }
+  function confirmFrom(room, ws, p) {
+    const reply = (o) => { try { ws.send(JSON.stringify(o)); } catch (_) {} };
+    if (p.trans || p.tr) return reply({ kind: 'confirm_error', why: 'p14_participant_translation_forbidden' });
+    if (!room.confirmOpen) return reply({ kind: 'confirm_error', why: 'closed' });
+    const m = room.listeners.get(ws) || {};
+    const dev = String(p.deviceId || m.dev || '').trim().slice(0, 64);
+    if (!dev) return reply({ kind: 'confirm_error', why: 'no_device' });
+    if (!room.confirms) room.confirms = {};
+    let item = room.confirms[dev];
+    if (!item) {
+      if (Object.keys(room.confirms).length >= 500) return reply({ kind: 'confirm_error', why: 'full' });
+      item = { dev, name: String(p.name || '').trim().slice(0, 60), lang: String(p.lang || m.lang || '').trim().slice(0, 16),
+               ua: String(p.ua || '').trim().slice(0, 40), at: Date.now() };
+      room.confirms[dev] = item;
+    }
+    reply({ kind: 'confirm_ok', at: item.at });
+    const msg = JSON.stringify({ kind: 'confirm', ...item });
+    for (const h of room.hosts) { try { h.send(msg); } catch (_) {} }
+  }
+  function leaveNotice(room, ws, m) {
+    const dev = m && m.dev;
+    if (!dev) return;
+    for (const [w, o] of room.listeners) if (w !== ws && o && o.dev === dev) return;
+    const msg = JSON.stringify({ kind: 'leave', dev, at: Date.now() });
+    for (const h of room.hosts) { try { h.send(msg); } catch (_) {} }
+  }
+
   // end:1 — dropLines: 끝 표시 한 줄만(숫자 요약만) 남긴다
   function endRoom(room, summary) {
     room.ended = true;
     room.att = null;
+    room.confirms = null;
+    room.confirmOpen = false;
     const mark = { end: 1 };
     if (summary && typeof summary === 'object') {
       const kept = {};
@@ -357,6 +388,9 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
       if (role === 'host') {
         room.hosts.add(ws);
         attSend(room, ws);
+        if (room.confirms && Object.keys(room.confirms).length) {
+          try { ws.send(JSON.stringify({ kind: 'confirm_list', items: confirmItems(room) })); } catch (_) {}
+        }
         if (room.askQueue && room.askQueue.length) {
           try { ws.send(JSON.stringify({ kind: 'ask_queue', queue: room.askQueue })); } catch (_) {}
         }
@@ -461,6 +495,7 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
           if (parsed) { hostReceived.push(parsed); room.received.push(parsed); }
           /* 원문이 간 **뒤에** 번역을 보낸다 — 늦어도 남는 쪽(R-15) */
           if (parsed && doRoomTr) roomTranslate(room, parsed);
+          if (parsed && (parsed.kind === 'confirm_open' || parsed.kind === 'confirm_close')) room.confirmOpen = parsed.kind === 'confirm_open';
           if (parsed && parsed.end) endRoom(room, parsed.summary);
         });
         ws.on('close', () => room.hosts.delete(ws));
@@ -468,6 +503,7 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
         for (const m of room.ring) { try { ws.send(m); } catch (_) {} }
         if (!room.ended) attJoin(room, ws);
         else room.listeners.set(ws, { lang: null, at: Date.now() });
+        if (room.confirmOpen) { try { ws.send(JSON.stringify({ kind: 'confirm_open' })); } catch (_) {} }
         if (room.askQueue && room.askQueue.length) {
           try {
             ws.send(JSON.stringify({
@@ -486,7 +522,9 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
           try {
             p = JSON.parse(s);
             if (p && p.hello && p.lang && room.att) attSetLang(room, ws, p.lang);
+            if (p && p.hello && typeof p.deviceId === 'string' && p.deviceId.trim() && room.listeners.get(ws)) room.listeners.get(ws).dev = p.deviceId.trim().slice(0, 64);
           } catch (_) {}
+          if (p && p.kind === 'confirm') { confirmFrom(room, ws, p); return; }
           if (p && (p.kind === 'ask' || p.kind === 'ask_req')) {
             if (p.trans || p.tr) {
               try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}
@@ -563,7 +601,7 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
           }
           for (const h of room.hosts) { try { h.send(s); } catch (_) {} }
         });
-        ws.on('close', () => { attLeave(room, ws); if (room.askOwner) room.askOwner.delete(ws); });
+        ws.on('close', () => { const m = room.listeners.get(ws); attLeave(room, ws); leaveNotice(room, ws, m); if (room.askOwner) room.askOwner.delete(ws); });
       }
     });
   });

@@ -3,8 +3,9 @@
 //   CHROME=<크롬 경로> 를 주면 그 브라우저를 쓴다.
 // 보는 것: ① 원고 줄 TTS — 기본은 안 읽음 / 청취자가 소리 단추를 켰으면 읽음 / 들은 줄(line)은 전과 같이 읽음
 //          ② 문단 3 + 건너뜀 1 → 끝내기 → 요약(참석·최대 동시·진행 시간·읽은/건너뛴 문단)
-//          ③ 리포트 내용 3 × 형식 3 — 원고 줄에 "(원고 n)", 끝에 "건너뛴 문단: …" (내려받은 파일을 읽어 본다)
-//          ④ 참석 CSV — BOM·CRLF·머리 + 한 사람 한 줄, 쉼표·따옴표·수식 글자 처리
+//          ③ (NOW 11-09 ⑤ 로 리포트 3×3 → 확인서) 붙임 2 강의 내용 = 나간 원고 줄만 · 확인서 인쇄 + 대조 JSON
+//             — 확인서 자체(숫자·QR·PDF 글꼴)는 samples/edu_cert_test.js 가 본다
+//          ④ 참석 CSV — BOM·CRLF·교육 정보 머리 + 열 머리 + 한 사람 한 줄, 쉼표·따옴표·수식 글자 처리
 //          ⑤ 방 닫기 — 릴레이의 기존 end:1 그대로 → 청취자 종료 화면, 릴레이 줄 삭제, 명단 메모리에서 삭제
 //          ⑥ 명단은 어디로도 나가지 않는다(/ws·HTTP·localStorage) · 바깥 요청 0건
 // 목업 릴레이는 samples/mock_relay.js (relay/src/room.js 와 같은 규칙).
@@ -204,14 +205,14 @@ const ttsStub = () => {
     return {
       exists: true, vis,
       inEnd: !!box.closest('#step-end'),
-      afterReportBtn: !!(prev && prev.id === 'btnReport'),
+      afterReportBtn: !!(prev && prev.id === 'btnCert'),
       state: (document.getElementById('postasrState') || {}).textContent || '',
       title: (box.querySelector('[data-t="acc_title"]') || {}).textContent || ''
     };
   });
   ok(accBox.exists && accBox.vis, '정확본 칸이 끝 화면에 **보인다** (기본 켬 — §24)');
   ok(accBox.inEnd && accBox.afterReportBtn,
-     '구조: #step-end 안, 「리포트 저장」 단추 **바로 다음 형제** (§12 구조 단언)');
+     '구조: #step-end 안, 「확인서 PDF 받기」 단추 **바로 다음 형제** (§12 구조 단언 — NOW 11-09 ⑤ 로 리포트 단추 자리를 이었다)');
   ok(accBox.title === '정확본', `칸 이름이 글자 표에서 나온다 (${accBox.title})`);
   ok(accBox.state.includes('아직 없음'),
      `지금 상태는 **아직 없음** — 그 길이 웹 강사 화면에 아직 없다. 지어낸 상태를 적지 않는다 (${accBox.state})`);
@@ -263,35 +264,17 @@ const ttsStub = () => {
   await host.click('#btnEnd');
   await host.waitForSelector('#step-end', { state: 'visible', timeout: 5000 });
 
-  // ── ③ 리포트 3 × 3 ──
-  const repOpts = await host.$$eval('#repLang option', els => els.map(e => e.value));
-  ok(repOpts.join(',') === 'en,ja', `리포트 언어 = 미리 번역이 실린 언어(en·ja) — 실패한 vi 는 없다 (${repOpts.join(',')})`);
-  // both × TXT (기본)
-  let f = await download(host, '#btnReport');
-  let body = f.buf.toString('utf8');
-  ok(/^raytok_\d{8}_\d{4}_en\.txt$/.test(f.name), `리포트 both·TXT 파일 이름 (${f.name})`);
-  ok(body.includes('(원고 1) 안전 교육을 시작하겠습니다.') && body.includes('(원고 2) 안전모를 반드시 착용하십시오.') && body.includes('(원고 3) 비상구 위치를 확인하세요.'), '리포트: 원고 줄 3개에 출처 "(원고 n)"');
-  ok(body.includes('[en] 안전 교육을 시작하겠습니다.') && body.includes('[en] 비상구 위치를 확인하세요.'), '리포트 both: 번역문(trans.en) 그대로');
-  ok(body.includes('Lines: 3'), '리포트: 줄 수 3');
-  ok(!body.includes('질문 있으면 손을 드세요.'), '리포트: 건너뛴 문단의 글은 본문에 없다');
-  ok(body.trimEnd().endsWith('건너뛴 문단: 4') && body.indexOf('건너뛴 문단: 4') > body.indexOf('(원고 3)'), '리포트: 본문 뒤에 "건너뛴 문단: 4"');
-  // src × DOC
-  await host.check('input[name="rep-content"][value="src"]');
-  await host.check('input[name="rep-format"][value="doc"]');
-  f = await download(host, '#btnReport');
-  body = f.buf.toString('utf8');
-  ok(/^raytok_\d{8}_\d{4}_src_en\.doc$/.test(f.name), `리포트 src·DOC 파일 이름 (${f.name})`);
-  ok(body.includes('(원고 2) 안전모를 반드시 착용하십시오.') && !body.includes('[en] '), '리포트 src·DOC: 출처 + 원문만(번역 없음)');
-  ok(body.includes('건너뛴 문단: 4</p>'), '리포트 DOC: 건너뛴 문단 한 줄');
-  // trans × TXT, 언어 ja
-  await host.selectOption('#repLang', 'ja');
-  await host.check('input[name="rep-content"][value="trans"]');
-  await host.check('input[name="rep-format"][value="txt"]');
-  f = await download(host, '#btnReport');
-  body = f.buf.toString('utf8');
-  ok(/^raytok_\d{8}_\d{4}_trans_ja\.txt$/.test(f.name), `리포트 trans·TXT 파일 이름 (${f.name})`);
-  ok(body.includes('(원고 1) [ja] 안전 교육을 시작하겠습니다.') && !body.includes(') 안전 교육을 시작하겠습니다.'), '리포트 trans: 출처 + 번역문만(trans.ja)');
-  // both × PDF — 인쇄 창 대신 인쇄에 넘긴 문서를 본다
+  // ── ③ 확인서 (NOW 11-09 ⑤ — 리포트 3×3 을 치웠다) ──
+  ok(!(await host.$('#btnReport')) && !(await host.$('#repLang')) && !(await host.$('input[name="rep-format"]')), '③ 리포트 3×3 단추·고르개는 없다(§5 치움)');
+  ok(await host.isDisabled('#btnCert'), '③ 확인 창이 열려 있는 동안 확인서 단추는 꺼져 있다');
+  await host.click('#btnCfClose');
+  await host.waitForFunction(() => !document.getElementById('btnCert').disabled, null, { timeout: 3000 });
+  await host.check('#chkCertContent');
+  const c2 = await host.evaluate(async () => { const c = await window.rtHostCert.build(); return { lines: c.model.lines, html: c.html }; });
+  ok(c2.lines.length === 3 && c2.lines.map(l => l.text).join('|') === '안전 교육을 시작하겠습니다.|안전모를 반드시 착용하십시오.|비상구 위치를 확인하세요.', '③ 붙임 2: 나간 원고 줄 3개(건너뛴 4번은 없다)');
+  ok(c2.lines[0].tr.en === '[en] 안전 교육을 시작하겠습니다.' && c2.lines[2].tr.ja === '[ja] 비상구 위치를 확인하세요.' && !('vi' in c2.lines[0].tr), '③ 붙임 2 번역문 = 이 폰의 검수 표(en·ja) — 실패한 vi 는 없다');
+  ok(c2.html.includes('[ja] 비상구 위치를 확인하세요.') && !c2.html.includes('질문 있으면 손을 드세요.'), '③ 확인서 붙임 2 에 번역 줄 · 건너뛴 문단 글 없음');
+  // 인쇄 창 대신 인쇄에 넘긴 문서를 본다
   await host.evaluate(() => {
     const orig = document.body.appendChild.bind(document.body);
     document.body.appendChild = (el) => {
@@ -300,13 +283,13 @@ const ttsStub = () => {
       return r;
     };
   });
-  await host.check('input[name="rep-content"][value="both"]');
-  await host.check('input[name="rep-format"][value="pdf"]');
-  await host.click('#btnReport');
+  let f = await download(host, '#btnCert');
+  ok(/^raytok_cert_RT-\d{8}-[A-Z0-9]{6}\.json$/.test(f.name) && JSON.parse(f.buf.toString('utf8')).ver === 1, `③ 확인서 → 진위 대조 JSON(v1) 받기 (${f.name})`);
   await host.waitForFunction(() => typeof window.__printed === 'string', null, { timeout: 5000 });
   const printed = await host.evaluate(() => window.__printed);
-  ok(printed.includes('(원고 3) 비상구 위치를 확인하세요.') && printed.includes('[ja] 비상구 위치를 확인하세요.') && printed.includes('건너뛴 문단: 4'), '리포트 both·PDF: 인쇄 문서에 출처·번역·건너뛴 문단');
+  ok(printed.includes('안전보건교육 실시 확인서') && printed.includes('붙임 1. 참석자 명단') && printed.includes('붙임 2. 강의 내용'), '③ 인쇄 문서 = 확인서(붙임 1·2)');
   await host.evaluate(() => { delete document.body.appendChild; });
+  await host.uncheck('#chkCertContent');
 
   // ── ⑤-0 방 닫기를 눌렀다가 취소 — CSV 를 아직 안 받았다고 알려 준다. 아무것도 바뀌지 않는다 ──
   dialogAnswer = 'dismiss';
@@ -322,10 +305,11 @@ const ttsStub = () => {
   const csv = f.buf.toString('utf8').slice(1);
   ok(csv.endsWith('\r\n') && !/[^\r]\n/.test(csv), '참석 CSV: 줄 끝 CRLF');
   const rows = csv.trimEnd().split('\r\n');
-  ok(rows[0] === '이름,언어,연결 분', `참석 CSV 머리 = 이름,언어,연결 분 (${rows[0]})`);
-  ok(rows.length === 3, `참석 CSV: 머리 + 참석자 한 사람 한 줄 = 3줄 (${rows.length})`);
-  ok(/^"김, ""철수""",en,\d+$/.test(rows[1]), `참석 CSV: 쉼표·따옴표 이름은 감싼다 · 연결 분은 숫자 (${rows[1]})`);
-  ok(/^'=SUM\(1\),vi,\d+$/.test(rows[2]), `참석 CSV: 수식 같은 이름은 ' 를 붙인다 · 언어는 마지막 것(vi) (${rows[2]})`);
+  ok(rows[0].startsWith('안전보건교육 실시 확인서,문서번호 RT-'), `참석 CSV 첫 줄 = 교육 정보 한 줄 (${rows[0].slice(0, 40)}…)`);
+  ok(rows[1] === '번호,성명,소속,언어,입장,퇴장,청취 시간(분),전자 확인', `참석 CSV 열 머리 = 확인서 붙임 1 과 같은 열 (${rows[1]})`);
+  ok(rows.length === 4, `참석 CSV: 머리 둘 + 참석자 한 사람 한 줄 = 4줄 (${rows.length})`);
+  ok(/^1,"김, ""철수""",,영어,\d\d:\d\d,\d\d:\d\d,\d+,미확인$/.test(rows[2]), `참석 CSV: 쉼표·따옴표 이름은 감싼다 · 청취 분은 숫자 (${rows[2]})`);
+  ok(/^2,'=SUM\(1\),,베트남어,\d\d:\d\d,\d\d:\d\d,\d+,미확인$/.test(rows[3]), `참석 CSV: 수식 같은 이름은 ' 를 붙인다 · 언어는 마지막 것(vi) (${rows[3]})`);
 
   // ⑥ 명단은 이 화면 밖으로 나가지 않는다
   ok(!JSON.stringify(hostReceived).includes('철수') && !JSON.stringify(hostReceived).includes('SUM'), '호스트가 /ws 로 보낸 글에 이름이 없다');
@@ -342,7 +326,7 @@ const ttsStub = () => {
   dialogAnswer = 'accept';
   await host.click('#btnCloseRoom');
   await host.waitForFunction(() => document.getElementById('endStatus').textContent.includes('방을 닫았습니다'), null, { timeout: 5000 });
-  ok(dialogs.length === 2 && !dialogs[1].includes('아직 받지 않았습니다'), '방 닫기 확인 창: CSV 를 받은 뒤에는 그 말이 없다');
+  ok(dialogs.length === 2 && !dialogs[1].includes('아직 받지 않았습니다'), '방 닫기 확인 창: 확인서·CSV 를 받은 뒤에는 그 말이 없다');
   const end = hostReceived.find(m => m.end);
   ok(end && Object.keys(end).sort().join(',') === 'end,summary' && end.end === 1, '방 닫기 = 릴레이의 기존 끝 메시지 {end:1, summary}');
   const finalMin = await host.evaluate(() => Math.round(live.finalSummary.durationMs / 60000));
@@ -366,10 +350,8 @@ const ttsStub = () => {
   ok(after.token === null, '방을 닫은 뒤 호스트 토큰을 지웠다');
   ok(after.csvDisabled && after.closeDisabled && !after.backVisible, '방을 닫은 뒤: 참석 CSV·방 닫기 단추 잠김, 돌아가기 없음');
   ok(after.att === '2', '방을 닫은 뒤에도 요약 숫자(참석 2)는 화면에 남는다');
-  // 리포트(원고 글 — 개인정보 아님)는 닫은 뒤에도 받을 수 있다
-  await host.check('input[name="rep-format"][value="txt"]');
-  f = await download(host, '#btnReport');
-  ok(f.buf.toString('utf8').includes('(원고 1) 안전 교육을 시작하겠습니다.'), '방을 닫은 뒤에도 리포트는 받을 수 있다');
+  // 확인서는 명단에서 나온다 — 명단을 지운 뒤에는 만들지 않는다
+  ok(await host.isDisabled('#btnCert') && (await host.evaluate(() => saveCert())) === false, '방을 닫은 뒤 확인서는 만들지 않는다(명단을 지웠다)');
   ok(await host.evaluate(() => saveCsv()) === false, '방을 닫은 뒤 참석 CSV 는 만들지 않는다');
 
   // ── 셈법(순수 함수) — 화면에서 바로 불러 본다 ──
@@ -386,7 +368,8 @@ const ttsStub = () => {
     rosterApplyAtt({ att: 1, now: 0, langs: { en: { now: 0 }, vi: { now: 0 } } }, 600000);          // 0명 → A·B 나감
     rosterJoin({ hello: 1, deviceId: 'a', name: 'A', lang: 'ja' }, 900000);                         // A 다시 들어옴(언어 바꿈)
     out.rows = rosterRows(1200000).map(r => `${r.name}/${r.lang}/${r.minutes}`).sort().join(' ');
-    out.csv = buildRosterCsv([{ name: 'x\ny', lang: 'en', minutes: 1 }, { name: '', lang: '', minutes: 0 }]);
+    out.csv = window.RayTokEduCert.certCsv(window.RayTokEduCert.buildCertModel({ edu: {}, code: '1', startedAt: 0, endedAt: 60000, confirms: {},
+      roster: [{ dev: 'x', name: 'x\ny', lang: 'en', joinedAt: [0], leftAt: [] }, { dev: 'y', name: '', lang: '', joinedAt: [1], leftAt: [] }] })).split('\r\n').slice(2).join('|');
     clearRoster();
     // 요약: 다시 읽은 문단은 한 번만 세고, 안 나간 문단은 전부 건너뛴 문단
     const keepP = paragraphs, keepS = live.sent;
@@ -400,7 +383,7 @@ const ttsStub = () => {
     return out;
   });
   ok(calc.rows === 'A/ja/15 B/en/9 C/vi/3', `연결 분: 구간 합 · 언어 0명일 때만 나감 처리 · 같은 기기는 한 줄 (${calc.rows})`);
-  ok(calc.csv === '﻿이름,언어,연결 분\r\n"x\ny",en,1\r\n,,0\r\n', '참석 CSV: 줄바꿈 든 칸은 감싸고, 빈 이름은 빈 칸');
+  ok(/^1,"x\ny",,en,\d\d:\d\d,\d\d:\d\d,1,미확인\|2,미기재,,,\d\d:\d\d,\d\d:\d\d,1,미확인\|$/.test(calc.csv), `참석 CSV: 줄바꿈 든 칸은 감싸고, 빈 이름은 「미기재」 (${JSON.stringify(calc.csv)})`);
   ok(calc.sum === '3/5 skip=3,5 lines=4 att=0', `요약 셈: 다시 읽은 문단 한 번 · 안 나간 문단은 건너뛴 문단 (${calc.sum})`);
   ok(calc.dur === '1:02:03', `진행 시간 표시 h:mm:ss (${calc.dur})`);
 
@@ -411,12 +394,12 @@ const ttsStub = () => {
     await en.goto(`${base}/web/host/?region=US&relay=${base}&lang=en`);
     const texts = await en.evaluate(() => ({
       end: document.getElementById('btnEnd').textContent, close: document.getElementById('btnCloseRoom').textContent,
-      csv: document.getElementById('btnCsv').textContent, head: buildRosterCsv([]),
+      csv: document.getElementById('btnCsv').textContent, cert: document.getElementById('btnCert').textContent,
       missing: Object.keys(HOST_STR.ko).filter(k => !HOST_STR.en[k]).concat(Object.keys(HOST_STR.en).filter(k => !HOST_STR.ko[k])),
       empty: [...document.querySelectorAll('[data-t]')].filter(el => !el.textContent.trim()).map(el => el.getAttribute('data-t'))
     }));
     ok(texts.end === 'Finish' && texts.close === 'Close room' && texts.csv === 'Download attendance CSV', '영어 화면: 끝내기·방 닫기·참석 CSV 단추 글');
-    ok(texts.head === '﻿Name,Language,Minutes connected\r\n', '영어 화면: 참석 CSV 머리');
+    ok(texts.cert === 'Download certificate PDF', '영어 화면: 확인서 단추 글(확인서 자체는 한국어 — NOW ③)');
     ok(texts.missing.length === 0 && texts.empty.length === 0, `글자 표 ko·en 빠짐 0 · 빈 data-t 0 (${texts.missing.concat(texts.empty).join(',')})`);
 
     // ── 릴레이와 끊긴 채로 방 닫기: 종료 신호를 못 보냈다고 말하고, 그래도 명단은 지우고, 다시 붙지 않는다 ──

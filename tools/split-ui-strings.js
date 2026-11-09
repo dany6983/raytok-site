@@ -34,7 +34,7 @@ const DICTS = [
  * 따로 낸다 — 첫 화면 gz 37KB 한도(first_load_bytes_test). 받는 곳은 `web/common/ask-mic.js` 하나.
  * 손 표는 그대로 한 파일이다(§4). 키 이름으로 고른다 — 이 줄과 ask-mic.js 가 같은 키를 본다.
  */
-const LATER = /^ask_(mic|err)_/;
+const LATER = /^(ask_(mic|err)_|cf_)/;   // + 교육 확인(cf_*, 11-09) — 강사가 「교육 끝」을 누른 뒤에만 보인다
 
 function sliceOf(dict, lang, pick = () => true) {
   const strings = {};

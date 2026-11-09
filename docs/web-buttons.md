@@ -26,7 +26,8 @@
 | btnAskSpeak (질문 소리) | — | 글자 토글 · localStorage raytok_ask_speak 0/1 |
 | btnEnd (강의 끝) | — (end 는 방 닫기 때) | #step-end 보임 · 재생 끔 |
 | btnBackLive (돌아가기) | — | #step-live 다시 |
-| btnReport (리포트 저장) | — | 파일 받기 1 |
+| btnCfClose (확인 지금 마감 · 11-09) | confirm_close | 마감됨 · 확인서 단추 켜짐 |
+| btnCert (확인서 PDF · 11-09, btnReport 대체) | — | 인쇄 창 + json 받기 1 |
 | btnCsv (명단 csv) | — | csv 받기 1 (닫은 뒤엔 꺼짐) |
 | btnCloseRoom (방 닫기) | end:1 · summary(숫자만) | 확인창 → 닫힘 · csv 꺼짐 · 돌아가기 숨김 |
 
@@ -50,6 +51,7 @@
 | btn-ask (✋ 질문, q:1 방) · btn-ask-cancel | — | 질문 창 열림/닫힘 |
 | btn-ask-submit (손들기 전송) | kind:ask (원문·언어만, P-14) | 창 닫힘 · 「✋ 대기」 |
 | btn-ask-mic (🎤 말하기, 지명됐을 때만) | 누르면 인식기 start 1회(사람 손가락 안에서) → kind:question (원문·언어만, P-14) | 「말씀하세요」·붉은 단추 → 끝나면 「다시 말하기」 · 안 되면 까닭 한 줄 (11-04, test:listener-ask-mic) |
+| btn-confirm (교육을 들었습니다 — 확인, confirm_open 때만 · 11-09) | kind:confirm (이름·언어·기기만 — 시각은 방이 찍음, P-14·P-16) | 「✔ 확인되었습니다 HH:MM」 · 이름 없으면 이름 먼저 (test:edu-cert) |
 | btn-save · btn-save-close | — | 저장 창 열림/닫힘 |
 | btn-save-execute (저장) | — | 파일 받기 1 |
 | btn-fullscreen (⛶) | — | 전체 화면 요청(기록 `fullscreen go=1`) |

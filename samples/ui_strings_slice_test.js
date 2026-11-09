@@ -16,7 +16,7 @@ const ok = (c, d) => { assert(c, d); checks++; console.log('  [PASS] ' + d); };
 
 const ROOT = path.join(__dirname, '..');
 const DICTS = [
-  { src: 'web/listener/ui-strings.json', out: 'web/listener/ui-strings', index: true, later: /^ask_(mic|err)_/ },
+  { src: 'web/listener/ui-strings.json', out: 'web/listener/ui-strings', index: true, later: /^(ask_(mic|err)_|cf_)/ },   // 11-09: 교육 확인 글자(cf_*)도 나중 조각 — tools/split-ui-strings.js LATER 와 같게
   { src: 'join/ui-strings.json', out: 'join/ui-strings', index: false }
 ];
 

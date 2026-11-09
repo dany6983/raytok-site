@@ -1744,6 +1744,20 @@
       };
     }
 
+    /* ── 교육 확인(전자 확인) — NOW 11-09 18:20 ② ──
+       강사 끝 화면이 열면(confirm_open) 「교육을 들었습니다 — 확인」 띠. 본체는 `web/common/edu-confirm.js` 를
+       **그때** 싣는다(첫 화면 37KB 한도 — ask-mic 와 같은 꼴). 열리기 전 다른 확인 글은 버린다.
+       본체는 이 쪽의 맨 위 이름(t·uiStrings·ws·roomCode·selectedLang·deviceId·myName)을 그대로 읽는다 — 넘길 꾸러미를
+       만들면 첫 화면이 37KB 를 넘는다(11-09 실측 +21B). 이름을 바꾸면 edu-confirm.js 의 cx() 도 같이(§4). */
+    let cfQ;
+    function cfOnMessage(m) {
+      if (window.rtEduConfirm) return rtEduConfirm.on(m);
+      if (cfQ) return cfQ.push(m);
+      if (m.kind != 'confirm_open') return;
+      cfQ = [m];
+      document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/edu-confirm.js', onload: () => cfQ.forEach((x) => rtEduConfirm.on(x)) }));
+    }
+
     function sendHello() {
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
       const langObj = langs.find(l => l.code === selectedLang);
@@ -1795,6 +1809,8 @@
         alert(t('alert_rejected', currentUiLang) + (msg.why || t('unknown_reason', currentUiLang)));
         return;
       }
+
+      if (/^confirm_/.test(msg.kind)) return cfOnMessage(msg);
 
       if ('end' in msg) {
         setStatus('status_ended', 'status-dot offline');

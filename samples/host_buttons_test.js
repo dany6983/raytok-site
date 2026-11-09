@@ -222,10 +222,17 @@ const PARAS = ['첫 문단입니다.', '두 번째 문단입니다.', '세 번�
     await page.click('#btnEnd');
     await page.waitForSelector('#step-end', { state: 'visible' });
 
-    ok(!(await page.isDisabled('#btnReport')), 'btnReport 는 보낸 문단이 있으면 켜진다');
-    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.click('#btnReport')]);
-    ok(!!dl.suggestedFilename(), `btnReport → 파일 받기 (${dl.suggestedFilename()})`);
-    rows.push(['btnReport (리포트 저장)', '—', '파일 받기 1']);
+    /* NOW 11-09 ⑤ — 리포트 3×3 단추(btnReport)를 확인서로 바꿨다. 끝 화면을 열면 근로자 확인 창이 열린다 */
+    ok(await page.isDisabled('#btnCert') && await page.isVisible('#btnCfClose'), 'btnCert 는 확인 창이 열린 동안 꺼짐 · btnCfClose 보임');
+    n = await mark(); await page.click('#btnCfClose');
+    await page.waitForFunction(() => !document.getElementById('btnCert').disabled, null, { timeout: 3000 });
+    s = await sentSince(n);
+    ok(s.some(m => m.kind === 'confirm_close') && !(await page.isVisible('#btnCfClose')), `btnCfClose → confirm_close 보냄 · 마감 단추 숨김 (${kinds(s).join(',')})`);
+    rows.push(['btnCfClose (확인 지금 마감)', 'confirm_close', '마감됨 · 확인서 단추 켜짐']);
+    await page.evaluate(() => { window.print = () => {}; });
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.click('#btnCert')]);
+    ok(/^raytok_cert_.*\.json$/.test(dl.suggestedFilename()), `btnCert → 확인서 인쇄 + 대조 json 받기 (${dl.suggestedFilename()})`);
+    rows.push(['btnCert (확인서 PDF)', '—', '인쇄 창 + json 받기 1']);
 
     const [dl2] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.click('#btnCsv')]);
     ok(/\.csv$/.test(dl2.suggestedFilename()), `btnCsv → 명단 csv 받기 (${dl2.suggestedFilename()})`);

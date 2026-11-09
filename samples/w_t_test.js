@@ -166,43 +166,34 @@ console.log('=== W-T 웹 강사 → 릴레이 → 청취 끝까지 시험 (P-16)
     ok(roomKr === 0, `W-T ⑤ 이 방은 해외 방(강사 isKR 아님) → welcome kr:0 (실제: ${roomKr})`);
     ok(notAllowed.length === 0, `W-T ⑤ 바깥 네트워크 요청 0건 확인 (실제: ${notAllowed.length}${notAllowed.length ? ' ' + notAllowed.slice(0, 3).join(' ') : ''})`);
 
-    // ── 7. W-T 조건 6: 리포트 3×3 세 형식 다운로드 + 참석 CSV + 방 닫기 뒤 줄 삭제 ──
-    console.log('\n[W-T 검증 6] 리포트 3×3 다운로드, 참석 CSV, 방 닫기 후 줄 삭제');
+    // ── 7. W-T 조건 6: (NOW 11-09 ⑤ 리포트 3×3 → 확인서) 확인서 인쇄 + 대조 JSON + 참석 CSV + 방 닫기 뒤 줄 삭제 ──
+    console.log('\n[W-T 검증 6] 확인서(붙임 2 강의 내용) 받기, 참석 CSV, 방 닫기 후 줄 삭제');
     await hostPage.click('#btnEnd');
     await hostPage.waitForSelector('#step-end', { state: 'visible' });
     ok(await hostPage.isVisible('#step-end'), '강의 끝 화면 진입');
 
-    // 리포트 1) TXT 다운로드
-    await hostPage.check('input[name="rep-format"][value="txt"]');
-    const [dlTxt] = await Promise.all([hostPage.waitForEvent('download'), hostPage.click('#btnReport')]);
-    ok(dlTxt.suggestedFilename().endsWith('.txt'), `W-T ⑥ 리포트 TXT 형식 정상 생성 (${dlTxt.suggestedFilename()})`);
-
-    // 리포트 2) DOC 다운로드
-    await hostPage.check('input[name="rep-format"][value="doc"]');
-    const [dlDoc] = await Promise.all([hostPage.waitForEvent('download'), hostPage.click('#btnReport')]);
-    ok(dlDoc.suggestedFilename().endsWith('.doc'), `W-T ⑥ 리포트 DOC 형식 정상 생성 (${dlDoc.suggestedFilename()})`);
-
-    // 리포트 3) PDF 인쇄 문서 생성 검증
+    // 확인 창을 바로 마감 → 확인서 단추가 켜진다
+    await hostPage.click('#btnCfClose');
+    await hostPage.waitForFunction(() => !document.getElementById('btnCert').disabled, null, { timeout: 3000 });
+    await hostPage.check('#chkCertContent');
     let pdfPrintHtml = null;
     await hostPage.exposeFunction('__capturePdfPrint', (html) => { pdfPrintHtml = html; });
     await hostPage.evaluate(() => {
-      const orig = window.RayTokReport.downloadReport;
-      window.RayTokReport.downloadReport = function (opts) {
-        if (opts.format === 'pdf') {
-          const html = window.RayTokReport.buildReportHtml(opts);
-          window.__capturePdfPrint(html);
-          return true;
-        }
-        return orig.apply(this, arguments);
+      const orig = document.body.appendChild.bind(document.body);
+      document.body.appendChild = (el) => {
+        const r = orig(el);
+        if (el.tagName === 'IFRAME') el.contentWindow.print = () => window.__capturePdfPrint(el.contentDocument.documentElement.outerHTML);
+        return r;
       };
     });
-    await hostPage.check('input[name="rep-format"][value="pdf"]');
-    await hostPage.click('#btnReport');
+    const [dlJson] = await Promise.all([hostPage.waitForEvent('download'), hostPage.click('#btnCert')]);
+    ok(dlJson.suggestedFilename().startsWith('raytok_cert_') && dlJson.suggestedFilename().endsWith('.json'), `W-T ⑥ 확인서 진위 대조 JSON 생성 (${dlJson.suggestedFilename()})`);
     const startWait = Date.now();
     while (!pdfPrintHtml && Date.now() - startWait < 5000) {
       await new Promise(r => setTimeout(r, 100));
     }
-    ok(pdfPrintHtml && pdfPrintHtml.includes('RayTok') && pdfPrintHtml.includes('안전 교육을 시작하겠습니다'), 'W-T ⑥ 리포트 PDF 인쇄 문서 정상 생성');
+    ok(pdfPrintHtml && pdfPrintHtml.includes('안전보건교육 실시 확인서') && pdfPrintHtml.includes('안전 교육을 시작하겠습니다'), 'W-T ⑥ 확인서 인쇄(PDF) 문서 — 붙임 2 에 강의 내용');
+    await hostPage.evaluate(() => { delete document.body.appendChild; });
 
     // 참석 CSV 다운로드
     const [dlCsv] = await Promise.all([hostPage.waitForEvent('download'), hostPage.click('#btnCsv')]);

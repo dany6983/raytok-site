@@ -363,6 +363,8 @@
     .end-row .end-key { color: var(--text-muted); min-width: 5.5em; }
     .end-row label.end-opt { display: inline-flex; align-items: center; gap: 5px; margin: 0; color: var(--text); font-size: 0.9rem; cursor: pointer; }
     .end-row select { width: auto; }
+    .edu-f { display: flex; flex-direction: column; gap: 3px; margin: 0; font-size: 0.82rem; color: var(--text-muted); }
+    .edu-f input, .edu-f select { width: 100%; box-sizing: border-box; }
   </style>
 
   <script src="../vendor/pdf.min.js"></script>
@@ -370,6 +372,7 @@
   <script src="../vendor/fflate.min.js"></script>
   <script src="../vendor/qrcode.js"></script>
   <script src="../common/report.js"></script>
+  <script src="../common/edu-cert.js"></script>
   <script src="../common/region.js"></script>   <!-- RULE: P-16 — 🎤 를 켤지 정하는 한 곳 -->
   <script src="../common/rec-lang.js"></script>   <!-- §6: 인식에 넘길 언어 태그는 표 한 곳에서 -->
   <script src="../common/script-follow.js"></script>   <!-- 10-20 판정 ⓐ: 원고를 읽는 중인 말은 안 보낸다 -->
@@ -517,6 +520,30 @@
         </div>
       </div>
 
+      <!-- ⑤ 교육 정보 (NOW 11-09 18:20 ①) — 끝 화면 「안전보건교육 실시 확인서」 머리에 들어간다.
+           빈칸이어도 방은 열린다(확인서에 「미기재」). 다음에 또 열 때 앞 값을 채워 둔다(이 기기 저장소 `raytok_edu_info`). -->
+      <div class="form-group" id="eduInfo" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 18px;">
+        <div style="font-weight: 600; font-size: 0.95rem;" data-t="edu_title"></div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;" data-t="edu_desc"></div>
+        <div class="edu-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px;">
+          <label class="edu-f"><span data-t="edu_site"></span><input id="eduSite" type="text" maxlength="80"></label>
+          <label class="edu-f"><span data-t="edu_place"></span><input id="eduPlace" type="text" maxlength="80"></label>
+          <label class="edu-f"><span data-t="edu_kind"></span><select id="eduKind">
+            <option value="" data-t="edu_kind_none"></option>
+            <option value="regular" data-t="edu_kind_regular"></option>
+            <option value="hire" data-t="edu_kind_hire"></option>
+            <option value="change" data-t="edu_kind_change"></option>
+            <option value="special" data-t="edu_kind_special"></option>
+            <option value="basic" data-t="edu_kind_basic"></option>
+          </select></label>
+          <label class="edu-f"><span data-t="edu_subject"></span><input id="eduSubject" type="text" maxlength="120"></label>
+          <label class="edu-f"><span data-t="edu_teacher"></span><input id="eduTeacher" type="text" maxlength="80"></label>
+          <label class="edu-f"><span data-t="edu_teacher_org"></span><input id="eduTeacherOrg" type="text" maxlength="80"></label>
+          <label class="edu-f"><span data-t="edu_teacher_title"></span><input id="eduTeacherTitle" type="text" maxlength="80"></label>
+          <label class="edu-f"><span data-t="edu_target"></span><input id="eduTarget" type="number" min="1" max="99999" inputmode="numeric"></label>
+        </div>
+      </div>
+
       <!-- 시작 칸 — ★ **늘 보인다**(대표님 10-22 17:35 ①, 정본 v1 §1 ②: 원고는 「선택」).
            10-22 까지는 `display:none` 으로 숨어 있다가 **사전 번역이 끝나야** 나왔다. 그래서
            원고 없이 바로 말하려는 강사에게 시작 단추가 **아예 없었다.** 머리글·설명은
@@ -614,7 +641,7 @@
       </div>
     </section>
 
-    <!-- 4단계: 끝 (L4-3) — 요약 · 리포트 3×3 · 참석 CSV · 방 닫기. 글자는 HOST_STR(ko·en) 한 곳에서 채운다(data-t) -->
+    <!-- 4단계: 끝 (L4-3 → NOW 11-09) — 요약 · 근로자 확인 n/N · 확인서 PDF · 명단 CSV · 방 닫기. 글자는 HOST_STR(ko·en) 한 곳에서 채운다(data-t) -->
     <section id="step-end" class="card" style="display: none;">
       <div class="card-title" data-t="end_title"></div>
       <div class="end-summary">
@@ -624,30 +651,27 @@
         <div><span data-t="sum_skip"></span><strong id="sumSkip">0</strong><span class="sum-sub" id="sumSkipList"></span></div>
       </div>
 
-      <div class="form-group">
-        <label data-t="rep_title"></label>
-        <div class="end-row">
-          <span class="end-key" data-t="rep_lang"></span>
-          <select id="repLang"></select>
+      <!-- ★ NOW 11-09 18:20 ②③④⑤ — 리포트 3종×3형식 + 참석 CSV 를 **확인서 PDF + 명단 CSV (+ 선택 붙임 2)** 로 바꿨다(§5 치움).
+           「교육 끝」(끝내기)을 누르면 근로자 화면에 확인 단추가 뜨고, 여기 확인 n/N 이 실시간으로 오른다.
+           3분 기다림 뒤(또는 「마감」) 확인서를 만든다. -->
+      <div class="form-group" id="certBox">
+        <label data-t="cf_title"></label>
+        <div class="end-row" style="font-size: 1.05rem;">
+          <span class="end-key" data-t="cf_count"></span>
+          <strong><span id="cfCount">0</span> / <span id="cfTotal">0</span></strong>
+          <span id="cfTimer" class="sum-sub" style="margin-left: 10px;"></span>
+          <button id="btnCfClose" class="btn secondary" style="margin-left: 10px;" data-t="cf_close_btn"></button>
         </div>
+        <div class="notice info" id="cfNote" data-t="cf_note"></div>
         <div class="end-row">
-          <span class="end-key" data-t="rep_content"></span>
-          <label class="end-opt"><input type="radio" name="rep-content" value="both" checked> <span data-t="rep_both"></span></label>
-          <label class="end-opt"><input type="radio" name="rep-content" value="src"> <span data-t="rep_src"></span></label>
-          <label class="end-opt"><input type="radio" name="rep-content" value="trans"> <span data-t="rep_trans"></span></label>
+          <label class="end-opt"><input type="checkbox" id="chkCertContent"> <span data-t="cert_content"></span></label>
         </div>
-        <div class="end-row">
-          <span class="end-key" data-t="rep_format"></span>
-          <label class="end-opt"><input type="radio" name="rep-format" value="txt" checked> TXT</label>
-          <label class="end-opt"><input type="radio" name="rep-format" value="pdf"> PDF</label>
-          <label class="end-opt"><input type="radio" name="rep-format" value="doc"> DOC</label>
-        </div>
-        <button id="btnReport" class="btn" data-t="rep_save"></button>
+        <button id="btnCert" class="btn" data-t="cert_btn"></button>
 
         <!-- B 31 사후 정확본 자리 (마스터 NOW). **꺼진 스위치면 이 칸이 아예 없다.**
              상태는 지어내지 않는다 — 앱·Desk 쪽에서 올 때 처리 중/끝으로 바뀐다.
              (방법은 적지 않는다, §9 — 비공개 설계: raytok-native1/docs/design/post-asr.md)
-             구조: #step-end > .form-group(리포트) > #postasrBox (btnReport 바로 다음 형제) -->
+             구조: #step-end > .form-group(확인서) > #postasrBox (btnCert 바로 다음 형제) -->
         <div id="postasrBox" style="display: none; margin-top: 14px; padding: 10px 12px; background: rgba(21, 128, 61, 0.06); border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem;">
           <strong data-t="acc_title"></strong>
           <span id="postasrState" style="margin-left: 6px; color: var(--text-muted);"></span>
@@ -1293,6 +1317,7 @@
     async function handleFile(file) {
       if (!file) return;
       const name = file.name || '';
+      eduSubjectFromFile(name);
       const ext = name.split('.').pop().toLowerCase();
 
       // 옛 .doc 및 .hwp 바이너리 차단 안내 (L3, L3-2 규칙)
@@ -1668,6 +1693,9 @@
       closed: false,      // 방을 닫았다
       relayEnded: false,  // 릴레이가 먼저 끝냈다(무음 정지 등)
       csvSaved: false,
+      certSaved: false,   // 확인서 PDF 를 받았다(닫기 경고 — NOW 11-09 ⑤)
+      confirms: {},       // 근로자 전자 확인 {dev:{dev,name,lang,at}} — 방이 시각을 찍어 준다. 메모리만, 방을 닫으면 지운다
+      cf: null,           // 확인 창 {openAt, closedAt} — 끝 화면에서 열고 3분 뒤(또는 「지금 마감」) 닫는다
       finalSummary: null  // 방을 닫을 때의 요약(숫자뿐) — 명단을 지운 뒤에도 화면 숫자가 남게
     };
 
@@ -2549,6 +2577,19 @@
         }
         return;
       }
+      /* 교육 확인 (NOW 11-09 ②) — 방이 시각을 찍은 전자 확인 · 강사 화면이 다시 붙으면 목록째 온다 */
+      if (msg.kind === 'confirm' || msg.kind === 'confirm_list') {
+        for (const c of (msg.kind === 'confirm' ? [msg] : (Array.isArray(msg.items) ? msg.items : []))) cfAdd(c);
+        if (live.ended) renderEnd();
+        return;
+      }
+      /* 한 사람이 나갔다(기기 번호만) — 전에는 「그 언어에 0명」일 때만 퇴장을 알았다. */
+      if (msg.kind === 'leave' && msg.dev) {
+        const p = live.roster['d:' + String(msg.dev).slice(0, 64)];
+        if (p && rosterIsOpen(p)) p.leftAt.push(Date.now());
+        if (live.ended) renderEnd();
+        return;
+      }
       if (msg.hello) {
         // 청취자 hello: 이름·언어는 이 화면에만 둔다(서버 저장 없음). welcome 으로 답한다.
         rosterJoin(msg, Date.now());
@@ -2921,6 +2962,10 @@
         live.closed = false;
         live.relayEnded = false;
         live.csvSaved = false;
+        live.certSaved = false;
+        live.confirms = {};
+        cfStopTimer();
+        live.cf = null;
         live.finalSummary = null;
         stepPrepare.style.display = 'none';
         stepLive.style.display = 'block';
@@ -3081,26 +3126,41 @@
         sum_dur: '진행 시간',
         sum_read: '읽은 문단',
         sum_skip: '건너뛴 문단',
-        rep_title: '리포트 저장 (내용 3 × 형식 3)',
-        rep_lang: '번역 언어',
-        rep_content: '내용',
-        rep_both: '원문/번역문',
-        rep_src: '원문만',
-        rep_trans: '번역문만',
-        rep_format: '형식',
-        rep_save: '리포트 저장',
-        rep_none: '보낸 원고 문단이 없어 리포트를 만들지 않았습니다.',
+        edu_title: '교육 정보 (확인서 머리에 들어갑니다)',
+        edu_desc: '비워 두어도 방은 열립니다 — 확인서에 「미기재」로 적힙니다. 이 기기에 저장되어 다음에 채워 둡니다.',
+        edu_site: '사업장명',
+        edu_place: '교육 장소',
+        edu_kind: '교육 종류',
+        edu_kind_none: '— 고르기 —',
+        edu_kind_regular: '정기교육',
+        edu_kind_hire: '채용 시 교육',
+        edu_kind_change: '작업내용 변경 시 교육',
+        edu_kind_special: '특별교육',
+        edu_kind_basic: '기초안전보건교육(외국인)',
+        edu_subject: '교육 과목',
+        edu_teacher: '강사 성명',
+        edu_teacher_org: '강사 소속',
+        edu_teacher_title: '강사 직위',
+        edu_target: '대상 인원 (선택)',
+        cf_title: '근로자 확인 (전자 확인)',
+        cf_count: '확인',
+        cf_timer: '마감까지 {t}',
+        cf_closed: '마감됨',
+        cf_close_btn: '지금 마감',
+        cf_note: '근로자 화면에 「교육을 들었습니다 — 확인」 단추가 떴습니다. 3분 뒤(또는 「지금 마감」) 확인서를 만들 수 있습니다.',
+        cert_content: '붙임 2 강의 내용(원문·번역) 넣기',
+        cert_btn: '확인서 PDF 받기',
+        cert_wait: '마감 뒤에 확인서를 만들 수 있습니다.',
+        cert_print: '인쇄 창에서 「PDF로 저장」을 고르세요. 진위 대조 파일(.json)도 같이 받았습니다.',
+        close_confirm_cert: '확인서 PDF 를 아직 받지 않았습니다.',
         acc_title: '정확본',
         acc_none: '아직 없음 — 앱·Desk 쪽에서 옵니다',
         acc_running: '처리 중',
         acc_done: '끝',
         src_script: '원고',
         csv_title: '참석 명단',
-        csv_note: '명단(이름·언어·연결 분)은 이 브라우저 메모리에만 있습니다. 서버에 저장하지 않으며 방을 닫으면 지워집니다 — 필요하면 닫기 전에 받으세요. 연결 분은 처음 들어온 때부터 잽니다(중간에 나간 시각은 같은 언어 청취자가 모두 나갔을 때만 압니다).',
+        csv_note: '명단(이름·언어·입장·퇴장·청취 분·전자 확인)은 이 브라우저 메모리에만 있습니다. 방을 닫으면 지워집니다 — 닫기 전에 확인서와 CSV 를 받으세요. 확인서의 붙임 1 과 같은 열입니다.',
         csv_btn: '참석 CSV 받기',
-        csv_name: '이름',
-        csv_lang: '언어',
-        csv_min: '연결 분',
         btn_back: '◀ 진행으로 돌아가기',
         btn_close: '방 닫기',
         close_confirm: '방을 닫으면 청취자 화면이 종료되고 참석 명단이 지워집니다. 닫을까요?',
@@ -3243,26 +3303,41 @@
         sum_dur: 'Duration',
         sum_read: 'Paragraphs read',
         sum_skip: 'Skipped paragraphs',
-        rep_title: 'Save report (3 contents × 3 formats)',
-        rep_lang: 'Translation language',
-        rep_content: 'Content',
-        rep_both: 'Source + translation',
-        rep_src: 'Source only',
-        rep_trans: 'Translation only',
-        rep_format: 'Format',
-        rep_save: 'Save report',
-        rep_none: 'No script paragraph was sent, so no report was made.',
+        edu_title: 'Training details (printed on the certificate)',
+        edu_desc: 'You can leave these blank — the certificate will say "not entered". Saved on this device and filled in next time.',
+        edu_site: 'Workplace',
+        edu_place: 'Training location',
+        edu_kind: 'Training type',
+        edu_kind_none: '— Choose —',
+        edu_kind_regular: 'Regular training',
+        edu_kind_hire: 'On hiring',
+        edu_kind_change: 'On change of work',
+        edu_kind_special: 'Special training',
+        edu_kind_basic: 'Basic safety training (foreign workers)',
+        edu_subject: 'Subject',
+        edu_teacher: 'Instructor name',
+        edu_teacher_org: 'Instructor organization',
+        edu_teacher_title: 'Instructor position',
+        edu_target: 'Expected attendees (optional)',
+        cf_title: 'Worker confirmation (electronic)',
+        cf_count: 'Confirmed',
+        cf_timer: '{t} left',
+        cf_closed: 'Closed',
+        cf_close_btn: 'Close now',
+        cf_note: 'Workers now see an "I attended the training — Confirm" button. After 3 minutes (or "Close now") you can make the certificate.',
+        cert_content: 'Include annex 2: lecture content (source and translation)',
+        cert_btn: 'Download certificate PDF',
+        cert_wait: 'The certificate can be made after closing.',
+        cert_print: 'Choose "Save as PDF" in the print window. The verification file (.json) was downloaded too.',
+        close_confirm_cert: 'You have not downloaded the certificate PDF yet.',
         acc_title: 'Accurate version',
         acc_none: 'Not yet — it comes from the app or Desk',
         acc_running: 'Processing',
         acc_done: 'Done',
         src_script: 'Script',
         csv_title: 'Attendance',
-        csv_note: 'The roster (name, language, minutes connected) exists only in this browser\'s memory. It is not stored on the server and is erased when you close the room — download it first if you need it. Minutes are counted from first join (a leave time is known only when every listener of that language has left).',
+        csv_note: 'The roster (name, language, join, leave, minutes listened, electronic confirmation) exists only in this browser\'s memory and is erased when you close the room — download the certificate and the CSV first. Same columns as annex 1 of the certificate.',
         csv_btn: 'Download attendance CSV',
-        csv_name: 'Name',
-        csv_lang: 'Language',
-        csv_min: 'Minutes connected',
         btn_back: '◀ Back to session',
         btn_close: 'Close room',
         close_confirm: 'Closing the room ends the listeners\' screens and erases the attendance roster. Close it?',
@@ -3317,6 +3392,7 @@
       const name = String(msg.name || '').trim().slice(0, NAME_MAX);
       if (name) p.name = name;                       // 빈 이름으로 덮지 않는다
       if (msg.lang) p.lang = String(msg.lang).slice(0, 16);
+      if (msg.deviceId) p.dev = String(msg.deviceId).slice(0, 64);   // 퇴장(leave)·전자 확인(confirm)을 짝지을 열쇠
       if (!rosterIsOpen(p)) p.joinedAt.push(at);     // 닫혀 있었으면(다시 들어옴) 새 구간
     }
     function rosterApplyAtt(a, at) {
@@ -3346,17 +3422,7 @@
     }
     function clearRoster() { live.roster = {}; }
 
-    // CSV: BOM(윈도우 엑셀 한글) · CRLF · RFC 4180. 이름은 청취자가 적은 글이라 = + - @ 로 시작하면 ' 를 붙여 수식으로 읽히지 않게 한다.
-    function csvCell(v) {
-      let c = String(v == null ? '' : v);
-      if (/^[=+\-@\t\r]/.test(c)) c = "'" + c;
-      return /[",\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
-    }
-    function buildRosterCsv(rows) {
-      const out = [[T('csv_name'), T('csv_lang'), T('csv_min')].map(csvCell).join(',')];
-      for (const r of rows) out.push([r.name, r.lang, r.minutes].map(csvCell).join(','));
-      return '﻿' + out.join('\r\n') + '\r\n';
-    }
+    // CSV 는 확인서와 같은 한 벌에서 나온다 — web/common/edu-cert.js certCsv (BOM · CRLF · 수식 글자 막음)
 
     // ── 요약: 화면 숫자와 파일(리포트·CSV)이 같은 한 벌에서 나온다 ──
     // 읽은 문단 = script 가 실제로 나간 문단(중복 없이). 건너뛴 문단 = 나가지 않은 문단 전부(건너뜀 단추 + 끝까지 안 간 것) — 앱 리포트와 같은 뜻.
@@ -3447,42 +3513,123 @@
     }
     window.rtHostLedger = { on: LEDGER_ON, key: ledgerKey, read: ledgerRead, add: ledgerAdd,
                             reportLines: () => reportLines(), forgetMemory: () => { live.sent = []; } };
-    function reportFooter(skipped) {
-      return skipped.length ? [`${T('sum_skip')}: ${skipped.join(', ')}`] : [];
-    }
-    function reportLangCodes() {
-      const set = new Set();
-      for (const m of reportSource()) for (const k of Object.keys(paraTransOf(m.para))) set.add(k);
-      if (!set.size) for (const k of activeTargets()) set.add(k);
-      if (!set.size) set.add('en');
-      return [...set];
-    }
-
     const stepEnd = document.getElementById('step-end');
     const endStatus = document.getElementById('endStatus');
-    const repLang = document.getElementById('repLang');
     const btnEnd = document.getElementById('btnEnd');
-    const btnReport = document.getElementById('btnReport');
+    const btnCert = document.getElementById('btnCert');
+    const btnCfClose = document.getElementById('btnCfClose');
     const btnCsv = document.getElementById('btnCsv');
     const btnBackLive = document.getElementById('btnBackLive');
     const btnCloseRoom = document.getElementById('btnCloseRoom');
 
-    function checkedValue(name, fallback) {
-      const el = document.querySelector(`input[name="${name}"]:checked`);
-      return el ? el.value : fallback;
+    /* ── 교육 정보 (NOW 11-09 ①) — 이 기기 저장소 한 곳(`raytok_edu_info`). 읽는 곳 eduRead · 쓰는 곳 eduSave ── */
+    const EDU_KEY = 'raytok_edu_info';
+    const EDU_IDS = { site: 'eduSite', place: 'eduPlace', kind: 'eduKind', subject: 'eduSubject', teacher: 'eduTeacher',
+                      teacherOrg: 'eduTeacherOrg', teacherTitle: 'eduTeacherTitle', target: 'eduTarget' };
+    function eduRead() {
+      const o = {};
+      for (const [k, id] of Object.entries(EDU_IDS)) { const el = document.getElementById(id); o[k] = el ? el.value : ''; }
+      return window.RayTokEduCert ? window.RayTokEduCert.normEdu(o) : o;
+    }
+    function eduSave() {
+      try { localStorage.setItem(EDU_KEY, JSON.stringify(eduRead())); } catch (_) {}   // 통째로 쓴다(D-19)
+    }
+    function eduLoad() {
+      let o = null;
+      try { o = JSON.parse(localStorage.getItem(EDU_KEY) || 'null'); } catch (_) { o = null; }
+      if (!o || typeof o !== 'object') return;
+      for (const [k, id] of Object.entries(EDU_IDS)) { const el = document.getElementById(id); if (el && typeof o[k] === 'string') el.value = o[k]; }
+    }
+    /* 원고를 올리면 과목이 비었을 때만 파일 이름으로 채운다 — 강사가 적은 것은 덮지 않는다 */
+    function eduSubjectFromFile(name) {
+      const el = document.getElementById('eduSubject');
+      if (!el || el.value.trim() || !name) return;
+      el.value = String(name).replace(/\.[^.]+$/, '').slice(0, 120);
+      eduSave();
+    }
+    for (const id of Object.values(EDU_IDS)) {
+      const el = document.getElementById(id);
+      if (el) { el.addEventListener('change', eduSave); el.addEventListener('input', eduSave); }
+    }
+    eduLoad();
+
+    /* ── 근로자 확인 창 (NOW 11-09 ②) ──
+       끝 화면으로 가면 `{kind:'confirm_open'}` → 근로자 화면에 확인 단추. 3분 뒤(또는 「지금 마감」) `confirm_close`.
+       스위치 `?cfwait=<초>` (0~600, 기본 180) — 시험이 기다리지 않게. */
+    const CF_WAIT_MS = (() => { const v = Number(urlParams.get('cfwait')); return urlParams.has('cfwait') && Number.isFinite(v) && v >= 0 && v <= 600 ? v * 1000 : 180000; })();
+    let cfTimerId = null;
+    function cfStopTimer() { if (cfTimerId) { clearInterval(cfTimerId); cfTimerId = null; } }
+    function cfAdd(c) {
+      if (!c || !c.dev) return;
+      const dev = String(c.dev).slice(0, 64);
+      if (live.confirms[dev]) return;                      // 한 기기 한 번 — 처음 시각이 남는다(방과 같은 규칙)
+      live.confirms[dev] = { dev, name: String(c.name || '').slice(0, 60), lang: String(c.lang || '').slice(0, 16), at: Number(c.at) || Date.now() };
+      const p = live.roster['d:' + dev];
+      if (p && !p.name && c.name) p.name = String(c.name).trim().slice(0, NAME_MAX);   // 확인 때 처음 적은 이름
+    }
+    function cfOpen() {
+      if (live.closed || live.relayEnded) return;
+      if (live.cf) return;
+      live.cf = { openAt: Date.now(), closedAt: null };
+      wsSend({ kind: 'confirm_open' });
+      cfStopTimer();
+      cfTimerId = setInterval(() => {
+        if (!live.cf || live.cf.closedAt) { cfStopTimer(); return; }
+        if (Date.now() - live.cf.openAt >= CF_WAIT_MS) cfClose('timer');
+        else renderEnd();
+      }, CF_WAIT_MS < 2000 ? 100 : 1000);
+    }
+    function cfClose(why) {
+      if (!live.cf || live.cf.closedAt) return;
+      live.cf.closedAt = Date.now();
+      live.cf.why = why || 'host';
+      cfStopTimer();
+      wsSend({ kind: 'confirm_close' });
+      renderEnd();
+    }
+    /* 진행으로 돌아가면 창을 닫고 비운다 — 다시 「끝내기」를 누르면 새로 연다(받은 확인은 그대로 둔다) */
+    function cfCancel() {
+      const wasOpen = live.cf && !live.cf.closedAt;
+      cfStopTimer();
+      live.cf = null;
+      if (wasOpen) wsSend({ kind: 'confirm_close' });
     }
 
-    function fillReportLangs() {
-      const keep = repLang.value;
-      repLang.innerHTML = '';
-      for (const code of reportLangCodes()) {
-        const info = targetLangs.find(l => l.code === code);
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = langName(info, code);
-        repLang.appendChild(opt);
+    /* 확인서 한 벌 — 화면 n/N · PDF · CSV · JSON 이 모두 여기서 나온다 (web/common/edu-cert.js) */
+    function rosterForCert() {
+      return Object.entries(live.roster).map(([k, p]) => ({
+        dev: p.dev || (k.startsWith('d:') ? k.slice(2) : ''), name: p.name, lang: p.lang,
+        joinedAt: p.joinedAt.slice(), leftAt: p.leftAt.slice()
+      }));
+    }
+    function certLangName(code) {
+      const info = targetLangs.find(l => l.code === code);
+      return info ? String(info.name).replace(/\s*\(.*\)\s*$/, '') : code;   // 확인서는 한국어 — 「베트남어」
+    }
+    function certModel(withLines) {
+      return window.RayTokEduCert.buildCertModel({
+        edu: eduRead(), code: live.code, startedAt: live.startedAt, endedAt: live.endedAt || Date.now(),
+        roster: rosterForCert(), confirms: live.confirms, langName: certLangName, srcLang: SRC_LANG,
+        lines: withLines ? reportLines().map(l => ({ at: l.at, text: l.text, tr: l.tr })) : null
+      });
+    }
+    function fmtLeft(ms) {
+      const sec = Math.max(0, Math.ceil(ms / 1000));
+      return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+    }
+    function renderCf() {
+      const closedNoRoster = live.closed;
+      const m = closedNoRoster ? null : certModel(false);
+      if (m) {
+        document.getElementById('cfCount').textContent = m.confirmed;
+        document.getElementById('cfTotal').textContent = m.present;
       }
-      if (keep && [...repLang.options].some(o => o.value === keep)) repLang.value = keep;
+      const timer = document.getElementById('cfTimer');
+      const open = !!(live.cf && !live.cf.closedAt);
+      if (open) timer.textContent = T('cf_timer').replace('{t}', fmtLeft(CF_WAIT_MS - (Date.now() - live.cf.openAt)));
+      else timer.textContent = (live.cf && live.cf.closedAt) ? T('cf_closed') : '';
+      btnCfClose.style.display = open ? '' : 'none';
+      btnCert.disabled = !(live.cf && live.cf.closedAt) || live.closed;
     }
 
     function renderEnd() {
@@ -3494,7 +3641,7 @@
       document.getElementById('sumTotal').textContent = s.total;
       document.getElementById('sumSkip').textContent = s.skipped.length;
       document.getElementById('sumSkipList').textContent = s.skipped.length ? s.skipped.join(', ') : '';
-      btnReport.disabled = reportSource().length === 0;   // ② 원장까지 본다
+      renderCf();
       btnCsv.disabled = live.closed;
       btnCloseRoom.disabled = live.closed;
       btnBackLive.style.display = (live.closed || live.relayEnded) ? 'none' : '';
@@ -3539,7 +3686,7 @@
       stepLive.style.display = 'none';
       stepEnd.style.display = 'block';
       endStatus.textContent = '';
-      fillReportLangs();
+      cfOpen();
       renderEnd();
     }
 
@@ -3547,6 +3694,7 @@
       if (live.closed || live.relayEnded) return;
       live.ended = false;
       live.endedAt = null;
+      cfCancel();
       stepEnd.style.display = 'none';
       stepLive.style.display = 'block';
       renderLiveSrcLang();
@@ -3554,34 +3702,8 @@
       renderLive();
     }
 
-    function saveReport() {
-      const lines = reportLines();
-      if (!lines.length) { endStatus.textContent = T('rep_none'); return false; }
-      const s = live.finalSummary || sessionSummary(Date.now());
-      const code = repLang.value || reportLangCodes()[0];
-      const info = targetLangs.find(l => l.code === code);
-      return window.RayTokReport.downloadReport({
-        lines,
-        srcLang: SRC_LANG,
-        targetLang: code,
-        langName: langName(info, code),
-        contentMode: checkedValue('rep-content', 'both'),
-        format: checkedValue('rep-format', 'txt'),
-        isRtl: !!(info && info.rtl),
-        footer: reportFooter(s.skipped),
-        /* 스위치가 꺼졌거나 상태가 없으면 **넘기지 않는다** — 그러면 리포트에 그 줄이 없다
-           (web/common/report.js: accurate 가 없으면 머리글 한 줄을 안 넣는다). */
-        accurate: (postAsrOn() && live.postasr && live.postasr.state) ? live.postasr : null
-      });
-    }
-
-    function saveCsv() {
-      if (live.closed) return false;   // 닫은 뒤에는 명단이 없다
-      const s = sessionSummary(Date.now());
-      const d = new Date(live.startedAt || Date.now());
-      const p2 = window.RayTokReport.pad2;
-      const filename = `raytok_${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}_roster_${UI_LANG}.csv`;
-      const blob = new Blob([buildRosterCsv(s.rows)], { type: 'text/csv;charset=utf-8' });
+    function downloadBlob(text, filename, type) {
+      const blob = new Blob([text], { type });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -3590,6 +3712,58 @@
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+    /* 인쇄 창 = PDF (A4). 웹에서 한글 글꼴을 싣지 않고도 깨지지 않는 길 — 기기 글꼴로 그린다. */
+    function printHtml(html) {
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      document.body.appendChild(iframe);
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(html);
+      iframe.contentDocument.close();
+      setTimeout(() => {
+        try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (err) { console.error('cert print error:', err); }
+        finally { setTimeout(() => iframe.remove(), 2000); }
+      }, 250);
+    }
+    /* 확인서 = 인쇄(PDF) + 진위 대조 JSON(v1 체인, 마지막 해시가 QR). 만든 한 벌은 window.rtHostCert.last() 로 본다(시험). */
+    let certLast = null;
+    async function buildCert() {
+      const C = window.RayTokEduCert;
+      const chk = document.getElementById('chkCertContent');
+      const m = certModel(!!(chk && chk.checked));
+      const chain = await C.buildChain(m, { roster: rosterForCert(), confirms: live.confirms, closedAt: live.cf && live.cf.closedAt });
+      const verifyUrl = new URL('../verify/', location.href).href + '#h=' + chain.last;
+      let qrSvg = '';
+      if (typeof qrcode === 'function') {
+        const q = qrcode(0, 'M');
+        q.addData(verifyUrl);
+        q.make();
+        qrSvg = q.createSvgTag({ cellSize: 3, margin: 1, scalable: true });
+      }
+      return { model: m, chain, verifyUrl, html: C.certHtml(m, { qrSvg, last: chain.last, verifyUrl }) };
+    }
+    async function saveCert() {
+      if (live.closed) return false;
+      if (!(live.cf && live.cf.closedAt)) { endStatus.textContent = T('cert_wait'); return false; }
+      const c = await buildCert();
+      certLast = c;
+      downloadBlob(JSON.stringify(c.chain, null, 1), `raytok_cert_${c.model.docNo}.json`, 'application/json');
+      printHtml(c.html);
+      live.certSaved = true;
+      endStatus.textContent = T('cert_print');
+      return true;
+    }
+    window.rtHostCert = { model: (w) => certModel(!!w), build: buildCert, last: () => certLast, close: () => cfClose('host'),
+                          state: () => ({ cf: live.cf, confirms: { ...live.confirms }, waitMs: CF_WAIT_MS }) };
+
+    function saveCsv() {
+      if (live.closed) return false;   // 닫은 뒤에는 명단이 없다
+      const d = new Date(live.startedAt || Date.now());
+      const p2 = (n) => String(n).padStart(2, '0');
+      const filename = `raytok_${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}_roster_${UI_LANG}.csv`;
+      downloadBlob(window.RayTokEduCert.certCsv(certModel(false)), filename, 'text/csv;charset=utf-8');
       live.csvSaved = true;
       return true;
     }
@@ -3597,8 +3771,10 @@
     // 방 닫기 = 릴레이의 기존 끝 메시지(end:1, summary 숫자) 그대로. 릴레이가 줄·참석 집계를 지우고 청취자에게 끝을 알린다(room.js).
     function closeRoom() {
       if (live.closed) return;
-      const hasRoster = Object.keys(live.roster).length > 0;
-      const ask = (hasRoster && !live.csvSaved ? T('close_confirm_csv') + '\n' : '') + T('close_confirm');
+      const hasRoster = Object.keys(live.roster).length > 0 || Object.keys(live.confirms).length > 0;
+      /* 닫으면 명단·확인이 지워진다 — 확인서·CSV 를 안 받았으면 먼저 묻는다 (NOW 11-09 ⑤) */
+      const ask = (hasRoster && !live.certSaved ? T('close_confirm_cert') + '\n' : '')
+                + (hasRoster && !live.csvSaved ? T('close_confirm_csv') + '\n' : '') + T('close_confirm');
       if (!window.confirm(ask)) return;
       const s = sessionSummary(Date.now());
       let sent = false;
@@ -3617,6 +3793,8 @@
       delete s.rows;           // 요약은 숫자만 남긴다
       live.finalSummary = s;
       clearRoster();           // 처리방침: 종료 때 삭제
+      live.confirms = {};      // 전자 확인도 같이 (방도 지운다)
+      cfStopTimer();
       ledgerClear();           // ② 원장도 — 방을 닫으면 지운다 (서버로 안 보냈다)
       renderEnd();
       endStatus.textContent = (sent || live.relayEnded) ? T('closed') : T('closed_nosend');
@@ -3629,7 +3807,8 @@
 
     btnEnd.addEventListener('click', () => { btnEnd.blur(); showEndScreen(); });
     btnBackLive.addEventListener('click', backToLive);
-    btnReport.addEventListener('click', saveReport);
+    btnCert.addEventListener('click', saveCert);
+    btnCfClose.addEventListener('click', () => cfClose('host'));
     btnCsv.addEventListener('click', saveCsv);
     btnCloseRoom.addEventListener('click', closeRoom);
     applyHostStrings();

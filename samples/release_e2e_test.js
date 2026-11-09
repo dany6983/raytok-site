@@ -188,16 +188,19 @@ console.log('=== 줄 23 출시 전 끝까지 시험 (웹 강사 경로 포함) =
     ok(summaryRead === '3', `요약: 읽은 문단 3개 확인 (실제: ${summaryRead})`);
     ok(summarySkip === '1', `요약: 건너뛴 문단 1개 확인 (실제: ${summarySkip})`);
 
-    // ── STEP 7: 리포트 및 참석자 CSV 다운로드 검증 ──
+    // ── STEP 7: 확인서 및 참석자 CSV 다운로드 검증 ──
     console.log('\n[STEP 7] 리포트 및 참석자 CSV 로컬 다운로드 검증');
-    ok(await hostPage.isVisible('#btnReport'), '리포트 다운로드 단추 노출 확인');
+    /* NOW 11-09 ⑤ — 리포트 3×3 → 안전보건교육 실시 확인서(마감 뒤) */
+    ok(await hostPage.isVisible('#btnCert'), '확인서 단추 노출 확인');
     ok(await hostPage.isVisible('#btnCsv'), '참석자 CSV 다운로드 단추 노출 확인');
-
+    await hostPage.click('#btnCfClose');
+    await hostPage.waitForFunction(() => !document.getElementById('btnCert').disabled, null, { timeout: 3000 });
+    await hostPage.evaluate(() => { window.print = () => {}; });
     const [dlReport] = await Promise.all([
       hostPage.waitForEvent('download'),
-      hostPage.click('#btnReport')
+      hostPage.click('#btnCert')
     ]);
-    ok(dlReport.suggestedFilename().startsWith('raytok_'), `리포트 파일 생성 확인: ${dlReport.suggestedFilename()}`);
+    ok(dlReport.suggestedFilename().startsWith('raytok_cert_'), `확인서 대조 파일 생성 확인: ${dlReport.suggestedFilename()}`);
 
     const [dlRoster] = await Promise.all([
       hostPage.waitForEvent('download'),

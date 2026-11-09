@@ -293,10 +293,17 @@
         return;
       }
 
+      // 6) 확인서 QR 대조 — 주소에 #h=<해시> 가 있으면(안전보건교육 실시 확인서의 진위 QR) 그 해시와 last 가 같아야 한다
+      const qrHash = (location.hash.match(/(?:^#|&)h=([0-9a-f]{64})/) || [])[1] || '';
+      if (qrHash && qrHash !== data.last) {
+        showError('실패 - 확인서 QR 의 해시와 이 기록 파일의 마지막 해시(last)가 다릅니다.');
+        return;
+      }
+
       // 통과 완료! 상세 표시
       resultBadge.className = 'result-badge badge-success';
       resultBadge.textContent = '통과';
-      resultMsg.textContent = '기록의 무결성 검증을 완벽하게 통과했습니다.';
+      resultMsg.textContent = '기록의 무결성 검증을 완벽하게 통과했습니다.' + (qrHash ? ' 확인서 QR 의 해시와도 같습니다.' : '');
       resultMsg.style.color = 'var(--success)';
 
       valCode.textContent = data.session?.code || '-';

@@ -50,10 +50,12 @@ export class Room {
 
     // 동면(Hibernation) 복구 시 영속 상태 복원
     this.ctx.blockConcurrencyWhile(async () => {
-      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'licFlags', 'silenceWarnMs', 'silenceTimeoutMs', 'att']);
+      const stored = await this.ctx.storage.get(['hostToken', 'startedAt', 'code', 'ringBuffer', 'initialized', 'lastLineAt', 'kind', 'sub', 'licFlags', 'silenceWarnMs', 'silenceTimeoutMs', 'att', 'confirms', 'confirmOpen']);
       if (stored.get('initialized')) {
         this.initialized = true;
         this.att = stored.get('att') || null;
+        this.confirms = stored.get('confirms') || null;      // 교육 확인(전자 확인) — 방이 끝나면 지운다
+        this.confirmOpen = !!stored.get('confirmOpen');
         this.hostToken = stored.get('hostToken') || null;
         this.startedAt = stored.get('startedAt') || null;
         this.code = stored.get('code') || null;
@@ -173,6 +175,21 @@ export class Room {
     this.attSend();
     return this.attSave();
   }
+  /* 한 사람이 나갔다 — 기기 번호만 강사에게(이름·글 없음). 같은 기기의 다른 소켓이 아직
+     붙어 있으면(망이 끊겼다 다시 붙음 — 닫힘이 늦게 온다) 알리지 않는다: 새 구간을 닫으면 안 된다. */
+  leaveNotice(ws) {
+    const m = this.attMark(ws);
+    const dev = m && m.dev;
+    if (!dev) return;
+    for (const w of this.ctx.getWebSockets('listener')) {
+      if (w === ws) continue;
+      const o = this.attMark(w);
+      if (o && !o.left && o.dev === dev) return;
+    }
+    const msg = JSON.stringify({ kind: 'leave', dev, at: Date.now() });
+    for (const h of this.ctx.getWebSockets('host')) { try { h.send(msg); } catch (_) {} }
+  }
+
   // 끝: 마지막 집계를 호스트에게 주고 지운다
   async attEnd() {
     if (!this.att) return;
@@ -198,7 +215,45 @@ export class Room {
       if (Object.keys(kept).length > 0) mark.summary = kept;
     }
     this.ringBuffer = [JSON.stringify(mark)];
+    // 교육 확인 기록도 방과 같이 지운다(참석 명단과 같은 자리 — 확인서는 강사 화면이 끝나기 전에 받는다)
+    this.confirms = null;
+    this.confirmOpen = false;
+    try { this.ctx.storage.delete(['confirms', 'confirmOpen']); } catch (_) {}
     return this.ctx.storage.put('ringBuffer', this.ringBuffer);
+  }
+
+  /* ── 교육 확인(근로자 전자 확인) — NOW 11-09 18:20 ② ──
+     강사가 끝 화면으로 가면 `{kind:'confirm_open'}` 을 보낸다(두루길로 청취자 전원에게 간다).
+     청취자는 「교육을 들었습니다 — 확인」을 누르고 `{kind:'confirm', name, lang, deviceId}` 를 보낸다.
+     방은 **시각을 방 시계로 찍어** 기록에 넣고 강사에게 준다. 소리·글(원문·번역)은 싣지 않는다(P-16·P-14).
+     한 기기 한 번 — 두 번 눌러도 처음 시각이 남는다. 상한 500(방 상한 200 보다 넉넉히). */
+  confirmItems() {
+    return Object.values(this.confirms || {}).sort((a, b) => a.at - b.at);
+  }
+  async confirmFrom(ws, parsed) {
+    const reply = (o) => { try { ws.send(JSON.stringify(o)); } catch (_) {} };
+    if (parsed.trans || parsed.tr) { reply({ kind: 'confirm_error', why: 'p14_participant_translation_forbidden' }); return; }
+    if (!this.confirmOpen) { reply({ kind: 'confirm_error', why: 'closed' }); return; }
+    const mark = this.attMark(ws) || {};
+    const dev = String(parsed.deviceId || mark.dev || '').trim().slice(0, 64);
+    if (!dev) { reply({ kind: 'confirm_error', why: 'no_device' }); return; }
+    if (!this.confirms) this.confirms = {};
+    let item = this.confirms[dev];
+    if (!item) {
+      if (Object.keys(this.confirms).length >= 500) { reply({ kind: 'confirm_error', why: 'full' }); return; }
+      item = {
+        dev,
+        name: String(parsed.name || '').trim().slice(0, 60),
+        lang: String(parsed.lang || mark.lang || '').trim().slice(0, 16),
+        ua: String(parsed.ua || '').trim().slice(0, 40),
+        at: Date.now()
+      };
+      this.confirms[dev] = item;
+      await this.ctx.storage.put('confirms', this.confirms);
+    }
+    reply({ kind: 'confirm_ok', at: item.at });
+    const msg = JSON.stringify({ kind: 'confirm', ...item });
+    for (const h of this.ctx.getWebSockets('host')) { try { h.send(msg); } catch (_) {} }
   }
 
   async recordDeskSessionMinutes() {
@@ -1524,6 +1579,7 @@ export class Room {
           } catch (e) {}
         }
         if (!this.attEnded()) await this.attJoin(server);
+        if (this.confirmOpen) { try { server.send(JSON.stringify({ kind: 'confirm_open' })); } catch (_) {} }
         if (this.askQueue && this.askQueue.length) {
           try {
             server.send(JSON.stringify({
@@ -1538,6 +1594,9 @@ export class Room {
         }
       } else {
         this.attSend(server);
+        if (this.confirms && Object.keys(this.confirms).length) {
+          try { server.send(JSON.stringify({ kind: 'confirm_list', items: this.confirmItems() })); } catch (_) {}
+        }
         if (this.askQueue && this.askQueue.length) {
           try {
             server.send(JSON.stringify({ kind: 'ask_queue', queue: this.askQueue }));
@@ -1638,6 +1697,12 @@ export class Room {
       /* 방이 번역한다 (B 3 · 보조 길). 원문은 **위에서 이미** 전원에게 갔다 — 번역은
          늦게 그 언어 손님에게만 간다(R-15: 늦어도 남는 쪽). 되돌림 자리는 이 한 줄이다. */
       if (parsed) this.roomTrFromHost(parsed);
+
+      // 교육 확인 열림·닫힘 — 글은 위 두루길로 이미 갔다. 방은 받을지 말지만 기억한다.
+      if (parsed && (parsed.kind === 'confirm_open' || parsed.kind === 'confirm_close')) {
+        this.confirmOpen = parsed.kind === 'confirm_open';
+        await this.ctx.storage.put('confirmOpen', this.confirmOpen);
+      }
 
       if (parsed) {
         // N:1 질문 지명 및 종료 처리 (정본 wire-messages.json: grant, revoke 규격 완비)
@@ -1817,11 +1882,15 @@ export class Room {
         parsed = JSON.parse(msgStr);
         if (parsed && parsed.hello && parsed.lang) {
           await this.attSetLang(ws, parsed.lang);
+          // 기기 번호를 쪽지에 둔다 — 그 사람이 나갈 때 강사에게 「누가」 나갔는지 알린다(입장·퇴장·청취 분)
+          if (typeof parsed.deviceId === 'string' && parsed.deviceId.trim()) this.attPatch(ws, { dev: parsed.deviceId.trim().slice(0, 64) });
           /* 늦게 들어온 손님의 **새 언어**를 방이 채운다 (B 4). 기다리지 않는다 —
              이 손님에게 지금 문단을 보내는 일이 먼저고, 번역은 뒤따라 간다(R-15). */
           this.fillLateLang(parsed.lang).catch(() => {});
         }
       } catch (_) {}
+
+      if (parsed && parsed.kind === 'confirm') { await this.confirmFrom(ws, parsed); return; }
 
       // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번, 정본 ask)
       if (parsed && (parsed.kind === 'ask' || parsed.kind === 'ask_req')) {
@@ -1999,6 +2068,7 @@ export class Room {
     } catch (e) {}
     const tags = this.ctx.getTags(ws);
     if (tags.includes('listener') && this.att) await this.attLeave(ws);
+    if (tags.includes('listener')) this.leaveNotice(ws);
     if (tags.includes('listener') && this.activeAsk) {
       // 발언 중인 청취자 단절 감지 시 사유 disconnect 기록 및 회수
       const askId = this.activeAsk.id;
