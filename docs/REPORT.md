@@ -11,6 +11,14 @@
 ```
 옛 보고(10-21 까지)는 `docs/archive/REPORT-to-2026-10-21.md`. 통째로 읽지 않는다.
 
+## 11-09 18:50 — [웹 일꾼] NOW 11-09 18:20 안전교육 「실시 확인서」 ①~⑦
+했다: 강사 준비 화면 교육 정보(다음에 채워 둠) → 「끝내기」 누르면 근로자 화면에 자기 말(81) 「교육을 들었습니다 — 확인」 → 강사 확인 n/N 실시간 → 3분(또는 「지금 마감」) 뒤 「안전보건교육 실시 확인서」 PDF(인쇄 → PDF 저장, A4 한국어, 붙임 1 명단 · 선택 붙임 2 강의 내용) + 명단 CSV + 진위 대조 JSON(QR = /web/verify/#h=<last>). 끝 화면 리포트 3×3 은 치움(§5). 릴레이: 확인을 방 시계로 찍어 방 기록에 · 한 사람 퇴장을 기기 번호로 강사에게 (e4aa87f)
+어디서 보나: 강사 /web/host/ 준비 화면 「교육 정보」 칸 → 진행 → 끝내기 → 끝 화면 「근로자 확인」·「확인서 PDF 받기」·「참석 CSV 받기」 · 손님 화면 #cf-band · 확인서 만드는 곳 `web/common/edu-cert.js` · 손님 단추 `web/common/edu-confirm.js`(눌릴 때만 실음 — 첫 화면 37,861/37,888B)
+막힘: 없음. **릴레이 배포 필요(대표님 손)** — 배포 전에는 확인 단추가 떠도 방이 기록하지 않고(옛 릴레이는 강사에게 날것으로만 넘김 → 강사 화면이 시각 없이 받음) 퇴장은 「그 언어 0명」 때만 안다
+확인만: test:* 106개 하나씩 — 붉은 3(i18n·generator·site-wording) = **이 일 전(HEAD 2eb2957)에도 같은 3** (사이트 쪽 생성기·금지어 「인터넷 없이」, 이 일과 무관). 새 시험 edu-cert 68 · edu-confirm 19. D-09: 강사 confirm 받기 빼면 edu-cert 붉음 · 방 시계 대신 손님 at 쓰면/퇴장 알림 빼면 edu-confirm 붉음 · QR 해시 다르면 verify 실패. PDF 는 Chromium A4 로 실제 뽑아 pdftotext — 한글·숫자(참석 3/확인 2/미확인 1) 그대로, 깨진 글자 0
+다음: 마스터 검수 대기. 판단 둘 — ⓐ 붙임 1 「소속」 칸은 근로자 입력 칸이 없어 빈칸(손 기재) — 받으려면 입장 화면에 칸 하나+81말 ⓑ 81말 cf_* 4키는 제가 썼다(§18 같은 커밋) — 원어민 검수는 실기 목록
+건드린 파일: web/host/index.html(교육 정보·끝 화면·확인 창·확인서/CSV, ko·en 표) · web/listener/index.src.html+index.html(확인 글 받는 줄) · web/listener/ui-strings.json+조각(cf_* 4키×81) · tools/split-ui-strings.js(cf_ 나중 조각) · web/common/edu-cert.js·edu-confirm.js(새) · web/verify/index.html(#h= 대조) · relay/src/room.js(confirm·leave) · samples/mock_relay.js(같은 문, D-11) · 시험 7. 이전 정상: 2eb2957
+
 ## 11-04 14:40 — [마케팅] 벤처나라 첨부 화면 찍다가 — 웹 강사·청취 결함 둘 (실측 세션 KFT4TM)
 했다: ① **[host] 말하는 언어가 틀려도 아무도 모른다** — 송출 화면에 「말하는 언어 — 한국어 (ko)」 상시 표시 + 받아쓴 **글자**가 고른 말의 글자가 아니면 한 줄 경고(고치진 않음 — 섞인 영어 한 줄이 언어를 되돌린다, D-11) + 고르개가 휠로 조용히 바뀌지 않게 막음 (c36bc1c) ② **[host] 원고 PDF 글자가 쪼개져 번역기에 들어감** — `extractTextFromPdf` 가 `items.map(i=>i.str).join(' ')` 였다. pdf.js 는 **낱말 사이 빈칸도 item(' ')으로 준다** → 빈칸 겹침. 글자마다 item 을 내는 PDF(한글 내보내기)에서는 「빈 칸 은」까지 간다. `join('')` + `hasEOL` 로 바꿈 (444d2f6)
 어디서 보나: ① 강사 송출 화면 맨 위 줄 · 경고는 그 아래 `#srcMismatchNote` · 글자 표는 `web/common/rec-lang.js`(`mismatch()`) ② `web/host/index.html` `extractTextFromPdf`
