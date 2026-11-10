@@ -40,6 +40,9 @@
 
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    /* 대표님 11-10 11:46 「글자 색을 전부 검정으로 — 안 보임」. 앱 배색(:root, design 시험)은 그대로 두고
+       청취자 화면 안에서만 글자 두 단계를 검정으로 덮는다 */
+    body { --text: #000; --text-muted: #000; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg);
@@ -343,11 +346,11 @@
       <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
       <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
     </div>
-    <div id="tr-notice" class="notice-band" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#bae6fd;">
+    <div id="tr-notice" class="notice-band" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#000;">
       <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
       <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
     </div>
-    <div id="voice-notice" class="notice-band" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a;"></div>
+    <div id="voice-notice" class="notice-band" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#000;"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
     <div id="room-state" role="status" aria-live="polite"></div>
     <div id="chat-list"></div>
