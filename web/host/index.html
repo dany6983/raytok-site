@@ -45,6 +45,9 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* 대표님 11-10 「글자 색 전부 검정」 — 청취자(0295215)와 같게 강사 화면도. 배색 정본(:root·theme.css)은 그대로 두고
+       화면 안에서만 글자 두 단계를 검정으로 덮는다 (NOW 11-10 12:56 ④) */
+    body { --text: #000; --text-muted: #000; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);

@@ -27,6 +27,10 @@ export const KEEP = 2;
 /** 한 줄 상한 — 넘으면 그 줄은 서버 번역으로(데운 뒤 한 문장 41~79ms 를 쟀다 · 폰 크롬) */
 export const LINE_MS = 8000;
 
+/** 한 번에 한 줄만 엔진에 (NOW 11-10 12:56 ②) — 끄면 전처럼 동시에(그러면 엔진이 앞 줄을 버린다) */
+export let RP_QUEUE = true;
+export const setRpQueue = (on) => { RP_QUEUE = !!on; };
+
 /**
  * 손님 화면의 말 코드 → 팩 목록의 `pair.dst`. **표로 읽는다**(§6 — 이름으로 가르지 않는다).
  * 팩 이름이 표준과 다른 것만 적는다(엔진 `HANDOFF-raypack.md` — `zt`·`tp` 는 엔진이 정한 이름).
@@ -238,12 +242,19 @@ export function createRaypack(opts = {}) {
     return state;
   }
 
-  /** 한 줄 번역 — 못 하면 **null**(그 줄은 서버 번역). 빈 답도 null 이다(§20) */
-  async function translate(text) {
-    if (state !== 'ready' || !tr || !text) return null;
+  /*
+   * ★ 줄 세우기 (NOW 11-10 12:56 ②, 스위치 `RP_QUEUE` 기본 켬). 마스터 실측(실 raytok.kr, ko-vi):
+   * 한 줄씩 5/5 폰 안 번역 · **3줄 동시 → 1줄 `raypack_line_fail`**. 까닭(코드로 확인 — `vendor/bergamot/
+   * translator.js` LatencyOptimisedTranslator.translate): 일꾼이 바쁠 때 새 줄이 오면 **기다리던 줄을
+   * SupersededError 로 버린다** — 「가장 최근 것만」 번역기다. 그래서 한 번에 하나만 넘긴다.
+   * 줄 서서 기다린 시간도 `LINE_MS` 에 든다 — 넘으면 그 줄만 서버 번역(null, R-15 · 뒤 줄은 계속).
+   */
+  let chain = Promise.resolve();
+  let queued = 0;
+  async function one(text, budget) {
     try {
       const r = await withLimit(tr.translate({ from: 'ko', to: target, text: String(text), html: false }),
-        LINE_MS, '한 줄');
+        budget, '한 줄');
       const s = r && r.target && r.target.text;
       return typeof s === 'string' && s.trim() ? s : null;
     } catch (err) {
@@ -251,12 +262,30 @@ export function createRaypack(opts = {}) {
       return null;
     }
   }
+  /** 한 줄 번역 — 못 하면 **null**(그 줄은 서버 번역). 빈 답도 null 이다(§20) */
+  function translate(text) {
+    if (state !== 'ready' || !tr || !text) return Promise.resolve(null);
+    if (!RP_QUEUE) return one(text, LINE_MS);
+    const t0 = Date.now();
+    queued += 1;
+    const p = chain.then(() => {
+      queued -= 1;
+      const waited = Date.now() - t0;
+      const left = LINE_MS - waited;
+      if (left <= 0) { log(`raypack_line_queue_timeout waited=${waited}`); return null; }
+      if (state !== 'ready' || !tr) return null;
+      return one(text, left);
+    });
+    chain = p.then(() => null, () => null);
+    return p;
+  }
 
   return {
     want: (lang) => start(lang),
     now: () => start(want, { force: true }),     // 「지금 받기」
     wifi: () => waitWifi(),                       // 「와이파이에서 받기」
     translate,
+    queued: () => queued,
     ready: () => state === 'ready' && !!tr,
     state: () => state,
     pct: () => pct,

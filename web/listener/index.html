@@ -137,6 +137,7 @@ overflow-wrap: anywhere;   /* 낱말 중간에서 끊지 않는다. 한 줄에 �
 .msg-text:lang(ko), .msg-tr:lang(ko) { word-break: keep-all; }   /* 한국어는 띄어쓰기에서만 줄을 바꾼다 */
 .msg-tr { color: var(--primary); font-weight: 500; margin-top: 4px; }
 .msg-src { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.dev-tag { display: none; } .dev .dev-tag { display: inline; }
 .badge {
 display: inline-block;
 padding: 2px 6px;
@@ -314,10 +315,6 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
 <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
 </div>
-<div id="tr-notice" class="notice-band" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#000;">
-<span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
-<button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
-</div>
 <div id="voice-notice" class="notice-band" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#000;"></div>
 <div id="break-band" data-i18n="break_band">쉬는 시간</div>
 <div id="room-state" role="status" aria-live="polite"></div>
@@ -435,6 +432,7 @@ document.getElementById('ver-text').textContent = LISTENER_VER;
 const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"}];
 
 const isDemo = new URLSearchParams(location.search).has('demo');
+if (new URLSearchParams(location.search).get('dev') === '1') document.documentElement.classList.add('dev');   // 줄 머리 #번호·말 코드 보이기
 let DEMO_SRC = 'ko';
 let DEMO_LINES = [];
 let DEMO_LANGS = [];
@@ -991,9 +989,11 @@ rpWant();
 
 let rp = null;
 let rpRoomOk = false;
+let rpIosSaid = 0;
 function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
 function rpWant() {
 if (isDemo || isRawBroadcast || !rpRoomOk) return;
+if (GUEST_TR_ORDER && isWebkitIos()) { if (!rpIosSaid) { rpIosSaid = 1; rpLog('raypack_skip why=ios'); } return; }
 (rp ? Promise.resolve(rp) : import('./raypack.js?v=1').then(m => (rp = m.createRaypack({
 row: document.getElementById('pack-row'), t: k => t(k), src: () => srcLang, log: rpLog }))))
 .then(r => r.want(selectedLang)).catch(e => rpLog('raypack_fail load ' + e));
@@ -1409,8 +1409,8 @@ say: function (text, via) { speakWebTts(text, via || ''); }
 
 function connect() {
 if (!window.__rtTtsGuardReady) {
-window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog });
-document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js' }));
+window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog, lang: () => selectedLang });
+document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js?v=2' }));
 }
 if (ws && ws.readyState === WebSocket.CONNECTING) { connLog.push(`${ts()} connect skipped (connecting)`); return; }
 if (ws) ws.close();
@@ -1542,7 +1542,7 @@ pendingDiv.innerHTML = `
 <div class="msg-text" style="color: var(--text-muted); font-style: italic;"></div>
 <div class="msg-tr" style="font-size: 12px; color: var(--warning);"><span class="badge badge-pending">${t('badge_pending', currentUiLang)}</span></div>
 </div>
-<div class="msg-src" style="color: var(--warning);">${srcLang.toUpperCase()}</div>
+<div class="msg-src" style="color: var(--warning);"><span class="dev-tag">${srcLang.toUpperCase()}</span></div>
 `;
 pendingDiv.querySelector('.msg-text').setAttribute('lang', srcLang);
 chatList.appendChild(pendingDiv);
@@ -1762,7 +1762,7 @@ spk: msg.spk || null,   // 화자 표시는 진행자가 보낸 때만(Desk). �
 at: Date.now(),         // 이 폰이 받은 시각 (기록 저장용)
 tr: msg.tr || {},
 pending: !!msg.pending || (!msg.tr || !msg.tr[selectedLang])
-&& onServerTr()
+&& onServerTr() && !isRawBroadcast   // 「원문만」 방(raw=1)은 번역이 오지 않는다 — 기다림 표 없음
 && !!(srcLang && selectedLang && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)),
 via: msg.via,
 broadcast: isBroadcast
@@ -1879,15 +1879,28 @@ function onServerTr() {
 return guestTr === 'server' || trPlan() === 'server';
 }
 
+var GUEST_TR_ORDER = (function () { try { return new URLSearchParams(location.search).get('trorder') !== '0'; } catch (e) { return true; } })();
+function isWebkitIos(ua) {
+var u = String(ua || (navigator && navigator.userAgent) || '');
+return /iP(hone|od|ad)/.test(u) ||
+(/Macintosh/.test(u) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
+}
 function trPlan() {
-var plan = browserCanTranslate() ? 'browser' : 'server';
-var line = 'guest_tr_plan plan=' + plan + ' me=' + (selectedLang || '-')
+var plan, why;
+if (GUEST_TR_ORDER) {
+plan = 'server';
+why = isWebkitIos() ? 'ios' : (rp && rp.ready()) ? 'raypack_ready' : ('raypack_' + (rp && rp.state ? rp.state() : 'none'));
+} else {
+plan = browserCanTranslate() ? 'browser' : 'server';
+why = 'old';
+}
+var line = 'guest_tr_plan plan=' + plan + ' why=' + why + ' me=' + (selectedLang || '-')
 + ' browser=' + (browserLangs()[0] || '-') + ' from=' + (srcLang || '-');
 if (trPlanLog[trPlanLog.length - 1] !== line) { trPlanLog.push(line); try { console.log(line); } catch (e) {} }
 return plan;
 }
 window.rtTrPlan = { plan: trPlan, log: function () { return trPlanLog.slice(); },
-canBrowser: browserCanTranslate, langs: browserLangs };
+canBrowser: browserCanTranslate, langs: browserLangs, ios: isWebkitIos, order: function () { return GUEST_TR_ORDER; } };
 
 var TR_WAIT_MS = 2000;
 function speakWhenTranslated(line, msg) {
@@ -1921,25 +1934,9 @@ try { console.log('guest_tr_wait_timeout seq=' + line.seq); } catch (e) {}
 })();
 }
 
-function renderTrNotice() {
-var box = document.getElementById('tr-notice');
-if (!box) return;
-var differ = srcLang && selectedLang &&
-normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang);
-var show = !!differ && guestTr !== 'server' && browserCanTranslate();
-box.style.display = show ? 'block' : 'none';
-var line = 'tr_notice on=' + (show ? 1 : 0) + ' from=' + (srcLang || '-') + ' me=' + (selectedLang || '-');
-if (trNoticeLog[trNoticeLog.length - 1] !== line) trNoticeLog.push(line);
-renderSrcBtn();        // 길(browser/server)이 정해지는 자리에서 단추도 같이 본다
-}
-var trNoticeLog = [];
-window.rtTrNotice = { log: function () { return trNoticeLog.slice(); }, render: renderTrNotice };
-
 function isIosSafari(ua) {
 var u = String(ua || (navigator && navigator.userAgent) || '');
-var ios = /iP(hone|od|ad)/.test(u) ||
-(/Macintosh/.test(u) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
-if (!ios) return false;
+if (!isWebkitIos(u)) return false;
 return !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/)/.test(u);
 }
 
@@ -1978,17 +1975,10 @@ iosChromeLog.push('ios_chrome go=1');
 try { location.href = to; } catch (e) {}
 });
 }
-var b = document.getElementById('btn-tr-server');
-if (!b) return;
-b.addEventListener('click', function () {
-markGuestTr('server');
-renderTrNotice();
-for (var i = 0; i < lines.length; i++) updateLineUI(lines[i]);
-});
 });
 
 function addLine(line) {
-renderTrNotice();        // 원문 언어는 줄이 와야 확실해진다 — 그때 다시 본다
+renderSrcBtn();          // 원문 언어는 줄이 와야 확실해진다 — 그때 단추를 다시 본다
 updateRoomState();   // ④ 줄이 하나라도 오면 빈 방 띠를 치운다
 const div = document.createElement('div');
 div.className = 'msg-line' + (line.script ? ' msg-script' : '');
@@ -2001,13 +1991,13 @@ const head = isAsk
 ? `<span class="badge badge-script">${t(line.isAnswer ? 'answer_line_tag' : 'ask_line_tag', currentUiLang)}</span>`
 : line.script
 ? `<span class="badge badge-script">${t('script_prefix', currentUiLang)} ${line.para}/${line.total}</span>`
-: `#${line.seq}`;
+: `<span class="dev-tag">#${line.seq}</span>`;
 div.innerHTML = `
 <div class="msg-bubble">
 <div class="msg-text"></div>
 <div class="msg-tr"></div>
 </div>
-<div class="msg-src" dir="ltr" translate="no">${head} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${spkLabel ? '' : ' hidden'}>${escapeHtmlText(spkLabel)}</span></div>
+<div class="msg-src" dir="ltr" translate="no">${head} <span class="dev-tag">${srcLang.toUpperCase()}</span> <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${spkLabel ? '' : ' hidden'}>${escapeHtmlText(spkLabel)}</span></div>
 `;
 const textDiv = div.querySelector('.msg-text');
 setLineText(textDiv, line.text);      // 우리가 쓴 글자를 적어 둔다 — 밖에서 바뀌면 번역이다

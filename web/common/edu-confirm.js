@@ -65,6 +65,10 @@
     $('cf-msg').textContent = d
       ? '✔ ' + T('cf_done') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
       : st.err;
+    /* 띠가 생기거나 커지면 목록이 줄어든다 — 그때 맨 아래(최신 줄)를 다시 보인다. 안 하면 띠가 번역 줄을
+       덮은 것처럼 보인다(실기 11-10 11:20 · NOW 11-10 12:56 ④). 띠는 목록 **위** 형제라 겹치지 않는다 */
+    var list = $('chat-list');
+    if (list) list.scrollTop = list.scrollHeight;
   }
   function send() {
     if (!cx || !st.open || st.done) return;

@@ -82,7 +82,7 @@ const UA = {
        자리(③)와 주소 꼴(④)은 코드에 남아 있다 — 되돌리면(IOS_CHROME_HINT=true) 다시 뜬다. */
     let r = await open(UA.iosSafari);
     ok(r.got.shown === false, `① 아이폰 사파리에서도 띠가 **안 보인다** — 스위치 끔 (기록 ${JSON.stringify(r.got.log)})`);
-    ok(r.got.parent === 'chat-screen' && r.got.next === 'tr-notice',
+    ok(r.got.parent === 'chat-screen' && r.got.next === 'voice-notice',   // #tr-notice 는 11-10 12:56 ① 에서 치움 — 다음 형제가 #voice-notice
        `③ 자리는 그대로: #${r.got.parent} > #ios-chrome → 다음 형제 #${r.got.next}`);
     ok(r.got.url === 'googlechromes://raytok.kr/web/listener/?room=ABC123&lang=ne',
        `④ 주소 꼴 함수도 그대로 (${r.got.url})`);

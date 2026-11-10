@@ -74,7 +74,9 @@ const srv = http.createServer((q, r) => {
   }, seq);
 
   try {
-    await page.goto(`http://localhost:${port}/web/listener/?room=123456&auto=1&ws=${wsPort}&lang=en`, { waitUntil: 'load' });
+    /* 11-10 12:56 ① 새 순서(기본)에서는 방송 줄도 방 번역을 **기다린다**(「번역 중」) — 이 시험은 옛 순서(브라우저 길)의
+       표시 규칙을 잰다. 「원문만」 방(raw=1)의 표시 없음은 test:web-host-mic 이 새 순서로 잰다 */
+    await page.goto(`http://localhost:${port}/web/listener/?room=123456&auto=1&ws=${wsPort}&lang=en&trorder=0`, { waitUntil: 'load' });
     await page.waitForSelector('#chat-screen', { state: 'visible', timeout: 8000 });
     await joined;
 

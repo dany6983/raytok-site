@@ -99,12 +99,16 @@
       font-size: 13px;
     }
     .gap-title { font-weight: 700; margin-bottom: 4px; }
+    /* 대표님 11-10 「글자 색 전부 검정」 — 회색 글자(흐린 단계)도 검정 (NOW 11-10 12:56 ④) */
+    body { --text: #000; --text-muted: #000; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>RayTok 기록 해시 체인 검증</h1>
+    <h1 id="vf-title">RayTok 기록 해시 체인 검증</h1>
+    <!-- 확인서 QR(#h=…)로 왔을 때만 보인다 (NOW 11-10 12:56 ④) — 무엇을 받았고 무엇을 넣으면 되는지 -->
+    <p id="qr-note" style="display:none; text-align:center; font-weight:600; margin:-4px 0 16px; padding:10px 12px; border:1px solid var(--primary); border-radius:8px;"></p>
     <p class="desc">JSON 파일을 드래그 앤 드롭하거나 클릭하여 해시 체인의 무결성을 확인합니다.</p>
     
     <div class="drop-zone" id="drop-zone">
@@ -338,5 +342,18 @@
       valLast.textContent = '-';
     }
   </script>
+<script>
+  /* 확인서 QR(#h=<해시>)로 열렸다 — 제목을 「교육 확인서 진위 확인」으로, 맨 위에 받은 번호 한 줄.
+     대조 자체는 아래 6) 이 그대로 한다(파일의 last == 주소의 h). */
+  (function () {
+    var m = String(location.hash || '').match(/(?:^#|&)h=([0-9a-f]{64})/);
+    if (!m) return;
+    var t = '교육 확인서 진위 확인';
+    document.title = 'RayTok ' + t;
+    var h1 = document.getElementById('vf-title'); if (h1) h1.textContent = t;
+    var n = document.getElementById('qr-note');
+    if (n) { n.textContent = '확인서 번호 ' + m[1].slice(0, 8) + '… 받음 — 함께 받은 기록 파일(.json)을 넣으면 진위를 확인합니다'; n.style.display = ''; }
+  })();
+</script>
 </body>
 </html>

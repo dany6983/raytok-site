@@ -144,6 +144,8 @@
     .msg-text:lang(ko), .msg-tr:lang(ko) { word-break: keep-all; }   /* 한국어는 띄어쓰기에서만 줄을 바꾼다 */
     .msg-tr { color: var(--primary); font-weight: 500; margin-top: 4px; }
     .msg-src { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    /* 줄 머리 `#10033 KO` 는 개발자만(`?dev=1`) — 손님에게는 뜻이 없다 (NOW 11-10 12:56 ④) */
+    .dev-tag { display: none; } .dev .dev-tag { display: inline; }
     .badge {
       display: inline-block;
       padding: 2px 6px;
@@ -161,7 +163,7 @@
     /* L4-2 원고 문단(script)·건너뜀·쉬는 시간 */
     .badge-script { background-color: var(--border); color: var(--text); }
     .msg-line.msg-skip .msg-bubble { opacity: 0.6; font-size: 13px; color: var(--text-muted); border-style: dashed; }
-    /* 안내 띠 셋(#ios-chrome·#tr-notice·#voice-notice)이 같은 치수를 **각자 인라인으로** 들고 있었다 —
+    /* 안내 띠 둘(#ios-chrome·#voice-notice — #tr-notice 는 11-10 에 치움)이 같은 치수를 **각자 인라인으로** 들고 있었다 —
        첫 화면 한도(gz 37KB)를 넘겨서 한 곳으로 모은다. 색과 display 는 띠마다 달라 인라인에 둔다
        (시험이 el.style.display 를 읽는 자리가 있다 — 거기로 옮기면 그 시험이 깨진다). */
     .notice-band { font-size: 12px; padding: 6px 12px; border-radius: 6px; margin: 6px 16px; text-align: center; }
@@ -333,22 +335,15 @@
   </div>
 
   <div class="screen" id="chat-screen">
-    <!-- 손님 폰이 번역한다 (장부 51) — 손님 말이 원문과 다를 때만 보인다.
-         「서버 번역으로」는 **보조 길**(판 3번). 3번이 들어오기 전까지는 지금 길(강사가 미리
-         보낸 번역)로 가고, 그때 기록이 `guest_tr=server` 로 남는다.
-         구조: #chat-screen > #tr-notice (#voice-notice 바로 앞 형제) -->
+    <!-- 파란 「브라우저 번역」 띠(#tr-notice)는 11-10 12:56 ① 에서 치웠다 — 방(서버) 번역이 기본 길 -->
     <!-- 아이폰 사파리로 열린 손님에게만: 같은 방을 크롬에서 열 수 있다 (NOW B 7 · 편의).
          왜 있나: 사파리에서 **새 자막 줄까지** 번역되는지 우리는 아직 모른다(실기 대기).
          크롬이 있으면 손님이 한 번 눌러 옮겨 갈 수 있고, 없으면 아무 일도 일어나지 않는다
-         — 그때는 사파리 번역 → 「서버 번역으로」(아래 띠) 가 그대로 받친다.
-         자리: #chat-screen > #ios-chrome (#tr-notice **바로 앞** 형제) -->
+         — 그때는 방(서버) 번역이 그대로 받친다.
+         자리: #chat-screen > #ios-chrome (#voice-notice **바로 앞** 형제) -->
     <div id="ios-chrome" class="notice-band" translate="no" style="display:none; background:rgba(148,163,184,0.12); border:1px solid var(--text-muted); color:var(--text);">
       <span id="ios-chrome-text" data-i18n="ios_chrome_hint"></span>
       <button class="tool-btn" id="btn-open-chrome" data-i18n="ios_chrome_btn" style="margin-left:8px; padding:2px 8px;"></button>
-    </div>
-    <div id="tr-notice" class="notice-band" translate="no" style="display:none; background:rgba(56,189,248,0.12); border:1px solid var(--primary); color:#000;">
-      <span id="tr-notice-text" data-i18n="tr_browser_hint"></span>
-      <button class="tool-btn" id="btn-tr-server" data-i18n="tr_server_btn" style="margin-left:8px; padding:2px 8px;"></button>
     </div>
     <div id="voice-notice" class="notice-band" style="display:none; background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#000;"></div>
     <div id="break-band" data-i18n="break_band">쉬는 시간</div>
@@ -489,6 +484,7 @@
     // ── 시연 (?demo=1): 서버 없이, 미리 적어 둔 줄을 실제와 같은 처리 길(handleMessage)로 흘린다.
     //    번역문은 사람이 적어 둔 예시다 — 번역 엔진 결과가 아니다. 이 페이지는 번역을 요청하지 않는다.
     const isDemo = new URLSearchParams(location.search).has('demo');
+    if (new URLSearchParams(location.search).get('dev') === '1') document.documentElement.classList.add('dev');   // 줄 머리 #번호·말 코드 보이기
     /* ★ 시연 줄은 **`?demo=1` 일 때만 받는다** (2026-10-21). 왜: 이 묶음이 gz 2.5KB 였고
        **손님 전원**이 받고 있었다 — 쓰는 사람은 데모를 켠 대표님 한 분이다. 첫 화면 여유가
        0.5KB 였으니 다음 기능이 바로 한도를 넘길 자리였다. 올리기 전에 **쓰지 않는 것을 찾는다**.
@@ -1126,9 +1122,12 @@
     /* RULE: P-16 — 레이팩은 **한국 강연 방**(강사 화면 welcome `kr:1`)에서만. 해외·Desk 방은 받지 않는다(바깥 요청 0건).
        welcome 전에는 늘 끔 — 언어를 먼저 골라도 받지 않는다. */
     let rpRoomOk = false;
+    let rpIosSaid = 0;
     function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
     function rpWant() {
       if (isDemo || isRawBroadcast || !rpRoomOk) return;
+      /* 11-10 12:56 ① — 아이폰/아이패드는 레이팩을 받지 않는다(메모리 ≈1GB). 처음부터 방(서버) 번역 */
+      if (GUEST_TR_ORDER && isWebkitIos()) { if (!rpIosSaid) { rpIosSaid = 1; rpLog('raypack_skip why=ios'); } return; }
       (rp ? Promise.resolve(rp) : import('./raypack.js?v=1').then(m => (rp = m.createRaypack({
         row: document.getElementById('pack-row'), t: k => t(k), src: () => srcLang, log: rpLog }))))
         .then(r => r.want(selectedLang)).catch(e => rpLog('raypack_fail load ' + e));
@@ -1672,8 +1671,8 @@
     function connect() {
       /* ③④ 지킴이는 방에 들어갈 때 싣는다 — 첫 화면에는 싣지 않는다(37KB) */
       if (!window.__rtTtsGuardReady) {
-        window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog });
-        document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js' }));
+        window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog, lang: () => selectedLang });
+        document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js?v=2' }));
       }
       /* ★ 10-27 14:14 대표님 tail: 아이폰이 같은 초에 `/ws` 를 **둘** 열고 둘 다 Canceled. 이 함수가 두 곳
          (들어가기 단추 · 화면이 다시 보일 때)에서 불리는데, 앞 것이 아직 **여는 중**(CONNECTING)이면
@@ -1833,7 +1832,7 @@
               <div class="msg-text" style="color: var(--text-muted); font-style: italic;"></div>
               <div class="msg-tr" style="font-size: 12px; color: var(--warning);"><span class="badge badge-pending">${t('badge_pending', currentUiLang)}</span></div>
             </div>
-            <div class="msg-src" style="color: var(--warning);">${srcLang.toUpperCase()}</div>
+            <div class="msg-src" style="color: var(--warning);"><span class="dev-tag">${srcLang.toUpperCase()}</span></div>
           `;
           pendingDiv.querySelector('.msg-text').setAttribute('lang', srcLang);
           chatList.appendChild(pendingDiv);
@@ -2093,7 +2092,7 @@
              화면만 보고 갈린다(콘솔을 열지 않아도 된다). 와이어는 손대지 않는다 —
              이 판단은 **이 폰의 것**이다(방은 그 폰이 어느 길인지 모른다). */
           pending: !!msg.pending || (!msg.tr || !msg.tr[selectedLang])
-                   && onServerTr()
+                   && onServerTr() && !isRawBroadcast   // 「원문만」 방(raw=1)은 번역이 오지 않는다 — 기다림 표 없음
                    && !!(srcLang && selectedLang && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)),
           via: msg.via,
           broadcast: isBroadcast
@@ -2248,17 +2247,40 @@
       return guestTr === 'server' || trPlan() === 'server';
     }
 
+    /* ★ 번역 순서 (NOW 11-10 12:56 ① · 대표님 12:56 「고」 · 스위치 `GUEST_TR_ORDER` 기본 켬, `?trorder=0` 끔).
+       실기 11-10 11:20: 아이폰 사파리 vi 손님 = 한글만 · 화면 중간에 죽음. 옛 순서는 폰 언어 목록에 그 말이
+       있으면 「브라우저 번역」을 기다렸다 — 사파리는 저절로 번역하지 않는다. 새 순서:
+         · 안드로이드(크로미움 계열) = 레이팩(폰 안) → 받는 중·실패한 줄은 방(서버) 번역
+         · 아이폰/아이패드(웹킷)     = 처음부터 방(서버) 번역 · 레이팩은 **받지 않는다**(팩 올린 뒤 렌더러 ≈1GB —
+                                       사파리 탭 강제 재시작 의심, 마스터 실측)
+         · 브라우저 번역은 손님이 메뉴에서 **직접** 켤 때만(기다리지 않는다)
+       방 번역은 손님이 누르지 않아도 온다 — 릴레이 `roomTrOn()` 이 이용권 0x04(웹 강연 강사)·0x08·0x10·0x20 에서
+       켜지고 방에 있는 손님 말마다 민다(relay/src/room.js · 운영 ROOM_TR=1). P-14: 강사 기기는 번역문을 보내지 않는다. */
+    var GUEST_TR_ORDER = (function () { try { return new URLSearchParams(location.search).get('trorder') !== '0'; } catch (e) { return true; } })();
+    /** 아이폰·아이패드(웹킷) — 아이패드OS 는 맥처럼 보이니 터치로 가린다. 아이폰의 크롬·파폭도 웹킷이다 */
+    function isWebkitIos(ua) {
+      var u = String(ua || (navigator && navigator.userAgent) || '');
+      return /iP(hone|od|ad)/.test(u) ||
+             (/Macintosh/.test(u) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
+    }
     function trPlan() {
-      var plan = browserCanTranslate() ? 'browser' : 'server';
+      var plan, why;
+      if (GUEST_TR_ORDER) {
+        plan = 'server';
+        why = isWebkitIos() ? 'ios' : (rp && rp.ready()) ? 'raypack_ready' : ('raypack_' + (rp && rp.state ? rp.state() : 'none'));
+      } else {
+        plan = browserCanTranslate() ? 'browser' : 'server';
+        why = 'old';
+      }
       /* 칸 이름에 s-r-c 를 쓰지 않는다 — 링크 검사기가 그 글자 뒤의 따옴표를 **링크로
          읽는다**(10-21 에 두 번 걸렸다: `langs_src=` 와 이 줄). `from=` 으로 적는다. */
-      var line = 'guest_tr_plan plan=' + plan + ' me=' + (selectedLang || '-')
+      var line = 'guest_tr_plan plan=' + plan + ' why=' + why + ' me=' + (selectedLang || '-')
                + ' browser=' + (browserLangs()[0] || '-') + ' from=' + (srcLang || '-');
       if (trPlanLog[trPlanLog.length - 1] !== line) { trPlanLog.push(line); try { console.log(line); } catch (e) {} }
       return plan;
     }
     window.rtTrPlan = { plan: trPlan, log: function () { return trPlanLog.slice(); },
-                        canBrowser: browserCanTranslate, langs: browserLangs };
+                        canBrowser: browserCanTranslate, langs: browserLangs, ios: isWebkitIos, order: function () { return GUEST_TR_ORDER; } };
 
     /* 손님 폰이 번역하기를 **기다렸다** 읽는다 (장부 51).
        상한 2초 — 브라우저 번역은 보통 그보다 빨리 글자를 바꾼다. 넘으면 원문을 읽지 않는다:
@@ -2299,24 +2321,9 @@
       })();
     }
 
-    /* 안내 띠 — **손님 말이 원문과 다를 때만** 보인다. 같으면 번역할 것이 없다.
-       읽는 곳은 이 한 함수다(§4). 첫 걸음에 기록 한 줄(§12). */
-    function renderTrNotice() {
-      var box = document.getElementById('tr-notice');
-      if (!box) return;
-      var differ = srcLang && selectedLang &&
-                   normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang);
-      /* ★ 「브라우저 번역을 켜면 당신 말로 보입니다」는 **브라우저가 그 말로 번역해 줄 때만**
-         참이다(B 0). 한국어 폰에서 영어를 고른 손님에게 그 띠는 **거짓**이고, 눌러도 아무
-         일이 없다. 그 폰은 방 번역으로 간다 — 손님이 할 일이 없으니 띠도 띄우지 않는다. */
-      var show = !!differ && guestTr !== 'server' && browserCanTranslate();
-      box.style.display = show ? 'block' : 'none';
-      var line = 'tr_notice on=' + (show ? 1 : 0) + ' from=' + (srcLang || '-') + ' me=' + (selectedLang || '-');
-      if (trNoticeLog[trNoticeLog.length - 1] !== line) trNoticeLog.push(line);
-      renderSrcBtn();        // 길(browser/server)이 정해지는 자리에서 단추도 같이 본다
-    }
-    var trNoticeLog = [];
-    window.rtTrNotice = { log: function () { return trNoticeLog.slice(); }, render: renderTrNotice };
+    /* 파란 「브라우저 번역 켜세요」 띠(#tr-notice)와 「서버 번역으로」 단추는 **치웠다**(NOW 11-10 12:56 ① · §5) —
+       새 순서에서는 방(서버) 번역이 손님이 누르지 않아도 오는 기본 길이라 손님이 할 일이 없다.
+       브라우저 번역은 손님이 브라우저 메뉴에서 **직접** 켤 때만이고, 그때도 위 지켜보기가 `guest_tr=browser` 를 센다. */
 
     /* ── 「크롬으로 열기」 — 아이폰 사파리에서만 (NOW B 7) ─────────────────────
      *
@@ -2332,9 +2339,7 @@
      */
     function isIosSafari(ua) {
       var u = String(ua || (navigator && navigator.userAgent) || '');
-      var ios = /iP(hone|od|ad)/.test(u) ||
-                (/Macintosh/.test(u) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
-      if (!ios) return false;
+      if (!isWebkitIos(u)) return false;
       return !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/)/.test(u);
     }
 
@@ -2376,20 +2381,10 @@
           try { location.href = to; } catch (e) {}
         });
       }
-      var b = document.getElementById('btn-tr-server');
-      if (!b) return;
-      b.addEventListener('click', function () {
-        /* 손님이 **스스로** 보조 길을 골랐다. 띠를 치우고 기록에 남긴다.
-           지금 보조 길은 강사가 미리 보낸 번역이다 — 판 3번(릴레이 번역)이 들어오면
-           그쪽으로 바뀐다. 바뀌는 자리는 여기 하나다(§4). */
-        markGuestTr('server');
-        renderTrNotice();
-        for (var i = 0; i < lines.length; i++) updateLineUI(lines[i]);
-      });
     });
 
     function addLine(line) {
-      renderTrNotice();        // 원문 언어는 줄이 와야 확실해진다 — 그때 다시 본다
+      renderSrcBtn();          // 원문 언어는 줄이 와야 확실해진다 — 그때 단추를 다시 본다
       updateRoomState();   // ④ 줄이 하나라도 오면 빈 방 띠를 치운다
       const div = document.createElement('div');
       div.className = 'msg-line' + (line.script ? ' msg-script' : '');
@@ -2405,13 +2400,13 @@
         ? `<span class="badge badge-script">${t(line.isAnswer ? 'answer_line_tag' : 'ask_line_tag', currentUiLang)}</span>`
         : line.script
           ? `<span class="badge badge-script">${t('script_prefix', currentUiLang)} ${line.para}/${line.total}</span>`
-          : `#${line.seq}`;
+          : `<span class="dev-tag">#${line.seq}</span>`;
       div.innerHTML = `
         <div class="msg-bubble">
           <div class="msg-text"></div>
           <div class="msg-tr"></div>
         </div>
-        <div class="msg-src" dir="ltr" translate="no">${head} ${srcLang.toUpperCase()} <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${spkLabel ? '' : ' hidden'}>${escapeHtmlText(spkLabel)}</span></div>
+        <div class="msg-src" dir="ltr" translate="no">${head} <span class="dev-tag">${srcLang.toUpperCase()}</span> <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${spkLabel ? '' : ' hidden'}>${escapeHtmlText(spkLabel)}</span></div>
       `;
       const textDiv = div.querySelector('.msg-text');
       setLineText(textDiv, line.text);      // 우리가 쓴 글자를 적어 둔다 — 밖에서 바뀌면 번역이다

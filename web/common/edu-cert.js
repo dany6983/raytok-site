@@ -84,7 +84,8 @@ function buildCertModel(o) {
       outAt: Math.max(out, p.joinedAt[0]),
       leftEarly: lastLeft != null && lastLeft < endedAt,
       minutes: Math.round(listenMs(p, endedAt) / 60000),
-      confirmAt: c ? c.at : null
+      confirmAt: c ? c.at : null,
+      rejoin: Math.max(0, p.joinedAt.length - 1)   // 화면(입장 칸)에만 — CSV 열은 그대로
     };
   });
   // 명단에 없는 기기의 확인(강사 화면을 새로 고쳤다 등) — 확인은 버리지 않는다(R-15). 시간 칸은 모름.
@@ -219,7 +220,7 @@ function certHtml(m, opts) {
   const langLine = m.byLang.length ? m.byLang.map(l => `${esc(l.name)} ${l.n}명`).join(' · ') : '없음';
   const row = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
   const att = m.rows.map(r => `<tr><td class="c">${r.no}</td><td>${esc(r.name || NONE)}</td><td>${esc(r.org)}</td><td>${esc(r.langName || r.lang)}</td>`
-    + `<td class="c">${r.inAt == null ? '' : hm(r.inAt)}</td><td class="c">${r.outAt == null ? '' : hm(r.outAt)}</td>`
+    + `<td class="c">${r.inAt == null ? '' : hm(r.inAt)}${r.rejoin ? `<br><span class="rj">재입장 ${r.rejoin}</span>` : ''}</td><td class="c">${r.outAt == null ? '' : hm(r.outAt)}</td>`
     + `<td class="c">${r.minutes == null ? '' : r.minutes}</td><td class="c">${r.confirmAt == null ? '미확인' : esc(hm(r.confirmAt))}</td></tr>`).join('');
   let annex2 = '';
   if (m.lines && m.lines.length) {
@@ -234,7 +235,7 @@ function certHtml(m, opts) {
       + `</tbody></table></div>`;
   }
   return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>${esc(m.title)} ${esc(m.docNo)}</title><style>
-@page { size: A4; margin: 16mm 14mm; }
+@page { size: A4; margin: 15mm; }
 body { font-family: 'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR','Noto Sans CJK KR',sans-serif; color:#111; font-size:10.5pt; margin:0; }
 h1 { text-align:center; font-size:20pt; letter-spacing:4px; margin:4px 0 2px; }
 .docno { text-align:right; font-size:9pt; color:#333; margin-bottom:8px; }
@@ -243,6 +244,7 @@ th, td { border:1px solid #333; padding:5px 6px; vertical-align:middle; }
 .info th { width:22%; background:#f1f1f1; text-align:left; font-weight:600; }
 .list th { background:#f1f1f1; font-weight:600; }
 .c { text-align:center; }
+.rj { font-size:8pt; }
 .top { display:flex; gap:10px; align-items:flex-start; margin:10px 0; }
 .sign { flex:1; } .sign td { height:52px; text-align:center; } .sign th { background:#f1f1f1; width:33%; }
 .qr { width:120px; text-align:center; font-size:7pt; word-break:break-all; color:#333; }

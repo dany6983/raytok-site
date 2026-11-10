@@ -151,7 +151,9 @@ async function openGuest(browser, base, code, port, mute, extra) {
     await guideRoom();
     const line = (en) => hostWs.send(JSON.stringify({ seq: ++seq, src_lang: 'ko', text: '말 ' + seq, tr: { en } }));
     const waitN = (pg, n) => pg.waitForFunction((n) => window.__tts.speak.length >= n, n, { timeout: 5000 });
-    const e = await openGuest(browser, base, plain.code, port, false);
+    /* 11-10 12:56 ③ 부터 기본은 앱 106 규칙(합치기·배속·10초@1.4 건너뜀 — test:listener-tts106). 여기서는
+       11-03 ④ 판(5초 건너뜀)을 스위치 ?tts106=0 으로 그대로 잰다 — 끄면 옛 판으로 돌아가는지가 이 칸의 일이다 */
+    const e = await openGuest(browser, base, plain.code, port, false, '&tts106=0');
     ['line one.', 'line two.', 'line three.'].forEach(line);
     await waitN(e.g, 1);
     await new Promise(r => setTimeout(r, 300));          // 셋 다 닿을 틈(실시간)

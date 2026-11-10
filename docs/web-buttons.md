@@ -56,7 +56,6 @@
 | btn-save-execute (저장) | — | 파일 받기 1 |
 | btn-fullscreen (⛶) | — | 전체 화면 요청(기록 `fullscreen go=1`) |
 | btn-save-end (끝 창 · 내 기록 받기) | — | 파일 받기 1 |
-| btn-tr-server (서버 번역으로) | — | 따로: test:listener-browser-tr (브라우저 번역 길에서만) |
 | btn-open-chrome (크롬으로 열기) | — | 따로: test:open-chrome (아이폰에서만) |
 
 레이팩 「와이파이에서 받기 / 지금 받기」 는 언어를 고른 뒤 만들어지는 단추 — test:raypack-guest 가 맡는다(E).

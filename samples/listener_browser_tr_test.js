@@ -98,60 +98,45 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
     ok((await page2.evaluate(() => rtGuestTr.mode())) === 'none',
        '우리가 줄을 더 쓰는 것은 번역으로 세지 않는다 (되돌림 실증 ①)');
 
-    /* ⑥-2 안내 띠 — 손님 말이 원문과 다를 때만. 「서버 번역으로」는 보조 길.
-       §12: 칸을 넣으면 **구조 단언**(어느 부모의 어느 형제인지)을 같이 넣는다. */
+    /* ⑥-2 파란 안내 띠·「서버 번역으로」 단추는 **치웠다** (NOW 11-10 12:56 ① · §5) — 방(서버) 번역이 기본 길이라
+       손님이 할 일이 없다. 띠가 다시 생기면 이 줄이 붉다. */
     {
-      /* ★ 폰 언어를 **손님이 고른 말(vi)로** 둔다 (B 0, 10-21). 까닭: 브라우저 번역은
-         **브라우저 언어**로 번역하므로, 그 말이 아닌 폰에서 이 띠는 **거짓**이다 —
-         그런 폰은 방 번역으로 간다(아래 ⑦ 에서 그 경우를 따로 센다). */
-      const pageN = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'vi-VN' });
-      await pageN.goto(`${base}/web/listener/?lang=vi`);
-      await pageN.waitForSelector('#lang-select');
-      const before = await pageN.evaluate(() => {
-        const b = document.getElementById('tr-notice');
-        return { exists: !!b, vis: b ? getComputedStyle(b).display !== 'none' : null,
-                 noTr: b ? b.getAttribute('translate') : null,
-                 nextIsVoice: !!(b && b.nextElementSibling && b.nextElementSibling.id === 'voice-notice'),
-                 inChat: !!(b && b.closest('#chat-screen')) };
+      const gone = await page2.evaluate(() => ({ band: !!document.getElementById('tr-notice'),
+        btn: !!document.getElementById('btn-tr-server'), fn: typeof window.renderTrNotice }));
+      ok(!gone.band && !gone.btn && gone.fn === 'undefined', `⑥-2 #tr-notice·#btn-tr-server·renderTrNotice 없음 (${JSON.stringify(gone)})`);
+    }
+
+    /* ⑥-3 새 순서 (guestTrOrder 기본 켬) — 폰 말에 vi 가 있어도 브라우저 번역을 **기다리지 않는다**.
+       안드로이드 = 레이팩 → 실패·받는 중이면 서버 · 아이폰 = 처음부터 서버(레이팩 안 받음) */
+    for (const [label, ua, why] of [
+      ['안드로이드 크롬', 'Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36', /^raypack_/],
+      ['아이폰 사파리', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1', /^ios$/],
+    ]) {
+      const ctxO = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'vi-VN', userAgent: ua });
+      const pO = await ctxO.newPage();
+      await pO.addInitScript(() => {
+        window.__spoken = [];
+        window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
+        Object.defineProperty(window, 'speechSynthesis', { configurable: true,
+          value: { getVoices: () => [{ lang: 'vi-VN', name: 'vi' }], cancel() {},
+                   speak: (u) => { if (u && u.text) window.__spoken.push(u.text); setTimeout(() => { if (u && u.onend) u.onend({}); }, 0); } } });
       });
-      ok(before.exists && before.noTr === 'no', '안내 띠가 있고 **번역 금지**다 — 이미 손님 말이다');
-      ok(before.nextIsVoice && before.inChat,
-         '구조: 청취 화면 안, 「음성 없음」 띠 **바로 앞 형제** (§12 구조 단언)');
-      ok(before.vis === false, '아직 방에 안 들어왔으면 띠가 없다');
-
-      /* 참여한 뒤의 화면으로 둔다 — 띠와 단추는 **청취 화면** 안에 있어서 참여 전에는
-         안 보인다(그게 맞다). 방에 붙는 길은 릴레이가 있어야 하므로 화면만 그 자리로 둔다. */
-      await pageN.evaluate(() => {
-        srcLang = 'ko'; selectedLang = 'vi';
-        document.getElementById('join-screen') && (document.getElementById('join-screen').style.display = 'none');
-        document.querySelectorAll('.screen').forEach((el) => { if (el.id !== 'chat-screen') el.style.display = 'none'; });
-        document.getElementById('chat-screen').style.display = 'flex';
-        renderTrNotice();
+      await pO.goto(`${base}/web/listener/?lang=vi`);
+      await pO.waitForSelector('#lang-select');
+      const g = await pO.evaluate(() => {
+        srcLang = 'ko'; selectedLang = 'vi'; isTtsEnabled = true;
+        const line = { seq: 21, text: '안전모를 쓰십시오.', tr: { vi: 'Hãy đội mũ bảo hộ.' }, at: Date.now(), broadcast: true };
+        lines.push(line); addLine(line); speakWhenTranslated(line, {});
+        const log = rtTrPlan.log();
+        return { order: rtTrPlan.order(), can: rtTrPlan.canBrowser(), plan: rtTrPlan.plan(), ios: rtTrPlan.ios(), last: log[log.length - 1] || '' };
       });
-      const shown = await pageN.evaluate(() => ({
-        vis: getComputedStyle(document.getElementById('tr-notice')).display !== 'none',
-        text: document.getElementById('tr-notice-text').textContent,
-        btn: document.getElementById('btn-tr-server').textContent,
-        log: rtTrNotice.log()
-      }));
-      ok(shown.vis === true, '손님 말이 원문과 다르면 띠가 보인다');
-      ok(/trình duyệt/i.test(shown.text), `안내가 **손님 말**로 나온다 — "${shown.text.slice(0, 40)}"`);
-      ok(/máy chủ/i.test(shown.btn), `단추도 손님 말이다 — "${shown.btn}"`);
-      ok(shown.log.some((l) => /^tr_notice on=1 from=ko me=vi$/.test(l)),
-         `첫 걸음에 기록 한 줄 (§12) — ${shown.log.join(' · ')}`);
-
-      /* 같은 말이면 띠가 없다 — 번역할 것이 없다 (되돌림 실증 ③) */
-      await pageN.evaluate(() => { selectedLang = 'ko'; renderTrNotice(); });
-      ok((await pageN.evaluate(() => getComputedStyle(document.getElementById('tr-notice')).display !== 'none')) === false,
-         '손님 말이 원문과 같으면 띠가 없다 (되돌림 실증 ③)');
-
-      /* 단추를 누르면 보조 길 — 띠가 사라지고 guest_tr=server */
-      await pageN.evaluate(() => { selectedLang = 'vi'; renderTrNotice(); });
-      await pageN.click('#btn-tr-server');
-      ok((await pageN.evaluate(() => rtGuestTr.mode())) === 'server', '단추를 누르면 guest_tr=server');
-      ok((await pageN.evaluate(() => getComputedStyle(document.getElementById('tr-notice')).display !== 'none')) === false,
-         '고른 뒤에는 띠가 사라진다 — 두 번 묻지 않는다');
-      await pageN.close();
+      await pO.waitForTimeout(200);
+      const said = await pO.evaluate(() => window.__spoken.slice());
+      const w = (g.last.match(/why=(\S+)/) || [])[1] || '';
+      ok(g.order === true && g.can === true && g.plan === 'server' && why.test(w),
+        `⑥-3 ${label}: 폰이 vi 를 번역할 수 있어도 길은 server (why=${w}) — 브라우저를 기다리지 않는다`);
+      ok(said[0] === 'Hãy đội mũ bảo hộ.', `⑥-3 ${label}: 기다림 없이 방 번역을 바로 읽는다 (${said[0] || '없음'})`);
+      await ctxO.close();
     }
 
     /* ⑦ 소리는 **번역된 글자**를 읽는다 — 번역 전 원문을 읽으면 손님은 모르는 말을 듣는다.
@@ -167,7 +152,7 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
                  speak: (u) => { if (u && u.text) window.__spoken.push(u.text); setTimeout(() => { if (u && u.onend) u.onend({}); }, 0); /* 진짜 엔진처럼 onend — 11-03 ④ 큐(D-11) */ } }
       });
     });
-    await page3.goto(`${base}/web/listener/?lang=vi`);
+    await page3.goto(`${base}/web/listener/?lang=vi&trorder=0`);   // 옛 순서(브라우저 먼저) — 스위치를 끄면 그대로인지
     await page3.waitForSelector('#lang-select');
     /* 방송 줄(원문)이 오는 길을 그대로 탄다 — `addLine` 이 아니라 소켓이 주는 모양으로 */
     await page3.evaluate(() => {
@@ -236,20 +221,16 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
       const pageK = await ctxK.newPage();
       const spoke = [];
       pageK.on('console', (m) => { const t = m.text(); if (/guest_tr/.test(t)) spoke.push(t); });
-      await pageK.goto(`${base}/web/listener/?lang=en`);
+      await pageK.goto(`${base}/web/listener/?lang=en&trorder=0`);
       await pageK.waitForSelector('#lang-select');
       const got = await pageK.evaluate(() => {
         srcLang = 'ko'; selectedLang = 'en';
         document.querySelectorAll('.screen').forEach((el) => { if (el.id !== 'chat-screen') el.style.display = 'none'; });
         document.getElementById('chat-screen').style.display = 'flex';
-        renderTrNotice();
-        return { plan: rtTrPlan.plan(), can: rtTrPlan.canBrowser(), langs: rtTrPlan.langs(),
-                 band: getComputedStyle(document.getElementById('tr-notice')).display !== 'none' };
+        return { plan: rtTrPlan.plan(), can: rtTrPlan.canBrowser(), langs: rtTrPlan.langs() };
       });
       ok(got.can === false && got.plan === 'server',
          `⑦ 한국어 폰 + 영어 손님 → 브라우저는 못 한다 · 길은 **server** (폰 말 ${got.langs.join(',')})`);
-      ok(got.band === false,
-         '⑦ 그 폰에 「브라우저 번역을 켜면…」 띠를 **띄우지 않는다** — 눌러도 아무 일이 없는 거짓 안내다');
       ok(spoke.some((l) => /guest_tr_plan plan=server/.test(l)),
          `⑦ 기록 한 줄 (${spoke.filter((l) => /plan=/.test(l)).slice(-1)[0] || '없음'})`);
 
@@ -257,11 +238,10 @@ const ok = (c, d) => { if (c) { pass++; console.log('  [PASS] ' + d); } else { f
          즉 코드가 지어낸 것이 아니라 **폰 말을 읽는다**. */
       const flip = await pageK.evaluate(() => {
         srcLang = 'en'; selectedLang = 'ko';            // 원문 en · 손님 ko = 이 폰의 말
-        renderTrNotice();
-        return { plan: rtTrPlan.plan(), band: getComputedStyle(document.getElementById('tr-notice')).display !== 'none' };
+        return { plan: rtTrPlan.plan() };
       });
-      ok(flip.plan === 'browser' && flip.band === true,
-         `⑦ 폰 말과 같은 언어를 고르면 길이 **browser** 로 바뀌고 띠가 돌아온다 (${flip.plan}) — 되돌림 실증 ③`);
+      ok(flip.plan === 'browser',
+         `⑦ (옛 순서) 폰 말과 같은 언어를 고르면 길이 **browser** 로 바뀐다 (${flip.plan}) — 되돌림 실증 ③`);
       await ctxK.close();
     }
   } finally {

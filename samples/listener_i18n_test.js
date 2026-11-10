@@ -19,7 +19,8 @@ const KEYS = ['voice_absent_notice', 'voice_button', 'voice_pick_title', 'voice_
   /* ⑤ (10-22 마스터 13:00) 정본 v1 로 생긴 글자 — 「번역 중」·「원문 보기」·「앱 같이 받기」.
      이 넷은 **번역이 아직일 때·원문을 숨겼을 때** 손님이 보는 글자다. 비면 그 자리에
      한국어가 남는다(§18 — 영어 폰에 한국어가 나오는 그 모양). */
-  'badge_pending', 'badge_no_tr', 'btn_show_src', 'tr_server_btn', 
+  'badge_pending', 'badge_no_tr', 'btn_show_src',   // tr_server_btn — 11-10 12:56 ① 띠와 같이 치움
+ 
   // ⑥ (10-27 00:30) 손님 질문 창 placeholder 및 발언 중 안내
   'ask_input_placeholder', 'ask_speaking'];
 const want = [...new Set(langs.map(l => l.code.startsWith('zh') ? 'zh' : l.code))];
