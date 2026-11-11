@@ -1294,9 +1294,9 @@ const iosNoMic = ASK_IOS_TEXT && /iP(hone|od|ad)/.test(navigator.userAgent || ''
 const Rec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
 showAskModalFallback(askId, askSeq);
 if (iosNoMic) connLog.push(`${ts()} ask ios→text`);
-if (!Rec) return;
+if (!Rec && !ASK_FLOW2) return;
 const go = () => window.rtAskMic && rtAskMic.open({
-Rec, id: askId, seq: askSeq, t, loadRecLang,
+Rec, flow2: ASK_FLOW2, id: askId, seq: askSeq, t, loadRecLang,
 lang: () => selectedLang || 'ko',
 log: (l) => connLog.push(`${ts()} ${l}`),
 alive: () => !!askSpeakingFor && askSpeakingFor.id === askId,
@@ -1311,10 +1311,9 @@ document.head.appendChild(Object.assign(document.createElement('script'), { src:
 function stopListenerMicQuestion() {
 const had = !!askSpeakingFor;
 askSpeakingFor = null;
-if (window.rtAskMic) rtAskMic.close();
 if (had) resumeReading('ask');
-const askModal = document.getElementById('ask-modal');
-if (askModal) askModal.style.display = 'none';
+const hide = () => { const m = document.getElementById('ask-modal'); if (m) m.style.display = 'none'; };
+if (window.rtAskMic) rtAskMic.end ? rtAskMic.end(hide) : (rtAskMic.close(), hide()); else hide();
 }
 
 function showAskModalFallback(askId, askSeq, micOn) {
@@ -1349,6 +1348,7 @@ const seenAsk = new Set();
 const seenSkip = new Set();
 const connLog = []; let connTries = 0, connTimer = null;
 const ASK_IOS_TEXT = true;
+const ASK_FLOW2 = new URLSearchParams(location.search).get('askflow') !== '0';
 const ts = () => new Date().toISOString().slice(11, 19);
 function scriptTtsDefault() {
 if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
@@ -1724,7 +1724,8 @@ return;
 if (msg.kind === 'question' || msg.kind === 'ask_active') {
 currentActiveAskId = msg.id;
 const qSrc = msg.src || msg.text;
-const askKey = `${msg.id}:${msg.askRev || ''}`;
+const askKey = `${msg.id}:${msg.askRev || ''}:${qSrc || ''}`;
+if (qSrc && msg.kind === 'question' && msg.id === myAskId && window.rtAskMic) rtAskMic.sent();
 if (msg.id && seenAsk.has(askKey)) return;
 if (msg.id) seenAsk.add(askKey);
 if (msg.id) {
@@ -1733,10 +1734,11 @@ for (let i = lines.length - 1; i >= 0; i -= 1) {
 if (lines[i].ask && lines[i].ask === msg.id) { dup = lines[i]; break; }
 }
 if (dup) {
-if (!dup.text && qSrc) { dup.text = qSrc; updateLineUI(dup); }
+if (qSrc && dup.text !== qSrc) { dup.text = qSrc; updateLineUI(dup); }
 return;
 }
 }
+if (!qSrc) return;
 const qLang = msg.srcLang || srcLang;
 const line = {
 seq: null,
@@ -1853,7 +1855,8 @@ pending: !!msg.pending || (!msg.tr || !msg.tr[selectedLang])
 && onServerTr() && !isRawBroadcast   // 「원문만」 방(raw=1)은 번역이 오지 않는다 — 기다림 표 없음
 && !!(srcLang && selectedLang && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)),
 via: msg.via,
-broadcast: isBroadcast
+broadcast: isBroadcast,
+ans: ASK_FLOW2 && !!currentActiveAskId   // 질문 중 강사가 한 말 = 답변 — 꼬리표만(④)
 };
 lines.push(line);
 lastSeq = msg.seq;
@@ -2089,7 +2092,7 @@ const head = isAsk
 ? `<span class="badge badge-script">${t(line.isAnswer ? 'answer_line_tag' : 'ask_line_tag', currentUiLang)}</span>`
 : line.script
 ? `<span class="badge badge-script">${t('script_prefix', currentUiLang)} ${line.para}/${line.total}</span>`
-: `<span class="dev-tag">#${line.seq}</span>`;
+: `<span class="dev-tag">#${line.seq}</span>${line.ans ? ` <span class="badge badge-script ans-tag">${t('answer_line_tag', currentUiLang)}</span>` : ''}`;
 div.innerHTML = `
 <div class="msg-bubble">
 <div class="msg-text"></div>
@@ -2399,6 +2402,7 @@ const askInputText = document.getElementById('ask-input-text');
 
 if (btnAsk) {
 btnAsk.addEventListener('click', () => {
+if (ASK_FLOW2 && !askSpeakingFor) { window.rtAskMic && rtAskMic.reset(); if (askInputText) { askInputText.style.height = '34px'; askInputText.onfocus = () => { if (askInputText.style.height === '34px') askInputText.style.height = '64px'; }; } }
 if (askModal) askModal.style.display = askModal.style.display === 'none' ? 'block' : 'none';
 });
 }
@@ -2410,7 +2414,7 @@ if (askModal) askModal.style.display = 'none';
 if (btnAskSubmit) {
 btnAskSubmit.addEventListener('click', () => {
 const text = (askInputText && askInputText.value || '').trim();
-if (!text) return;
+if (!text && (askSpeakingFor || !ASK_FLOW2)) return;
 if (!(ws && ws.readyState === WebSocket.OPEN)) return;
 const userName = myName || (nameInput && nameInput.value) || t('anon_name', currentUiLang) || 'Anonymous';
 if (askSpeakingFor) {
@@ -2423,6 +2427,7 @@ src: text,
 srcLang: selectedLang,
 at: Date.now()
 }));
+if (ASK_FLOW2 && window.rtAskMic) { rtAskMic.sending(); askInputText.value = ''; return; }
 } else {
 myAskId = 'q_web_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 ws.send(JSON.stringify({

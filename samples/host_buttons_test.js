@@ -206,6 +206,9 @@ const PARAS = ['첫 문단입니다.', '두 번째 문단입니다.', '세 번�
       ok(r.st === '0' && r.back, `btnAskSpeak(지명 칸 안 — 지금 숨김) 누르면 저장 0 · 다시 누르면 원래 (${r.t0.trim()} → ${r.t1.trim()})`);
     }
     rows.push(['btnAskSpeak (질문 소리)', '—', '글자 토글 · localStorage raytok_ask_speak 0/1']);
+    /* 질문 흐름 2 (NOW 11-11 15:26 ④⑤) — 누르는 시험은 samples/ask_flow2_test.mjs (지명 칸 안 단추) */
+    rows.push(['btnAskAnswer (🎤 답변하기)', '— (강의 🎤 켬 · 원문 줄)', 'test:ask-flow2 — 누르면 🎤 켬, 손님 줄에 「답변」 꼬리표']);
+    rows.push(['btnAskEnd (질문 끝내기)', 'revoke reason=host_done', 'test:ask-flow2 — 손님 「질문 끝」 · 원고 멈춘 문장부터']);
 
     /* ── 끝 화면 ── */
     console.log('\n[끝]');

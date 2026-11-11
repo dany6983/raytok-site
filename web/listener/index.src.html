@@ -1524,9 +1524,9 @@
       const Rec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
       showAskModalFallback(askId, askSeq);         // 먼저 글자 칸 — 마이크 단추는 본체가 붙인다
       if (iosNoMic) connLog.push(`${ts()} ask ios→text`);
-      if (!Rec) return;
+      if (!Rec && !ASK_FLOW2) return;              // 흐름 2는 아이폰도 본체를 싣는다(글 칸 꼴·글자 조각)
       const go = () => window.rtAskMic && rtAskMic.open({
-        Rec, id: askId, seq: askSeq, t, loadRecLang,
+        Rec, flow2: ASK_FLOW2, id: askId, seq: askSeq, t, loadRecLang,
         lang: () => selectedLang || 'ko',
         log: (l) => connLog.push(`${ts()} ${l}`),
         alive: () => !!askSpeakingFor && askSpeakingFor.id === askId,
@@ -1541,10 +1541,9 @@
     function stopListenerMicQuestion() {
       const had = !!askSpeakingFor;
       askSpeakingFor = null;          // 발언권이 끝났다 — 단추는 다시 손들기 쪽
-      if (window.rtAskMic) rtAskMic.close();
       if (had) resumeReading('ask');  // ③ 발언권이 끝나면 이어 읽는다
-      const askModal = document.getElementById('ask-modal');
-      if (askModal) askModal.style.display = 'none';
+      const hide = () => { const m = document.getElementById('ask-modal'); if (m) m.style.display = 'none'; };
+      if (window.rtAskMic) rtAskMic.end ? rtAskMic.end(hide) : (rtAskMic.close(), hide()); else hide();   // 흐름 2: 「질문 끝 — 감사합니다」 뒤 닫힘
     }
 
     // 마이크가 없거나 거절당했을 때 — 글자 칸으로 대신한다.
@@ -1592,6 +1591,8 @@
     const seenSkip = new Set();     // 재연결 되풀이 거르기 — `para:at`
     const connLog = []; let connTries = 0, connTimer = null;   // 연결 기록 — 안 될 때의 근거(§12)
     const ASK_IOS_TEXT = true;   // 아이폰은 지명 뒤 글자로 묻는다 (10-27 실기: 마이크 열면 죽음)
+    /* 질문 흐름 2 (NOW 11-11 15:26, 기본 켬 · `?askflow=0` 옛 판) — 손들기는 글 없이도 · 지명 뒤 꼴은 ask-mic.js */
+    const ASK_FLOW2 = new URLSearchParams(location.search).get('askflow') !== '0';
     const ts = () => new Date().toISOString().slice(11, 19);
     function scriptTtsDefault() {
       if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
@@ -2058,7 +2059,8 @@
       if (msg.kind === 'question' || msg.kind === 'ask_active') {
         currentActiveAskId = msg.id;
         const qSrc = msg.src || msg.text;
-        const askKey = `${msg.id}:${msg.askRev || ''}`;
+        const askKey = `${msg.id}:${msg.askRev || ''}:${qSrc || ''}`;   // 흐름 2: 지명 때(빈 글) 뒤 말한 질문도 받는다
+        if (qSrc && msg.kind === 'question' && msg.id === myAskId && window.rtAskMic) rtAskMic.sent();
         if (msg.id && seenAsk.has(askKey)) return;
         if (msg.id) seenAsk.add(askKey);
         /* ★ 한 질문에 **메시지가 둘** 온다 — 방은 `question` 과 `ask_active` 를 같이 보낸다.
@@ -2071,10 +2073,11 @@
             if (lines[i].ask && lines[i].ask === msg.id) { dup = lines[i]; break; }
           }
           if (dup) {
-            if (!dup.text && qSrc) { dup.text = qSrc; updateLineUI(dup); }
+            if (qSrc && dup.text !== qSrc) { dup.text = qSrc; updateLineUI(dup); }
             return;
           }
         }
+        if (!qSrc) return;   // 글 없이 손든 질문 — 말하기 전엔 줄을 만들지 않는다(빈 줄 0)
         const qLang = msg.srcLang || srcLang;
         const line = {
           seq: null,
@@ -2200,7 +2203,8 @@
                    && onServerTr() && !isRawBroadcast   // 「원문만」 방(raw=1)은 번역이 오지 않는다 — 기다림 표 없음
                    && !!(srcLang && selectedLang && normalizeLangCode(srcLang) !== normalizeLangCode(selectedLang)),
           via: msg.via,
-          broadcast: isBroadcast
+          broadcast: isBroadcast,
+          ans: ASK_FLOW2 && !!currentActiveAskId   // 질문 중 강사가 한 말 = 답변 — 꼬리표만(④)
         };
         lines.push(line);
         lastSeq = msg.seq;
@@ -2517,7 +2521,7 @@
         ? `<span class="badge badge-script">${t(line.isAnswer ? 'answer_line_tag' : 'ask_line_tag', currentUiLang)}</span>`
         : line.script
           ? `<span class="badge badge-script">${t('script_prefix', currentUiLang)} ${line.para}/${line.total}</span>`
-          : `<span class="dev-tag">#${line.seq}</span>`;
+          : `<span class="dev-tag">#${line.seq}</span>${line.ans ? ` <span class="badge badge-script ans-tag">${t('answer_line_tag', currentUiLang)}</span>` : ''}`;
       div.innerHTML = `
         <div class="msg-bubble">
           <div class="msg-text"></div>
@@ -2883,6 +2887,7 @@
 
     if (btnAsk) {
       btnAsk.addEventListener('click', () => {
+        if (ASK_FLOW2 && !askSpeakingFor) { window.rtAskMic && rtAskMic.reset(); if (askInputText) { askInputText.style.height = '34px'; askInputText.onfocus = () => { if (askInputText.style.height === '34px') askInputText.style.height = '64px'; }; } }   // 글은 선택 — 한 줄로 접힘
         if (askModal) askModal.style.display = askModal.style.display === 'none' ? 'block' : 'none';
       });
     }
@@ -2897,7 +2902,7 @@
       // (10-16 에 실제로 그랬다: 마이크를 거절당한 사람의 글자 질문이 한 번도 안 나갔다).
       btnAskSubmit.addEventListener('click', () => {
         const text = (askInputText && askInputText.value || '').trim();
-        if (!text) return;
+        if (!text && (askSpeakingFor || !ASK_FLOW2)) return;   // 흐름 2: 손들기는 글 없이도 된다
         if (!(ws && ws.readyState === WebSocket.OPEN)) return;
         const userName = myName || (nameInput && nameInput.value) || t('anon_name', currentUiLang) || 'Anonymous';
         if (askSpeakingFor) {
@@ -2911,6 +2916,7 @@
             srcLang: selectedLang,
             at: Date.now()
           }));
+          if (ASK_FLOW2 && window.rtAskMic) { rtAskMic.sending(); askInputText.value = ''; return; }   // 창은 그대로 — 「전달 중…」→「전달됨 ✓」
         } else {
           /* ★ **내 질문의 이름(id)을 내가 만들어 보낸다** (2026-10-22, 진짜 릴레이 실측).
            *
