@@ -185,6 +185,12 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
   }
 
   /* 교육 확인 — relay/src/room.js `confirmFrom`·`leaveNotice` 와 같은 문(D-11) */
+  /* relay/src/room.js `iosBeatLine` 와 같은 꼴(D-11) — 고치면 둘 다 */
+  function iosBeatLine(p) {
+    const n = (x) => Math.max(0, Math.min(1e6, Math.floor(Number(x) || 0)));
+    const w = (x) => String(x || '').replace(/[^a-z0-9_]/gi, '').slice(0, 24);
+    return `ios_beat id=${w(p && p.id).slice(0, 6)} seq=${n(p && p.seq)} lines=${n(p && p.lines)} stage=${w(p && p.stage)} vis=${p && p.vis ? 1 : 0} tts=${p && p.tts ? 1 : 0}`;
+  }
   function confirmItems(room) { return Object.values(room.confirms || {}).sort((a, b) => a.at - b.at); }
   function confirmFrom(room, ws, p) {
     const reply = (o) => { try { ws.send(JSON.stringify(o)); } catch (_) {} };
@@ -525,6 +531,12 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
             if (p && p.hello && typeof p.deviceId === 'string' && p.deviceId.trim() && room.listeners.get(ws)) room.listeners.get(ws).dev = p.deviceId.trim().slice(0, 64);
           } catch (_) {}
           if (p && p.kind === 'confirm') { confirmFrom(room, ws, p); return; }
+          /* 아이폰 숨 — relay/src/room.js iosBeat 와 같은 문(D-11): 4초 안 겹친 숨은 버리고 한 줄 남긴다 */
+          if (p && p.kind === 'ios_beat') {
+            const now = Date.now();
+            if (!(ws.__beatAt && now - ws.__beatAt < 4000)) { ws.__beatAt = now; (room.beats = room.beats || []).push(iosBeatLine(p)); }
+            return;
+          }
           if (p && (p.kind === 'ask' || p.kind === 'ask_req')) {
             if (p.trans || p.tr) {
               try { ws.send(JSON.stringify({ kind: 'ask_error', why: 'p14_participant_translation_forbidden' })); } catch (_) {}

@@ -45,7 +45,8 @@ const ms = (t) => Math.round(t);
  */
 export const LIMIT = {
   index: 15000,      // 목록(32KB)
-  stall: 25000,      // 받다가 **더 이상 늘지 않는** 시간
+  stall: 10000,      // 받다가 **0바이트**인 시간 — 넘으면 끊고 받은 데서 이어받는다(Range, NOW 11-11 ⑥ · 전 25초 상한에 두 번 끊김)
+  resumes: 6,        // 이어받기 횟수 상한
   unzip: 120000,     // 60MB 풀기 (낡은 폰은 느리다)
   engine: 120000,    // 엔진 띄우기 + 모델 싣기 + 첫 문장
   sentence: 60000,   // 한 문장
@@ -215,19 +216,33 @@ export async function getPack(row, { base = PACK_BASE, onProgress = () => {}, us
   if (!res.ok) throw new Error(`팩을 못 받았다 — HTTP ${res.status} · ${url}`);
 
   const total = Number(res.headers.get('content-length')) || row.bytes || 0;
-  const parts = [];
+  let parts = [];
   let got = 0;
+  let resumes = 0;
   if (res.body && res.body.getReader) {
-    const reader = res.body.getReader();
+    let reader = res.body.getReader();
     for (;;) {
-      // ★ 한 조각을 기다리는 데도 상한을 둔다 — 그물이 멈추면 **멈춘 자리**를 적고 끝낸다
+      /* ★ 0바이트 멈춤 감지(NOW 11-11 13:28 ⑥) — 전체 시간 상한이 아니다. 10초 동안 한 조각도 안 오면 끊고
+         **받은 데서** 이어받는다(`Range: bytes=<받은 수>-`). 206 이 아니면(서버가 이어받기 안 받음) 처음부터. 상한 resumes 번 */
       let step;
       try {
         step = await withLimit(reader.read(), LIMIT.stall,
           `받다가 멈췄다(${mb(got)} / ${total ? mb(total) : '?'} 에서)`);
       } catch (err) {
         try { await reader.cancel(); } catch { /* 이미 끊겼으면 넘어간다 */ }
-        throw err;
+        if (resumes >= LIMIT.resumes) throw err;
+        resumes += 1;
+        let r2;
+        try { r2 = await fetch(url, { credentials: 'omit', headers: got ? { Range: `bytes=${got}-` } : {} }); }
+        catch (e2) { throw new Error(whyNet(e2, url)); }
+        if (r2.status === 206) { /* 이어받는다 */ }
+        else if (r2.ok) { parts = []; got = 0; }
+        else throw new Error(`이어받기 실패 — HTTP ${r2.status} · ${url}`);
+        globalThis.__rpResume = (globalThis.__rpResume || 0) + 1;
+        try { console.log(`raypack_resume n=${resumes} at=${got} status=${r2.status}`); } catch { /* */ }
+        if (!r2.body || !r2.body.getReader) throw new Error('이어받기 몸통이 없다');
+        reader = r2.body.getReader();
+        continue;
       }
       if (step.done) break;
       parts.push(step.value);

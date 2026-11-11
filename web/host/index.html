@@ -1955,7 +1955,10 @@
          · 말이 없어 조용하면(interim 0) 아무것도 안 한다 — 살아 있는 인식기는 건드리지 않는다.
        스위치(§3, 기본 켬): `?nofinal=0` 이면 끈다.
        ─────────────────────────────────────────────────────────────────── */
-    const MIC_NOFINAL_MS = 15000;
+    /* ★ 11-11 13:28 ① — interim 확정(`IC_ON`)이 이 감시견을 **대체**한다(§5). 켜져 있으면 감시견은
+       30초 안전망으로만 남는다(인식기가 interim 을 몇 분씩 키우는 꼴 — 되열어 기억을 비운다). */
+    const IC_ON = urlParams.get('interimCommit') !== '0';
+    const MIC_NOFINAL_MS = IC_ON ? 30000 : 15000;
     const MIC_NOFINAL_ON = urlParams.get('nofinal') !== '0';
     const micNf = { since: 0, text: '', forcing: null, forcedN: 0 };
 
@@ -1998,7 +2001,87 @@
       micNf.forcing = null;
       try { clearTimeout(rec.__rtSettleTimer); } catch (_) {}
       rec.__rtSettleTimer = null;
+      if (IC_ON) { icFlush('nofinal'); return; }   // ① 이미 보낸 앞부분은 빼고 나머지만
       if (f.text) sendSpokenLine(f.text);
+    }
+
+    /* ───────────────────────────────────────────────────────────────────
+       ★ **확정을 크롬에 맡기지 않는다** (NOW 11-11 13:28 ① · 스위치 `?interimCommit=0` 끔, 기본 켬)
+
+       11-11 실기(크롬 강사, 영상·육성): final 이 **한 번도** 안 왔다. interim 15~18초 → 위 감시견이
+       끊으며 쥐고 있던 글만 나갔고, 그것도 **끝 조각**(2~46자)이었다 — `onresult` 가 `resultIndex`
+       부터만 모았는데 크롬은 interim 을 **여러 칸**으로 주고 바뀐 칸부터 알린다. 앞 칸이 빠졌다.
+       그래서:
+         · interim 은 **모든 칸**을 잇는다(`fullInterim`) — 끝 조각 버그
+         · interim 이 **1.5초** 안 바뀌면 그 글을 확정 줄로 보낸다(`why=still`)
+         · 계속 바뀌어도 **6초**면 낱말 경계까지 보내고 나머지는 이어 받는다(`why=max`)
+         · 이미 보낸 앞부분은 **글자 수(빈칸 뺌)** 로 센다 — 크롬 final 이 뒤늦게 같은 글로 오면
+           보낸 만큼 빼고 나머지만(겹쳐 보내지 않는다). 셈이 낱말 가운데에 떨어지면 낱말 처음으로
+           물러난다 — 반 낱말을 잃느니 한 낱말 겹치는 쪽(R-15)
+         · 인식기가 끝나면(`onend`) 남은 것을 보낸다(`why=end`) — **버리는 글자 0**
+       보내는 것은 그대로 원문 줄(`sendSpokenLine` · P-14).
+       ─────────────────────────────────────────────────────────────────── */
+    const IC_STILL_MS = 1500, IC_MAX_MS = 6000, IC_TICK_MS = 250;
+    const ic = { covered: 0, last: '', changedAt: 0, firstAt: 0, n: 0 };
+    function icCount(s) { let n = 0; for (const ch of String(s || '')) if (!/\s/.test(ch)) n += 1; return n; }
+    /** text 에서 빈칸 아닌 글자 n 개 뒤 자리 — 낱말 가운데면 낱말 처음으로 물러난다 */
+    function icAt(text, n) {
+      if (n <= 0) return 0;
+      const t = String(text || '');
+      let i = 0, k = 0;
+      while (i < t.length && k < n) { if (!/\s/.test(t[i])) k += 1; i += 1; }
+      if (i < t.length && !/\s/.test(t[i]) && /\s/.test(t)) {
+        let j = i; while (j > 0 && !/\s/.test(t[j - 1])) j -= 1;
+        if (j > 0) i = j;
+      }
+      return i;
+    }
+    function icRest(t) { return String(t || '').slice(icAt(t, ic.covered)); }
+    function icSend(part, why, coveredAfter) {
+      const p = String(part || '').trim();
+      ic.covered = coveredAfter;
+      ic.firstAt = 0;
+      if (!p) return;
+      ic.n += 1;
+      micNote('mic_commit', { why, chars: p.length });
+      sendSpokenLine(p);
+    }
+    /** interim(모든 칸을 이은 글) 하나 */
+    function icInterim(t) {
+      const now = Date.now();
+      if (t !== ic.last) { ic.last = t; ic.changedAt = now; }
+      if (icRest(t).trim()) { if (!ic.firstAt) ic.firstAt = now; } else ic.firstAt = 0;
+      icTick();
+    }
+    function icTick() {
+      if (!IC_ON || !ic.last) return;
+      const t = ic.last;
+      const at = icAt(t, ic.covered);
+      const rest = t.slice(at);
+      if (!rest.trim()) return;
+      const now = Date.now();
+      if (now - ic.changedAt >= IC_STILL_MS) { icSend(rest, 'still', icCount(t)); return; }
+      if (ic.firstAt && now - ic.firstAt >= IC_MAX_MS) {
+        /* 낱말 경계까지 — 마지막 낱말은 아직 자라는 중일 수 있다. 빈칸 없는 글(일본어·중국어 등)은 다 보낸다 */
+        const cut = rest.replace(/\s+$/, '').search(/\s\S*$/);
+        if (cut > 0) icSend(rest.slice(0, cut), 'max', icCount(t.slice(0, at + cut)));
+        else if (!/\s/.test(rest.trim())) icSend(rest, 'max', icCount(t));
+      }
+    }
+    /** 크롬 final — 이미 보낸 만큼 빼고 나머지만. 남은 셈은 다음 interim 앞부분으로 넘어간다 */
+    function icFinal(f) {
+      const c = ic.covered, n = icCount(f);
+      ic.last = ''; ic.changedAt = 0; ic.firstAt = 0;
+      if (c <= 0) { ic.covered = 0; sendSpokenLine(f); return; }
+      if (c < n) { const rest = String(f || '').slice(icAt(f, c)); ic.covered = 0;
+                   if (rest.trim()) { micNote('mic_commit', { why: 'final_rest', chars: rest.trim().length }); sendSpokenLine(rest); } return; }
+      ic.covered = c - n;                       // final 보다 많이 보냈다 — 넘친 만큼은 다음 줄의 앞이다
+      micNote('mic_final_dup', { chars: n });
+    }
+    /** 끝(onend·감시견) — 남은 것을 보내고 처음부터 */
+    function icFlush(why) {
+      if (ic.last) { const rest = icRest(ic.last); if (rest.trim()) icSend(rest, why, 0); }
+      ic.covered = 0; ic.last = ''; ic.changedAt = 0; ic.firstAt = 0;
     }
 
     /** 한 줄 적는다 — 화면이 아니라 **기록**이다. 시험과 사람이 같은 줄을 본다 */
@@ -2197,6 +2280,46 @@
       if (live.on && !live.ended && !live.closed) acquireWakeLock();
     });
 
+    /* ───────────────────────────────────────────────────────────────────
+       ★ **엉킴 탈출** (NOW 11-11 13:28 ② · 스위치 `?micRebuild=0` 끔, 기본 켬)
+
+       11-11 실기: 한 번 엉키면 `aborted`→`end`→되열기가 **1분 300번+** 돌고 스스로 못 빠져나왔다
+       (마이크를 끄고 켜니 0). 되열기는 `onstart` 가 올 때마다 물러서기를 0 으로 되돌리니 폭풍이 그대로 돈다.
+       같은 인식기를 다시 `start()` 하는 대신 **새로 만든다**(`buildRecognition()`) — 사람이 끄고 켠 것과 같다.
+         · 5초 안에 끝남(`onend`) 5번↑ → 새로 만들어 시작 · 기록 `mic_rebuild`
+         · 새로 만든 뒤 10초 안에 또 → 1초 쉬고 한 번 더
+         · 화면에 「마이크 다시 잡는 중」 한 줄 — 말이 들리면 「듣는 중」으로 돌아간다
+       ─────────────────────────────────────────────────────────────────── */
+    const MIC_REBUILD_ON = urlParams.get('micRebuild') !== '0';
+    const MIC_TANGLE_N = 5, MIC_TANGLE_MS = 5000, MIC_REBUILD_AGAIN_MS = 10000, MIC_REBUILD_REST_MS = 1000;
+    mic.ends = []; mic.rebuilds = 0; mic.lastRebuildAt = 0; mic.regrab = false;
+    function micTangled() {
+      if (!MIC_REBUILD_ON) return false;
+      const now = Date.now();
+      mic.ends.push(now);
+      mic.ends = mic.ends.filter(t => now - t <= MIC_TANGLE_MS);
+      return mic.ends.length >= MIC_TANGLE_N;
+    }
+    function rebuildMic() {
+      const now = Date.now();
+      const again = !!mic.lastRebuildAt && now - mic.lastRebuildAt < MIC_REBUILD_AGAIN_MS;
+      mic.rebuilds += 1; mic.lastRebuildAt = now; mic.ends = [];
+      micNote('mic_rebuild', { n: mic.rebuilds, again: again ? 1 : 0, why: mic.lastWhy || 'end' });
+      mic.regrab = true;
+      micStatus.textContent = T('mic_regrab');
+      const old = mic.rec;
+      mic.rec = null;                          // 옛 인식기가 늦게 내는 신호는 아래 `rec !== mic.rec` 로 버린다
+      try { if (old) old.abort ? old.abort() : old.stop(); } catch (_) {}
+      clearTimeout(mic.reopenTimer);
+      mic.reopenTimer = setTimeout(() => {
+        mic.reopenTimer = null;
+        if (!mic.on) return;
+        mic.rec = buildRecognition();
+        if (!mic.rec) return;
+        try { mic.rec.start(); } catch (e) { reopenMic('start_threw'); }
+      }, again ? MIC_REBUILD_REST_MS : 0);
+    }
+
     function buildRecognition() {
       const Ctor = speechCtor();
       if (!Ctor) return null;
@@ -2206,18 +2329,30 @@
       rec.continuous = true;
       rec.interimResults = true;
       rec.onresult = (ev) => {
+        if (rec !== mic.rec) return;             // ② 새로 만든 뒤 옛 인식기가 늦게 말한 것
+        if (mic.regrab) { mic.regrab = false; micStatus.textContent = T('mic_listening'); }
         let gotFinal = false, interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
           const r = ev.results[i];
           /* **확정 문장만** 나간다 — 그리고 원고를 읽는 중인 말은 **안** 나간다(아래) */
-          if (r.isFinal) { gotFinal = true; sendSpokenLine(r[0] && r[0].transcript); }
-          else interim += (r[0] && r[0].transcript) || '';
+          if (r.isFinal) {
+            gotFinal = true;
+            const f = r[0] && r[0].transcript;
+            if (IC_ON) icFinal(f); else sendSpokenLine(f);
+          }
         }
-        noFinalSeen(rec, gotFinal, interim);   // ① interim 만 15초 → 끊고 다시 연다
+        /* ① interim 은 **모든 칸**을 잇는다 — `resultIndex` 앞 칸도 아직 interim 일 수 있다(끝 조각 버그) */
+        for (let i = 0; i < ev.results.length; i++) {
+          const r = ev.results[i];
+          if (!r.isFinal) interim += (r[0] && r[0].transcript) || '';
+        }
+        if (IC_ON && interim.trim()) icInterim(interim);
+        noFinalSeen(rec, gotFinal, interim);   // 감시견 — 켜져 있으면 30초 안전망
       };
       /* 열렸다 — 물러서기를 되돌리고 지킴이에게 "살아 있다"고 알린다 */
-      rec.onstart = () => { mic.live = true; mic.backoff = 0; };
+      rec.onstart = () => { if (rec !== mic.rec) return; mic.live = true; mic.backoff = 0; };
       rec.onerror = (ev) => {
+        if (rec !== mic.rec) return;
         const why = (ev && ev.error) || 'error';
         if (why === 'not-allowed' || why === 'service-not-allowed') {
           micStatus.textContent = T('mic_denied');
@@ -2235,9 +2370,12 @@
       };
       // iOS Safari 는 몇 초 말이 없으면 **혼자 끝낸다.** 사람이 멈추지 않았으면 다시 연다.
       rec.onend = () => {
+        if (rec !== mic.rec) return;
         mic.live = false;
-        noFinalSettle(rec);                    // ① 끊은 뒤 final 이 없었으면 interim 을 보낸다 (R-15)
+        noFinalSettle(rec);                    // 끊은 뒤 final 이 없었으면 interim 을 보낸다 (R-15)
+        if (IC_ON) icFlush('end');             // ① 남은 interim — 버리는 글자 0
         if (!mic.on) return;
+        if (micTangled()) { rebuildMic(); mic.lastWhy = ''; return; }   // ② 엉킴 탈출
         reopenMic(mic.lastWhy || 'end');
         mic.lastWhy = '';
       };
@@ -2254,6 +2392,10 @@
       if (!mic.rec) { micStatus.textContent = T('mic_unsupported'); return; }
       mic.on = true;
       mic.backoff = 0; mic.reopens = 0; mic.live = false; mic.lastWhy = '';
+      mic.ends = []; mic.lastRebuildAt = 0; mic.regrab = false;
+      ic.covered = 0; ic.last = ''; ic.changedAt = 0; ic.firstAt = 0;
+      clearInterval(mic.icTimer);
+      if (IC_ON) mic.icTimer = setInterval(icTick, IC_TICK_MS);   // ① 말이 멈춰 onresult 가 안 와도 1.5초를 잰다
       try { mic.rec.start(); } catch (_) { reopenMic('first_start_threw'); }
       /*
        * 지킴이 — **열려 있어야 하는데 안 열린** 상태만 본다(D-30 을 되풀이하지 않는다).
@@ -2276,6 +2418,8 @@
     function stopMic() {
       mic.on = false;
       mic.live = false;
+      if (IC_ON) icFlush('off');                 // ① 끄는 순간 들고 있던 말도 보낸다(R-15)
+      clearInterval(mic.icTimer); mic.icTimer = null;
       clearInterval(mic.guard); mic.guard = null;
       clearTimeout(mic.reopenTimer); mic.reopenTimer = null;
       if (mic.reopens) micNote('mic_off', { reopens: mic.reopens, held: mic.pending.length });
@@ -2304,7 +2448,9 @@
     });
     window.rtHostMic = { state: mic, start: startMic, stop: stopMic, apply: applyMicVisibility,
                          send: sendSpokenLine, flush: flushSpoken, log: () => mic.log.map(x => x.line),
-                         noFinal: { on: MIC_NOFINAL_ON, ms: MIC_NOFINAL_MS, state: micNf } };
+                         noFinal: { on: MIC_NOFINAL_ON, ms: MIC_NOFINAL_MS, state: micNf },
+                         commit: { on: IC_ON, stillMs: IC_STILL_MS, maxMs: IC_MAX_MS, state: ic },
+                         rebuild: { on: MIC_REBUILD_ON, n: () => mic.rebuilds } };
 
     /* ⑥ 1시간 소크(돌리는 건 마스터 — NOW 11-03 18:45 ⑥): `?soak=1` 이면 5분마다 콘솔에 한 줄.
      * 조건: 노트북 크롬 + 유튜브 강연 1시간 연속 + 🎤 + 청취 1명. 기본 꺼짐(개발자 스위치). */
@@ -2558,6 +2704,7 @@
       let msg;
       try { msg = JSON.parse(raw); } catch (_) { return; }
       if (msg.__ping) return;
+      if (msg.kind === 'ios_beat') return;   // 손님 아이폰 숨(11-11 ④) — 옛 릴레이는 강사에게 넘긴다. 강사 화면은 쓰지 않는다
       if (msg.kind === 'para_done' && msg.para) {
         if (!live.paraDoneReceipts) live.paraDoneReceipts = {};
         if (!live.paraDoneReceipts[msg.para]) live.paraDoneReceipts[msg.para] = new Set();
@@ -3180,6 +3327,7 @@
         mic_stop: '🎤 말하기 멈춤',
         mic_idle: '원고 없이 말한 대로 청취자에게 보냅니다.',
         mic_listening: '듣는 중 — 말하면 문장 단위로 나갑니다.',
+        mic_regrab: '마이크 다시 잡는 중…',
         mic_denied: '마이크를 쓸 수 없습니다. 브라우저 주소창의 자물쇠에서 마이크를 허용해 주세요.',
         mic_unsupported: '이 브라우저는 음성 인식이 없습니다. 원고 모드로 진행해 주세요 (Chrome·Edge·Safari 16.4 이상·삼성 인터넷에서 됩니다).',
         mic_region_off: '실시간 말하기는 지금 국내에서만 켭니다. 원고 모드로 진행해 주세요.'
@@ -3357,6 +3505,7 @@
         mic_stop: '🎤 Stop speaking',
         mic_idle: 'Speak without a script — your words go to listeners.',
         mic_listening: 'Listening — each finished sentence is sent.',
+        mic_regrab: 'Re-acquiring the microphone…',
         mic_denied: 'Microphone unavailable. Allow the microphone from the lock icon in the address bar.',
         mic_unsupported: 'This browser has no speech recognition. Please use script mode (works on Chrome, Edge, Safari 16.4+, Samsung Internet).',
         mic_region_off: 'Live speaking is available in Korea only for now. Please use script mode.'

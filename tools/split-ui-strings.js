@@ -18,6 +18,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const ROOT = path.dirname(__dirname);
 const CHECK = process.argv.includes('--check');
@@ -50,14 +51,19 @@ function sliceOf(dict, lang, pick = () => true) {
     // 그 언어에도, en·ko 에도 없으면 키를 넣지 않는다 — 없는 것을 있는 척하지 않는다(§20)
     if (Object.keys(one).length) strings[key] = one;
   }
-  return { ver: dict.ver, langs: dict.langs, strings };
+  return { ver: dict.ver, rev: dict.rev, langs: dict.langs, strings };
 }
 
 const text = (obj) => JSON.stringify(obj) + '\n';   // 조각은 사람이 읽는 파일이 아니다 — 들여쓰기 없이
 
 let diffs = 0, wrote = 0;
 for (const d of DICTS) {
-  const dict = JSON.parse(fs.readFileSync(path.join(ROOT, d.src), 'utf-8'));
+  const raw = fs.readFileSync(path.join(ROOT, d.src), 'utf-8');
+  const dict = JSON.parse(raw);
+  /* ★ 11-11 13:28 ⑤ — 조각 **판 번호**(손 표 내용의 해시 8자). 손님은 `?v=<rev>` 로 받고, 받은 조각의 rev 가
+     다르면 옛 캐시로 보고 캐시 무시로 한 번 더(실기: 아이폰 메뉴가 vi 로 안 바뀜 → 사이트 데이터 지우니 바뀜).
+     `ver` 는 사전 꼴 번호라 그대로 둔다. 손님 쪽만(index) — join 은 안 붙인다(첫 화면 바이트) */
+  if (d.index) dict.rev = crypto.createHash('sha1').update(raw.replace(/\r\n/g, '\n')).digest('hex').slice(0, 8);
   const langs = dict.langs || [];
   const outDir = path.join(ROOT, d.out);
   if (!CHECK) fs.mkdirSync(outDir, { recursive: true });
@@ -71,7 +77,7 @@ for (const d of DICTS) {
     }
   }
   if (d.later && !CHECK) fs.mkdirSync(path.join(outDir, 'later'), { recursive: true });
-  if (d.index) files.set('_langs.json', text({ ver: dict.ver, langs }));   // 고를 수 있는 언어 목록만 (조각보다 먼저 받는다)
+  if (d.index) files.set('_langs.json', text({ ver: dict.ver, rev: dict.rev, langs }));   // 고를 수 있는 언어 목록만 (조각보다 먼저 받는다)
 
   for (const [name, body] of files) {
     const p = path.join(outDir, name);

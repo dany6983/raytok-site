@@ -28,7 +28,12 @@
   var q = new URLSearchParams(location.search);
   var CAP_ON = q.get('ttscap') !== '0';
   var Q_ON = q.get('ttsq') !== '0';
-  var APP106 = q.get('tts106') !== '0';
+  /* ★ 11-11 13:28 ③ — 아이폰/아이패드(웹킷)는 106 규칙을 끈다(옛 줄 세우기 · 배속 없음). 실기: 오늘 판에서 10~15초 뒤 화면
+     죽음, `?tts106=0&trorder=0` 은 4분 멀쩡. 2×2 가르기(docs/reclog/2026-11-11-web/ios-split.txt)에서 106 만 다른 것은
+     **배속 발화**(1.2/1.4배, 7개 중 6) — 그 폰은 vi 목소리도 없었다. 원인은 짐작(실기로 가름) · 다시 켜려면 `?tts106=1`. */
+  var IOS = (function () { try { var u = navigator.userAgent || ''; return /iP(hone|od|ad)/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1); } catch (_) { return false; } })();
+  var APP106 = q.get('tts106') === '1' || (q.get('tts106') !== '0' && !IOS);
+  var IOS_OFF_SAID = false;
   var JUMP_MS = 5000;                       // ④ 옛 판(?tts106=0)
   /* ⑤ 앱 수치 — 앱이 바꾸면 같이 바꾼다(앱 src/readLoop.js · src/ttsCap.js) */
   var MERGE_SHORT = 100, MERGE_MAX = 240, MERGE_UNITS = 6;
@@ -188,7 +193,8 @@
   }
 
   window.rtTtsGuard = {
-    init: function (d) { for (var k in d) dep[k] = d[k]; },
+    init: function (d) { for (var k in d) dep[k] = d[k];
+      if (IOS && !APP106 && !IOS_OFF_SAID) { IOS_OFF_SAID = true; dep.log('tts106_off why=ios'); } },
     arm: arm, ok: ok, say: say, clear: clear, capMs: capMs, dropFillers: dropFillers, catchupRate: catchupRate,
     state: function () { return { cap: CAP_ON, queue: Q_ON, app106: APP106, held: live.q.length, speaking: !!live.cur,
                                   miss: st.miss, timeouts: st.timeouts, rebinds: st.rebinds, jumps: st.jumps,

@@ -80,7 +80,8 @@ const notes = (page, k) => page.evaluate((k) => window.rtHostMic.log().filter(l 
   try {
     /* ── ① 감시견 ── */
     console.log('\n[①] final 없음 15초 감시견');
-    const h = await openHost(browser, base);
+    /* 11-11 13:28 ①(interim 확정)이 15초 감시견을 대체 — 옛 15초 판은 스위치를 끈 판에서 잰다. 새 판은 host_mic_commit_test.js */
+    const h = await openHost(browser, base, '&interimCommit=0');
     const room = relay.rooms.get(h.code);
     await h.page.click('#btnMic');
     await h.page.waitForFunction(() => window.rtHostMic.state.live === true);
@@ -133,7 +134,7 @@ const notes = (page, k) => page.evaluate((k) => window.rtHostMic.log().filter(l 
     await h.ctx.close();
 
     // D-09 거울: 스위치를 끄면 붉어야 할 자리 — 꺼진 판은 끊지 않는다
-    const off = await openHost(browser, base, '&nofinal=0');
+    const off = await openHost(browser, base, '&nofinal=0&interimCommit=0');
     await off.page.click('#btnMic');
     await off.page.waitForFunction(() => window.rtHostMic.state.live === true);
     const so = await stops(off.page);

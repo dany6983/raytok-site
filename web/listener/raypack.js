@@ -15,7 +15,7 @@
  *       | loading(n%) → ready | failed
  */
 import { canRun, fetchIndex, rowFor, getPack, sha256Hex, unzip, readPack, makeBacking,
-         withLimit, LIMIT, PACK_BASE, CACHE_NAME } from '../raypack-probe/probe.js?v=4';
+         withLimit, LIMIT, PACK_BASE, CACHE_NAME } from '../raypack-probe/probe.js?v=5';
 import { LatencyOptimisedTranslator } from '../vendor/bergamot/translator.js';
 
 /** 판 번호 — 화면 기록에 같이 적는다(옛 글이 캐시에서 도는지 가리려고. 측정 페이지 10-28 에 배웠다) */

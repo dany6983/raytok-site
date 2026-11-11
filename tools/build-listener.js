@@ -58,6 +58,19 @@ function strip(src) {
      (<pre>·<textarea> 안 여러 줄 글은 이 파일에 없다 — 생기면 여기서 비켜 간다). 템플릿 글자열 안의
      줄 앞 공백은 innerHTML 로 가는 마크업이라 역시 뜻이 없다. */
   text = text.replace(/^[ \t]+/gm, '');
+  /* 11-11: 코드 뒤에 붙은 `  // …` 도 뺀다 — 한국어 꼬리 주석 68개가 gz 2.4KB 였다(위 「0.2KB」는 10-17 셈).
+     좁게만: 줄이 `; { } , ) ]` 로 끝나고 공백 뒤 `// ` 가 올 때 · 그 앞 코드의 따옴표·백틱 수가 짝수일 때 ·
+     여러 줄 템플릿 글자열 안이 아닐 때. 틀리면 아래 검사(파싱·모양)가 쓰지 않고 멈춘다. */
+  let inTpl = false;
+  text = text.split('\n').map((l) => {
+    const m = !inTpl && l.match(/^(.*?[;{},)\]])[ \t]+\/\/ .*$/);
+    const code = m ? m[1] : l;
+    const even = (ch) => (code.split(ch).length - 1) % 2 === 0;
+    const keep = !m || !even("'") || !even('"') || !even('`');
+    const out = keep ? l : m[1];
+    if (!even('`') && !(m && !keep)) inTpl = !inTpl;
+    return out;
+  }).join('\n');
   return { text: text.replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n'), dropped };
 }
 

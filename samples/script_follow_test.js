@@ -49,7 +49,9 @@ const sends = host.match(/sendSpokenLine\(/g) || [];
  */
 /* 11-03 ① (「final 없음」 감시견): 끊은 인식기의 마지막 interim 도 **같은 함수**로 보낸다 — 부르는 곳 둘,
    둘 다 원고 판정을 거친다(문은 여전히 하나: sendSpokenLine). */
-ok(sends.length === 3, `sendSpokenLine 자리 ${sends.length}개 (정의 1 · 부르는 곳 2: 확정 줄 · no_final interim)`);
+/* 11-11 13:28 ① (interim 확정, 설계 NOW 11-11 ①): 부르는 곳 다섯 — 확정 줄(스위치 끔) · no_final interim(스위치 끔) ·
+   icSend(1.5초·6초·끝) · icFinal(앞 확정 없음 · 나머지) 둘. 모두 같은 문(sendSpokenLine)이라 원고 판정을 거친다. */
+ok(sends.length === 6, `sendSpokenLine 자리 ${sends.length}개 (정의 1 · 부르는 곳 5: 확정 줄 · no_final interim · icSend · icFinal 둘)`);
 ok(/scriptOffScript\(|offScript\(/.test(host), '보내기 전에 원고 밖인지 묻는다');
 
 /*

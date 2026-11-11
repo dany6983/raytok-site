@@ -19,7 +19,7 @@
     gotStrings = new Promise(function (res) {
       var done = false, fin = function () { if (!done) { done = true; res(); } };
       try {
-        fetch('/web/listener/ui-strings/later/' + encodeURIComponent(lang) + '.json')
+        fetch('/web/listener/ui-strings/later/' + encodeURIComponent(lang) + '.json' + (window.rtUiRev ? '?v=' + window.rtUiRev : ''))
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (d) { if (d && d.strings && cx && cx.uiStrings && cx.uiStrings.strings) Object.assign(cx.uiStrings.strings, d.strings); fin(); }, fin);
       } catch (_) { fin(); }

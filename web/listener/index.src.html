@@ -453,7 +453,6 @@
     <span data-i18n="lang_need_net"> (강사 폰 인터넷 필요)</span>
     <span data-i18n="badge_pending">번역 대기 중</span>
     <span data-i18n="badge_via">대체 번역</span>
-    <span data-i18n="no_voice_badge">음성 없음</span>
     <span data-i18n="alert_invalid_code">세션 코드 6자리를 입력하세요.</span>
     <span data-i18n="alert_rejected">연결이 거부되었습니다: </span>
     <span data-i18n="unknown_reason">알 수 없는 이유</span>
@@ -773,18 +772,26 @@
        조각이 없으면(옛 배포·만들기 빠짐) 통째 사전으로 떨어진다 — 느려도 글자가 나오는 쪽이다(R-15).
        조각도 통째도 없으면 화면은 마크업의 한국어 그대로 돈다(§20 — 빈 답에 멈추지 않는다). */
     let uiStringsLoadedFor = null;
+    /* ★ 11-11 13:28 ⑤ 판 번호 붙인 주소 — 아이폰이 옛 조각을 쥐고 있었다(메뉴가 vi 로 안 바뀜). 판(rev)은 `_langs.json`
+       (캐시 확인하고 받음)에서 읽는다. 받은 조각의 rev 가 다르면 옛 것 — 쓰지 않고 캐시 무시로 한 번 더. 실패도 한 번 더 */
+    let uiRev = '';
+    const uiLog = [];
+    function uiFail(why, lang) { const l = 'ui_strings_fail why=' + why + ' lang=' + lang; uiLog.push(l); try { console.log(l); } catch (e) {} }
+    window.rtUiStrings = { log: () => uiLog.slice(), rev: () => uiRev };
     async function loadUiStrings(lang) {
       if (uiStringsLoadedFor === lang || uiStringsLoadedFor === '*') return;
       const keep = (uiStrings && uiStrings.langs) || null;
-      try {
-        const res = await fetch('./ui-strings/' + encodeURIComponent(lang) + '.json');
-        if (res.ok) {
+      for (let k = 0; k < 2; k++) {
+        try {
+          const res = await fetch('./ui-strings/' + encodeURIComponent(lang) + '.json' + (uiRev ? '?v=' + uiRev : ''), k ? { cache: 'reload' } : undefined);
+          if (!res.ok) { uiFail('http' + res.status, lang); continue; }
           const d = await res.json();
-          uiStrings = { ver: d.ver, langs: d.langs || keep, strings: d.strings };
+          if (uiRev && d.rev !== uiRev) { uiFail('old', lang); continue; }
+          uiStrings = { ver: d.ver, rev: d.rev, langs: d.langs || keep, strings: d.strings };
           uiStringsLoadedFor = lang;
           return;
-        }
-      } catch (e) {}
+        } catch (e) { uiFail('net', lang); }
+      }
       try {
         const res = await fetch('./ui-strings.json');
         if (res.ok) { uiStrings = await res.json(); uiStringsLoadedFor = '*'; }
@@ -999,8 +1006,8 @@
          ① 고를 수 있는 언어 목록만(0.4 KB) → ② 쓸 언어 **한 조각**(약 8 KB · gz 3 KB).
          조각은 `tools/split-ui-strings.js` 가 손 표에서 만든다 — 고치는 자리는 손 표 하나다. */
       try {
-        const res = await fetch('./ui-strings/_langs.json');
-        if (res.ok) uiStrings = await res.json();        // {ver, langs} — strings 는 아직 없다
+        const res = await fetch('./ui-strings/_langs.json', { cache: 'no-cache' });   // ⑤ 판 번호는 늘 서버에 묻는다(0.2KB)
+        if (res.ok) { uiStrings = await res.json(); uiRev = window.rtUiRev = uiStrings.rev || ''; }   // {ver, rev, langs}
       } catch (e) {}
 
       const availableLangs = (uiStrings && uiStrings.langs) || ['ko', 'en'];
@@ -1128,24 +1135,31 @@
       if (isDemo || isRawBroadcast || !rpRoomOk) return;
       /* 11-10 12:56 ① — 아이폰/아이패드는 레이팩을 받지 않는다(메모리 ≈1GB). 처음부터 방(서버) 번역 */
       if (GUEST_TR_ORDER && isWebkitIos()) { if (!rpIosSaid) { rpIosSaid = 1; rpLog('raypack_skip why=ios'); } return; }
-      (rp ? Promise.resolve(rp) : import('./raypack.js?v=1').then(m => (rp = m.createRaypack({
+      (rp ? Promise.resolve(rp) : import('./raypack.js?v=2').then(m => (rp = m.createRaypack({
         row: document.getElementById('pack-row'), t: k => t(k), src: () => srcLang, log: rpLog }))))
         .then(r => r.want(selectedLang)).catch(e => rpLog('raypack_fail load ' + e));
     }
-    /* 한 줄을 폰 안에서 — 실패·빈 답·서버가 먼저 왔으면 그 줄은 서버 번역 길 그대로(R-15) */
+    /* 한 줄을 폰 안에서 — 실패·빈 답이면 그 줄은 서버 번역 길(R-15).
+       ★ 11-11 13:28 ⑥ 한 줄 = 번역 길 **하나**(스위치 `?trone=0` 끔): 실기 — 받은 뒤 12/12 줄이 server+raypack 둘 다 번역됐다.
+       레이팩 길로 간 줄에 서버 번역이 먼저 와도 **쥐고만 있다가**(line.srv) 레이팩이 실패할 때만 쓴다. 기록은 줄마다 한 줄 */
     function rpLine(line, msg, bc) {
+      line.path = 'raypack';
       rp.translate(line.text).then(out => {
-        if (out && !line.tr[selectedLang]) {
+        line.rpDone = 1;
+        if (out && (TR_ONE || !line.tr[selectedLang])) {
           line.tr[selectedLang] = out; line.rp = 1; line.pending = false;
           updateLineUI(line);
           rpLog('guest_tr_plan plan=raypack seq=' + line.seq + ' me=' + selectedLang);
           sayOnce(line, out);
           return;
         }
+        line.path = 'server';
         rpLog('guest_tr_plan plan=server seq=' + line.seq + ' why=' + (out ? 'late' : 'empty'));
+        if (line.srv) { const m = line.srv; line.srv = null; applyRoomTr(line, m); return; }
         if (bc && !line.tr[selectedLang]) speakWhenTranslated(line, msg);
       });
     }
+    const TR_ONE = (function () { try { return new URLSearchParams(location.search).get('trone') !== '0'; } catch (e) { return true; } })();
 
 
     /* B 24 — QR 로 들어온 **그 자리에서** 이 폰에 그 언어 음성이 있는지 보고 알린다.
@@ -1536,7 +1550,8 @@
        멈춤·원고 읽기의 cancel 뒤 남은 줄은 다음 줄이 올 때 지킴이 스스로 비운다(읽는 것이 없으면 비우고 시작). */
 
     function speak(text, via, audioUrl) {
-      if (!isTtsEnabled || askSpeakingFor) return;   // ③ 발언권 동안은 소리 내지 않는다(글자는 그대로)
+      if (!isTtsEnabled || askSpeakingFor) return;
+      beatStage = 'tts';   // ③ 발언권 동안은 소리 내지 않는다(글자는 그대로)
       if (!audioUrl && window.rtTtsGuard && rtTtsGuard.say(text, via)) return;
       speechSynthesis.cancel();
 
@@ -1672,7 +1687,7 @@
       /* ③④ 지킴이는 방에 들어갈 때 싣는다 — 첫 화면에는 싣지 않는다(37KB) */
       if (!window.__rtTtsGuardReady) {
         window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog, lang: () => selectedLang });
-        document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js?v=2' }));
+        document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js?v=3' }));
       }
       /* ★ 10-27 14:14 대표님 tail: 아이폰이 같은 초에 `/ws` 를 **둘** 열고 둘 다 Canceled. 이 함수가 두 곳
          (들어가기 단추 · 화면이 다시 보일 때)에서 불리는데, 앞 것이 아직 **여는 중**(CONNECTING)이면
@@ -1721,6 +1736,7 @@
         clearTimeout(connTimer);
         connLog.push(`${ts()} open`);
         sendHello();
+        iosBeat();
       };
       ws.onerror = () => { connLog.push(`${ts()} error`); };
 
@@ -1758,6 +1774,20 @@
       if (m.kind != 'confirm_open') return;
       cfQ = [m];
       document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/edu-confirm.js', onload: () => cfQ.forEach((x) => rtEduConfirm.on(x)) }));
+    }
+
+    /* ★ 11-11 13:28 ④ 아이폰 숨 — iOS 면 5초마다 방에 작은 숨(seq·줄 수·마지막 단계·화면 보임·읽는 중). 화면이 죽으면 숨이 끊긴다 —
+       relay 기록에서 끊긴 seq 와 그때 단계를 사후에 본다. 개인정보 0(기기 번호·이름·글자 없음, id 는 이 탭의 아무 글자 4개) */
+    let beatN = 0, beatT = null, beatStage = 'join';
+    const beatId = Math.random().toString(36).slice(2, 6);
+    function iosBeat() {
+      if (beatT || isDemo || !isWebkitIos()) return;
+      beatT = setInterval(() => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        let tts = 0; try { tts = speechSynthesis.speaking ? 1 : 0; } catch (e) {}
+        ws.send(JSON.stringify({ kind: 'ios_beat', id: beatId, seq: ++beatN, lines: lines.length, stage: beatStage,
+                                 vis: document.visibilityState === 'visible' ? 1 : 0, tts }));
+      }, 5000);
     }
 
     function sendHello() {
@@ -2075,6 +2105,7 @@
       }
 
       if ('text' in msg) {
+        beatStage = 'line';
         const pendingDiv = document.getElementById('msg-pending');
         if (pendingDiv) pendingDiv.remove();
 
@@ -2121,23 +2152,35 @@
       } else if ('tr' in msg && !('text' in msg)) {
         const line = lines.find(l => l.seq === msg.seq);
         if (line) {
-          /* 폰 안에서 이미 번역한 줄(장부 63)은 그 글을 둔다 — 늦게 온 서버 글로 바꾸지 않는다 */
-          Object.assign(line.tr, msg.tr, line.rp ? { [selectedLang]: line.tr[selectedLang] } : {});
-          line.pending = false;
-          if (msg.via) line.via = msg.via;
-          updateLineUI(line);
-          liveTtsDefault();
-          /* 방이 늦게 보낸 번역(B 3). 이미 읽은 줄이면 **읽지 않는다** — 손님 폰이
-             먼저 번역해 읽었을 수 있다(장부 51). 글자는 이 번역으로 바뀐다. */
-          if (msg.tr[selectedLang]) sayOnce(line, msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
+          /* ⑥ 레이팩 길로 간 줄 — 끝날 때까지 쥐고만 있는다(한 줄 = 길 하나). 레이팩이 실패하면 rpLine 이 이것을 쓴다 */
+          if (TR_ONE && line.path === 'raypack' && !line.rpDone) {
+            const o = Object.assign({}, msg.tr); delete o[selectedLang]; Object.assign(line.tr, o);   // 다른 말 칸은 그대로 받는다
+            line.srv = msg; return;
+          }
+          applyRoomTr(line, msg);   // 레이팩 글이 이미 있으면 그 칸은 그대로 둔다(applyRoomTr 안)
         }
       } else if ('no_tr' in msg) {
         const line = lines.find(l => l.seq === msg.seq);
+        if (TR_ONE && line && line.path === 'raypack') return;   // ⑥ 레이팩 길 줄 — 방의 「번역 없음」은 그 줄의 말이 아니다
         if (line) {
           line.pending = false;
           updateLineUI(line);
         }
       }
+    }
+
+    /* 방이 늦게 보낸 번역 한 줄을 붙인다 — 받는 곳(위 'tr')과 레이팩 실패(rpLine)가 같이 쓴다(§4) */
+    function applyRoomTr(line, msg) {
+      beatStage = 'tr';
+      /* 폰 안에서 이미 번역한 줄(장부 63)은 그 글을 둔다 — 늦게 온 서버 글로 바꾸지 않는다 */
+      Object.assign(line.tr, msg.tr, line.rp ? { [selectedLang]: line.tr[selectedLang] } : {});
+      line.pending = false;
+      if (msg.via) line.via = msg.via;
+      updateLineUI(line);
+      liveTtsDefault();
+      /* 방이 늦게 보낸 번역(B 3). 이미 읽은 줄이면 **읽지 않는다** — 손님 폰이
+         먼저 번역해 읽었을 수 있다(장부 51). 글자는 이 번역으로 바뀐다. */
+      if (msg.tr[selectedLang]) sayOnce(line, msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
     }
 
     // 줄 → 화면 요소 id. 원고 줄(script)은 seq 가 없으니 자기 번호(uid)로.
@@ -2440,13 +2483,21 @@
       /* ★ 10-27 15:17 대표님(세 번째): 「한국어 띄우지 말라고 — 손님 말만. 굳이 보고 싶으면 단추」.
          전에는 브라우저 번역 길이거나 번역이 아직 없으면 원문을 보였다 → 손님 폰에 한국어가 떴다.
          이제 원문은 **「원문 보기」 단추를 켰을 때만**. 번역이 없으면 「번역 대기/없음」 표만 보인다(R-15: 줄은 남고, 원문은 단추 뒤에 있다). */
-      if (line.broadcast && !(line.tr && line.tr[selectedLang])) return true;   // 「원문만」 줄에 번역이 없으면 원문이 그 줄의 전부다
+      /* ★ 11-11 13:28 ③ (스위치 `?srcHide=0` 끔, 기본 켬): 실기 — 아이폰 vi 「한글+vi 같이」. 🎤 줄은 모두 `broadcast` 라
+         번역(방)이 오기 전까지 이 줄이 원문을 보였다 — 11-10 ① 이 아이폰을 처음부터 방 번역으로 돌리자 줄마다 한글이 먼저 떴다
+         (2×2 가르기 docs/reclog/2026-11-11-web/ios-split.txt). 이제 번역이 **오는** 길이면 원문 대신 「…」(번역 대기 표)만.
+         원문이 그 줄의 전부인 곳(「원문만」 방 raw=1 · 브라우저 번역 길)만 원문을 보인다. */
+      if (line.broadcast && !(line.tr && line.tr[selectedLang])) {
+        if (!SRC_HIDE || isRawBroadcast || !onServerTr()) return true;   // 「원문만」 줄에 번역이 없으면 원문이 그 줄의 전부다
+        return !!showSrc;
+      }
       if (SRC_ONLY_ON_TOGGLE) return !!showSrc;
       if (!onServerTr()) return true;
       if (showSrc) return true;
       return !(line.tr && line.tr[selectedLang]);
     }
     const SRC_ONLY_ON_TOGGLE = true;   // 손님 폰: 원문은 단추로만 (대표님 10-27 15:17)
+    const SRC_HIDE = (function () { try { return new URLSearchParams(location.search).get('srcHide') !== '0'; } catch (e) { return true; } })();
 
     /** 단추는 **숨길 원문이 있을 때만** 보인다 (위 ①②에서는 숨길 것이 없다) */
     function renderSrcBtn() {
@@ -2488,8 +2539,8 @@
       const trText = line.tr[selectedLang] || '';
       trDiv.textContent = trText;
 
-      /* 읽을 수 있나 — 읽어 주는 쪽과 **같은 자리**에 묻는다(`pickVoice`, D-193) */
-      const hasVoice = !!pickVoice(selectedLang, line.via).voice;
+      /* 줄마다 붙던 빨간 「목소리 없음」 표는 **치웠다**(NOW 11-11 13:28 ⑦ · §5) — 위 안내 띠(#voice-notice, 손님 언어)
+         한 번이면 된다. 24줄이면 빨간 표 24개였다. */
 
       if (line.pending) {
         const badge = document.createElement('span');
@@ -2504,15 +2555,6 @@
         const badge = document.createElement('span');
         badge.className = 'badge badge-via';
         badge.textContent = `${t('badge_via', currentUiLang)}(${viaName})`;
-        trDiv.appendChild(badge);
-      }
-
-      if (trText && !hasVoice) {
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.style.backgroundColor = 'var(--danger)';
-        badge.style.color = '#fff';
-        badge.textContent = t('no_voice_badge', currentUiLang);
         trDiv.appendChild(badge);
       }
 

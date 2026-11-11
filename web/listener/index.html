@@ -416,7 +416,6 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 <span data-i18n="lang_need_net"> (강사 폰 인터넷 필요)</span>
 <span data-i18n="badge_pending">번역 대기 중</span>
 <span data-i18n="badge_via">대체 번역</span>
-<span data-i18n="no_voice_badge">음성 없음</span>
 <span data-i18n="alert_invalid_code">세션 코드 6자리를 입력하세요.</span>
 <span data-i18n="alert_rejected">연결이 거부되었습니다: </span>
 <span data-i18n="unknown_reason">알 수 없는 이유</span>
@@ -426,13 +425,13 @@ v<span id="ver-text">1.2.0</span> &copy; RayTok · <a href="/privacy/" style="co
 
 <script src="../common/voice-fallback.js"></script>
 <script>
-const LISTENER_VER = '1.2.0'; // v1.2.0 — 정본 v1: 내 말만 보기 · 질문도 내 말로 · 앱 같이 받기
+const LISTENER_VER = '1.2.0';
 document.getElementById('ver-text').textContent = LISTENER_VER;
 
 const FALLBACK_LANGS = [{"code":"ko","name_ko":"한국어","name_en":"Korean","offline":true,"fallback":null},{"code":"en","name_ko":"영어","name_en":"English","offline":true,"fallback":null},{"code":"ja","name_ko":"일본어","name_en":"Japanese","offline":true,"fallback":null},{"code":"zh-CN","name_ko":"중국어(간체)","name_en":"Chinese (Simplified)","offline":true,"fallback":null},{"code":"zh-TW","name_ko":"중국어(번체)","name_en":"Chinese (Traditional)","offline":true,"fallback":null},{"code":"es","name_ko":"스페인어","name_en":"Spanish","offline":true,"fallback":null},{"code":"fr","name_ko":"프랑스어","name_en":"French","offline":true,"fallback":null},{"code":"ru","name_ko":"러시아어","name_en":"Russian","offline":true,"fallback":null},{"code":"ar","name_ko":"아랍어","name_en":"Arabic","offline":true,"fallback":null},{"code":"vi","name_ko":"베트남어","name_en":"Vietnamese","offline":true,"fallback":null},{"code":"th","name_ko":"태국어","name_en":"Thai","offline":true,"fallback":null},{"code":"id","name_ko":"인도네시아어","name_en":"Indonesian","offline":true,"fallback":null},{"code":"mn","name_ko":"몽골어","name_en":"Mongolian","offline":false,"fallback":"ru"}];
 
 const isDemo = new URLSearchParams(location.search).has('demo');
-if (new URLSearchParams(location.search).get('dev') === '1') document.documentElement.classList.add('dev');   // 줄 머리 #번호·말 코드 보이기
+if (new URLSearchParams(location.search).get('dev') === '1') document.documentElement.classList.add('dev');
 let DEMO_SRC = 'ko';
 let DEMO_LINES = [];
 let DEMO_LANGS = [];
@@ -451,11 +450,11 @@ DEMO_LANGS = Object.keys(DEMO_LINES[0].tr || {});
 try { console.log('demo_lines n=' + DEMO_LINES.length); } catch (e) {}
 return DEMO_LINES.length;
 }
-const DEMO_PENDING_MS = 600;     // 말하는 중(임시) 글자가 늘어나는 간격
-const DEMO_GAP_MS = 2200;        // 확정 뒤 다음 말까지 최소 쉼
-const DEMO_PER_CHAR_MS = 40;     // 줄 길이만큼 더 쉰다(읽을 시간)
-const DEMO_SPEAK_MAX_MS = 15000; // 음성이 이보다 길어지면 기다리지 않는다
-const DEMO_END_MS = 5000;        // 마지막 줄 뒤 종료 화면까지
+const DEMO_PENDING_MS = 600;
+const DEMO_GAP_MS = 2200;
+const DEMO_PER_CHAR_MS = 40;
+const DEMO_SPEAK_MAX_MS = 15000;
+const DEMO_END_MS = 5000;
 if (isDemo) document.documentElement.classList.add('is-demo');
 
 let langs = FALLBACK_LANGS;
@@ -474,9 +473,9 @@ let ws = null;
 let lastSeq = 0;
 let lines = [];
 let isConnected = false;
-let isTtsEnabled = new URLSearchParams(location.search).get('view') !== 'screen'; // 큰 화면 보기는 소리 끔으로 시작(도구 막대에서 켠다)
+let isTtsEnabled = new URLSearchParams(location.search).get('view') !== 'screen';
 let currentVoice = null;
-var voicePickSeen = 0;        // 읽기 목소리를 기록에 한 번만 적는다(§12)
+var voicePickSeen = 0;
 
 let wakeLock = null;
 let noSleepVideo = null;
@@ -590,7 +589,7 @@ const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAI
 let bgAudioEl = null;
 let bgAudioOn = (function () {
 try { return localStorage.getItem('raytok_bg_audio') !== '0'; } catch (_) { return true; }
-})();   // **기본 켬**
+})();
 
 function bgAudioEnsure() {
 if (bgAudioEl) return bgAudioEl;
@@ -599,7 +598,7 @@ bgAudioEl.id = 'bg-audio';
 bgAudioEl.loop = true;
 bgAudioEl.src = SILENT_WAV;
 bgAudioEl.setAttribute('playsinline', '');
-bgAudioEl.volume = 0.01;     // 0 이면 어떤 브라우저는 세션을 안 잡는다
+bgAudioEl.volume = 0.01;
 bgAudioEl.style.display = 'none';
 document.body.appendChild(bgAudioEl);
 return bgAudioEl;
@@ -691,21 +690,27 @@ if (lower === 'iw' || lower.startsWith('iw-')) return 'he';
 return lower.split('-')[0];
 }
 
-const RTL = new Set(['ar', 'he', 'iw', 'fa', 'ur']); // iw 는 he 의 옛 코드
+const RTL = new Set(['ar', 'he', 'iw', 'fa', 'ur']);
 
 let uiStringsLoadedFor = null;
+let uiRev = '';
+const uiLog = [];
+function uiFail(why, lang) { const l = 'ui_strings_fail why=' + why + ' lang=' + lang; uiLog.push(l); try { console.log(l); } catch (e) {} }
+window.rtUiStrings = { log: () => uiLog.slice(), rev: () => uiRev };
 async function loadUiStrings(lang) {
 if (uiStringsLoadedFor === lang || uiStringsLoadedFor === '*') return;
 const keep = (uiStrings && uiStrings.langs) || null;
+for (let k = 0; k < 2; k++) {
 try {
-const res = await fetch('./ui-strings/' + encodeURIComponent(lang) + '.json');
-if (res.ok) {
+const res = await fetch('./ui-strings/' + encodeURIComponent(lang) + '.json' + (uiRev ? '?v=' + uiRev : ''), k ? { cache: 'reload' } : undefined);
+if (!res.ok) { uiFail('http' + res.status, lang); continue; }
 const d = await res.json();
-uiStrings = { ver: d.ver, langs: d.langs || keep, strings: d.strings };
+if (uiRev && d.rev !== uiRev) { uiFail('old', lang); continue; }
+uiStrings = { ver: d.ver, rev: d.rev, langs: d.langs || keep, strings: d.strings };
 uiStringsLoadedFor = lang;
 return;
+} catch (e) { uiFail('net', lang); }
 }
-} catch (e) {}
 try {
 const res = await fetch('./ui-strings.json');
 if (res.ok) { uiStrings = await res.json(); uiStringsLoadedFor = '*'; }
@@ -788,7 +793,7 @@ if (val) el.setAttribute('aria-label', val);
 });
 
 btnToggleTts.textContent = isTtsEnabled ? t('tts_on', lang) : t('tts_off', lang);
-{   // B 9 — 「화면 꺼도 듣기」 단추 글자·불 (사전이 붙은 뒤라야 그 언어로 뜬다)
+{
 const bgBtn = document.getElementById('btn-bg-audio');
 if (bgBtn) {
 bgBtn.textContent = t(bgAudioOn ? 'bg_audio_on' : 'bg_audio_off', lang);
@@ -884,7 +889,7 @@ document.documentElement.classList.remove('font-s', 'font-l');
 if (size !== 'm') document.documentElement.classList.add('font-' + size);
 document.querySelectorAll('#font-group .tool-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-font') === size));
 if (save) { try { localStorage.setItem('raytok_font', size); } catch (e) {} }
-var line = 'font_size=' + size;          // §12 첫 걸음에 기록 한 줄
+var line = 'font_size=' + size;
 if (fontLog[fontLog.length - 1] !== line) { fontLog.push(line); try { console.log(line); } catch (e) {} }
 }
 document.querySelectorAll('#font-group .tool-btn').forEach(b => b.addEventListener('click', () => applyFontSize(b.getAttribute('data-font'), true)));
@@ -898,8 +903,8 @@ if (res.ok) langs = await res.json();
 try { console.log('langs_from=' + (langs.length > 20 ? 'json' : 'inline') + ' n=' + langs.length); } catch (e) {}
 
 try {
-const res = await fetch('./ui-strings/_langs.json');
-if (res.ok) uiStrings = await res.json();        // {ver, langs} — strings 는 아직 없다
+const res = await fetch('./ui-strings/_langs.json', { cache: 'no-cache' });
+if (res.ok) { uiStrings = await res.json(); uiRev = window.rtUiRev = uiStrings.rev || ''; }
 } catch (e) {}
 
 const availableLangs = (uiStrings && uiStrings.langs) || ['ko', 'en'];
@@ -918,16 +923,16 @@ function pickLang(want) {
 const w = String(want || '').trim();
 if (!w) return null;
 const exact = langs.find(l => l.code === w);
-if (exact) return exact.code;                      // 딱 맞는 것이 먼저다 (zh-TW 를 zh-CN 으로 보내지 않는다)
+if (exact) return exact.code;
 const norm = normalizeLangCode(w);
 const say = (code, by) => {
 try { console.log(`lang_pick want=${w} use=${code} by=${by}`); } catch (_) {}
 return code;
 };
 const pool = langs.filter(l => l.code === norm || normalizeLangCode(l.code) === norm);
-if (!pool.length) return null;                     // 모르면 **고르지 않는다** — 다음 자리가 본다(D-70)
+if (!pool.length) return null;
 if (pool.length === 1) return say(pool[0].code, 'base');
-const tags = w.toLowerCase().split('-').slice(1);   // 뿌리 뒤의 조각들 (hant·tw·hk …)
+const tags = w.toLowerCase().split('-').slice(1);
 const shared = pool.find(l => l.code.toLowerCase().split('-').slice(1).some(t => tags.includes(t)));
 if (shared) return say(shared.code, 'tag');
 for (const t of tags) {
@@ -945,7 +950,7 @@ const initialUiLang = determineLanguage();
 await loadUiStrings(initialUiLang);
 applyStrings(initialUiLang);
 updateSubtitleDir();
-checkOsVoiceSupport(selectedLang);   // B 24 — QR 로 들어온 그 자리에서 본다(연결 전)
+checkOsVoiceSupport(selectedLang);
 
 if (isRawBroadcast) {
 if (langSelect) langSelect.style.display = 'none';
@@ -972,12 +977,12 @@ initApp();
 
 langSelect.addEventListener('change', async () => {
 selectedLang = langSelect.value;
-if (!isDemo) localStorage.setItem('raytok_lang', selectedLang);   // 시연에서 고른 언어는 저장하지 않는다
+if (!isDemo) localStorage.setItem('raytok_lang', selectedLang);
 
 const newUiLang = determineLanguage();
-await loadUiStrings(newUiLang);      // 그 언어 조각이 손에 없으면 받는다 (B 19)
+await loadUiStrings(newUiLang);
 applyStrings(newUiLang);
-checkOsVoiceSupport(selectedLang);   // B 24 — 바꾼 언어로 다시 본다
+checkOsVoiceSupport(selectedLang);
 updateSubtitleDir();
 
 if (isConnected) {
@@ -994,31 +999,36 @@ function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
 function rpWant() {
 if (isDemo || isRawBroadcast || !rpRoomOk) return;
 if (GUEST_TR_ORDER && isWebkitIos()) { if (!rpIosSaid) { rpIosSaid = 1; rpLog('raypack_skip why=ios'); } return; }
-(rp ? Promise.resolve(rp) : import('./raypack.js?v=1').then(m => (rp = m.createRaypack({
+(rp ? Promise.resolve(rp) : import('./raypack.js?v=2').then(m => (rp = m.createRaypack({
 row: document.getElementById('pack-row'), t: k => t(k), src: () => srcLang, log: rpLog }))))
 .then(r => r.want(selectedLang)).catch(e => rpLog('raypack_fail load ' + e));
 }
 function rpLine(line, msg, bc) {
+line.path = 'raypack';
 rp.translate(line.text).then(out => {
-if (out && !line.tr[selectedLang]) {
+line.rpDone = 1;
+if (out && (TR_ONE || !line.tr[selectedLang])) {
 line.tr[selectedLang] = out; line.rp = 1; line.pending = false;
 updateLineUI(line);
 rpLog('guest_tr_plan plan=raypack seq=' + line.seq + ' me=' + selectedLang);
 sayOnce(line, out);
 return;
 }
+line.path = 'server';
 rpLog('guest_tr_plan plan=server seq=' + line.seq + ' why=' + (out ? 'late' : 'empty'));
+if (line.srv) { const m = line.srv; line.srv = null; applyRoomTr(line, m); return; }
 if (bc && !line.tr[selectedLang]) speakWhenTranslated(line, msg);
 });
 }
+const TR_ONE = (function () { try { return new URLSearchParams(location.search).get('trone') !== '0'; } catch (e) { return true; } })();
 
 const VOICE_WAIT_MS = 3000, VOICE_POLL_MS = 200;
-window.__rtVoiceCheck = [];                  // 마지막 판정들 — 시험과 개발자 창이 읽는 자리
-let voiceCheckedFor = null;                  // 어느 언어까지 알렸나 (언어마다 한 번)
+window.__rtVoiceCheck = [];
+let voiceCheckedFor = null;
 let voiceWaitTimer = null;
 let voiceVia = '';
 const voiceFbSeen = {};
-window.__rtVoiceFallback = [];          // 시험과 개발자 창이 읽는 자리
+window.__rtVoiceFallback = [];
 
 function voiceLog(lang, have) {
 const line = { lang, have, at: Date.now() };
@@ -1044,11 +1054,11 @@ el.style.display = 'none';
 function checkOsVoiceSupport(lang, waitedMs) {
 const target = normalizeLangCode(lang || selectedLang || '');
 if (!target) return;
-if (voiceCheckedFor === target && waitedMs === undefined) return;   // 같은 언어를 또 알리지 않는다
+if (voiceCheckedFor === target && waitedMs === undefined) return;
 
 if (typeof window.speechSynthesis === 'undefined' || typeof speechSynthesis.getVoices !== 'function') {
 voiceCheckedFor = target;
-voiceLog(target, 'no_api');            // 이 브라우저는 소리를 낼 길이 아예 없다 = 자막만
+voiceLog(target, 'no_api');
 showVoiceNotice(true);
 return;
 }
@@ -1056,13 +1066,13 @@ return;
 const voices = speechSynthesis.getVoices() || [];
 if (!voices.length) {
 const waited = Number(waitedMs || 0);
-if (waited < VOICE_WAIT_MS) {          // 늦게 차는 중일 수 있다 — 기다린다
+if (waited < VOICE_WAIT_MS) {
 if (voiceWaitTimer) clearTimeout(voiceWaitTimer);
 voiceWaitTimer = setTimeout(() => checkOsVoiceSupport(target, waited + VOICE_POLL_MS), VOICE_POLL_MS);
 return;
 }
 voiceCheckedFor = target;
-voiceLog(target, 'unknown');           // 모름 — 없다고 하지 않는다(D-70)
+voiceLog(target, 'unknown');
 return;
 }
 
@@ -1142,7 +1152,7 @@ if (got.voice) { currentVoice = got.voice; voiceVia = got.via; }
 checkOsVoiceSupport(selectedLang);
 }
 if (typeof window.speechSynthesis !== 'undefined') {
-speechSynthesis.onvoiceschanged = () => {       // 늦게 찬 목록이 오면 그때 다시 본다
+speechSynthesis.onvoiceschanged = () => {
 voiceCheckedFor = null;
 updateVoice();
 };
@@ -1206,7 +1216,7 @@ if (btnCloseVoicePicker && voicePickerModal) {
 btnCloseVoicePicker.onclick = () => { voicePickerModal.style.display = 'none'; };
 }
 
-let askSpeakingFor = null;  // 지금 발언권을 받은 질문 {id, seq} — 보내는 길이 이것으로 갈린다
+let askSpeakingFor = null;
 
 function loadRecLang() {
 if (window.rtRecLang) return Promise.resolve();
@@ -1218,10 +1228,10 @@ setTimeout(res, 3000);
 }
 function startListenerMicQuestion(askId, askSeq) {
 askSpeakingFor = { id: askId, seq: askSeq };
-pauseReading('ask');                         // ③ 말할 때 소리 끈다 (cancel 포함)
+pauseReading('ask');
 const iosNoMic = ASK_IOS_TEXT && /iP(hone|od|ad)/.test(navigator.userAgent || '');
 const Rec = iosNoMic ? null : (window.SpeechRecognition || window.webkitSpeechRecognition);
-showAskModalFallback(askId, askSeq);         // 먼저 글자 칸 — 마이크 단추는 본체가 붙인다
+showAskModalFallback(askId, askSeq);
 if (iosNoMic) connLog.push(`${ts()} ask ios→text`);
 if (!Rec) return;
 const go = () => window.rtAskMic && rtAskMic.open({
@@ -1239,9 +1249,9 @@ document.head.appendChild(Object.assign(document.createElement('script'), { src:
 
 function stopListenerMicQuestion() {
 const had = !!askSpeakingFor;
-askSpeakingFor = null;          // 발언권이 끝났다 — 단추는 다시 손들기 쪽
+askSpeakingFor = null;
 if (window.rtAskMic) rtAskMic.close();
-if (had) resumeReading('ask');  // ③ 발언권이 끝나면 이어 읽는다
+if (had) resumeReading('ask');
 const askModal = document.getElementById('ask-modal');
 if (askModal) askModal.style.display = 'none';
 }
@@ -1258,7 +1268,7 @@ if (st) st.textContent = t(micOn ? 'ask_speaking' : 'ask_notice', currentUiLang)
 if (!micOn) { try { askInput.focus(); } catch (_) {} }
 }
 
-let ttsTouched = false;   // 청취자가 단추를 직접 눌렀나 (L4-3: 원고 줄 기본 끔을 가를 때 본다)
+let ttsTouched = false;
 function setTtsEnabled(on) {
 isTtsEnabled = !!on;
 if (!isTtsEnabled) { reader = null; try { speechSynthesis.cancel(); } catch (_) {} }
@@ -1271,13 +1281,13 @@ ttsAutoOff = false;
 setTtsEnabled(!isTtsEnabled);
 });
 
-let ttsAutoOff = false;   // 원고 줄 때문에 페이지가 끈 상태(청취자가 끈 것이 아니다)
-let welcomeInfo = null;   // 환영 줄(plan·script·q) — 저장 TXT 머리에 적는다(§12 기록)
-const seenScript = new Set();   // 재연결 되풀이 거르기 — `para:at`
-const seenAsk = new Set();      // 재연결 되풀이 거르기 — `id:askRev`
-const seenSkip = new Set();     // 재연결 되풀이 거르기 — `para:at`
-const connLog = []; let connTries = 0, connTimer = null;   // 연결 기록 — 안 될 때의 근거(§12)
-const ASK_IOS_TEXT = true;   // 아이폰은 지명 뒤 글자로 묻는다 (10-27 실기: 마이크 열면 죽음)
+let ttsAutoOff = false;
+let welcomeInfo = null;
+const seenScript = new Set();
+const seenAsk = new Set();
+const seenSkip = new Set();
+const connLog = []; let connTries = 0, connTimer = null;
+const ASK_IOS_TEXT = true;
 const ts = () => new Date().toISOString().slice(11, 19);
 function scriptTtsDefault() {
 if (!ttsTouched && isTtsEnabled) { setTtsEnabled(false); ttsAutoOff = true; }
@@ -1299,7 +1309,8 @@ return true;
 }
 
 function speak(text, via, audioUrl) {
-if (!isTtsEnabled || askSpeakingFor) return;   // ③ 발언권 동안은 소리 내지 않는다(글자는 그대로)
+if (!isTtsEnabled || askSpeakingFor) return;
+beatStage = 'tts';
 if (!audioUrl && window.rtTtsGuard && rtTtsGuard.say(text, via)) return;
 speechSynthesis.cancel();
 
@@ -1328,7 +1339,7 @@ const uttr = new SpeechSynthesisUtterance(text);
 const got = pickVoice(selectedLang, via);
 if (got.voice) {
 uttr.voice = got.voice;
-uttr.lang = got.voice.lang;      // 대체어로 읽을 때는 **그 언어로** 말해야 목소리가 유지된다
+uttr.lang = got.voice.lang;
 } else {
 const targetLang = via || selectedLang;
 const FULL = { en: 'en-US', ja: 'ja-JP', zh: 'zh-CN', ko: 'ko-KR', uk: 'uk-UA', ru: 'ru-RU', vi: 'vi-VN', th: 'th-TH', id: 'id-ID', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-BR', ar: 'ar-SA', hi: 'hi-IN', tr: 'tr-TR', pl: 'pl-PL', nl: 'nl-NL', ms: 'ms-MY', fil: 'fil-PH', tl: 'fil-PH' };
@@ -1340,8 +1351,8 @@ return uttr;
 
 const PAUSE_READ = true;
 const PARA_DONE_WIRE = true;
-let reader = null;   // { line, sents, idx, via, paused, cur }
-const readLog = [];  // 시험·실기 기록: 무엇을 왜 (§12)
+let reader = null;
+const readLog = [];
 function rlog(l) { readLog.push(l); if (readLog.length > 200) readLog.shift(); }
 function splitSentences(text) {
 const t = String(text || '').trim();
@@ -1375,7 +1386,7 @@ return;
 }
 const u = r.cur = makeUtter(r.sents[r.idx], r.via);
 const advance = () => {
-if (reader !== r || r.cur !== u || r.paused) return;   // cancel 로 끝난 것·옛 발화는 안 센다
+if (reader !== r || r.cur !== u || r.paused) return;
 r.idx += 1; r.cur = null; readNext();
 };
 u.onend = advance;
@@ -1410,7 +1421,7 @@ say: function (text, via) { speakWebTts(text, via || ''); }
 function connect() {
 if (!window.__rtTtsGuardReady) {
 window.__rtTtsGuardReady = () => rtTtsGuard.init({ utter: makeUtter, on: () => isTtsEnabled, log: rlog, lang: () => selectedLang });
-document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js?v=2' }));
+document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/tts-guard.js?v=3' }));
 }
 if (ws && ws.readyState === WebSocket.CONNECTING) { connLog.push(`${ts()} connect skipped (connecting)`); return; }
 if (ws) ws.close();
@@ -1440,6 +1451,7 @@ ws.onopen = () => {
 clearTimeout(connTimer);
 connLog.push(`${ts()} open`);
 sendHello();
+iosBeat();
 };
 ws.onerror = () => { connLog.push(`${ts()} error`); };
 
@@ -1470,6 +1482,18 @@ if (cfQ) return cfQ.push(m);
 if (m.kind != 'confirm_open') return;
 cfQ = [m];
 document.head.appendChild(Object.assign(document.createElement('script'), { src: '/web/common/edu-confirm.js', onload: () => cfQ.forEach((x) => rtEduConfirm.on(x)) }));
+}
+
+let beatN = 0, beatT = null, beatStage = 'join';
+const beatId = Math.random().toString(36).slice(2, 6);
+function iosBeat() {
+if (beatT || isDemo || !isWebkitIos()) return;
+beatT = setInterval(() => {
+if (!ws || ws.readyState !== WebSocket.OPEN) return;
+let tts = 0; try { tts = speechSynthesis.speaking ? 1 : 0; } catch (e) {}
+ws.send(JSON.stringify({ kind: 'ios_beat', id: beatId, seq: ++beatN, lines: lines.length, stage: beatStage,
+vis: document.visibilityState === 'visible' ? 1 : 0, tts }));
+}, 5000);
 }
 
 function sendHello() {
@@ -1574,7 +1598,7 @@ via: undefined
 };
 lines.push(line);
 addLine(line);
-scriptTtsDefault();   // 원고 줄은 기본 끔 — 청취자가 소리 단추를 켠 때만 아래 speak 가 소리를 낸다
+scriptTtsDefault();
 if (line.tr[selectedLang]) sayOnce(line, line.tr[selectedLang]);
 return;
 }
@@ -1692,7 +1716,7 @@ if (msg.kind === 'answer') {
 const askId = msg.id;
 const ansSrc = msg.src || msg.text;
 if (!ansSrc) return;
-if (askId && lines.some(l => l.ask === askId && l.isAnswer && l.text === ansSrc)) return;   // 재연결 되풀이
+if (askId && lines.some(l => l.ask === askId && l.isAnswer && l.text === ansSrc)) return;
 const qLang = msg.srcLang || srcLang;
 const line = {
 seq: null,
@@ -1701,7 +1725,7 @@ ask: askId,
 isAnswer: true,
 para: Number(msg.seq) || 1,
 total: Number(msg.seq) || 1,
-text: ansSrc,              // 머리표가 「강사 답변」을 말한다 — 글자에 한국어를 박지 않는다(§18)
+text: ansSrc,
 spk: null,
 at: msg.at || Date.now(),
 tr: (msg.trans && typeof msg.trans === 'object') ? msg.trans : {},
@@ -1730,7 +1754,7 @@ return;
 }
 if (msg.kind === 'revoke' || msg.kind === 'ask_ended') {
 if (currentActiveAskId === msg.id) currentActiveAskId = null;
-if (myAskId === msg.id) { myAskId = null; stopListenerMicQuestion(); }   // 7번 — 회수되면 마이크를 끈다
+if (myAskId === msg.id) { myAskId = null; stopListenerMicQuestion(); }
 const btnAsk = document.getElementById('btn-ask');
 if (btnAsk) btnAsk.textContent = t('btn_ask', currentUiLang) || '✋ 질문';
 return;
@@ -1751,6 +1775,7 @@ return;
 }
 
 if ('text' in msg) {
+beatStage = 'line';
 const pendingDiv = document.getElementById('msg-pending');
 if (pendingDiv) pendingDiv.remove();
 
@@ -1758,8 +1783,8 @@ const isBroadcast = !!msg.broadcast;
 const line = {
 seq: msg.seq,
 text: msg.text,
-spk: msg.spk || null,   // 화자 표시는 진행자가 보낸 때만(Desk). 강의·가이드는 보내지 않는다
-at: Date.now(),         // 이 폰이 받은 시각 (기록 저장용)
+spk: msg.spk || null,
+at: Date.now(),
 tr: msg.tr || {},
 pending: !!msg.pending || (!msg.tr || !msg.tr[selectedLang])
 && onServerTr() && !isRawBroadcast   // 「원문만」 방(raw=1)은 번역이 오지 않는다 — 기다림 표 없음
@@ -1771,7 +1796,7 @@ lines.push(line);
 lastSeq = msg.seq;
 localStorage.setItem(`raytok_last_seq_${roomCode}`, lastSeq);
 addLine(line);
-liveTtsDefault();   // 원고 줄 때문에 꺼 둔 소리는 들은 줄에서 도로 켠다(L4-3)
+liveTtsDefault();
 const isSameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
 if (!isSameLang && !line.tr[selectedLang] && rpRoomOk && rp && rp.ready() && normalizeLangCode(srcLang) === 'ko') {
 rpLine(line, msg, isBroadcast);
@@ -1785,20 +1810,30 @@ sayOnce(line, line.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.t
 } else if ('tr' in msg && !('text' in msg)) {
 const line = lines.find(l => l.seq === msg.seq);
 if (line) {
+if (TR_ONE && line.path === 'raypack' && !line.rpDone) {
+const o = Object.assign({}, msg.tr); delete o[selectedLang]; Object.assign(line.tr, o);
+line.srv = msg; return;
+}
+applyRoomTr(line, msg);
+}
+} else if ('no_tr' in msg) {
+const line = lines.find(l => l.seq === msg.seq);
+if (TR_ONE && line && line.path === 'raypack') return;
+if (line) {
+line.pending = false;
+updateLineUI(line);
+}
+}
+}
+
+function applyRoomTr(line, msg) {
+beatStage = 'tr';
 Object.assign(line.tr, msg.tr, line.rp ? { [selectedLang]: line.tr[selectedLang] } : {});
 line.pending = false;
 if (msg.via) line.via = msg.via;
 updateLineUI(line);
 liveTtsDefault();
 if (msg.tr[selectedLang]) sayOnce(line, msg.tr[selectedLang], line.via, msg.audio_url || (msg.tr && msg.tr.audio_url));
-}
-} else if ('no_tr' in msg) {
-const line = lines.find(l => l.seq === msg.seq);
-if (line) {
-line.pending = false;
-updateLineUI(line);
-}
-}
 }
 
 let scriptUid = 0;
@@ -1871,7 +1906,7 @@ return (l || []).filter(Boolean).map(function (x) { return normalizeLangCode(Str
 function browserCanTranslate() {
 var me = normalizeLangCode(String(selectedLang || '').split(/[-_]/)[0]);
 var src = normalizeLangCode(String(srcLang || '').split(/[-_]/)[0]);
-if (!me || !src || me === src) return false;        // 번역할 것이 없다
+if (!me || !src || me === src) return false;
 return browserLangs().indexOf(me) >= 0;
 }
 var trPlanLog = [];
@@ -1918,7 +1953,7 @@ var was = el.getAttribute('data-src-text');
 var t0 = Date.now();
 (function tick() {
 var now = el.textContent;
-if (was != null && now !== was) {         // 브라우저가 바꿨다 = 번역됐다
+if (was != null && now !== was) {
 markGuestTr('browser');
 sayOnce(line, now, selectedLang, audio);
 return;
@@ -1940,7 +1975,7 @@ if (!isWebkitIos(u)) return false;
 return !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/)/.test(u);
 }
 
-var IOS_CHROME_HINT = false;   // 기본 끔 (대표님 10-27 15:15)
+var IOS_CHROME_HINT = false;
 var iosChromeLog = [];
 function renderIosChrome() {
 var box = document.getElementById('ios-chrome');
@@ -1958,7 +1993,7 @@ window.rtIosChrome = { log: function () { return iosChromeLog.slice(); },
 isIosSafari: isIosSafari, urlOf: chromeUrlOf, render: renderIosChrome };
 
 document.addEventListener('DOMContentLoaded', function () {
-renderIosChrome();                       // 기능의 첫 걸음에 기록 한 줄(§12)
+renderIosChrome();
 if (btnToggleSrc) {
 btnToggleSrc.addEventListener('click', function () {
 showSrc = !showSrc;
@@ -1978,8 +2013,8 @@ try { location.href = to; } catch (e) {}
 });
 
 function addLine(line) {
-renderSrcBtn();          // 원문 언어는 줄이 와야 확실해진다 — 그때 단추를 다시 본다
-updateRoomState();   // ④ 줄이 하나라도 오면 빈 방 띠를 치운다
+renderSrcBtn();
+updateRoomState();
 const div = document.createElement('div');
 div.className = 'msg-line' + (line.script ? ' msg-script' : '');
 div.id = lineElId(line);
@@ -2000,12 +2035,12 @@ div.innerHTML = `
 <div class="msg-src" dir="ltr" translate="no">${head} <span class="dev-tag">${srcLang.toUpperCase()}</span> <span class="badge ${spkClass}" id="spk-badge-${line.seq}"${spkLabel ? '' : ' hidden'}>${escapeHtmlText(spkLabel)}</span></div>
 `;
 const textDiv = div.querySelector('.msg-text');
-setLineText(textDiv, line.text);      // 우리가 쓴 글자를 적어 둔다 — 밖에서 바뀌면 번역이다
+setLineText(textDiv, line.text);
 textDiv.setAttribute('dir', RTL.has(normalizeLangCode(srcLang)) ? 'rtl' : 'ltr');
 textDiv.setAttribute('lang', srcLang);
 const prevLatest = chatList.querySelector('.msg-line.is-latest');
 if (prevLatest) prevLatest.classList.remove('is-latest');
-div.classList.add('is-latest');   // 방금 확정된 줄 (큰 화면에서 가장 밝게)
+div.classList.add('is-latest');
 chatList.appendChild(div);
 updateLineUI(line);
 chatList.scrollTop = chatList.scrollHeight;
@@ -2015,13 +2050,17 @@ function showSrcFor(line) {
 if (isScreenView) return true;
 const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
 if (sameLang) return true;
-if (line.broadcast && !(line.tr && line.tr[selectedLang])) return true;   // 「원문만」 줄에 번역이 없으면 원문이 그 줄의 전부다
+if (line.broadcast && !(line.tr && line.tr[selectedLang])) {
+if (!SRC_HIDE || isRawBroadcast || !onServerTr()) return true;
+return !!showSrc;
+}
 if (SRC_ONLY_ON_TOGGLE) return !!showSrc;
 if (!onServerTr()) return true;
 if (showSrc) return true;
 return !(line.tr && line.tr[selectedLang]);
 }
-const SRC_ONLY_ON_TOGGLE = true;   // 손님 폰: 원문은 단추로만 (대표님 10-27 15:17)
+const SRC_ONLY_ON_TOGGLE = true;
+const SRC_HIDE = (function () { try { return new URLSearchParams(location.search).get('srcHide') !== '0'; } catch (e) { return true; } })();
 
 function renderSrcBtn() {
 if (!btnToggleSrc) return;
@@ -2038,7 +2077,7 @@ if (!div) return;
 const textDiv = div.querySelector('.msg-text');
 if (textDiv) textDiv.style.display = showSrcFor(line) ? '' : 'none';
 const srcTag = div.querySelector('.msg-src');
-if (srcTag) srcTag.style.display = '';   // 머리줄(원고 n/n · 언어 · 꼬리표)은 한국어가 아니다 — 원문 글자만 접는다
+if (srcTag) srcTag.style.display = '';
 const trDiv = div.querySelector('.msg-tr');
 
 const sameLang = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
@@ -2054,8 +2093,6 @@ trDiv.setAttribute('lang', selectedLang);
 const trText = line.tr[selectedLang] || '';
 trDiv.textContent = trText;
 
-const hasVoice = !!pickVoice(selectedLang, line.via).voice;
-
 if (line.pending) {
 const badge = document.createElement('span');
 badge.className = 'badge badge-pending';
@@ -2069,15 +2106,6 @@ const viaName = viaLang ? (currentUiLang === 'ko' ? viaLang.name_ko : viaLang.na
 const badge = document.createElement('span');
 badge.className = 'badge badge-via';
 badge.textContent = `${t('badge_via', currentUiLang)}(${viaName})`;
-trDiv.appendChild(badge);
-}
-
-if (trText && !hasVoice) {
-const badge = document.createElement('span');
-badge.className = 'badge';
-badge.style.backgroundColor = 'var(--danger)';
-badge.style.color = '#fff';
-badge.textContent = t('no_voice_badge', currentUiLang);
 trDiv.appendChild(badge);
 }
 
@@ -2380,7 +2408,7 @@ next();
 
 btnJoin.addEventListener('click', () => {
 try { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch(e){}
-bgAudioUnlock();   // B 9 — 첫 탭에서 소리 세션을 연다 (화면 꺼도 듣기)
+bgAudioUnlock();
 if (isDemo) {
 roomCode = '000000';
 keepAwake();

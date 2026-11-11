@@ -86,7 +86,7 @@ const NO_SPEECH = `
   Object.defineProperty(window, 'webkitSpeechRecognition', { value: undefined, configurable: true });
 `;
 
-async function openHost(browser, base, { speech, region, locale, question }) {
+async function openHost(browser, base, { speech, region, locale, question, extra }) {
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 850 }, locale: locale || 'ko-KR' });
   await ctx.addInitScript(speech);
   const page = await ctx.newPage();
@@ -94,7 +94,7 @@ async function openHost(browser, base, { speech, region, locale, question }) {
     const u = new URL(rq.url());
     if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') outsideRequests.push(rq.url());
   });
-  const q = region ? `&region=${region}` : '';
+  const q = (region ? `&region=${region}` : '') + (extra || '');
   await page.goto(`${base}/web/host/?relay=${encodeURIComponent(base)}${q}`);
   await page.fill('#tokenInput', 'valid_instructor_token');
   await page.click('#btnVerifyToken');
@@ -407,7 +407,9 @@ async function openHost(browser, base, { speech, region, locale, question }) {
        재는 것 셋: ① 끝까지 살아 있나 ② 한 줄도 안 사라졌나 ③ 기록·대기줄이 **안 부푸나**
        (고치면서 메모리를 새게 만드는 것이 흔한 사고라, 상한이 지켜지는지 같이 본다). */
     console.log('\n[7] 한 시간치 — 120번 다시 열고 300줄 말한다 (A1)');
-    const long = await openHost(browser, base, { speech: FAKE_SPEECH, region: 'KR' });
+    /* 11-11 13:28 ②: 시간을 줄여 120번 끝남을 1.5초에 몰았다 — ② 의 정의로는 「엉킴」이다(5초에 5번↑).
+       여기서 재는 것은 보통 끝남의 되열기라 엉킴 탈출을 끈 판에서 잰다. 엉킴은 host_mic_commit_test.js */
+    const long = await openHost(browser, base, { speech: FAKE_SPEECH, region: 'KR', extra: '&micRebuild=0' });
     const longRoom = relay.rooms.get((await long.page.textContent('#roomCode')).trim());
     await long.page.click('#btnMic');
     await long.page.waitForFunction(() => window.__rec && window.__rec.running, null, { timeout: 3000 });

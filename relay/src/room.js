@@ -3,6 +3,13 @@ import { verifyCode, trustedKeys } from './mint-core.js';
 import * as RTR from './room-translate.js';
 import crypto from 'node:crypto';
 
+/** 아이폰 숨 한 줄 — relay 와 samples/mock_relay.js 가 같은 꼴(D-11) */
+export function iosBeatLine(p) {
+  const n = (x) => Math.max(0, Math.min(1e6, Math.floor(Number(x) || 0)));
+  const w = (x) => String(x || '').replace(/[^a-z0-9_]/gi, '').slice(0, 24);
+  return `ios_beat id=${w(p && p.id).slice(0, 6)} seq=${n(p && p.seq)} lines=${n(p && p.lines)} stage=${w(p && p.stage)} vis=${p && p.vis ? 1 : 0} tts=${p && p.tts ? 1 : 0}`;
+}
+
 export class Room {
   constructor(ctx, env) {
     this.ctx = ctx;
@@ -503,6 +510,15 @@ export class Room {
    */
   trLog(line) {
     try { console.log(`[${this.code || '------'}] ${line}`); } catch (_) {}
+  }
+
+  /* ★ 아이폰 숨(NOW 11-11 13:28 ④) — 손님 아이폰이 5초마다 보내는 작은 숨을 방 기록에 한 줄. 화면이 죽은 자리를 사후에
+   보려고(끊긴 seq · 그때 줄 수 · 마지막 단계). 개인정보 0 — 숫자·짧은 낱말만 남기고 나머지는 버린다. 4초 안 겹친 숨은 버린다 */
+  iosBeat(ws, p) {
+    const now = Date.now();
+    if (ws.__beatAt && now - ws.__beatAt < 4000) return;
+    ws.__beatAt = now;
+    this.trLog(iosBeatLine(p));
   }
 
   tellHost(msg) {
@@ -1891,6 +1907,7 @@ export class Room {
       } catch (_) {}
 
       if (parsed && parsed.kind === 'confirm') { await this.confirmFrom(ws, parsed); return; }
+      if (parsed && parsed.kind === 'ios_beat') { this.iosBeat(ws, parsed); return; }
 
       // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번, 정본 ask)
       if (parsed && (parsed.kind === 'ask' || parsed.kind === 'ask_req')) {
