@@ -551,10 +551,12 @@
               requestWakeLock();
             }
           });
+          return true;
         } catch (e) {
           wakeLock = null;
         }
       }
+      return false;
     }
 
     function playNoSleepVideo() {
@@ -574,10 +576,9 @@
       }
       try {
         var p = noSleepVideo.play();
-        if (p && typeof p.catch === 'function') {
-          p.catch(function(e) {});
-        }
-      } catch (e) {}
+        if (p && typeof p.then === 'function') return p.then(function () { return 'play'; }, function () { return 'blocked'; });
+        return Promise.resolve('play');
+      } catch (e) { return Promise.resolve('blocked'); }
     }
 
     let keepAliveAudioCtx = null;
@@ -601,15 +602,36 @@
       } catch (e) {}
     }
 
+    /* ★ 아이폰 자동 잠금 (NOW 11-11 14:59 ④ · 스위치 `?wakeBoth=0` 끔, 기본 켬 §24). 실기 — 대표님 「가-자동 잠김」.
+       옛 길: wakeLock 이 **있으면** 그것만 — 요청이 실패하거나 iOS 가 풀어도 소리 없는 영상으로 안 넘어갔다.
+       새 길: iOS 면 **둘 다**(영상은 참여 손가락 안에서 — await 앞) · 다른 폰은 wakeLock 실패 때 영상 · 결과 한 줄
+       `wake ios=1 api=ok|fail|none video=play|blocked|off`. 화면이 꺼졌다 돌아오면(iOS) 「화면을 켜 둔 채로 두세요」 한 줄. */
+    var WAKE_BOTH = (function () { try { return new URLSearchParams(location.search).get('wakeBoth') !== '0'; } catch (e) { return true; } })();
+    var wakeLog = [];
     async function keepAwake() {
       isSessionActive = true;
-      if ('wakeLock' in navigator && navigator.wakeLock) {
-        await requestWakeLock();
-      } else {
-        playNoSleepVideo();
+      var ios = isWebkitIos(), api = 'none', vid = null;
+      var has = 'wakeLock' in navigator && navigator.wakeLock;
+      if (!has || (WAKE_BOTH && ios)) vid = playNoSleepVideo();
+      if (has) {
+        api = (await requestWakeLock()) ? 'ok' : 'fail';
+        if (api === 'fail' && !vid && WAKE_BOTH) vid = playNoSleepVideo();
       }
       startAudioKeepAlive();
+      var v = vid ? await vid : 'off';
+      var l = 'wake ios=' + (ios ? 1 : 0) + ' api=' + api + ' video=' + v;
+      wakeLog.push(l); try { console.log(l); } catch (e) {}
     }
+    function wakeHint() {
+      if (document.getElementById('wake-hint')) return;
+      var list = document.getElementById('chat-list');
+      if (!list || !list.parentNode) return;
+      var d = document.createElement('div');
+      d.id = 'wake-hint'; d.className = 'notice-band'; d.setAttribute('role', 'status');
+      d.textContent = t('hint_keep_screen', currentUiLang);
+      list.parentNode.insertBefore(d, list);
+    }
+    window.rtWake = { both: WAKE_BOTH, log: function () { return wakeLog.slice(); } };
 
     function releaseWake() {
       isSessionActive = false;
@@ -626,14 +648,19 @@
       }
     }
 
+    var wakeHid = 0;
     document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden' && isSessionActive) wakeHid++;
       if (document.visibilityState === 'visible') {
         if (isSessionActive) {
+          var ios4 = WAKE_BOTH && isWebkitIos();
           if ('wakeLock' in navigator && navigator.wakeLock && !wakeLock) {
             requestWakeLock();
-          } else if (noSleepVideo && noSleepVideo.paused) {
+          }
+          if (noSleepVideo && noSleepVideo.paused && (ios4 || !('wakeLock' in navigator && navigator.wakeLock) || !wakeLock)) {
             playNoSleepVideo();
           }
+          if (ios4 && wakeHid) { wakeLog.push('wake back hid=' + wakeHid); wakeHint(); }
         }
         if (!isDemo && isSessionActive && (!ws || ws.readyState !== WebSocket.OPEN)) {
           if (currentStatusKey !== 'status_ended' && currentStatusKey !== 'status_rejected') {
@@ -1130,7 +1157,51 @@
        welcome 전에는 늘 끔 — 언어를 먼저 골라도 받지 않는다. */
     let rpRoomOk = false;
     let rpIosSaid = 0;
-    function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
+    function rpLog(s) {
+      trPlanLog.push(s); try { console.log(s); } catch (e) {}
+      if (/^raypack_state /.test(String(s))) rpNeedSync('state');
+    }
+    /* ★ 레이팩 손님은 방(서버) 번역을 **안 받는다** (NOW 11-11 14:59 ② · 스위치 `?rpNoSrv=0` 끔, 기본 켬 §24).
+       실기 11-11 Y60S7H: 크롬 레이팩 손님인데 `plan=server why=raypack_ready` 19 / `plan=raypack` 20 — 방이 그 말 번역을
+       계속 샀다. 번역은 손님이 청하는 것이 아니라 **방(릴레이)이 민다** — 그래서 손님이 「나는 서버 번역 필요 없음」을
+       알리고(`tr_need srv=0`), 그 말 손님이 **전부** 레이팩이면 방이 그 말의 들은 줄(seq) 번역을 멈춘다. 원고 줄은 그대로.
+       레이팩이 한 줄 놓치면(빈 답) 그 줄 번호로 `srv=1 seq=n` — 방이 그 줄만 사서 보낸다(R-15 유실 0) · 30초 서버 길. */
+    var RP_NOSRV = (function () { try { return new URLSearchParams(location.search).get('rpNoSrv') !== '0'; } catch (e) { return true; } })();
+    var RP_FAIL_MS = 30000;
+    var rpNeedSent = null, rpFailUntil = 0, rpFailTimer = null;
+    function rpNeedWant() {
+      if (!RP_NOSRV || isDemo || isRawBroadcast) return 1;
+      if (Date.now() < rpFailUntil) return 1;
+      var same = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+      return (rpRoomOk && rp && rp.ready() && !same && normalizeLangCode(srcLang || 'ko') === 'ko') ? 0 : 1;
+    }
+    function rpNeedSend(o, why) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+      try { ws.send(JSON.stringify(Object.assign({ kind: 'tr_need' }, o))); } catch (e) { return false; }
+      var l = 'tr_need srv=' + o.srv + (o.seq != null ? ' seq=' + o.seq : '') + ' why=' + why;
+      trPlanLog.push(l); try { console.log(l); } catch (e) {}
+      return true;
+    }
+    /** 지금 상태를 방에 알린다 — 바뀔 때만(hello 뒤에는 늘 한 번: 새 소켓은 「필요」로 시작한다) */
+    function rpNeedSync(why) {
+      if (!RP_NOSRV) return;
+      var w = rpNeedWant();
+      if (why === 'hello') rpNeedSent = null;
+      if (rpNeedSent === null && w === 1) { rpNeedSent = 1; return; }   // 방의 기본이 「필요」 — 보낼 것 없음
+      if (w === rpNeedSent) return;
+      if (rpNeedSend({ srv: w }, why)) rpNeedSent = w;
+    }
+    /** 레이팩이 그 줄을 놓쳤다 — 방에 그 줄만 청하고 30초는 서버 길(유실 0) */
+    function rpNeedRescue(line) {
+      if (!RP_NOSRV || rpNeedSent !== 0) return false;     // 방이 이미 그 말을 번역 중이면 서버 글이 온다
+      rpFailUntil = Date.now() + RP_FAIL_MS;
+      if (!rpNeedSend({ srv: 1, seq: line.seq }, 'rp_miss')) return false;
+      rpNeedSent = 1;
+      clearTimeout(rpFailTimer);
+      rpFailTimer = setTimeout(function () { rpNeedSync('retry'); }, RP_FAIL_MS + 50);
+      return true;
+    }
+    window.rtRpNeed = { on: RP_NOSRV, want: function () { return rpNeedWant(); }, sent: function () { return rpNeedSent; } };
     function rpWant() {
       if (isDemo || isRawBroadcast || !rpRoomOk) return;
       /* 11-10 12:56 ① — 아이폰/아이패드는 레이팩을 받지 않는다(메모리 ≈1GB). 처음부터 방(서버) 번역 */
@@ -1156,6 +1227,7 @@
         line.path = 'server';
         rpLog('guest_tr_plan plan=server seq=' + line.seq + ' why=' + (out ? 'late' : 'empty'));
         if (line.srv) { const m = line.srv; line.srv = null; applyRoomTr(line, m); return; }
+        if (!line.tr[selectedLang]) rpNeedRescue(line);      // ② 방이 그 말을 안 사는 중이면 이 줄만 청한다
         if (bc && !line.tr[selectedLang]) speakWhenTranslated(line, msg);
       });
     }
@@ -1807,6 +1879,7 @@
       if (last) payload.resume_from = parseInt(last);
 
       ws.send(JSON.stringify(payload));
+      rpNeedSync('hello');
     }
 
     function handleMessage(msg) {
@@ -1818,6 +1891,7 @@
         rpRoomOk = msg.kr === 1;
         if (!rpRoomOk) rpLog('raypack_off room=' + (msg.kr === 0 ? 'abroad' : 'other'));
         rpWant();
+        rpNeedSync('welcome');
         welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, kr: rpRoomOk ? 1 : 0, at: Date.now() };
         /* 원고 강연(`script:1`)이면 원고 줄을 **읽는다** — 강사가 말하지 않는 방이라 소리를 끄면 아무것도
            안 들린다(대표님 실기 10-27 ①). 손님이 단추를 건드린 적 있으면 그 뜻대로. */

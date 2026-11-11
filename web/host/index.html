@@ -2382,12 +2382,22 @@
       return rec;
     }
 
+    /* ★ PC 소리(유튜브 등)도 받기 — 가르기 판 (NOW 11-11 14:59 ① · 스위치 `?micRaw=0` 끔, 기본 켬 §24).
+       실기 11-11 14:37: PC 에서 튼 유튜브 소리를 🎤 가 못 받음(약 165초 mic_commit 0). 의심 = 브라우저 에코 제거가
+       PC 출력음을 마이크에서 뺀다. 우리 스트림의 처리를 끈다 — 그것이 Web Speech 쪽에도 먹는지는 **모름**(D-11):
+       대표님 실기 「PC 유튜브 3분 · 켬/끔 두 판」으로 가른다. 기록 `mic_open raw=1|0`. */
+    const MIC_RAW_ON = urlParams.get('micRaw') !== '0';
+    function micAudioOpts() {
+      return MIC_RAW_ON ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false } : true;
+    }
+
     async function startMic() {
       if (mic.on) return;
       if (!applyMicVisibility()) return;          // P-16 · 인식 없음 — 여기서 막는다
       try {
-        mic.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mic.stream = await navigator.mediaDevices.getUserMedia({ audio: micAudioOpts() });
       } catch (_) { micStatus.textContent = T('mic_denied'); return; }
+      micNote('mic_open', { raw: MIC_RAW_ON ? 1 : 0 });
       mic.rec = buildRecognition();
       if (!mic.rec) { micStatus.textContent = T('mic_unsupported'); return; }
       mic.on = true;
@@ -2450,7 +2460,8 @@
                          send: sendSpokenLine, flush: flushSpoken, log: () => mic.log.map(x => x.line),
                          noFinal: { on: MIC_NOFINAL_ON, ms: MIC_NOFINAL_MS, state: micNf },
                          commit: { on: IC_ON, stillMs: IC_STILL_MS, maxMs: IC_MAX_MS, state: ic },
-                         rebuild: { on: MIC_REBUILD_ON, n: () => mic.rebuilds } };
+                         rebuild: { on: MIC_REBUILD_ON, n: () => mic.rebuilds },
+                         raw: { on: MIC_RAW_ON, opts: micAudioOpts } };
 
     /* ⑥ 1시간 소크(돌리는 건 마스터 — NOW 11-03 18:45 ⑥): `?soak=1` 이면 5분마다 콘솔에 한 줄.
      * 조건: 노트북 크롬 + 유튜브 강연 1시간 연속 + 🎤 + 청취 1명. 기본 꺼짐(개발자 스위치). */

@@ -493,10 +493,12 @@ if (isSessionActive) {
 requestWakeLock();
 }
 });
+return true;
 } catch (e) {
 wakeLock = null;
 }
 }
+return false;
 }
 
 function playNoSleepVideo() {
@@ -516,10 +518,9 @@ document.body.appendChild(noSleepVideo);
 }
 try {
 var p = noSleepVideo.play();
-if (p && typeof p.catch === 'function') {
-p.catch(function(e) {});
-}
-} catch (e) {}
+if (p && typeof p.then === 'function') return p.then(function () { return 'play'; }, function () { return 'blocked'; });
+return Promise.resolve('play');
+} catch (e) { return Promise.resolve('blocked'); }
 }
 
 let keepAliveAudioCtx = null;
@@ -543,15 +544,32 @@ osc.start(0);
 } catch (e) {}
 }
 
+var WAKE_BOTH = (function () { try { return new URLSearchParams(location.search).get('wakeBoth') !== '0'; } catch (e) { return true; } })();
+var wakeLog = [];
 async function keepAwake() {
 isSessionActive = true;
-if ('wakeLock' in navigator && navigator.wakeLock) {
-await requestWakeLock();
-} else {
-playNoSleepVideo();
+var ios = isWebkitIos(), api = 'none', vid = null;
+var has = 'wakeLock' in navigator && navigator.wakeLock;
+if (!has || (WAKE_BOTH && ios)) vid = playNoSleepVideo();
+if (has) {
+api = (await requestWakeLock()) ? 'ok' : 'fail';
+if (api === 'fail' && !vid && WAKE_BOTH) vid = playNoSleepVideo();
 }
 startAudioKeepAlive();
+var v = vid ? await vid : 'off';
+var l = 'wake ios=' + (ios ? 1 : 0) + ' api=' + api + ' video=' + v;
+wakeLog.push(l); try { console.log(l); } catch (e) {}
 }
+function wakeHint() {
+if (document.getElementById('wake-hint')) return;
+var list = document.getElementById('chat-list');
+if (!list || !list.parentNode) return;
+var d = document.createElement('div');
+d.id = 'wake-hint'; d.className = 'notice-band'; d.setAttribute('role', 'status');
+d.textContent = t('hint_keep_screen', currentUiLang);
+list.parentNode.insertBefore(d, list);
+}
+window.rtWake = { both: WAKE_BOTH, log: function () { return wakeLog.slice(); } };
 
 function releaseWake() {
 isSessionActive = false;
@@ -568,14 +586,19 @@ noSleepVideo.pause();
 }
 }
 
+var wakeHid = 0;
 document.addEventListener('visibilitychange', function() {
+if (document.visibilityState === 'hidden' && isSessionActive) wakeHid++;
 if (document.visibilityState === 'visible') {
 if (isSessionActive) {
+var ios4 = WAKE_BOTH && isWebkitIos();
 if ('wakeLock' in navigator && navigator.wakeLock && !wakeLock) {
 requestWakeLock();
-} else if (noSleepVideo && noSleepVideo.paused) {
+}
+if (noSleepVideo && noSleepVideo.paused && (ios4 || !('wakeLock' in navigator && navigator.wakeLock) || !wakeLock)) {
 playNoSleepVideo();
 }
+if (ios4 && wakeHid) { wakeLog.push('wake back hid=' + wakeHid); wakeHint(); }
 }
 if (!isDemo && isSessionActive && (!ws || ws.readyState !== WebSocket.OPEN)) {
 if (currentStatusKey !== 'status_ended' && currentStatusKey !== 'status_rejected') {
@@ -995,7 +1018,44 @@ rpWant();
 let rp = null;
 let rpRoomOk = false;
 let rpIosSaid = 0;
-function rpLog(s) { trPlanLog.push(s); try { console.log(s); } catch (e) {} }
+function rpLog(s) {
+trPlanLog.push(s); try { console.log(s); } catch (e) {}
+if (/^raypack_state /.test(String(s))) rpNeedSync('state');
+}
+var RP_NOSRV = (function () { try { return new URLSearchParams(location.search).get('rpNoSrv') !== '0'; } catch (e) { return true; } })();
+var RP_FAIL_MS = 30000;
+var rpNeedSent = null, rpFailUntil = 0, rpFailTimer = null;
+function rpNeedWant() {
+if (!RP_NOSRV || isDemo || isRawBroadcast) return 1;
+if (Date.now() < rpFailUntil) return 1;
+var same = srcLang && selectedLang && normalizeLangCode(srcLang) === normalizeLangCode(selectedLang);
+return (rpRoomOk && rp && rp.ready() && !same && normalizeLangCode(srcLang || 'ko') === 'ko') ? 0 : 1;
+}
+function rpNeedSend(o, why) {
+if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+try { ws.send(JSON.stringify(Object.assign({ kind: 'tr_need' }, o))); } catch (e) { return false; }
+var l = 'tr_need srv=' + o.srv + (o.seq != null ? ' seq=' + o.seq : '') + ' why=' + why;
+trPlanLog.push(l); try { console.log(l); } catch (e) {}
+return true;
+}
+function rpNeedSync(why) {
+if (!RP_NOSRV) return;
+var w = rpNeedWant();
+if (why === 'hello') rpNeedSent = null;
+if (rpNeedSent === null && w === 1) { rpNeedSent = 1; return; }
+if (w === rpNeedSent) return;
+if (rpNeedSend({ srv: w }, why)) rpNeedSent = w;
+}
+function rpNeedRescue(line) {
+if (!RP_NOSRV || rpNeedSent !== 0) return false;
+rpFailUntil = Date.now() + RP_FAIL_MS;
+if (!rpNeedSend({ srv: 1, seq: line.seq }, 'rp_miss')) return false;
+rpNeedSent = 1;
+clearTimeout(rpFailTimer);
+rpFailTimer = setTimeout(function () { rpNeedSync('retry'); }, RP_FAIL_MS + 50);
+return true;
+}
+window.rtRpNeed = { on: RP_NOSRV, want: function () { return rpNeedWant(); }, sent: function () { return rpNeedSent; } };
 function rpWant() {
 if (isDemo || isRawBroadcast || !rpRoomOk) return;
 if (GUEST_TR_ORDER && isWebkitIos()) { if (!rpIosSaid) { rpIosSaid = 1; rpLog('raypack_skip why=ios'); } return; }
@@ -1017,6 +1077,7 @@ return;
 line.path = 'server';
 rpLog('guest_tr_plan plan=server seq=' + line.seq + ' why=' + (out ? 'late' : 'empty'));
 if (line.srv) { const m = line.srv; line.srv = null; applyRoomTr(line, m); return; }
+if (!line.tr[selectedLang]) rpNeedRescue(line);
 if (bc && !line.tr[selectedLang]) speakWhenTranslated(line, msg);
 });
 }
@@ -1513,6 +1574,7 @@ const last = localStorage.getItem(`raytok_last_seq_${roomCode}`);
 if (last) payload.resume_from = parseInt(last);
 
 ws.send(JSON.stringify(payload));
+rpNeedSync('hello');
 }
 
 function handleMessage(msg) {
@@ -1524,6 +1586,7 @@ srcLang = msg.src_lang || 'ko';
 rpRoomOk = msg.kr === 1;
 if (!rpRoomOk) rpLog('raypack_off room=' + (msg.kr === 0 ? 'abroad' : 'other'));
 rpWant();
+rpNeedSync('welcome');
 welcomeInfo = { script: msg.script ? 1 : 0, plan: msg.plan || '', q: msg.q ? 1 : 0, kr: rpRoomOk ? 1 : 0, at: Date.now() };
 if (welcomeInfo.script && !ttsTouched) { ttsTouched = true; ttsAutoOff = false; if (!isTtsEnabled) setTtsEnabled(true); }
 setStatus('status_connected', 'status-dot online');

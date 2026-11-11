@@ -531,6 +531,8 @@ function createMockRelay({ root, endCloseMs = 5000, roomTranslate: doRoomTr = tr
             if (p && p.hello && typeof p.deviceId === 'string' && p.deviceId.trim() && room.listeners.get(ws)) room.listeners.get(ws).dev = p.deviceId.trim().slice(0, 64);
           } catch (_) {}
           if (p && p.kind === 'confirm') { confirmFrom(room, ws, p); return; }
+          /* 레이팩 손님 「서버 번역 필요/없음」 — relay/src/room.js trNeedFrom 과 같은 문(받아 적기만 · 번역 빼기는 진짜 릴레이 시험 relay/test/rp-skip.mjs) */
+          if (p && p.kind === 'tr_need') { if (!(p.trans || p.tr)) (room.trNeed = room.trNeed || []).push({ srv: p.srv, seq: p.seq }); return; }
           /* 아이폰 숨 — relay/src/room.js iosBeat 와 같은 문(D-11): 4초 안 겹친 숨은 버리고 한 줄 남긴다 */
           if (p && p.kind === 'ios_beat') {
             const now = Date.now();

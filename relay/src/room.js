@@ -298,15 +298,42 @@ export class Room {
   }
 
   /** 지금 방에 있는 손님들의 언어 — **아는 칸은 이 하나**다(§4: 새 칸을 만들지 않는다) */
-  listenerLangs() {
+  listenerLangs(opts) {
+    const live = !!(opts && opts.live);
     const out = [];
     try {
       for (const ws of this.ctx.getWebSockets('listener')) {
         const m = this.attMark(ws);
+        if (live && m && m.rp === 1) continue;           // 레이팩 손님 — 들은 줄은 폰이 번역한다(②)
         if (m && m.lang && !m.left) out.push(m.lang);
       }
     } catch (_) {}
     return out;
+  }
+
+  /* ★ 레이팩 손님은 방 번역을 안 받는다 (사이트 NOW 11-11 14:59 ② · 스위치 env `ROOM_TR_RPSKIP=0` 끔, 기본 켬 §24).
+     손님이 `{kind:'tr_need', srv:0}` 을 보내면 그 소켓 쪽지에 `rp:1`. 어느 말의 손님이 **전부** rp 면 그 말의
+     들은 줄(seq) 번역을 사지 않는다 — 원고 줄·질문·답은 그대로(레이팩은 들은 줄만 번역한다). 손님은 청하지 않는다:
+     알릴 뿐이다. 레이팩이 줄을 놓치면 `srv:1, seq:n` — 그 줄만 ringBuffer 에서 찾아 그 말로 산다(R-15). P-14: 손님은
+     번역문을 보내지 않는다(tr·trans 실린 쪽지는 버린다). */
+  rpSkipOn() { return String(this.env && this.env.ROOM_TR_RPSKIP) !== '0'; }
+  isLiveLine(it) { return !!it && !it.script && !it.ask && it.seq !== undefined && it.seq !== null; }
+  trNeedFrom(ws, parsed) {
+    if (parsed.trans || parsed.tr) return;                 // P-14
+    const srv = Number(parsed.srv) === 0 ? 0 : 1;
+    this.attPatch(ws, { rp: srv === 0 ? 1 : 0 });
+    const m = this.attMark(ws) || {};
+    const seq = parsed.seq === undefined || parsed.seq === null ? null : Number(parsed.seq);
+    this.trLog(`room_tr_need srv=${srv} lang=${m.lang || '-'}` + (seq !== null ? ` seq=${seq}` : ''));
+    if (srv !== 1 || seq === null || !m.lang || !this.roomTrOn()) return;
+    let item = null;
+    for (let i = this.ringBuffer.length - 1; i >= 0 && !item; i -= 1) {
+      let p = null;
+      try { p = JSON.parse(this.ringBuffer[i]); } catch (_) { p = null; }
+      if (p && Number(p.seq) === seq) item = this.trItemOf(p);
+    }
+    if (!item || !this.isLiveLine(item)) { this.trLog(`room_tr_rescue_miss seq=${seq}`); return; }
+    this.roomTrFlush([item], { only: m.lang }).catch(() => {});
   }
 
   /**
@@ -587,7 +614,17 @@ export class Room {
       this.trLog(`room_tr_cap langs=${langs.length} dropped=${capped}`);
       this.tellHost({ kind: 'tr_cap', n: langs.length, dropped: capped });
     }
+    /* ② 들은 줄을 살 말 — 레이팩 손님만 있는 말은 뺀다(`only` 는 콕 집어 청한 것이라 그대로) */
+    const srvLangs = (!o.only && this.rpSkipOn())
+      ? new Set(this.listenerLangs({ live: true }).map((x) => RTR.normLang(x))) : null;
     for (const lang of langs) {
+      if (srvLangs && !srvLangs.has(RTR.normLang(lang))) {
+        const keep = batch.filter((it) => !this.isLiveLine(it));
+        if (keep.length !== batch.length) this.trLog(`room_tr_skip lang=${lang} n=${batch.length - keep.length} why=raypack`);
+        if (!keep.length) continue;
+        await this.roomTrFlush(keep, { ...o, only: lang });
+        continue;
+      }
       /* 그 언어에 **아직 없는** 줄만 산다: ① 강사가 이미 실어 보낸 칸 ② 아까 산 칸.
          적어 두지 않으면 같은 (문단, 언어)를 몇 번이고 다시 사게 된다 — 돈이다. */
       /* ① 아까 **미리 사 둔** 글자가 있으면 그것을 그대로 보낸다 (B 4: 지연 0) */
@@ -1908,6 +1945,7 @@ export class Room {
 
       if (parsed && parsed.kind === 'confirm') { await this.confirmFrom(ws, parsed); return; }
       if (parsed && parsed.kind === 'ios_beat') { this.iosBeat(ws, parsed); return; }
+      if (parsed && parsed.kind === 'tr_need') { this.trNeedFrom(ws, parsed); return; }
 
       // N:1 참여자 질문 요청 (P-16 텍스트 질문만, P-14 참여자 번역 배제, B-3 도착 순번, 정본 ask)
       if (parsed && (parsed.kind === 'ask' || parsed.kind === 'ask_req')) {

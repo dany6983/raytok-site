@@ -162,6 +162,8 @@ function verifyChain(f) {
   ok(room.received.some((m) => m.kind === 'confirm_open'), '② 「끝내기」 → confirm_open 을 보낸다');
   await VI.p.waitForSelector('#cf-band', { state: 'visible', timeout: 5000 });
   await KM.p.waitForSelector('#cf-band', { state: 'visible', timeout: 5000 });
+  /* 11-11 14:59 ③ 접힌 띠(기본) — 머리를 눌러 펼친 뒤 본다. 접힘 자체는 samples/listener_1111c_test.js */
+  for (const P of [VI, KM]) { if (await P.p.isVisible('#cf-head')) await P.p.click('#cf-head'); }
   const viBand = await VI.p.evaluate(() => ({ btn: document.getElementById('btn-confirm').textContent, priv: document.getElementById('cf-privacy').textContent,
     name: getComputedStyle(document.getElementById('cf-name')).display, prev: document.getElementById('cf-band').nextElementSibling.id }));
   const dict = JSON.parse(fs.readFileSync(path.join(ROOT, 'web/listener/ui-strings.json'), 'utf8')).strings;

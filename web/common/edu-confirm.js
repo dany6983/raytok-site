@@ -7,10 +7,15 @@
  * 보내는 것: `{kind:'confirm', name, lang, deviceId, ua}` — 시각은 **방이** 찍는다. 소리·글(원문·번역) 없음(P-16·P-14).
  * 누른 기록은 이 폰에도 둔다(`raytok_cf_<방>`) — 새로 고쳐도 「확인되었습니다」가 남는다(R-15).
  * 자리: #chat-screen > #cf-band (#chat-list 바로 앞 형제).
+ * ★ 접힌 띠 (NOW 11-11 14:59 ③ · 스위치 `?cfFold=0` 끔, 기본 켬): 실기 — 아이폰에서 카드가 화면 절반, 번역 줄 1줄만 보였다.
+ *   처음엔 한 줄(#cf-head = 기존 글자 cf_btn + ▾) — 누르면 펼침(#cf-body: 안내·이름·확인 단추). 펼쳐도 띠는 화면 40% 까지
+ *   (넘치면 띠 안에서 굴린다) — 번역 줄이 반 이상. 안내(cf_privacy)는 펼친 뒤 확인 단추 **위**에 있어 보고 누른다.
  */
 (function () {
   var st = { open: false, done: 0, err: '', room: '' };
   var cx = null, gotStrings = null, band = null;
+  var FOLD = (function () { try { return new URLSearchParams(location.search).get('cfFold') !== '0'; } catch (_) { return true; } })();
+  var exp = !FOLD;
   function T(k) { return (cx && cx.t(k)) || ''; }
   function $(id) { return document.getElementById(id); }
 
@@ -42,19 +47,29 @@
     band.setAttribute('role', 'region');
     band.setAttribute('aria-live', 'polite');
     band.setAttribute('translate', 'no');
-    band.style.cssText = 'display:none; background:rgba(34,197,94,0.12); border:1px solid #22c55e; color:var(--text);';
-    band.innerHTML = '<div id="cf-privacy" style="font-size:13px; margin-bottom:6px;"></div>'
+    band.style.cssText = 'display:none; background:rgba(34,197,94,0.12); border:1px solid #22c55e; color:var(--text);'
+      + (FOLD ? ' max-height:40vh; overflow-y:auto; padding-top:6px; padding-bottom:6px;' : '');
+    band.innerHTML = '<button type="button" class="tool-btn" id="cf-head" aria-expanded="false" aria-controls="cf-body" style="display:none; width:100%; text-align:left; font-size:15px; padding:6px 10px; font-weight:600;"></button>'
+      + '<div id="cf-body">'
+      + '<div id="cf-privacy" style="font-size:13px; margin:6px 0;"></div>'
       + '<input type="text" id="cf-name" maxlength="60" style="display:none; width:100%; box-sizing:border-box; margin-bottom:6px;">'
       + '<button class="tool-btn" id="btn-confirm" style="font-size:15px; padding:8px 12px; font-weight:600;"></button>'
+      + '</div>'
       + '<div id="cf-msg" style="font-size:14px; margin-top:4px; font-weight:600;"></div>';
     list.parentNode.insertBefore(band, list);
     $('btn-confirm').addEventListener('click', send);
+    $('cf-head').addEventListener('click', function () { exp = !exp; render(); });
     return band;
   }
   function render() {
     if (!make()) return;
     var ask = st.open && !st.done;
     band.style.display = (ask || st.done) ? '' : 'none';
+    var head = $('cf-head'), open = ask && exp;
+    head.style.display = (FOLD && ask) ? '' : 'none';
+    head.textContent = T('cf_btn') + (open ? ' ▴' : ' ▾');
+    head.setAttribute('aria-expanded', open ? 'true' : 'false');
+    $('cf-body').style.display = open ? '' : 'none';
     $('cf-privacy').textContent = T('cf_privacy');
     $('cf-privacy').style.display = ask ? '' : 'none';
     $('cf-name').placeholder = T('name_placeholder');
@@ -105,5 +120,5 @@
     } else if (msg.kind === 'confirm_error' && msg.why === 'closed') st.open = false;
     return loadStrings(c.lang || 'ko').then(render);
   }
-  window.rtEduConfirm = { on: on, state: function () { return { open: st.open, done: st.done }; } };
+  window.rtEduConfirm = { on: on, fold: FOLD, state: function () { return { open: st.open, done: st.done, exp: exp }; } };
 })();

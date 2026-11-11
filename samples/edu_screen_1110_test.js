@@ -58,7 +58,7 @@ const BLACK = 'rgb(0, 0, 0)';
 
     console.log('\n[2] 근로자 확인 띠 — 최신 줄을 덮지 않는다');
     hostWs.send(JSON.stringify({ kind: 'confirm_open' }));
-    await a.g.waitForFunction(() => { const b = document.getElementById('cf-band'); return b && getComputedStyle(b).display !== 'none' && document.getElementById('btn-confirm').offsetHeight > 0; }, null, { timeout: 8000 });
+    await a.g.waitForFunction(() => { const b = document.getElementById('cf-band'); return b && getComputedStyle(b).display !== 'none' && (document.getElementById('btn-confirm').offsetHeight > 0 || document.getElementById('cf-head').offsetHeight > 0); }   /* 11-11 ③ 접힌 띠 — 머리만 보여도 뜬 것 */, null, { timeout: 8000 });
     await a.g.waitForTimeout(200);
     const geo = await a.g.evaluate(() => {
       const r = (e) => { const x = e.getBoundingClientRect(); return { top: x.top, bottom: x.bottom }; };
