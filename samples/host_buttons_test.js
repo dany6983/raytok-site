@@ -209,6 +209,8 @@ const PARAS = ['첫 문단입니다.', '두 번째 문단입니다.', '세 번�
     /* 질문 흐름 2 (NOW 11-11 15:26 ④⑤) — 누르는 시험은 samples/ask_flow2_test.mjs (지명 칸 안 단추) */
     rows.push(['btnAskAnswer (🎤 답변하기)', '— (강의 🎤 켬 · 원문 줄)', 'test:ask-flow2 — 누르면 🎤 켬, 손님 줄에 「답변」 꼬리표']);
     rows.push(['btnAskEnd (질문 끝내기)', 'revoke reason=host_done', 'test:ask-flow2 — 손님 「질문 끝」 · 원고 멈춘 문장부터']);
+    rows.push(['btnAskSoundFix (🔇 눌러서 듣기)', '—', 'test:host-ask-band — 읽기 5초 안 시작 없으면 보임 · 누르면 다시 speak']);
+    rows.push(['btnPcAudio (🖥 PC 소리)', '— (🎤 와 같은 원문 줄)', 'test:host-ask-band — getDisplayMedia → start(audioTrack) · 크롬 135+ 데스크톱만 보임']);
 
     /* ── 끝 화면 ── */
     console.log('\n[끝]');

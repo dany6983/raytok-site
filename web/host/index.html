@@ -353,6 +353,17 @@
       text-align: center;
     }
     .break-band.on { display: block; }
+    /* 웹 4차 ① — 질문 띠: 스크롤과 무관하게 화면 맨 위(sticky). 길어지면 띠 안에서만 스크롤 */
+    .ask-band {
+      position: sticky; top: 0; z-index: 30;
+      background: var(--card-bg); border: 2px solid var(--primary); border-radius: 8px;
+      padding: 10px 12px; margin: 0 0 12px 0; max-height: 70vh; overflow-y: auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .ask-band.flash { animation: askFlash 0.5s ease-in-out 4; }
+    @keyframes askFlash { 50% { background: rgba(245, 158, 11, 0.45); } }
+    #btnAskSpeak.on { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; opacity: 1; }
+    #btnAskSpeak:not(.on) { opacity: 0.6; }
 
     /* ── L4-3 끝 화면 ── */
     .btn.danger { background: var(--danger); }
@@ -562,6 +573,37 @@
     <!-- 3단계: 진행 (L4-2) — 문단 넘기기 · QR · 참석 수 -->
     <section id="step-live" class="card" style="display: none;">
       <div class="card-title"><span data-t="live_title"></span> <span id="liveProgress" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></span></div>
+      <!-- ★ 웹 4차 ① (NOW 11-13 16:35) — 질문 칸은 진행 화면 **맨 위 가로 띠**(sticky). 11-13 실기: 지명된 질문이
+           오른쪽 단 QR·참석 **밑**에 있어 1568×698 창에서 스크롤해야 보였다 → 대표님 눈엔 「기능 없음」.
+           옛 자리(오른쪽 단)는 치웠다(§5). 질문이 없으면 띠는 0높이(display:none) — `renderAskBand()` 가 정한다. -->
+      <div class="ask-box ask-band" id="askBox" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-weight: 700; font-size: 0.95rem;"><span data-t="ask_queue_label"></span><span id="askQueueCount">0</span>)</span>
+          <!-- ③ 읽어 주기가 5초 안에 시작 안 됐다 — 손가락 안에서 다시 읽는다 -->
+          <button id="btnAskSoundFix" class="btn warn" style="display: none; min-height: 36px; padding: 6px 10px;" data-t="ask_sound_fix"></button>
+        </div>
+        <!-- 활성 발언(답변) 영역 -->
+        <div id="askActiveArea" style="display: none; background: rgba(0, 136, 176, 0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-weight: 600; font-size: 0.85rem; color: var(--primary);" id="askActiveSpeaker" data-t="ask_speaking"></span>
+            <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
+          </div>
+          <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
+          <div style="display: flex; gap: 6px;">
+            <!-- 정본 §1 ⑤ — 질문을 강사 말로 읽어 준다. 기본 켬(§24), 끄는 단추다 -->
+            <button id="btnAskSpeak" class="btn secondary" style="min-height: 36px; padding: 6px 10px;" data-t="ask_speak_on"></button>
+          </div>
+          <!-- 질문 흐름 2 (NOW 11-11 15:26 ④⑤) — 큰 단추 둘: 답변(= 강의 🎤) · 질문 끝내기. `?askflow=0` 이면 숨김 -->
+          <div id="askFlow2Btns" style="display: none; gap: 8px; margin-top: 8px;">
+            <button id="btnAskAnswer" class="btn warn" style="flex: 1; min-height: 48px; font-size: 1rem;" data-t="ask_answer_btn"></button>
+            <button id="btnAskEnd" class="btn" style="flex: 1; min-height: 48px; font-size: 1rem;" data-t="ask_end_btn"></button>
+          </div>
+        </div>
+        <!-- 대기열 목록 -->
+        <div id="askQueueList" style="max-height: 180px; overflow-y: auto;">
+          <div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText" data-t="ask_empty"></div>
+        </div>
+      </div>
       <div id="breakBand" class="break-band" data-t="live_break_badge"></div>
       <!-- 11-04 KFT4TM: 고른 말이 **고르개 한 곳에만** 있었다. 틀려도 방송 내내 안 보여서
            말레이어로 한국어를 받아쓰는 줄 아무도 몰랐다. 송출 중에도 계속 보인다(§20). -->
@@ -584,6 +626,8 @@
           <!-- B 9 실시간 말하기 — 원고 모드와 **같은 방**에서 섞어 쓴다 (MASTER 10-14 22:55 ①) -->
           <div class="live-controls" id="micBox" style="display: none; border-top: 1px solid var(--border); padding-top: 14px;">
             <button id="btnMic" class="btn warn" data-t="mic_start"></button>
+            <!-- 웹 4차 ④ — 탭 공유 소리로 인식(크롬·엣지 데스크톱 135+ 만 보임) -->
+            <button id="btnPcAudio" class="btn warn" style="display: none;" data-t="pc_audio_btn"></button>
             <span id="micStatus" class="live-status" data-t="mic_idle"></span>
           </div>
           <div class="notice info" id="micOffNote" style="display: none; margin-top: 12px; margin-bottom: 0;"></div>
@@ -616,33 +660,6 @@
                 <span id="hostLicIndexText" style="font-size: 0.75rem; color: var(--text-muted);">1 / 1</span>
                 <button id="btnLicNext" class="btn-action">▶</button>
               </div>
-            </div>
-          </div>
-          <!-- 질문 대기열 및 지명 UI (N:1, question.md) -->
-          <div class="ask-box" id="askBox" style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="font-weight: 600; font-size: 0.85rem;"><span data-t="ask_queue_label"></span><span id="askQueueCount">0</span>)</span>
-            </div>
-            <!-- 활성 발언(답변) 영역 -->
-            <div id="askActiveArea" style="display: none; background: rgba(0, 136, 176, 0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-weight: 600; font-size: 0.85rem; color: var(--primary);" id="askActiveSpeaker" data-t="ask_speaking"></span>
-                <span style="font-size: 0.8rem; color: #f59e0b;" id="askTimer">1:30</span>
-              </div>
-              <div style="font-size: 0.85rem; margin-bottom: 8px; line-height: 1.4;" id="askActiveText"></div>
-              <div style="display: flex; gap: 6px;">
-                <!-- 정본 §1 ⑤ — 질문을 강사 말로 읽어 준다. 기본 켬(§24), 끄는 단추다 -->
-                <button id="btnAskSpeak" class="btn secondary" style="min-height: 36px; padding: 6px 10px;" data-t="ask_speak_on"></button>
-              </div>
-              <!-- 질문 흐름 2 (NOW 11-11 15:26 ④⑤) — 큰 단추 둘: 답변(= 강의 🎤) · 질문 끝내기. `?askflow=0` 이면 숨김 -->
-              <div id="askFlow2Btns" style="display: none; gap: 8px; margin-top: 8px;">
-                <button id="btnAskAnswer" class="btn warn" style="flex: 1; min-height: 48px; font-size: 1rem;" data-t="ask_answer_btn"></button>
-                <button id="btnAskEnd" class="btn" style="flex: 1; min-height: 48px; font-size: 1rem;" data-t="ask_end_btn"></button>
-              </div>
-            </div>
-            <!-- 대기열 목록 -->
-            <div id="askQueueList" style="max-height: 180px; overflow-y: auto;">
-              <div style="color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 8px 0;" id="askEmptyText" data-t="ask_empty"></div>
             </div>
           </div>
         </div>
@@ -1831,8 +1848,7 @@
       const isQuestion = chkQ && chkQ.checked;
       live.raw = isRaw;
       live.questionEnabled = isQuestion;
-      const askBoxEl = document.getElementById('askBox');
-      if (askBoxEl) askBoxEl.style.display = isQuestion ? 'block' : 'none';
+      renderAskBand();          // 웹 4차 ① — 띠는 질문이 켜졌고 **질문이 있을 때만** 보인다
 
       const res = await fetch(`${RELAY_BASE}/room`, {
         method: 'POST',
@@ -1915,10 +1931,11 @@
        ─────────────────────────────────────────────────────────────────── */
     const micBox = document.getElementById('micBox');
     const btnMic = document.getElementById('btnMic');
+    const btnPcAudio = document.getElementById('btnPcAudio');
     const micStatus = document.getElementById('micStatus');
     const micOffNote = document.getElementById('micOffNote');
 
-    const mic = { on: false, rec: null, stream: null, seq: 0, sent: [],
+    const mic = { on: false, rec: null, stream: null, track: null, seq: 0, sent: [],
                   /* 60분 무중단 (A1, 2026-10-19) */
                   live: false,          // 인식기가 **지금 열려 있나** (onstart ↔ onend)
                   reopens: 0, backoff: 0, lastWhy: '', reopenTimer: null, guard: null,
@@ -2247,7 +2264,7 @@
       mic.reopenTimer = setTimeout(() => {
         mic.reopenTimer = null;
         if (!mic.on || !mic.rec) return;
-        try { mic.rec.start(); }
+        try { recStart(mic.rec); }
         catch (e) { reopenMic('start_threw'); }       // 던져도 끝이 아니다
       }, wait);
     }
@@ -2321,7 +2338,7 @@
         if (!mic.on) return;
         mic.rec = buildRecognition();
         if (!mic.rec) return;
-        try { mic.rec.start(); } catch (e) { reopenMic('start_threw'); }
+        try { recStart(mic.rec); } catch (e) { reopenMic('start_threw'); }
       }, again ? MIC_REBUILD_REST_MS : 0);
     }
 
@@ -2387,31 +2404,59 @@
       return rec;
     }
 
-    /* ★ PC 소리(유튜브 등)도 받기 — 가르기 판 (NOW 11-11 14:59 ① · 스위치 `?micRaw=0` 끔, 기본 켬 §24).
-       실기 11-11 14:37: PC 에서 튼 유튜브 소리를 🎤 가 못 받음(약 165초 mic_commit 0). 의심 = 브라우저 에코 제거가
-       PC 출력음을 마이크에서 뺀다. 우리 스트림의 처리를 끈다 — 그것이 Web Speech 쪽에도 먹는지는 **모름**(D-11):
-       대표님 실기 「PC 유튜브 3분 · 켬/끔 두 판」으로 가른다. 기록 `mic_open raw=1|0`. */
-    const MIC_RAW_ON = urlParams.get('micRaw') !== '0';
-    function micAudioOpts() {
-      return MIC_RAW_ON ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false } : true;
+    /* ★ 웹 4차 ④ (NOW 11-13 16:35) — PC 소리(유튜브 등) 받기 = **탭 공유 소리 트랙으로 인식**.
+       11-11 의 `micRaw`(getUserMedia 에코 제거 끔)는 실기 두 번(11-11 14:37 · 11-13 16:25) 효과 없음 → 걷었다(§5):
+       Web Speech 는 우리 스트림이 아니라 **자기 마이크**를 연다. 길: `SpeechRecognition.start(audioTrack)`
+       (MDN: 인자 MediaStreamTrack — kind≠audio 또는 readyState≠live 면 InvalidStateError. BCD 8.1.9: Chrome·Edge
+       데스크톱 135+, 안드로이드·사파리 없음) + `getDisplayMedia({video, audio})` 탭 소리. 지원 안 하면 단추를 숨긴다.
+       줄 길·원문만(P-14)은 🎤 와 같다 — 소리 출처만 바뀐다. 스위치 `?pcaudio=0`. */
+    const PC_AUDIO_ON = urlParams.get('pcaudio') !== '0';
+    function chromiumMajor() {
+      try {
+        const ud = navigator.userAgentData;
+        if (ud && Array.isArray(ud.brands)) {
+          const b = ud.brands.find(x => /Chromium|Google Chrome|Microsoft Edge/.test(x.brand));
+          if (b) return parseInt(b.version, 10) || 0;
+        }
+      } catch (_) {}
+      const m = /(?:Chrome|Chromium)\/(\d+)/.exec(navigator.userAgent || '');
+      return m ? parseInt(m[1], 10) : 0;
+    }
+    function pcAudioSupported() {
+      if (!PC_AUDIO_ON) return false;
+      const ua = navigator.userAgent || '';
+      const mobile = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|Mobi/i.test(ua);
+      return !mobile && !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) && chromiumMajor() >= 135;
+    }
+    /* 인식기를 여는 곳은 이 하나(첫 열기·다시 열기·엉킴 탈출 셋 다) — 탭 소리면 그 트랙을 준다 */
+    function recStart(rec) {
+      if (mic.track) rec.start(mic.track); else rec.start();
     }
 
-    async function startMic() {
+    async function startMic(pc) {
       if (mic.on) return;
-      if (!applyMicVisibility()) return;          // P-16 · 인식 없음 — 여기서 막는다
-      try {
-        mic.stream = await navigator.mediaDevices.getUserMedia({ audio: micAudioOpts() });
-      } catch (_) { micStatus.textContent = T('mic_denied'); return; }
-      micNote('mic_open', { raw: MIC_RAW_ON ? 1 : 0 });
+      if (!applyMicVisibility()) { if (pc) pc.stream.getTracks().forEach(t => t.stop()); return; }   // P-16 · 인식 없음 — 여기서 막는다
+      if (pc) { mic.stream = pc.stream; mic.track = pc.track; }
+      else {
+        mic.track = null;
+        try {
+          mic.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (_) { micStatus.textContent = T('mic_denied'); return; }
+      }
+      micNote('mic_open', { src: mic.track ? 'pc' : 'mic' });
       mic.rec = buildRecognition();
-      if (!mic.rec) { micStatus.textContent = T('mic_unsupported'); return; }
+      if (!mic.rec) {
+        try { mic.stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+        mic.stream = null; mic.track = null;
+        micStatus.textContent = T('mic_unsupported'); return;
+      }
       mic.on = true;
       mic.backoff = 0; mic.reopens = 0; mic.live = false; mic.lastWhy = '';
       mic.ends = []; mic.lastRebuildAt = 0; mic.regrab = false;
       ic.covered = 0; ic.last = ''; ic.changedAt = 0; ic.firstAt = 0;
       clearInterval(mic.icTimer);
       if (IC_ON) mic.icTimer = setInterval(icTick, IC_TICK_MS);   // ① 말이 멈춰 onresult 가 안 와도 1.5초를 잰다
-      try { mic.rec.start(); } catch (_) { reopenMic('first_start_threw'); }
+      try { recStart(mic.rec); } catch (_) { reopenMic('first_start_threw'); }
       /*
        * 지킴이 — **열려 있어야 하는데 안 열린** 상태만 본다(D-30 을 되풀이하지 않는다).
        * 살아 있는 인식기는 건드리지 않으므로, 강사가 한참 말이 없어도 끊기지 않는다.
@@ -2425,9 +2470,19 @@
         reopenMic('stuck');
       }, MIC_GUARD_MS);
       await acquireWakeLock();
-      btnMic.textContent = T('mic_stop');
-      btnMic.classList.add('on');
-      micStatus.textContent = T('mic_listening');
+      renderMicBtns();
+    }
+
+    /* 🎤 / 🖥 단추 글자 — 켠 쪽만 「끄기」. 쓰는 곳 startMic·stopMic 둘 */
+    function renderMicBtns() {
+      const pcOn = mic.on && !!mic.track;
+      btnMic.textContent = T(mic.on && !pcOn ? 'mic_stop' : 'mic_start');
+      btnMic.classList.toggle('on', mic.on && !pcOn);
+      if (btnPcAudio) {
+        btnPcAudio.textContent = T(pcOn ? 'pc_audio_stop' : 'pc_audio_btn');
+        btnPcAudio.classList.toggle('on', pcOn);
+      }
+      micStatus.textContent = !mic.on ? T('mic_idle') : T(pcOn ? 'pc_audio_listening' : 'mic_listening');
     }
 
     function stopMic() {
@@ -2442,11 +2497,10 @@
       mic.rec = null;
       try { if (mic.stream) mic.stream.getTracks().forEach(t => t.stop()); } catch (_) {}
       mic.stream = null;
+      mic.track = null;
       /* 화면 깨우기는 **놓지 않는다** — 임자가 진행 화면이다(위). 🎤 를 끄면 원고 재생으로
          돌아가는 것이 보통이고, 거기서 화면이 꺼지면 재생이 멈춘다. */
-      btnMic.textContent = T('mic_start');
-      btnMic.classList.remove('on');
-      micStatus.textContent = T('mic_idle');
+      renderMicBtns();
     }
 
     /* 정본 §6 ④ — 🎤 로 끼어들면 원고는 **멈추고 그 문단을 기억**한다. 🎤 를 한 번 더
@@ -2461,12 +2515,51 @@
         if (mic.on) playStop('mic_on', true);
       }
     });
+
+    /* 🖥 PC 소리 — 누르면 탭 고르기 → 그 탭 소리 트랙으로 인식. 🎤 가 켜져 있으면 닫고 바꾼다.
+       공유를 브라우저 막대에서 멈추면(트랙 ended) 🎤 끄기와 같게 닫는다. 실패하면 원고를 멈추지 않는다(D-32). */
+    async function startPcAudio() {
+      let ds = null;
+      try { ds = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); }
+      catch (e) { micNote('pc_audio_denied', { why: (e && e.name) || '' }); return false; }
+      const tr = ds && ds.getAudioTracks ? ds.getAudioTracks()[0] : null;
+      if (!tr) {
+        try { ds.getTracks().forEach(t => t.stop()); } catch (_) {}
+        micNote('pc_audio_no_track', {});
+        micStatus.textContent = T('pc_audio_no_audio');
+        return false;
+      }
+      tr.addEventListener('ended', () => {
+        if (mic.track !== tr) return;
+        micNote('pc_audio_ended', {});
+        stopMic();
+        if (play.pausedAt) playStart('mic_off');
+      });
+      await startMic({ stream: ds, track: tr });
+      return mic.on;
+    }
+    if (btnPcAudio) {
+      btnPcAudio.style.display = pcAudioSupported() ? '' : 'none';
+      btnPcAudio.addEventListener('click', async () => {
+        btnPcAudio.blur();
+        if (mic.on && mic.track) {
+          stopMic();
+          if (play.pausedAt) playStart('mic_off');
+          return;
+        }
+        const wasMic = mic.on;
+        if (wasMic) stopMic();
+        const okPc = await startPcAudio();
+        if (okPc && !wasMic) playStop('mic_on', true);
+        else if (!okPc && wasMic && play.pausedAt) playStart('mic_off');
+      });
+    }
     window.rtHostMic = { state: mic, start: startMic, stop: stopMic, apply: applyMicVisibility,
                          send: sendSpokenLine, flush: flushSpoken, log: () => mic.log.map(x => x.line),
                          noFinal: { on: MIC_NOFINAL_ON, ms: MIC_NOFINAL_MS, state: micNf },
                          commit: { on: IC_ON, stillMs: IC_STILL_MS, maxMs: IC_MAX_MS, state: ic },
                          rebuild: { on: MIC_REBUILD_ON, n: () => mic.rebuilds },
-                         raw: { on: MIC_RAW_ON, opts: micAudioOpts } };
+                         pc: { on: PC_AUDIO_ON, supported: pcAudioSupported, start: startPcAudio, track: () => mic.track } };
 
     /* ⑥ 1시간 소크(돌리는 건 마스터 — NOW 11-03 18:45 ⑥): `?soak=1` 이면 5분마다 콘솔에 한 줄.
      * 조건: 노트북 크롬 + 유튜브 강연 1시간 연속 + 🎤 + 청취 1명. 기본 꺼짐(개발자 스위치). */
@@ -2857,8 +2950,51 @@
     let liveGrantedId = null;   // [선택] 한 질문 id — 손님이 말하기 전(ask_active 오기 전)에도 ▶ 가 닫을 수 있게
     let askTimerInterval = null;
 
+    /* ── 웹 4차 ①② (NOW 11-13 16:35) — 맨 위 질문 띠 · 새 손 알림 ──
+     * 띠(`#askBox`)는 질문을 켠 방에서 **대기 또는 지명이 있을 때만** 보인다(없으면 0높이). 보이는지 정하는 곳은
+     * 이 함수 하나(§4). 새 손(처음 보는 id)이 오르면 짧은 삑 1회(WebAudio — 파일 없음) + 띠 깜빡 2초.
+     * 🎤 가 켜져 있어도 낸다(짧다). 스위치 `?askbeep=0`. */
+    const ASK_BEEP_ON = urlParams.get('askbeep') !== '0';
+    const askSeenIds = new Set();
+    let askAudioCtx = null;
+    let askBeeps = 0;
+    function renderAskBand() {
+      const band = document.getElementById('askBox');
+      if (!band) return;
+      const show = !!live.questionEnabled && (liveAskQueue.length > 0 || !!liveActiveAsk);
+      band.style.display = show ? 'block' : 'none';
+    }
+    function askBeep() {
+      if (!ASK_BEEP_ON) return;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!askAudioCtx) askAudioCtx = new AC();
+        if (askAudioCtx.state === 'suspended' && askAudioCtx.resume) askAudioCtx.resume();
+        const o = askAudioCtx.createOscillator();
+        const g = askAudioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = 880;
+        g.gain.value = 0.15;
+        o.connect(g); g.connect(askAudioCtx.destination);
+        const t0 = askAudioCtx.currentTime || 0;
+        o.start(t0); o.stop(t0 + 0.18);
+        askBeeps += 1;
+        askLog.push(`ask_beep n=${askBeeps}`);
+      } catch (_) {}
+    }
+    function askFlashBand() {
+      const band = document.getElementById('askBox');
+      if (!band) return;
+      band.classList.remove('flash'); void band.offsetWidth; band.classList.add('flash');
+      setTimeout(() => band.classList.remove('flash'), 2000);
+    }
+
     function renderAskQueue(queue) {
       liveAskQueue = queue;
+      const fresh = queue.filter(q => q && q.id != null && !askSeenIds.has(q.id));
+      fresh.forEach(q => askSeenIds.add(q.id));
+      if (fresh.length) { askBeep(); askFlashBand(); }
+      renderAskBand();
       const countEl = document.getElementById('askQueueCount');
       if (countEl) countEl.textContent = queue.length;
       const listEl = document.getElementById('askQueueList');
@@ -2975,15 +3111,38 @@
      * 낸다 — 릴레이로 소리를 보내지 않는다(RULE: P-04). */
     let askSpeakOn = (() => { try { return localStorage.getItem('raytok_ask_speak') !== '0'; } catch (_) { return true; } })();
 
+    /* ★ 웹 4차 ③ — `ask_speak` 를 찍어도 **소리가 실제로 났는지** 몰랐다(대표님 11-13 「듣는 기능도 없고」).
+       onstart/onend/onerror 를 기록하고, 5초 안에 onstart 가 없으면 띠에 「🔇 소리 안 남 — 눌러서 듣기」 —
+       누르면 **손가락 안에서** 다시 읽는다(크롬 자동 재생 막힘을 넘는 길). */
+    const ASK_SPEAK_WAIT_MS = 5000;
+    let askSpeakLast = null;        // { text, lang } — 「눌러서 듣기」가 다시 읽을 것
+    let askSpeakWatch = null;
+    function askSoundFixShow(on) {
+      const b = document.getElementById('btnAskSoundFix');
+      if (!b) return;
+      if (on) b.textContent = T('ask_sound_fix');
+      b.style.display = on ? 'inline-block' : 'none';
+    }
     function speakHost(text, lang) {
       if (!askSpeakOn) return false;
       try {
         if (!window.speechSynthesis) return false;
         const u = new SpeechSynthesisUtterance(String(text || ''));
         u.lang = (window.rtRecLang && window.rtRecLang.tag) ? window.rtRecLang.tag(lang || SRC_LANG) : (lang || SRC_LANG);
+        askSpeakLast = { text: String(text || ''), lang };
+        let started = false, t0 = 0;
+        u.onstart = () => { started = true; t0 = Date.now(); clearTimeout(askSpeakWatch); askSoundFixShow(false); askLog.push('ask_speak_start'); };
+        u.onend = () => { askLog.push(`ask_speak_end ms=${started ? Date.now() - t0 : 0}`); };
+        u.onerror = (e) => { askLog.push(`ask_speak_err why=${(e && e.error) || 'unknown'}`); };
         window.speechSynthesis.cancel();        // 앞 질문을 읽는 중이면 끊고 새것을
         window.speechSynthesis.speak(u);
         askLog.push(`ask_speak lang=${u.lang} chars=${String(text || '').length}`);
+        clearTimeout(askSpeakWatch);
+        askSpeakWatch = setTimeout(() => {
+          if (started) return;
+          askLog.push('ask_speak_err why=no_start');
+          askSoundFixShow(true);
+        }, ASK_SPEAK_WAIT_MS);
         return true;
       } catch (_) { return false; }
     }
@@ -3032,6 +3191,15 @@
       }
     }
 
+    const btnAskSoundFix = document.getElementById('btnAskSoundFix');
+    if (btnAskSoundFix) btnAskSoundFix.addEventListener('click', () => {
+      btnAskSoundFix.blur();
+      askLog.push('ask_sound_fix');
+      askSoundFixShow(false);
+      if (!askSpeakOn) { askSpeakOn = true; try { localStorage.setItem('raytok_ask_speak', '1'); } catch (_) {} renderAskSpeakBtn(); }
+      if (askSpeakLast) speakHost(askSpeakLast.text, askSpeakLast.lang);
+    });
+
     const btnAskSpeak = document.getElementById('btnAskSpeak');
     function renderAskSpeakBtn() {
       if (!btnAskSpeak) return;
@@ -3050,7 +3218,7 @@
        `HOST_STR` 은 이 아래에서 `const` 로 만들어진다(TDZ). 글자는 발언 칸이 열릴 때
        맞춘다(`renderAskActive`). 10-21 에 이것 때문에 화면 전체가 안 떴다. */
 
-    window.rtHostAsk = { speakOn: () => askSpeakOn, log: () => askLog.slice() };
+    window.rtHostAsk = { speakOn: () => askSpeakOn, log: () => askLog.slice(), beeps: () => askBeeps, beepOn: ASK_BEEP_ON };
 
     function renderAskActive(msg) {
       liveActiveAsk = msg;
@@ -3059,6 +3227,7 @@
       const textEl = document.getElementById('askActiveText');
       const timerEl = document.getElementById('askTimer');
       if (area) area.style.display = 'block';
+      renderAskBand();
       if (speakerEl) speakerEl.textContent = `${T('ask_speaking')}: ${msg.name} (${msg.lang})`;
       renderAskSpeakBtn();      // 🔊 글자를 그때 맞춘다 (표는 이 시점엔 다 차 있다)
       renderAskFlow2();
@@ -3120,6 +3289,7 @@
       clearInterval(askTimerInterval);
       const area = document.getElementById('askActiveArea');
       if (area) area.style.display = 'none';
+      clearTimeout(askSpeakWatch); askSoundFixShow(false);
       renderAskQueue(liveAskQueue);
     }
 
@@ -3342,7 +3512,12 @@
         att_unit: '명 (최대',
         qr_title: '손님 이용권 QR',
         qr_desc: '손님이 찍으면 즉시 이용권이 활성화됩니다.',
-        ask_queue_label: '질문 대기 (',
+        ask_queue_label: '✋ 질문 (',
+        ask_sound_fix: '🔇 소리 안 남 — 눌러서 듣기',
+        pc_audio_btn: '🖥 PC 소리 번역(탭 공유)',
+        pc_audio_stop: '🖥 PC 소리 끄기',
+        pc_audio_listening: '🖥 PC 소리 받는 중',
+        pc_audio_no_audio: '공유 창에서 「탭 오디오 공유」를 켜고 다시 눌러 주세요',
         live_mute: '무음',
         foot_privacy: '개인정보 처리방침',
         foot_terms: '이용약관',
@@ -3523,7 +3698,12 @@
         att_unit: 'people (peak',
         qr_title: 'Visitor pass QR',
         qr_desc: 'Scanning it activates the pass right away.',
-        ask_queue_label: 'Questions waiting (',
+        ask_queue_label: '✋ Questions (',
+        ask_sound_fix: '🔇 No sound — tap to hear',
+        pc_audio_btn: '🖥 Translate PC audio (share tab)',
+        pc_audio_stop: '🖥 Stop PC audio',
+        pc_audio_listening: '🖥 Listening to PC audio',
+        pc_audio_no_audio: 'Turn on “Share tab audio” in the share dialog and try again',
         live_mute: 'Mute',
         foot_privacy: 'Privacy',
         foot_terms: 'Terms',
